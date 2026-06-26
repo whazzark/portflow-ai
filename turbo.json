@@ -1,0 +1,39 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["build/**", "dist/**"]
+    },
+    "start": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "persistent": true
+    },
+    "typecheck": {
+      "outputs": []
+    },
+    "test": {
+      "cache": false,
+      "passThroughEnv": [
+        "TZ",
+        "PORT",
+        "HOST",
+        "LOG_LEVEL",
+        "APP_KEY",
+        "NODE_ENV",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_PASSWORD",
+        "DB_DATABASE",
+        "WEB_ORIGIN"
+      ]
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "name": "@portflow/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx ace.js serve --watch",
+    "build": "node --import tsx ace.js build",
+    "start": "node build/bin/server.js",
+    "migrate": "node --import tsx ace.js migration:run",
+    "seed": "node --import tsx ace.js db:seed",
+    "rollback": "node --import tsx ace.js migration:rollback",
+    "test": "node --import tsx ace.js test",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./registry": "./.adonisjs/client/registry/index.ts",
+    "./data": "./.adonisjs/client/data.d.ts"
+  },
+  "imports": {
+    "#controllers/*": "./app/controllers/*.js",
+    "#config/*": "./config/*.js",
+    "#exceptions/*": "./app/exceptions/*.js",
+    "#generated/*": "./.adonisjs/server/*.js",
+    "#start/*": "./start/*.js"
+  },
+  "dependencies": {
+    "@adonisjs/core": "^7.3.4",
+    "@adonisjs/cors": "^3.0.0",
+    "@adonisjs/lucid": "^22.4.2",
+    "@japa/runner": "^5.3.0",
+    "@tuyau/core": "^1.2.2",
+    "@vinejs/vine": "^4.0.0",
+    "luxon": "^3.7.2",
+    "pg": "^8.13.1",
+    "reflect-metadata": "^0.2.2",
+    "youch": "^4.1.1"
+  },
+  "devDependencies": {
+    "@adonisjs/assembler": "^8.4.0",
+    "@japa/api-client": "^3.2.1",
+    "@japa/assert": "^4.2.0",
+    "@japa/plugin-adonisjs": "^5.2.0",
+    "@poppinss/ts-exec": "^1.4.4",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
