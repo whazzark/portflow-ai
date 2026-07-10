@@ -91,4 +91,10 @@ test.group('Persist user access status', (group) => {
 
     await assert.rejects(() => UserFactory.merge({ email: user.email }).create())
   })
+
+  test('rejects a duplicate email that differs only by case', async ({ assert }) => {
+    const user = await UserFactory.create()
+
+    await assert.rejects(() => UserFactory.merge({ email: user.email.toUpperCase() }).create())
+  })
 })

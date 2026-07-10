@@ -9,7 +9,7 @@ export default class extends BaseSchema {
 
       table.string('first_name').notNullable()
       table.string('last_name').notNullable()
-      table.string('email').notNullable().unique()
+      table.string('email').notNullable()
       table.string('password').nullable()
       table.string('role').notNullable()
       table.string('access_status').notNullable().defaultTo('PENDING')
@@ -39,6 +39,11 @@ export default class extends BaseSchema {
 
       table.timestamp('created_at')
       table.timestamp('updated_at')
+    })
+
+    this.defer(async (db) => {
+      // biome-ignore lint/security/noSecrets: SQL statement, not a secret
+      await db.rawQuery('CREATE UNIQUE INDEX users_email_unique ON users (LOWER(email))')
     })
   }
 
