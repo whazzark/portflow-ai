@@ -1,49 +1,10 @@
-name: CI
+name: PR Template Check
 
 on:
-  push:
-    branches: [master]
   pull_request:
 
 jobs:
-  checks:
-    runs-on: ubuntu-latest
-    env:
-      TZ: UTC
-      PORT: 3333
-      HOST: 0.0.0.0
-      LOG_LEVEL: info
-      APP_KEY: ci-only-insecure-app-key-0123456789
-      NODE_ENV: test
-      DB_HOST: 127.0.0.1
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_DATABASE: portflow
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Format & lint
-        run: pnpm check
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
-
   pr-template-check:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Check PR body follows the template
