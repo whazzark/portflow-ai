@@ -29,8 +29,7 @@
 - Return an explicit typed outcome from a conditional mutation when failure can have more than one business meaning; do not use `null` to represent several distinct outcomes.
 - Let the use case translate repository outcomes into dedicated business exceptions. Do not make repositories choose HTTP-aware or workflow-specific exceptions.
 - Lucid models may serve as application entities in this codebase; do not introduce a parallel persistence-independent entity layer without a concrete need.
-- For every new table that participates in application workflows, add an abstract repository, a Lucid repository implementation, and a fake repository for tests.
-- Keep fake repositories behaviorally equivalent to Lucid repositories, including conditional outcomes, while using model factories to prepare realistic test data.
+- For every new table that participates in application workflows, add an abstract repository and a Lucid repository implementation.
 - See `apps/api/docs/adr/0013-use-case-and-repository-boundaries.md` for the architectural rationale.
 
 ## HTTP layer
@@ -60,7 +59,7 @@
 
 - Organize unit tests by domain slice only, for example `tests/unit/auth` or `tests/unit/users`; do not add a separate directory for each feature or use case.
 - Cover use case business behavior in unit tests and the corresponding API endpoint contract in integration tests.
-- Treat the `integration` suite as HTTP-level functional coverage, not as infrastructure integration coverage: it boots the HTTP server but swaps repositories and collaborators with in-memory fakes from `tests/helpers` and `tests/fakes`.
+- Treat the `integration` suite as HTTP-level functional coverage: it boots the HTTP server and runs requests through the real Lucid repositories against the in-memory SQLite test database. Do not use integration tests to re-prove business behavior already covered by unit tests; keep them focused on the request/response contract.
 - Order unit tests as: happy path, valid business variations, invalid input, forbidden business states, conflicts, then regressions or race conditions.
 - When an integration file covers several resource actions, order the tests by action, for example `create -> list -> show -> update -> archive -> reactivate`.
 - For one integration action, prefer the local order: unauthenticated rejection, unauthorized rejection, success, then endpoint-specific validation or business conflict.
@@ -68,8 +67,6 @@
 - Keep `422` tests near the action when the validation rules are an important part of the endpoint contract.
 - For workflow-oriented integration files, repeated guard-rail cases may be grouped later in the file when that improves readability.
 - In unit and integration tests, use model factories whenever they are the most relevant way to prepare realistic test data.
-- Use factories in tests to prepare realistic model instances, then register or inject them into fake repositories instead of calling `.create()` directly.
-- Store all API test fakes in `tests/fakes`; do not place fakes inside workflow slices. Keep their state in memory and match the observable contract of the corresponding Lucid implementations, including conditional outcomes. Do not use factories inside fakes; tests should prepare any realistic model instances before registering or injecting them into the fake.
 - When implementing with TDD, proceed one observable behavior at a time: write a failing test, add the minimal implementation, then refactor while the tests are green.
 - Keep integration tests focused on the API contract: happy path, authentication, authorization policies, request validation, response shape, and transformer exposure.
 - Do not use integration tests to re-prove the full business behavior already covered by unit tests. In integration tests, assert only the minimum business state needed to prove the endpoint wiring and public contract, and leave detailed state-transition coverage, edge cases, rollback cases, and concurrency cases to unit tests.
