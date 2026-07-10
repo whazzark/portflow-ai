@@ -1,0 +1,3 @@
+# Preserve loaded reweighings for truck capacity compliance
+
+Every loaded weighing is retained as an immutable physical event rather than overwritten as a correction. When a weighing produces a net tonnage above the truck's captured maximum authorized payload, the rotation cannot proceed to deposit: the truck returns to the dock to remove product and is weighed again, with only the latest compliant weighing becoming effective. This preserves the evidence of each attempt while enforcing capacity before transport; if a post-validation adjustment later reveals an actual overload, the truthful value remains effective and creates an irreversible Truck Capacity Breach in the activity log and future report snapshots.

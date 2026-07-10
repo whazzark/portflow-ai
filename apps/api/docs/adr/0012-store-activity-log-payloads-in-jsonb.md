@@ -1,0 +1,3 @@
+# Store Activity Log payloads in JSONB
+
+Activity Log entries will share one PostgreSQL table whose indexed columns hold the common envelope—Discharge, server time, actor, category, action type, and schema version—while each producing domain stores its type-specific payload in JSONB. The journal is an immutable read history, not an event store or source of truth: business state remains in its owning models, and each accepted action validates and inserts its entry synchronously in the same database transaction as its state change; an invalid required payload rolls back the complete business action rather than committing without its history.
