@@ -25,7 +25,6 @@ Closes #
 
 - [ ] Acceptance criteria verified one by one against the delivered result
 - [ ] `pnpm check && pnpm typecheck && pnpm test` run locally and green
-- [ ] End-to-end behavior verified with `/verify` (not just automated tests)
 - [ ] For `apps/web` changes: golden path and edge cases exercised in the browser
 - [ ] Fresh-session review completed (`/code-review --comment` + `/review` for spec fidelity; `/security-review` if this touches auth/sessions/user access)
 - [ ] Every CONFIRMED finding from the fresh-session review resolved or explicitly justified
