@@ -8,8 +8,8 @@ export type CreateUserCommand = {
   lastName: string
   email: string
   role: UserRole
-  invitedAt?: DateTime | null
-  invitedByUserId?: string | null
+  invitedAt?: DateTime
+  invitedByUserId?: string
 }
 
 export default abstract class UserRepository {
