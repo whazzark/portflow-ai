@@ -1,0 +1,3 @@
+# Model post-validation rotation corrections as immutable adjustments
+
+Validated rotations remain immutable, including after discharge closure and report generation, so every later correction is recorded as an append-only Rotation Adjustment rather than an update to the original rotation. Each adjustment atomically preserves its previous and corrected values under a required comment, becomes immediately effective for current views and future reports, and can itself be corrected only by another adjustment; this adds an effective-value projection but preserves the complete operational history and the integrity of existing report snapshots.
