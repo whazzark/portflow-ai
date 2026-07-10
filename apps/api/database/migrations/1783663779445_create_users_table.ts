@@ -14,39 +14,28 @@ export default class extends BaseSchema {
       table.string('role').notNullable()
       table.string('access_status').notNullable().defaultTo('PENDING')
 
+      const actorColumn = (columnName: string) =>
+        table
+          .uuid(columnName)
+          .nullable()
+          .references('id')
+          .inTable(this.tableName)
+          .onDelete('SET NULL')
+
       table.timestamp('invited_at').nullable()
-      table
-        .uuid('invited_by_user_id')
-        .nullable()
-        .references('id')
-        .inTable(this.tableName)
-        .onDelete('SET NULL')
+      actorColumn('invited_by_user_id')
 
       table.timestamp('activated_at').nullable()
+      actorColumn('activated_by_user_id')
 
       table.timestamp('cancelled_at').nullable()
-      table
-        .uuid('cancelled_by_user_id')
-        .nullable()
-        .references('id')
-        .inTable(this.tableName)
-        .onDelete('SET NULL')
+      actorColumn('cancelled_by_user_id')
 
       table.timestamp('deactivated_at').nullable()
-      table
-        .uuid('deactivated_by_user_id')
-        .nullable()
-        .references('id')
-        .inTable(this.tableName)
-        .onDelete('SET NULL')
+      actorColumn('deactivated_by_user_id')
 
       table.timestamp('reactivated_at').nullable()
-      table
-        .uuid('reactivated_by_user_id')
-        .nullable()
-        .references('id')
-        .inTable(this.tableName)
-        .onDelete('SET NULL')
+      actorColumn('reactivated_by_user_id')
 
       table.timestamp('created_at')
       table.timestamp('updated_at')

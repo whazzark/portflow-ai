@@ -27,4 +27,8 @@ export const UserFactory = factory
     user.accessStatus = 'CANCELLED'
     user.cancelledAt = DateTime.now()
   })
+  .state('reactivated', (user) => {
+    user.accessStatus = 'ACTIVE'
+    user.reactivatedAt = DateTime.now()
+  })
   .build()

@@ -26,17 +26,20 @@ test.group('Persist user access status', (group) => {
   })
 
   test('persists activation metadata and the chosen password', async ({ assert }) => {
+    const activator = await UserFactory.apply('active').create()
     const user = await UserFactory.create()
 
     const activatedAt = DateTime.now()
     user.accessStatus = 'ACTIVE'
     user.password = 'a-hashed-password'
     user.activatedAt = activatedAt
+    user.activatedByUserId = activator.id
     await user.save()
     await user.refresh()
 
     assert.equal(user.accessStatus, 'ACTIVE')
     assert.equal(user.password, 'a-hashed-password')
+    assert.equal(user.activatedByUserId, activator.id)
     assert.isTrue(user.activatedAt?.hasSame(activatedAt, 'second'))
   })
 

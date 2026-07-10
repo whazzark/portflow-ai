@@ -18,6 +18,7 @@ export default class UserTransformer extends BaseTransformer<User> {
       'reactivatedAt',
       // biome-ignore lint/security/noSecrets: field name, not a secret
       'invitedByUserId',
+      'activatedByUserId',
       'cancelledByUserId',
       'deactivatedByUserId',
       'reactivatedByUserId',

@@ -46,6 +46,7 @@
     "@japa/assert": "^4.2.0",
     "@japa/plugin-adonisjs": "^5.2.0",
     "@poppinss/ts-exec": "^1.4.4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/luxon": "^3.7.2",
     "@types/node": "^22.10.2",
     "tsx": "^4.19.2",

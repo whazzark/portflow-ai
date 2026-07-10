@@ -1,4 +1,6 @@
 import { defineConfig } from '@adonisjs/lucid'
+import type BetterSqlite3 from 'better-sqlite3'
+
 import env from '#start/env'
 
 const databaseConfig = defineConfig({
@@ -27,10 +29,7 @@ const databaseConfig = defineConfig({
       pool: {
         min: 1,
         max: 1,
-        afterCreate: (
-          conn: { pragma: (statement: string) => void },
-          done: (err: Error | null) => void,
-        ) => {
+        afterCreate: (conn: BetterSqlite3.Database, done: (err: Error | null) => void) => {
           conn.pragma('foreign_keys = ON')
           done(null)
         },
