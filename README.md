@@ -78,7 +78,7 @@ Ces éléments sont documentés, mais pas tous implémentés dans ce dépôt auj
 ├── apps/
 │   └── api/                # API AdonisJS
 ├── docker/
-│   └── docker-compose.yml  # PostgreSQL local
+│   └── docker-compose.yml  # PostgreSQL local + profile `prod` (images api/web)
 ├── docs/
 │   └── adr/                # ADRs racine
 ├── CONTEXT.md              # Glossaire métier
@@ -157,6 +157,26 @@ Point important : le `docker-compose` expose `5433` par défaut sur la machine h
 
 - définir `DB_PORT=5433` dans `apps/api/.env`, soit
 - lancer Docker avec `DB_PORT=5432` dans l'environnement de la commande.
+
+## Lancer la stack avec les images de production
+
+Le même `docker-compose.yml` expose un profile `prod` qui construit et lance `apps/api` et `apps/web` à partir de leurs `Dockerfile` de production (celles utilisées par la CI), pour vérifier localement que les images se comportent comme en prod :
+
+```bash
+docker compose -f docker/docker-compose.yml --profile prod up --build
+```
+
+- API accessible sur `http://localhost:3333` (santé : `/health`) ;
+- Web accessible sur `http://localhost:8081` ;
+- `APP_KEY`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE`, `WEB_ORIGIN` et `VITE_API_BASE_URL` peuvent être surchargés via l'environnement ou un fichier `docker/.env`.
+
+Ce profile ne lance pas les migrations automatiquement. Une fois les conteneurs démarrés, les exécuter avec :
+
+```bash
+docker compose -f docker/docker-compose.yml --profile prod exec api node ace.js migration:run --force
+```
+
+(`--force` est nécessaire car les conteneurs tournent en `NODE_ENV=production`, où AdonisJS demande une confirmation interactive par défaut.)
 
 Une fois PostgreSQL lancé, exécuter les migrations :
 
