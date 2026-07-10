@@ -16,7 +16,7 @@ export const plugins: Config['plugins'] = [assert(), pluginAdonisJS(app), apiCli
  * tests.
  */
 export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
-  setup: [],
+  setup: [() => testUtils.db().migrate()],
   teardown: [],
 }
 
@@ -26,6 +26,6 @@ export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
  */
 export const configureSuite: Config['configureSuite'] = (suite) => {
   if (['browser', 'functional', 'integration', 'e2e'].includes(suite.name)) {
-    return suite.setup(() => testUtils.httpServer().start())
+    suite.setup(() => testUtils.httpServer().start())
   }
 }

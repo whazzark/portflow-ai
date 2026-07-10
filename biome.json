@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/.adonisjs"]
+    "includes": ["**", "!**/.adonisjs", "!apps/api/database/schema.ts"]
   },
   "formatter": {
     "enabled": true,
@@ -73,6 +73,16 @@
           "style": {
             "useImportType": "off",
             "noProcessEnv": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/api/database/migrations/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useAwait": "off"
           }
         }
       }

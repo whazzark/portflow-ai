@@ -1,8 +1,10 @@
 import { defineConfig } from '@adonisjs/lucid'
+import type BetterSqlite3 from 'better-sqlite3'
+
 import env from '#start/env'
 
 const databaseConfig = defineConfig({
-  connection: 'postgres',
+  connection: env.get('NODE_ENV') === 'test' ? 'sqlite' : 'postgres',
   connections: {
     postgres: {
       client: 'pg',
@@ -12,6 +14,25 @@ const databaseConfig = defineConfig({
         user: env.get('DB_USER'),
         password: env.get('DB_PASSWORD'),
         database: env.get('DB_DATABASE'),
+      },
+      migrations: {
+        naturalSort: true,
+        paths: ['database/migrations'],
+      },
+    },
+    sqlite: {
+      client: 'better-sqlite3',
+      connection: {
+        filename: ':memory:',
+      },
+      useNullAsDefault: true,
+      pool: {
+        min: 1,
+        max: 1,
+        afterCreate: (conn: BetterSqlite3.Database, done: (err: Error | null) => void) => {
+          conn.pragma('foreign_keys = ON')
+          done(null)
+        },
       },
       migrations: {
         naturalSort: true,
