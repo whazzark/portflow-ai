@@ -1,0 +1,14 @@
+# Build context is the repo root; patterns are relative to it.
+# BuildKit picks this file up automatically for apps/api/Dockerfile
+# (Dockerfile-name.dockerignore convention).
+
+**/node_modules
+**/.turbo
+**/build
+**/dist
+**/.env
+**/.env.*
+.git
+.pnpm-store
+docs
+**/*.md
