@@ -18,6 +18,12 @@ export type LoginUserInput = {
  */
 const dummyPasswordHash = hash.make(randomUUID())
 
+/**
+ * Verifies credentials by hand instead of `@adonisjs/auth`'s `withAuthFinder`
+ * mixin, whose `verifyCredentials()` throws an uncaught 500 on a null
+ * password — the normal state for a PENDING user — where every rejection
+ * reason here must resolve to the same graceful 401.
+ */
 @inject()
 export default class LoginUserUseCase {
   constructor(private userRepository: UserRepository) {}
