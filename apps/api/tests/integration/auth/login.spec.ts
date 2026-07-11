@@ -25,7 +25,7 @@ test.group('Auth login', () => {
 
     response.assertStatus(401)
     assert.deepEqual(response.body(), {
-      errors: [{ code: 'E_INVALID_CREDENTIALS', message: 'Invalid credentials' }],
+      errors: [{ code: 'E_LOGIN_INVALID_CREDENTIALS', message: 'Invalid credentials' }],
     })
     response.assertSessionMissing('auth_web')
   })
@@ -42,7 +42,7 @@ test.group('Auth login', () => {
 
     response.assertStatus(401)
     assert.deepEqual(response.body(), {
-      errors: [{ code: 'E_INVALID_CREDENTIALS', message: 'Invalid credentials' }],
+      errors: [{ code: 'E_LOGIN_INVALID_CREDENTIALS', message: 'Invalid credentials' }],
     })
     response.assertSessionMissing('auth_web')
   })

@@ -23,7 +23,7 @@ export default class LoginUserUseCase {
   constructor(private userRepository: UserRepository) {}
 
   async handle(input: LoginUserInput) {
-    const email = input.email.trim().toLowerCase()
+    const email = input.email.trim()
     const user = await this.userRepository.findByEmail(email)
 
     const isValidPassword = await hash.verify(
