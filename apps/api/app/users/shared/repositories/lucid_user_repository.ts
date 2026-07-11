@@ -8,6 +8,6 @@ export default class LucidUserRepository extends UserRepository {
   }
 
   findByEmail(email: string): Promise<User | null> {
-    return User.findBy('email', email)
+    return User.query().whereRaw('LOWER(email) = ?', [email.toLowerCase()]).first()
   }
 }
