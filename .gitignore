@@ -12,6 +12,7 @@ coverage/
 .env.*
 !.env.example
 !.env.docker.example
+!.env.test
 
 # OS
 .DS_Store
