@@ -3,7 +3,11 @@ import { defineConfig } from '@adonisjs/core/app'
 import { generateRegistry } from '@tuyau/core/hooks'
 
 export default defineConfig({
-  commands: [() => import('@adonisjs/core/commands'), () => import('@adonisjs/lucid/commands')],
+  commands: [
+    () => import('@adonisjs/core/commands'),
+    () => import('@adonisjs/lucid/commands'),
+    () => import('@adonisjs/session/commands'),
+  ],
   providers: [
     () => import('@adonisjs/core/providers/app_provider'),
     () => import('@adonisjs/core/providers/hash_provider'),
@@ -13,6 +17,8 @@ export default defineConfig({
     () => import('@adonisjs/cors/cors_provider'),
     () => import('./providers/api_provider.js'),
     () => import('./providers/repositories_provider.js'),
+    () => import('@adonisjs/session/session_provider'),
+    () => import('@adonisjs/auth/auth_provider'),
   ],
   preloads: [() => import('#start/routes'), () => import('#start/kernel')],
   hooks: {

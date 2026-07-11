@@ -5,4 +5,5 @@
 
 export const controllers = {
   Health: () => import('#controllers/health_controller'),
+  Login: () => import('#controllers/login_controller'),
 }
