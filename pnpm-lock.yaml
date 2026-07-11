@@ -17,6 +17,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@adonisjs/auth':
+        specifier: ^10.1.0
+        version: 10.1.0(ee0b616c2277d21aeeb7086e8010fbcd)
       '@adonisjs/core':
         specifier: ^7.3.4
         version: 7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1)
@@ -26,6 +29,9 @@ importers:
       '@adonisjs/lucid':
         specifier: ^22.4.2
         version: 22.4.2(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(pg@8.22.0)
+      '@adonisjs/session':
+        specifier: ^8.1.0
+        version: 8.1.0(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(pg@8.22.0))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0))(@japa/browser-client@2.3.0(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)(playwright@1.61.1))(@japa/plugin-adonisjs@5.2.0(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0))(@japa/browser-client@2.3.0(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)(playwright@1.61.1))(@japa/runner@5.3.0)(playwright@1.61.1))
       '@japa/runner':
         specifier: ^5.3.0
         version: 5.3.0
@@ -137,6 +143,34 @@ packages:
     engines: {node: '>=24.0.0'}
     peerDependencies:
       typescript: ^5.0.0 || ^6.0.0
+
+  '@adonisjs/auth@10.1.0':
+    resolution: {integrity: sha512-H92C4HLWBpvxtQrgnsdWdWfoGu2bM/j+nyk/tHmpxH9ETkNOH0z3dRfEebLJI63vtTDpRp5cwiI0bzn32gUQiA==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      '@adonisjs/assembler': ^8.0.0-next.26 || ^8.0.0
+      '@adonisjs/core': ^7.0.0-next.16 || ^7.0.0
+      '@adonisjs/i18n': ^3.0.0-next.2 || ^3.0.0
+      '@adonisjs/lucid': ^22.0.0-next.1 || ^22.0.0
+      '@adonisjs/session': ^8.0.0-next.1 || ^8.0.0
+      '@japa/api-client': ^3.1.1
+      '@japa/browser-client': ^2.2.0
+      '@japa/plugin-adonisjs': ^5.1.0-next.0 || ^5.1.0
+    peerDependenciesMeta:
+      '@adonisjs/assembler':
+        optional: true
+      '@adonisjs/i18n':
+        optional: true
+      '@adonisjs/lucid':
+        optional: true
+      '@adonisjs/session':
+        optional: true
+      '@japa/api-client':
+        optional: true
+      '@japa/browser-client':
+        optional: true
+      '@japa/plugin-adonisjs':
+        optional: true
 
   '@adonisjs/bodyparser@11.0.4':
     resolution: {integrity: sha512-amqMPVFbzxkOoCMbkFs5sC+rTu7cER2rSv+1v8dsGKszolk5lnGuyNjkha1Lqksvw1qykIIbC1fXr37B9WJTdg==}
@@ -275,6 +309,40 @@ packages:
   '@adonisjs/repl@5.0.0':
     resolution: {integrity: sha512-cPp0w5svYUA3M1gdxQBO2Mx5g+SZfPweqKCAxk7C1Os/Qu67JKgWqXqNnl1q0Tzv/l0L19Ms1C7ivzQxeBNajg==}
     engines: {node: '>=24.0.0'}
+
+  '@adonisjs/session@8.1.0':
+    resolution: {integrity: sha512-hTd5m49Ro8XhxVQN0yyCeDOihDhj+mFIVltzeWPXkCxK19JHAtA++TAygxSUEhvcm56IVS43XWNE1lNIOPjMJA==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      '@adonisjs/assembler': ^8.0.0-next.26 || ^8.0.0
+      '@adonisjs/core': ^7.0.0-next.16 || ^7.0.0
+      '@adonisjs/lucid': ^22.0.0-next.0 || ^22.0.0
+      '@adonisjs/redis': ^10.0.0-next.2 || ^10.0.0
+      '@aws-sdk/client-dynamodb': ^3.955.0
+      '@aws-sdk/util-dynamodb': ^3.955.0
+      '@japa/api-client': ^3.1.0
+      '@japa/browser-client': ^2.0.3
+      '@japa/plugin-adonisjs': ^5.1.0-next.0 || ^5.1.0
+      edge.js: ^6.4.0
+    peerDependenciesMeta:
+      '@adonisjs/assembler':
+        optional: true
+      '@adonisjs/lucid':
+        optional: true
+      '@adonisjs/redis':
+        optional: true
+      '@aws-sdk/client-dynamodb':
+        optional: true
+      '@aws-sdk/util-dynamodb':
+        optional: true
+      '@japa/api-client':
+        optional: true
+      '@japa/browser-client':
+        optional: true
+      '@japa/plugin-adonisjs':
+        optional: true
+      edge.js:
+        optional: true
 
   '@antfu/install-pkg@1.1.0':
     resolution: {integrity: sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ==}
@@ -1330,6 +1398,10 @@ packages:
     resolution: {integrity: sha512-c/jurFrDLyui7o1J86yLkRu4LMsTYcBohveus7/I2Hzdn9KIP2bdJPTue/lR1KH46enoPbD77GKeSYNdyPoD3Q==}
     engines: {node: '>=6.0.0'}
     hasBin: true
+
+  basic-auth@2.0.1:
+    resolution: {integrity: sha512-NF+epuEdnUYVlGuhaxbbq+dvJttwLnGY+YixlXlME5KpQ5W3CnXA5cVTneY3SPbPDRkcjMbifrwmFYcClgOZeg==}
+    engines: {node: '>= 0.8'}
 
   better-sqlite3@12.11.1:
     resolution: {integrity: sha512-dq9AtApgg5PGFtBzPFSBl3HZQjHok5gaQCM6zh2Yk0aSmDCs1CbnVI8/HgASQkNKsWFpseIO9beg5xxpYhbIfA==}
@@ -2441,6 +2513,9 @@ packages:
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
 
+  safe-buffer@5.1.2:
+    resolution: {integrity: sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==}
+
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
 
@@ -2832,6 +2907,19 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
+  '@adonisjs/auth@10.1.0(ee0b616c2277d21aeeb7086e8010fbcd)':
+    dependencies:
+      '@adonisjs/core': 7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1)
+      '@adonisjs/presets': 3.0.0(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))
+      basic-auth: 2.0.1
+    optionalDependencies:
+      '@adonisjs/assembler': 8.4.0(typescript@5.9.3)
+      '@adonisjs/lucid': 22.4.2(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(pg@8.22.0)
+      '@adonisjs/session': 8.1.0(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(pg@8.22.0))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0))(@japa/browser-client@2.3.0(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)(playwright@1.61.1))(@japa/plugin-adonisjs@5.2.0(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0))(@japa/browser-client@2.3.0(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)(playwright@1.61.1))(@japa/runner@5.3.0)(playwright@1.61.1))
+      '@japa/api-client': 3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)
+      '@japa/browser-client': 2.3.0(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)(playwright@1.61.1)
+      '@japa/plugin-adonisjs': 5.2.0(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0))(@japa/browser-client@2.3.0(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)(playwright@1.61.1))(@japa/runner@5.3.0)(playwright@1.61.1)
+
   '@adonisjs/bodyparser@11.0.4(@adonisjs/http-server@9.1.0(@adonisjs/application@9.0.1(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/config@6.1.0)(@adonisjs/fold@11.0.0))(@adonisjs/events@10.2.0(@adonisjs/application@9.0.1(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/config@6.1.0)(@adonisjs/fold@11.0.0))(@adonisjs/fold@11.0.0))(@adonisjs/fold@11.0.0)(@adonisjs/logger@7.1.1)(@boringnode/encryption@1.0.0)(youch@4.1.1))':
     dependencies:
       '@adonisjs/http-server': 9.1.0(@adonisjs/application@9.0.1(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/config@6.1.0)(@adonisjs/fold@11.0.0))(@adonisjs/events@10.2.0(@adonisjs/application@9.0.1(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/config@6.1.0)(@adonisjs/fold@11.0.0))(@adonisjs/fold@11.0.0))(@adonisjs/fold@11.0.0)(@adonisjs/logger@7.1.1)(@boringnode/encryption@1.0.0)(youch@4.1.1)
@@ -3002,6 +3090,18 @@ snapshots:
     dependencies:
       '@poppinss/colors': 4.1.6
       string-width: 8.2.1
+
+  '@adonisjs/session@8.1.0(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(pg@8.22.0))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0))(@japa/browser-client@2.3.0(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)(playwright@1.61.1))(@japa/plugin-adonisjs@5.2.0(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0))(@japa/browser-client@2.3.0(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)(playwright@1.61.1))(@japa/runner@5.3.0)(playwright@1.61.1))':
+    dependencies:
+      '@adonisjs/core': 7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1)
+      '@poppinss/macroable': 1.1.2
+      '@poppinss/utils': 7.0.1
+    optionalDependencies:
+      '@adonisjs/assembler': 8.4.0(typescript@5.9.3)
+      '@adonisjs/lucid': 22.4.2(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(pg@8.22.0)
+      '@japa/api-client': 3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)
+      '@japa/browser-client': 2.3.0(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)(playwright@1.61.1)
+      '@japa/plugin-adonisjs': 5.2.0(@adonisjs/core@7.3.4(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(youch@4.1.1))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0))(@japa/browser-client@2.3.0(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)(playwright@1.61.1))(@japa/runner@5.3.0)(playwright@1.61.1)
 
   '@antfu/install-pkg@1.1.0':
     dependencies:
@@ -3878,6 +3978,10 @@ snapshots:
   base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.10.42: {}
+
+  basic-auth@2.0.1:
+    dependencies:
+      safe-buffer: 5.1.2
 
   better-sqlite3@12.11.1:
     dependencies:
@@ -4872,6 +4976,8 @@ snapshots:
   run-parallel@1.2.0:
     dependencies:
       queue-microtask: 1.2.3
+
+  safe-buffer@5.1.2: {}
 
   safe-buffer@5.2.1: {}
 

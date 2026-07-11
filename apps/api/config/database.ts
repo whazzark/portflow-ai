@@ -4,7 +4,7 @@ import type BetterSqlite3 from 'better-sqlite3'
 import env from '#start/env'
 
 const databaseConfig = defineConfig({
-  connection: env.get('NODE_ENV') === 'test' ? 'sqlite' : 'postgres',
+  connection: env.get('DB_CONNECTION'),
   connections: {
     postgres: {
       client: 'pg',

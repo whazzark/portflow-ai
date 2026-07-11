@@ -392,6 +392,10 @@ _Avoid_: permission edit, profile update
 The action of changing the identifying information of a user, either by the user themselves or by an organization admin.
 _Avoid_: profile update, account edit
 
+**Login**:
+The action by which an active user establishes an authenticated session by presenting valid credentials. Every non-active access status is rejected with the same outcome as invalid credentials, so the response never reveals which reason applied.
+_Avoid_: sign in, authentication
+
 **Password Reset**:
 The action of requiring an active user to choose a new password.
 _Avoid_: password change, password recovery

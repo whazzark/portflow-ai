@@ -1,7 +1,12 @@
+import hash from '@adonisjs/core/services/hash'
 import factory from '@adonisjs/lucid/factories'
 import { DateTime } from 'luxon'
 
 import User, { USER_ROLES } from '#models/user'
+
+export const USER_FACTORY_PASSWORD = 'Password!234'
+
+const hashedFactoryPassword = hash.make(USER_FACTORY_PASSWORD)
 
 export const UserFactory = factory
   .define(User, ({ faker }) => {
@@ -14,9 +19,9 @@ export const UserFactory = factory
       accessStatus: 'PENDING' as const,
     }
   })
-  .state('active', (user) => {
+  .state('active', async (user) => {
     user.accessStatus = 'ACTIVE'
-    user.password = 'hashed-password'
+    user.password = await hashedFactoryPassword
     user.activatedAt = DateTime.now()
   })
   .state('deactivated', (user) => {
@@ -27,8 +32,9 @@ export const UserFactory = factory
     user.accessStatus = 'CANCELLED'
     user.cancelledAt = DateTime.now()
   })
-  .state('reactivated', (user) => {
+  .state('reactivated', async (user) => {
     user.accessStatus = 'ACTIVE'
+    user.password = await hashedFactoryPassword
     user.reactivatedAt = DateTime.now()
   })
   .build()
