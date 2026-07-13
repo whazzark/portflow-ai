@@ -6,4 +6,6 @@
 export const controllers = {
   Health: () => import('#controllers/health_controller'),
   Login: () => import('#controllers/login_controller'),
+  Logout: () => import('#controllers/logout_controller'),
+  Me: () => import('#controllers/me_controller'),
 }
