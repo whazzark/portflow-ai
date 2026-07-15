@@ -1,26 +1,25 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { getRequestHeader } from '@tanstack/react-start/server'
 
-import { LoginScreen } from '@/features/auth/ui/login-screen'
+import { GuestLayout } from '@/features/layout/ui/guest-layout'
 import { tuyauQuery } from '@/libraries/tuyau/client'
 
-export const Route = createFileRoute('/login')({
+export const Route = createFileRoute('/_guest')({
   beforeLoad: async ({ context: { queryClient } }) => {
     const cookie = import.meta.env.SSR ? getRequestHeader('cookie') : undefined
 
-    const isAuthenticated = await queryClient
-      .ensureQueryData(
+    try {
+      await queryClient.ensureQueryData(
         tuyauQuery.auth.me.queryOptions(
           {},
           cookie ? { tuyau: { headers: { cookie } } } : undefined,
         ),
       )
-      .then(() => true)
-      .catch(() => false)
-
-    if (isAuthenticated) {
-      throw redirect({ to: '/' })
+    } catch {
+      return
     }
+
+    throw redirect({ to: '/' })
   },
-  component: LoginScreen,
+  component: GuestLayout,
 })
