@@ -1,5 +1,11 @@
 # Web Agent Notes
 
+## Design system
+
+- UI primitives come from shadcn/ui (`src/components/ui`, `components.json`), themed with the "Channel Marker" brand tokens in `src/styles/globals.css`. Prefer an existing primitive or a `shadcn add`-ed component over hand-rolled markup.
+- shadcn's `cn()` helper is renamed to `classnames()` and lives at `src/libraries/shadcn/helpers.ts` (not the default `src/lib/utils.ts`), matching this project's `libraries` convention for tool integrations. The shadcn CLI always generates `import { cn } from "@/libraries/shadcn/helpers"` — after every `npx shadcn add <component>` (or `add --overwrite`/update), fix that import to `classnames` and update any `cn(...)` call sites in the added file(s) before committing.
+- Harbor Control defaults to dark mode through the custom provider at `src/libraries/theme/` (`ThemeProvider`, `useTheme`), not `next-themes` — this is a Vite/TanStack Start app, not Next.js. The explicit `light` preference is stored in `portflow-theme`.
+
 ## Feature folder structure
 
 - Each feature under `src/features/<feature>/` groups its internals by technical role, not by screen: `ui/` for screen and component UI, `mutations/` for TanStack Query mutation hooks, `context/` for React context providers and their hooks, `__tests__/` for that feature's tests. See `src/features/auth/` for the established layout.
@@ -12,6 +18,7 @@
 - **Unit** — pure non-React logic only: adapters, mappers, small branching business rules (for example `parseApiError`). Never renders anything, never calls `renderHook` or otherwise exercises a hook in isolation. Colocate as `*.test.ts` next to the source file.
 - **Feature** — one integration-style seam per feature, rendered through the real router and real providers (see `src/features/auth/__tests__/auth-flow.test.tsx` for the established pattern). This is the day-to-day layer TDD's red-green-refactor loop drives. Colocate as `*.test.tsx` under the feature's `__tests__/` folder.
 - **E2E** — a comprehensive suite of full user journeys against a real `apps/api` instance and a real database, never MSW. Written after a feature is already green at the feature level, as a safety net for what a mocked environment can't catch (SSR assembly, hydration, real network) — not TDD'd behavior-by-behavior. Lives under `apps/web/e2e/*.spec.ts`, configured by `apps/web/playwright.config.ts`.
+- Cross-cutting providers under `src/libraries/*` (for example `ThemeProvider`) sit outside any single feature, so there is no natural "feature level" to test them through. These may have a colocated `*.test.tsx` that renders the provider in isolation with a minimal local probe component, as a deliberate exception to the no-isolated-component-test rule. Keep this exception scoped to `src/libraries/`; feature-owned components still go through the feature level.
 
 ## Feature-level mocking
 

@@ -1,12 +1,20 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { getRequestHeader } from '@tanstack/react-start/server'
+import { createIsomorphicFn } from '@tanstack/react-start'
 
 import { tuyauQuery } from '@/libraries/tuyau/client'
 
-export function ensureSessionUser(queryClient: QueryClient) {
-  const cookie = import.meta.env.SSR ? getRequestHeader('cookie') : undefined
+const getSessionCookie = createIsomorphicFn()
+  .server(async () => {
+    const { getRequestHeader } = await import('@tanstack/react-start/server')
 
-  return queryClient.ensureQueryData(
+    return getRequestHeader('cookie')
+  })
+  .client(() => undefined)
+
+export async function ensureSessionUser(queryClient: QueryClient) {
+  const cookie = await getSessionCookie()
+
+  return await queryClient.ensureQueryData(
     tuyauQuery.auth.me.queryOptions({}, cookie ? { tuyau: { headers: { cookie } } } : undefined),
   )
 }

@@ -61,12 +61,6 @@
   },
   "overrides": [
     {
-      "includes": ["apps/web/src/components/ui/**"],
-      "linter": {
-        "enabled": false
-      }
-    },
-    {
       "includes": ["apps/api/**"],
       "linter": {
         "rules": {
@@ -92,9 +86,20 @@
       "linter": {
         "rules": {
           "nursery": {
-            "useSortedClasses": "error"
+            "useSortedClasses": {
+              "level": "error",
+              "options": {
+                "functions": ["classnames"]
+              }
+            }
           }
         }
+      }
+    },
+    {
+      "includes": ["apps/web/src/components/ui/**"],
+      "linter": {
+        "enabled": false
       }
     }
   ]
