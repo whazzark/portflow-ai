@@ -25,7 +25,7 @@ test.group('Auth login', () => {
 
     response.assertStatus(401)
     assert.deepEqual(response.body(), {
-      errors: [{ code: 'E_LOGIN_INVALID_CREDENTIALS', message: 'Invalid credentials' }],
+      error: { code: 'E_LOGIN_INVALID_CREDENTIALS', message: 'Invalid credentials' },
     })
     response.assertSessionMissing('auth_web')
   })
@@ -42,14 +42,16 @@ test.group('Auth login', () => {
 
     response.assertStatus(401)
     assert.deepEqual(response.body(), {
-      errors: [{ code: 'E_LOGIN_INVALID_CREDENTIALS', message: 'Invalid credentials' }],
+      error: { code: 'E_LOGIN_INVALID_CREDENTIALS', message: 'Invalid credentials' },
     })
     response.assertSessionMissing('auth_web')
   })
 
-  test('rejects a malformed login payload with a validation error', async ({ client }) => {
+  test('rejects a malformed login payload with a validation error', async ({ assert, client }) => {
     const response = await client.post('/auth/login').json({ email: 'not-an-email', password: 'x' })
 
     response.assertStatus(422)
+    assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+    assert.isArray(response.body().error.details)
   })
 })

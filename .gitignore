@@ -21,3 +21,6 @@ coverage/
 tmp/
 .turbo/
 .claude/
+
+# Generated
+apps/web/src/routeTree.gen.ts
