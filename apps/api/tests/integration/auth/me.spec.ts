@@ -24,7 +24,12 @@ test.group('Auth me', () => {
 
     const unauthenticatedResponse = await client.get('/auth/me')
     const sessionCookie = loginResponse.cookie('adonis-session')
-    const response = await client.get('/auth/me').cookie('adonis-session', sessionCookie!.value)
+
+    if (!sessionCookie) {
+      throw new Error('Expected an authenticated session cookie')
+    }
+
+    const response = await client.get('/auth/me').cookie('adonis-session', sessionCookie.value)
 
     unauthenticatedResponse.assertStatus(401)
     response.assertStatus(401)
@@ -52,5 +57,47 @@ test.group('Auth me', () => {
     response.assertStatus(200)
     assert.equal(response.body().data.id, activeUser.id)
     assert.isUndefined(response.body().data.password)
+  })
+
+  test('restores a remembered connection after its session disappears', async ({
+    assert,
+    client,
+  }) => {
+    const activeUser = await UserFactory.apply('active').create()
+    const loginResponse = await client
+      .post('/auth/login')
+      .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD, rememberMe: true })
+    const rememberedCookie = loginResponse.cookie('remember_web')
+
+    if (!rememberedCookie) {
+      throw new Error('Expected a remembered connection cookie')
+    }
+
+    const response = await client
+      .get('/auth/me')
+      .encryptedCookie('remember_web', rememberedCookie.value)
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.id, activeUser.id)
+    response.assertCookie('adonis-session')
+
+    const staleResponse = await client
+      .get('/auth/me')
+      .encryptedCookie('remember_web', rememberedCookie.value)
+
+    staleResponse.assertStatus(401)
+    assert.equal(staleResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+  })
+
+  test('rejects a remembered session after its absolute expiration', async ({ assert, client }) => {
+    const activeUser = await UserFactory.apply('active').create()
+
+    const response = await client.get('/auth/me').withSession({
+      auth_web: activeUser.id,
+      remembered_connection_expires_at: Date.now() - 1,
+    })
+
+    response.assertStatus(401)
+    assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
   })
 })

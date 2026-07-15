@@ -56,7 +56,8 @@ test('signs in with valid credentials', async () => {
             { status: 401 },
           ),
     ),
-    http.post(`${API_BASE_URL}/auth/login`, () => {
+    http.post(`${API_BASE_URL}/auth/login`, async ({ request }) => {
+      expect(await request.json()).toMatchObject({ rememberMe: false })
       signedIn = true
       return HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
     }),
@@ -67,6 +68,42 @@ test('signs in with valid credentials', async () => {
   await screen.findByRole('heading', { name: 'Sign in' })
   await user.type(screen.getByLabelText('Email'), 'active.user@portflow.test')
   await user.type(screen.getByLabelText('Password'), 'Password!234')
+  await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+  expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()
+})
+
+test('lets a user request a remembered connection', async () => {
+  const user = userEvent.setup()
+  let signedIn = false
+
+  server.use(
+    http.get(`${API_BASE_URL}/auth/me`, () =>
+      signedIn
+        ? HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
+        : HttpResponse.json(
+            {
+              error: { code: 'E_UNAUTHORIZED_ACCESS', message: 'Invalid or expired user session' },
+            },
+            { status: 401 },
+          ),
+    ),
+    http.post(`${API_BASE_URL}/auth/login`, async ({ request }) => {
+      expect(await request.json()).toMatchObject({ rememberMe: true })
+      signedIn = true
+      return HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
+    }),
+  )
+
+  renderApp('/')
+
+  await screen.findByRole('heading', { name: 'Sign in' })
+  const rememberMe = screen.getByRole('checkbox', { name: 'Remember me for 30 days' })
+  expect(rememberMe).not.toBeChecked()
+
+  await user.type(screen.getByLabelText('Email'), 'active.user@portflow.test')
+  await user.type(screen.getByLabelText('Password'), 'Password!234')
+  await user.click(rememberMe)
   await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
   expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()

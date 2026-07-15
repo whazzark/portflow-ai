@@ -1,17 +1,19 @@
 import { type FormEvent, useState } from 'react'
-
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { useLogin } from '@/features/auth/mutations/use-login'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const login = useLogin()
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    login.mutate({ body: { email, password } })
+    login.mutate({ body: { email, password, rememberMe } })
   }
 
   const apiError = login.isError ? parseApiError(login.error) : null
@@ -33,6 +35,15 @@ export function LoginForm() {
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
+
+      <Label htmlFor="remember-me">
+        <Checkbox
+          id="remember-me"
+          checked={rememberMe}
+          onCheckedChange={(checked) => setRememberMe(checked === true)}
+        />
+        Remember me for 30 days
+      </Label>
 
       <button type="submit">Sign in</button>
 

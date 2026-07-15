@@ -16,6 +16,18 @@ test.group('Auth login', () => {
     response.assertSession('auth_web', activeUser.id)
   })
 
+  test('starts a remembered connection when requested', async ({ assert, client }) => {
+    const activeUser = await UserFactory.apply('active').create()
+
+    const response = await client
+      .post('/auth/login')
+      .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD, rememberMe: true })
+
+    response.assertStatus(200)
+    response.assertCookie('remember_web')
+    assert.equal(response.cookie('remember_web')?.maxAge, 60 * 60 * 24 * 30)
+  })
+
   test('rejects invalid credentials without creating a session', async ({ assert, client }) => {
     const activeUser = await UserFactory.apply('active').create()
 
