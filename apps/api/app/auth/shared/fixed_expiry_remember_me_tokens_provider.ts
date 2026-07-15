@@ -1,4 +1,5 @@
 import { DbRememberMeTokensProvider } from '@adonisjs/auth/session'
+import { errors } from '@adonisjs/auth'
 import type { LucidModel } from '@adonisjs/lucid/types/model'
 
 export default class FixedExpiryRememberMeTokensProvider<
@@ -12,7 +13,9 @@ export default class FixedExpiryRememberMeTokensProvider<
     const token = await this.find(user, identifier)
 
     if (!token) {
-      return super.recycle(user, identifier, _expiresIn)
+      throw new errors.E_UNAUTHORIZED_ACCESS('Invalid or expired user session', {
+        guardDriverName: 'session',
+      })
     }
 
     const remainingLifetimeInSeconds = Math.max(
@@ -20,7 +23,19 @@ export default class FixedExpiryRememberMeTokensProvider<
       Math.floor((token.expiresAt.getTime() - Date.now()) / 1000),
     )
 
-    await this.delete(user, identifier)
+    const db = await this.getDb()
+    const deletedCount = await db
+      .query()
+      .from(this.table)
+      .where({ id: identifier, tokenable_id: user.$primaryKeyValue, hash: token.hash })
+      .del()
+      .exec()
+
+    if (Number(deletedCount) !== 1) {
+      throw new errors.E_UNAUTHORIZED_ACCESS('Invalid or expired user session', {
+        guardDriverName: 'session',
+      })
+    }
 
     return this.create(user, remainingLifetimeInSeconds)
   }

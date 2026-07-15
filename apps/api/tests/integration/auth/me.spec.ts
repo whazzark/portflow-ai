@@ -70,6 +70,10 @@ test.group('Auth me', () => {
     response.assertStatus(200)
     assert.equal(response.body().data.id, activeUser.id)
     response.assertCookie('adonis-session')
+    assert.notEqual(
+      response.cookie('remember_web')?.value,
+      loginResponse.cookie('remember_web')?.value,
+    )
   })
 
   test('rejects a remembered session after its absolute expiration', async ({ assert, client }) => {

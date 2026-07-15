@@ -1,6 +1,8 @@
 import { type FormEvent, useState } from 'react'
 
 import { useLogin } from '@/features/auth/mutations/use-login'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
 export function LoginForm() {
@@ -35,15 +37,14 @@ export function LoginForm() {
         onChange={(event) => setPassword(event.target.value)}
       />
 
-      <label htmlFor="remember-me">
-        <input
+      <Label htmlFor="remember-me">
+        <Checkbox
           id="remember-me"
-          type="checkbox"
           checked={rememberMe}
-          onChange={(event) => setRememberMe(event.target.checked)}
+          onCheckedChange={(checked) => setRememberMe(checked === true)}
         />
         Remember me for 30 days
-      </label>
+      </Label>
 
       <button type="submit">Sign in</button>
 
