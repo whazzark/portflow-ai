@@ -16,7 +16,7 @@ type Session =
 const SessionContext = createContext<Session | null>(null)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const meQuery = useQuery(tuyauQuery.auth.me.queryOptions())
+  const meQuery = useQuery(tuyauQuery.auth.me.queryOptions({}))
 
   let session: Session = { status: 'error' }
 

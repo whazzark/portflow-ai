@@ -19,5 +19,5 @@ export function renderApp(initialPath: string) {
     history: createMemoryHistory({ initialEntries: [initialPath] }),
   })
 
-  return render(<RouterProvider router={router} />)
+  return { ...render(<RouterProvider router={router} />), router }
 }
