@@ -14,6 +14,8 @@ export function LoginForm() {
     login.mutate({ body: { email, password } })
   }
 
+  const apiError = login.isError ? parseApiError(login.error) : null
+
   return (
     <form onSubmit={handleSubmit}>
       <label htmlFor="email">Email</label>
@@ -34,7 +36,14 @@ export function LoginForm() {
 
       <button type="submit">Sign in</button>
 
-      {login.isError && <p role="alert">{parseApiError(login.error).message}</p>}
+      {apiError && (
+        <div role="alert">
+          <p>{apiError.message}</p>
+          {apiError.details?.map((detail) => (
+            <p key={detail.field}>{detail.message}</p>
+          ))}
+        </div>
+      )}
     </form>
   )
 }

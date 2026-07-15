@@ -16,6 +16,26 @@ test('maps a known API error shape to its code and message', () => {
   })
 })
 
+test('threads field-level validation details through when present', () => {
+  const error = new TuyauHTTPError(
+    // biome-ignore lint/suspicious/noExplicitAny: constructing a minimal fake ky HTTPError for the test
+    {} as any,
+    {
+      error: {
+        code: 'E_VALIDATION_ERROR',
+        message: 'Validation failure',
+        details: [{ field: 'email', message: 'The email field must be a valid email address' }],
+      },
+    },
+  )
+
+  expect(parseApiError(error)).toEqual({
+    code: 'E_VALIDATION_ERROR',
+    message: 'Validation failure',
+    details: [{ field: 'email', message: 'The email field must be a valid email address' }],
+  })
+})
+
 test('maps a network error to a generic connectivity message', () => {
   const error = new TuyauNetworkError(new Error('fetch failed'))
 

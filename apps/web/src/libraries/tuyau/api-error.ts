@@ -3,6 +3,7 @@ import { TuyauError } from '@tuyau/core/client'
 export type ApiError = {
   code: string
   message: string
+  details?: Array<{ field: string; message: string }>
 }
 
 const NETWORK_ERROR: ApiError = {
@@ -27,7 +28,11 @@ export function parseApiError(error: unknown): ApiError {
   const response = error.response as { error?: Partial<ApiError> } | undefined
 
   if (response?.error?.code && response.error.message) {
-    return { code: response.error.code, message: response.error.message }
+    return {
+      code: response.error.code,
+      message: response.error.message,
+      details: response.error.details,
+    }
   }
 
   return UNKNOWN_ERROR
