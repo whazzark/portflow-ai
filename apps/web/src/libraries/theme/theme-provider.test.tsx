@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { renderToString } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { THEME_STORAGE_KEY, ThemeProvider } from '@/libraries/theme/theme-provider'
@@ -44,6 +45,7 @@ beforeEach(() => {
 
 afterEach(() => {
   document.documentElement.classList.remove('dark')
+  delete document.documentElement.dataset.theme
 })
 
 describe('ThemeProvider', () => {
@@ -61,6 +63,18 @@ describe('ThemeProvider', () => {
 
     expect(screen.getByText('light')).toBeInTheDocument()
     expect(document.documentElement).not.toHaveClass('dark')
+  })
+
+  it('uses the bootstrap theme on the first render', () => {
+    document.documentElement.dataset.theme = 'light'
+
+    const html = renderToString(
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>,
+    )
+
+    expect(html).toContain('<output>light</output>')
   })
 
   it('synchronizes a changed preference with the document and local storage', () => {

@@ -43,7 +43,7 @@ function RootComponent() {
           <script
             // biome-ignore lint/security/noDangerouslySetInnerHtml: static string, no user input
             dangerouslySetInnerHTML={{
-              __html: `try{if(localStorage.getItem('${THEME_STORAGE_KEY}')!=='light')document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.toggle('dark','${DEFAULT_THEME}'==='dark')}`,
+              __html: `try{const t=localStorage.getItem('${THEME_STORAGE_KEY}')==='light'?'light':'${DEFAULT_THEME}';document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.dataset.theme=t}catch(e){const t='${DEFAULT_THEME}';document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.dataset.theme=t}`,
             }}
           />
           <HeadContent />
