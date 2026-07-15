@@ -1,11 +1,10 @@
 import { errors } from '@adonisjs/auth'
-import { Secret } from '@adonisjs/core/helpers'
 import type { Authenticators } from '@adonisjs/auth/types'
+import { Secret } from '@adonisjs/core/helpers'
 import type { HttpContext } from '@adonisjs/core/http'
 import type { NextFn } from '@adonisjs/core/types/http'
-
-import User from '#models/user'
 import { REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY } from '#auth/shared/remembered_connection'
+import User from '#models/user'
 
 /**
  * Auth middleware is used authenticate HTTP requests and deny

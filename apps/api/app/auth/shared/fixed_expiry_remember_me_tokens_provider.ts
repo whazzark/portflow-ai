@@ -1,5 +1,5 @@
-import { DbRememberMeTokensProvider } from '@adonisjs/auth/session'
 import { errors } from '@adonisjs/auth'
+import { DbRememberMeTokensProvider } from '@adonisjs/auth/session'
 import type { LucidModel } from '@adonisjs/lucid/types/model'
 
 export default class FixedExpiryRememberMeTokensProvider<
@@ -7,7 +7,7 @@ export default class FixedExpiryRememberMeTokensProvider<
 > extends DbRememberMeTokensProvider<TokenableModel> {
   async recycle(
     user: InstanceType<TokenableModel>,
-    identifier: string | number | BigInt,
+    identifier: string | number | bigint,
     _expiresIn: string | number,
   ) {
     const token = await this.find(user, identifier)
