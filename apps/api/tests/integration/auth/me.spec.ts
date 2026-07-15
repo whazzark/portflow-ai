@@ -70,10 +70,13 @@ test.group('Auth me', () => {
     response.assertStatus(200)
     assert.equal(response.body().data.id, activeUser.id)
     response.assertCookie('adonis-session')
-    assert.notEqual(
-      response.cookie('remember_web')?.value,
-      loginResponse.cookie('remember_web')?.value,
-    )
+
+    const staleResponse = await client
+      .get('/auth/me')
+      .encryptedCookie('remember_web', loginResponse.cookie('remember_web')!.value)
+
+    staleResponse.assertStatus(401)
+    assert.equal(staleResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
   })
 
   test('rejects a remembered session after its absolute expiration', async ({ assert, client }) => {
