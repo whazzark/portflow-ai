@@ -24,7 +24,9 @@ test('restores an authenticated session on load', async () => {
 test('shows the login screen when there is no valid session', async () => {
   renderApp('/')
 
-  expect(await screen.findByRole('heading', { name: 'Keep every handoff on track' })).toBeInTheDocument()
+  expect(
+    await screen.findByRole('heading', { name: 'Keep every handoff on track' }),
+  ).toBeInTheDocument()
 })
 
 test('redirects an authenticated user away from the login screen', async () => {
@@ -228,7 +230,9 @@ test('redirects to home after signing in directly from the login screen', async 
   await user.click(screen.getByRole('button', { name: 'Log in' }))
 
   expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Keep every handoff on track' })).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('heading', { name: 'Keep every handoff on track' }),
+  ).not.toBeInTheDocument()
 })
 
 test('shows a distinct error when session restoration fails for a reason other than being unauthenticated', async () => {
@@ -244,7 +248,9 @@ test('shows a distinct error when session restoration fails for a reason other t
   renderApp('/')
 
   expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong')
-  expect(screen.queryByRole('heading', { name: 'Keep every handoff on track' })).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('heading', { name: 'Keep every handoff on track' }),
+  ).not.toBeInTheDocument()
 })
 
 test('shows an error when signing out fails', async () => {
@@ -318,5 +324,7 @@ test('signs out and returns to the login screen', async () => {
   await screen.findByText('active.user@portflow.test')
   await user.click(screen.getByRole('button', { name: 'Sign out' }))
 
-  expect(await screen.findByRole('heading', { name: 'Keep every handoff on track' })).toBeInTheDocument()
+  expect(
+    await screen.findByRole('heading', { name: 'Keep every handoff on track' }),
+  ).toBeInTheDocument()
 })
