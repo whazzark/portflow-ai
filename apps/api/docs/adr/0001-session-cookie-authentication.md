@@ -8,4 +8,4 @@ The automated test suite substitutes an in-memory session store (`SESSION_DRIVER
 
 ## Consequences
 
-Every environment other than automated tests relies on the cookie for session state: there is no session persistence layer to run, back up, or scale, but a session's data is bounded by cookie size and lives entirely on the client between requests. Session restoration (`GET /auth/me`) and logout are not implemented yet; they are expected to reuse the same guard and cookie store.
+Every environment other than automated tests relies on the cookie for session state: there is no session persistence layer to run, back up, or scale, but a session's data is bounded by cookie size and lives entirely on the client between requests. Session restoration (`GET /auth/me`) and logout (`POST /auth/logout`) reuse the same guard and cookie store: both require the `web` guard through `auth_middleware`, and neither carries business logic beyond reading or clearing the authenticated user.

@@ -12,6 +12,24 @@ const routes = {
     tokens: [{"old":"/health","type":0,"val":"health","end":""}],
     types: placeholder as Registry['health.show']['types'],
   },
+  'auth.login': {
+    methods: ["POST"],
+    pattern: '/auth/login',
+    tokens: [{"old":"/auth/login","type":0,"val":"auth","end":""},{"old":"/auth/login","type":0,"val":"login","end":""}],
+    types: placeholder as Registry['auth.login']['types'],
+  },
+  'auth.me': {
+    methods: ["GET","HEAD"],
+    pattern: '/auth/me',
+    tokens: [{"old":"/auth/me","type":0,"val":"auth","end":""},{"old":"/auth/me","type":0,"val":"me","end":""}],
+    types: placeholder as Registry['auth.me']['types'],
+  },
+  'auth.logout': {
+    methods: ["POST"],
+    pattern: '/auth/logout',
+    tokens: [{"old":"/auth/logout","type":0,"val":"auth","end":""},{"old":"/auth/logout","type":0,"val":"logout","end":""}],
+    types: placeholder as Registry['auth.logout']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

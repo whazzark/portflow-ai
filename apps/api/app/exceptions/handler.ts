@@ -22,11 +22,13 @@ export default class HttpExceptionHandler extends ExceptionHandler {
     if (error instanceof Exception) {
       return ctx.response
         .status(error.status)
-        .send({ errors: [{ code: error.code, message: error.message }] })
+        .send({ error: { code: error.code, message: error.message } })
     }
 
     if (error instanceof ValidationError) {
-      return ctx.response.status(error.status).send({ errors: error.messages })
+      return ctx.response
+        .status(error.status)
+        .send({ error: { code: error.code, message: error.message, details: error.messages } })
     }
 
     return await super.handle(error, ctx)
