@@ -32,7 +32,7 @@ export function TextareaField({
         {...props}
         id={inputId}
         name={field.name}
-        value={field.state.value}
+        value={field.state.value ?? ''}
         aria-describedby={isInvalid ? errorId : undefined}
         aria-invalid={isInvalid}
         onBlur={field.handleBlur}

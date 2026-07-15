@@ -18,6 +18,7 @@
 - **Unit** — pure non-React logic only: adapters, mappers, small branching business rules (for example `parseApiError`). Never renders anything, never calls `renderHook` or otherwise exercises a hook in isolation. Colocate as `*.test.ts` next to the source file.
 - **Feature** — one integration-style seam per feature, rendered through the real router and real providers (see `src/features/auth/__tests__/auth-flow.test.tsx` for the established pattern). This is the day-to-day layer TDD's red-green-refactor loop drives. Colocate as `*.test.tsx` under the feature's `__tests__/` folder.
 - **E2E** — a comprehensive suite of full user journeys against a real `apps/api` instance and a real database, never MSW. Written after a feature is already green at the feature level, as a safety net for what a mocked environment can't catch (SSR assembly, hydration, real network) — not TDD'd behavior-by-behavior. Lives under `apps/web/e2e/*.spec.ts`, configured by `apps/web/playwright.config.ts`.
+- Cross-cutting providers under `src/libraries/*` (for example `ThemeProvider`) sit outside any single feature, so there is no natural "feature level" to test them through. These may have a colocated `*.test.tsx` that renders the provider in isolation with a minimal local probe component, as a deliberate exception to the no-isolated-component-test rule. Keep this exception scoped to `src/libraries/`; feature-owned components still go through the feature level.
 
 ## Feature-level mocking
 

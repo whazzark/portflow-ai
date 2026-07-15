@@ -23,7 +23,7 @@ export function CheckboxField({
       <Checkbox
         id={checkboxId}
         name={field.name}
-        checked={field.state.value}
+        checked={field.state.value ?? false}
         aria-describedby={isInvalid ? errorId : undefined}
         aria-invalid={isInvalid}
         onCheckedChange={field.handleChange}

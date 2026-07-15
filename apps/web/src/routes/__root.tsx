@@ -34,7 +34,8 @@ function RootComponent() {
     <StrictMode>
       <html lang="en">
         <head>
-          {/* Applies the stored theme before first paint; Harbor Control is dark by default. */}
+          {/* Applies the stored theme before first paint; Harbor Control is dark by default.
+              Mirrors theme-provider.ts's readStoredTheme() decision rule — keep both in sync. */}
           <script
             // biome-ignore lint/security/noDangerouslySetInnerHtml: static string, no user input
             dangerouslySetInnerHTML={{
