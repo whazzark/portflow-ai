@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { TuyauError } from '@tuyau/core/client'
 import type { Route } from '@tuyau/core/types'
 import { createContext, type ReactNode } from 'react'
 
+import { isUnauthorizedError } from '@/libraries/tuyau/api-error'
 import { tuyauQuery } from '@/libraries/tuyau/client'
 
 export type SessionUser = Route.Response<'auth.me'>['data']
@@ -28,7 +28,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     session = { status: 'authenticated', user: meQuery.data.data }
   }
 
-  if (meQuery.error instanceof TuyauError && meQuery.error.status === 401) {
+  if (isUnauthorizedError(meQuery.error)) {
     session = { status: 'unauthenticated' }
   }
 
