@@ -1,5 +1,11 @@
 # Web Agent Notes
 
+## Design system
+
+- UI primitives come from shadcn/ui (`src/components/ui`, `components.json`), themed with the "Channel Marker" brand tokens in `src/styles/globals.css`. Prefer an existing primitive or a `shadcn add`-ed component over hand-rolled markup.
+- shadcn's `cn()` helper is renamed to `classnames()` and lives at `src/libraries/shadcn/helpers.ts` (not the default `src/lib/utils.ts`), matching this project's `libraries` convention for tool integrations. The shadcn CLI always generates `import { cn } from "@/libraries/shadcn/helpers"` — after every `npx shadcn add <component>` (or `add --overwrite`/update), fix that import to `classnames` and update any `cn(...)` call sites in the added file(s) before committing.
+- Harbor Control defaults to dark mode through the custom provider at `src/libraries/theme/` (`ThemeProvider`, `useTheme`), not `next-themes` — this is a Vite/TanStack Start app, not Next.js. The explicit `light` preference is stored in `portflow-theme`.
+
 ## Feature folder structure
 
 - Each feature under `src/features/<feature>/` groups its internals by technical role, not by screen: `ui/` for screen and component UI, `mutations/` for TanStack Query mutation hooks, `context/` for React context providers and their hooks, `__tests__/` for that feature's tests. See `src/features/auth/` for the established layout.
