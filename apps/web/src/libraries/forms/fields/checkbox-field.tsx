@@ -4,6 +4,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui
 import { useFieldContext, useFormContext } from '../contexts'
 import {
   type FieldPresentationProps,
+  FieldLabelContent,
   getFieldPresentation,
   normalizeFieldErrors,
 } from './field-presentation'
@@ -12,6 +13,7 @@ export function CheckboxField({
   description,
   id,
   label,
+  required,
 }: FieldPresentationProps & { id?: string }) {
   const field = useFieldContext<boolean>()
   const form = useFormContext()
@@ -26,10 +28,13 @@ export function CheckboxField({
         checked={field.state.value ?? false}
         aria-describedby={isInvalid ? errorId : undefined}
         aria-invalid={isInvalid}
+        aria-required={required}
         onCheckedChange={field.handleChange}
       />
       <div className="flex flex-col gap-1">
-        <FieldLabel htmlFor={checkboxId}>{label}</FieldLabel>
+        <FieldLabel htmlFor={checkboxId}>
+          <FieldLabelContent label={label} required={required} />
+        </FieldLabel>
         {description && <FieldDescription>{description}</FieldDescription>}
         {isInvalid && <FieldError id={errorId} errors={normalizeFieldErrors(errors)} />}
       </div>

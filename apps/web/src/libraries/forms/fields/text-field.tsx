@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { useFieldContext, useFormContext } from '../contexts'
 import {
   type FieldPresentationProps,
+  FieldLabelContent,
   getFieldPresentation,
   normalizeFieldErrors,
 } from './field-presentation'
@@ -14,6 +15,7 @@ export function TextField({
   description,
   id,
   label,
+  required,
   ...props
 }: FieldPresentationProps &
   Omit<React.ComponentProps<typeof Input>, 'id' | 'name' | 'onBlur' | 'onChange' | 'value'> & {
@@ -26,7 +28,9 @@ export function TextField({
 
   return (
     <Field data-invalid={isInvalid}>
-      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+      <FieldLabel htmlFor={inputId}>
+        <FieldLabelContent label={label} required={required} />
+      </FieldLabel>
       {description && <FieldDescription>{description}</FieldDescription>}
       <Input
         {...props}
@@ -35,6 +39,7 @@ export function TextField({
         value={field.state.value ?? ''}
         aria-describedby={isInvalid ? errorId : undefined}
         aria-invalid={isInvalid}
+        aria-required={required}
         onBlur={field.handleBlur}
         onChange={(event) => field.handleChange(event.target.value)}
       />

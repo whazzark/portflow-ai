@@ -1,60 +1,81 @@
-import { type FormEvent, useState } from 'react'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
+import { z } from 'zod'
+import { FieldGroup } from '@/components/ui/field'
 import { useLogin } from '@/features/auth/mutations/use-login'
+import { applyValidationError } from '@/libraries/forms/api-error'
+import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
+const loginSchema = z.object({
+  email: z.email('Enter a valid email address.'),
+  password: z.string().min(1, 'Password is required.'),
+  rememberMe: z.boolean(),
+})
+
 export function LoginForm() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
   const login = useLogin()
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  const form = useAppForm({
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+    },
+    validators: {
+      onBlur: loginSchema,
+      onSubmit: loginSchema,
+    },
+    onSubmit: async ({ formApi, value }) => {
+      try {
+        await login.mutateAsync({ body: value })
+      } catch (error) {
+        if (!applyValidationError(formApi, error)) {
+          const apiError = parseApiError(error)
 
-    login.mutate({ body: { email, password, rememberMe } })
-  }
-
-  const apiError = login.isError ? parseApiError(login.error) : null
+          toast.error('Unable to log in', { description: apiError.message })
+        }
+      }
+    },
+  })
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label htmlFor="email">Email</label>
-      <input
-        id="email"
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-      />
+    <form.AppForm>
+      <form.Form className="flex flex-col gap-6">
+        <FieldGroup>
+          <form.AppField name="email">
+            {(field) => (
+              <field.TextField
+                autoComplete="email"
+                label="Email address"
+                placeholder="name@company.com"
+                required={true}
+                type="email"
+              />
+            )}
+          </form.AppField>
 
-      <label htmlFor="password">Password</label>
-      <input
-        id="password"
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-      />
+          <form.AppField name="password">
+            {(field) => (
+              <field.TextField
+                autoComplete="current-password"
+                label="Password"
+                placeholder="**********"
+                required={true}
+                type="password"
+              />
+            )}
+          </form.AppField>
+        </FieldGroup>
 
-      <Label htmlFor="remember-me">
-        <Checkbox
-          id="remember-me"
-          checked={rememberMe}
-          onCheckedChange={(checked) => setRememberMe(checked === true)}
-        />
-        Remember me for 30 days
-      </Label>
+        <form.AppField name="rememberMe">
+          {(field) => <field.CheckboxField label="Remember me for 30 days" />}
+        </form.AppField>
 
-      <button type="submit">Sign in</button>
-
-      {apiError && (
-        <div role="alert">
-          <p>{apiError.message}</p>
-          {apiError.details?.map((detail) => (
-            <p key={detail.field}>{detail.message}</p>
-          ))}
-        </div>
-      )}
-    </form>
+        <form.FormError />
+        <form.SubmitButton className="h-10 w-full" pendingLabel="Logging in…" size="lg">
+          Log in
+        </form.SubmitButton>
+      </form.Form>
+    </form.AppForm>
   )
 }

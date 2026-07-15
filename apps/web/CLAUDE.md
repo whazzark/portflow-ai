@@ -26,6 +26,12 @@
 - Global setup lives in `src/test/setup.ts`; MSW server and handlers live under `src/test/msw/`. Add new handlers there rather than inlining `server.use(...)` overrides scattered across test files, unless a single test needs a one-off response.
 - Use MSW to simulate states a real backend can't produce deterministically in an automated suite, such as a genuine network failure (`HttpResponse.error()` → `TuyauNetworkError`).
 
+## Forms
+
+- Build application forms with `useAppForm` from `src/libraries/forms`. It composes TanStack Form with the shared shadcn field primitives, so features should use `form.AppField` and the registered field components rather than bind values, errors, or ARIA attributes manually.
+- Keep a form's Zod schema, default values, and mutation in its feature. In `onSubmit`, await the mutation and call `applyApiError(formApi, error)` to display API errors in the form and attach API field details when available.
+- Use `form.FormError` for submission failures and `form.SubmitButton` for submission state. Do not show a toast for an error caused by a form submission.
+
 ## Running tests
 
 - `pnpm test` — unit + feature suite (Vitest, jsdom). Fast; this is the TDD loop.

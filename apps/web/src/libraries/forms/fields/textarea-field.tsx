@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useFieldContext, useFormContext } from '../contexts'
 import {
   type FieldPresentationProps,
+  FieldLabelContent,
   getFieldPresentation,
   normalizeFieldErrors,
 } from './field-presentation'
@@ -14,6 +15,7 @@ export function TextareaField({
   description,
   id,
   label,
+  required,
   ...props
 }: FieldPresentationProps &
   Omit<React.ComponentProps<typeof Textarea>, 'id' | 'name' | 'onBlur' | 'onChange' | 'value'> & {
@@ -26,7 +28,9 @@ export function TextareaField({
 
   return (
     <Field data-invalid={isInvalid}>
-      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+      <FieldLabel htmlFor={inputId}>
+        <FieldLabelContent label={label} required={required} />
+      </FieldLabel>
       {description && <FieldDescription>{description}</FieldDescription>}
       <Textarea
         {...props}
@@ -35,6 +39,7 @@ export function TextareaField({
         value={field.state.value ?? ''}
         aria-describedby={isInvalid ? errorId : undefined}
         aria-invalid={isInvalid}
+        aria-required={required}
         onBlur={field.handleBlur}
         onChange={(event) => field.handleChange(event.target.value)}
       />
