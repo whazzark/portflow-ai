@@ -396,6 +396,14 @@ _Avoid_: profile update, account edit
 The action by which an active user establishes an authenticated session by presenting valid credentials. Every non-active access status is rejected with the same outcome as invalid credentials, so the response never reveals which reason applied.
 _Avoid_: sign in, authentication
 
+**Temporary Session**:
+An authenticated session that ends when the user closes their browser. It is distinct from a remembered connection, which may restore access across browser restarts.
+_Avoid_: short-lived remembered connection, persistent session
+
+**Remembered Connection**:
+An authenticated connection that can be restored on the same browser for at most 30 days from login. Logging out on that browser revokes its restoration token without affecting other browsers.
+_Avoid_: permanent login, global session, device management
+
 **Password Reset**:
 The action of requiring an active user to choose a new password.
 _Avoid_: password change, password recovery
