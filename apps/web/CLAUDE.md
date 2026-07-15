@@ -1,0 +1,30 @@
+# Web Agent Notes
+
+## Feature folder structure
+
+- Each feature under `src/features/<feature>/` groups its internals by technical role, not by screen: `ui/` for screen and component UI, `mutations/` for TanStack Query mutation hooks, `context/` for React context providers and their hooks, `__tests__/` for that feature's tests. See `src/features/auth/` for the established layout.
+- This convention is intentionally minimal today (`ui`, `mutations`, `context`, `__tests__`) and expected to grow new subfolders (for example `queries/`) as later features need them — do not pre-create empty subfolders a feature doesn't use yet.
+- Authentication is an explicit exception to feature isolation: `features/auth` is the one feature every other feature may import from for session and authorization-aware UI. See `docs/adr/0008-vertical-slice-web-frontend-with-explicit-ui-adapters.md`.
+
+## Test levels
+
+- Three levels only: unit, feature, e2e. There is no separate isolated-component-test level — test components through the feature level instead. See `docs/adr/0001-frontend-testing-strategy.md` for the full rationale.
+- **Unit** — pure non-React logic only: adapters, mappers, small branching business rules (for example `parseApiError`). Never renders anything, never calls `renderHook` or otherwise exercises a hook in isolation. Colocate as `*.test.ts` next to the source file.
+- **Feature** — one integration-style seam per feature, rendered through the real router and real providers (see `src/features/auth/__tests__/auth-flow.test.tsx` for the established pattern). This is the day-to-day layer TDD's red-green-refactor loop drives. Colocate as `*.test.tsx` under the feature's `__tests__/` folder.
+- **E2E** — a comprehensive suite of full user journeys against a real `apps/api` instance and a real database, never MSW. Written after a feature is already green at the feature level, as a safety net for what a mocked environment can't catch (SSR assembly, hydration, real network) — not TDD'd behavior-by-behavior. Lives under `apps/web/e2e/*.spec.ts`, configured by `apps/web/playwright.config.ts`.
+
+## Feature-level mocking
+
+- Mock the network with MSW (`msw/node`, `setupServer`), never the Tuyau client module and never a hand-rolled `ky`/fetch mock — both bypass Tuyau's real request-building and error-wrapping code.
+- Global setup lives in `src/test/setup.ts`; MSW server and handlers live under `src/test/msw/`. Add new handlers there rather than inlining `server.use(...)` overrides scattered across test files, unless a single test needs a one-off response.
+- Use MSW to simulate states a real backend can't produce deterministically in an automated suite, such as a genuine network failure (`HttpResponse.error()` → `TuyauNetworkError`).
+
+## Running tests
+
+- `pnpm test` — unit + feature suite (Vitest, jsdom). Fast; this is the TDD loop.
+- `pnpm e2e` — Playwright suite against a real `apps/api` + real database. Requires both services running; not part of `pnpm test` or the `test` turbo task on purpose, so it never rides along with the fast gate. Runs in CI as its own decoupled job (`.github/workflows/e2e.yml`), not folded into `ci-checks.yml`.
+
+## Out of scope
+
+- Visual regression / screenshot testing.
+- Automated accessibility (a11y) testing.
