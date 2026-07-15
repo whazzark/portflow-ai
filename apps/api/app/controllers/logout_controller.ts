@@ -5,5 +5,7 @@ export default class LogoutController {
     await auth.use('web').logout()
 
     response.status(204)
+
+    return
   }
 }
