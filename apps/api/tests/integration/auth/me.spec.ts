@@ -53,4 +53,34 @@ test.group('Auth me', () => {
     assert.equal(response.body().data.id, activeUser.id)
     assert.isUndefined(response.body().data.password)
   })
+
+  test('restores a remembered connection after its session disappears', async ({
+    assert,
+    client,
+  }) => {
+    const activeUser = await UserFactory.apply('active').create()
+    const loginResponse = await client
+      .post('/auth/login')
+      .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD, rememberMe: true })
+
+    const response = await client
+      .get('/auth/me')
+      .encryptedCookie('remember_web', loginResponse.cookie('remember_web')!.value)
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.id, activeUser.id)
+    response.assertCookie('adonis-session')
+  })
+
+  test('rejects a remembered session after its absolute expiration', async ({ assert, client }) => {
+    const activeUser = await UserFactory.apply('active').create()
+
+    const response = await client.get('/auth/me').withSession({
+      auth_web: activeUser.id,
+      remembered_connection_expires_at: Date.now() - 1,
+    })
+
+    response.assertStatus(401)
+    assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+  })
 })

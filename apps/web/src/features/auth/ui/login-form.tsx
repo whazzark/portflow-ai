@@ -6,12 +6,13 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const login = useLogin()
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    login.mutate({ body: { email, password } })
+    login.mutate({ body: { email, password, rememberMe } })
   }
 
   const apiError = login.isError ? parseApiError(login.error) : null
@@ -33,6 +34,16 @@ export function LoginForm() {
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
+
+      <label htmlFor="remember-me">
+        <input
+          id="remember-me"
+          type="checkbox"
+          checked={rememberMe}
+          onChange={(event) => setRememberMe(event.target.checked)}
+        />
+        Remember me for 30 days
+      </label>
 
       <button type="submit">Sign in</button>
 
