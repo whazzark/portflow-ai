@@ -18,7 +18,8 @@
 - **Unit** — pure non-React logic only: adapters, mappers, small branching business rules (for example `parseApiError`). Never renders anything, never calls `renderHook` or otherwise exercises a hook in isolation. Colocate as `*.test.ts` next to the source file.
 - **Feature** — one integration-style seam per feature, rendered through the real router and real providers (see `src/features/auth/__tests__/auth-flow.test.tsx` for the established pattern). This is the day-to-day layer TDD's red-green-refactor loop drives. Colocate as `*.test.tsx` under the feature's `__tests__/` folder.
 - **E2E** — a comprehensive suite of full user journeys against a real `apps/api` instance and a real database, never MSW. Written after a feature is already green at the feature level, as a safety net for what a mocked environment can't catch (SSR assembly, hydration, real network) — not TDD'd behavior-by-behavior. Lives under `apps/web/e2e/*.spec.ts`, configured by `apps/web/playwright.config.ts`.
-- Cross-cutting providers under `src/libraries/*` (for example `ThemeProvider`) sit outside any single feature, so there is no natural "feature level" to test them through. These may have a colocated `*.test.tsx` that renders the provider in isolation with a minimal local probe component, as a deliberate exception to the no-isolated-component-test rule. Keep this exception scoped to `src/libraries/`; feature-owned components still go through the feature level.
+- Cross-cutting providers under `src/libraries/*` (for example `ThemeProvider`) sit outside any single feature, so there is no natural "feature level" to test them through. These may have a colocated `*.test.tsx` that renders the provider in isolation with a minimal local probe component, as a deliberate exception to the no-isolated-component-test rule. Keep this exception scoped to `src/libraries/`.
+- A presentational feature component with a small, explicit visual contract may also use a colocated isolated test when that contract would otherwise be obscured by an unrelated feature flow. Provide its real context provider rather than mocking its internals; `features/brand/ui/Brand` is an example. Keep behavioural interactions at the feature level.
 
 ## Feature-level mocking
 
@@ -30,7 +31,7 @@
 
 - Build application forms with `useAppForm` from `src/libraries/forms`. It composes TanStack Form with the shared shadcn field primitives, so features should use `form.AppField` and the registered field components rather than bind values, errors, or ARIA attributes manually.
 - Keep a form's Zod schema, default values, and mutation in its feature. In `onSubmit`, await the mutation and call `applyApiError(formApi, error)` to display API errors in the form and attach API field details when available.
-- Use `form.FormError` for submission failures and `form.SubmitButton` for submission state. Do not show a toast for an error caused by a form submission.
+- Use `form.FormError` for submission failures and `form.SubmitButton` for submission state. A toast may complement or replace the inline form error when an API submission failure needs prominent, transient feedback; do not duplicate the same error in both surfaces without a user-facing reason.
 
 ## Running tests
 
