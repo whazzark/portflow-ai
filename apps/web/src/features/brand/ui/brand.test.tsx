@@ -26,13 +26,13 @@ test('uses the light mark on the light theme', () => {
 test('uses the dark mark on the dark theme', () => {
   const { container } = renderBrand('dark')
 
-  expect(container.querySelector('img')).toHaveAttribute('src', '/logo-full-dark.svg')
+  expect(container.querySelector('img')).toHaveAttribute('src', '/logo-full-dark.png')
 })
 
 test('uses the compact mark and names it', () => {
   const { container } = renderBrand('dark', { variant: 'mark' })
 
-  expect(container.querySelector('img')).toHaveAttribute('src', '/logo-dark.svg')
+  expect(container.querySelector('img')).toHaveAttribute('src', '/logo-dark.png')
   expect(screen.getByRole('img', { name: 'Portflow' })).toBeInTheDocument()
 })
 

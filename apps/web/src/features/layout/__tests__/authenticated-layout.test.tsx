@@ -10,7 +10,9 @@ const API_BASE_URL = 'http://localhost:3333'
 test('redirects unauthenticated access to the protected frame to the login screen', async () => {
   const { router } = renderApp('/')
 
-  expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+  expect(
+    await screen.findByRole('heading', { name: 'Keep every handoff on track' }),
+  ).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/login')
   expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
 })
@@ -56,7 +58,9 @@ test('signs out from the protected frame and returns to the login screen', async
   await screen.findByRole('navigation')
   await user.click(screen.getByRole('button', { name: 'Sign out' }))
 
-  expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+  expect(
+    await screen.findByRole('heading', { name: 'Keep every handoff on track' }),
+  ).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/login')
   expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
 })
