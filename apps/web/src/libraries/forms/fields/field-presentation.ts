@@ -1,8 +1,22 @@
 import type * as React from 'react'
+import { createElement, Fragment } from 'react'
 
 export type FieldPresentationProps = {
   description?: React.ReactNode
   label: React.ReactNode
+  required?: boolean
+}
+
+export function FieldLabelContent({
+  label,
+  required,
+}: Pick<FieldPresentationProps, 'label' | 'required'>) {
+  return createElement(
+    Fragment,
+    null,
+    label,
+    required && createElement('span', { 'aria-hidden': true, className: 'text-destructive' }, '*'),
+  )
 }
 
 export function getFieldPresentation<

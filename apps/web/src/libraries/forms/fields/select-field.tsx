@@ -10,6 +10,7 @@ import {
 
 import { useFieldContext, useFormContext } from '../contexts'
 import {
+  FieldLabelContent,
   type FieldPresentationProps,
   getFieldPresentation,
   normalizeFieldErrors,
@@ -23,6 +24,7 @@ export function SelectField({
   label,
   options,
   placeholder,
+  required,
 }: FieldPresentationProps & { id?: string; options: Array<SelectOption>; placeholder?: string }) {
   const field = useFieldContext<string>()
   const form = useFormContext()
@@ -31,7 +33,9 @@ export function SelectField({
 
   return (
     <Field data-invalid={isInvalid}>
-      <FieldLabel htmlFor={selectId}>{label}</FieldLabel>
+      <FieldLabel htmlFor={selectId}>
+        <FieldLabelContent label={label} required={required} />
+      </FieldLabel>
       {description && <FieldDescription>{description}</FieldDescription>}
       <Select
         value={field.state.value}
@@ -45,6 +49,7 @@ export function SelectField({
           id={selectId}
           aria-describedby={isInvalid ? errorId : undefined}
           aria-invalid={isInvalid}
+          aria-required={required}
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

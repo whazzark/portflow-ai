@@ -18,6 +18,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     await ensureSessionUser(queryClient).catch(() => undefined)
   },
   head: () => ({
+    links: [
+      { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico?v=1' },
+      { rel: 'shortcut icon', type: 'image/x-icon', href: '/favicon.ico?v=1' },
+    ],
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -39,7 +43,7 @@ function RootComponent() {
           <script
             // biome-ignore lint/security/noDangerouslySetInnerHtml: static string, no user input
             dangerouslySetInnerHTML={{
-              __html: `try{if(localStorage.getItem('${THEME_STORAGE_KEY}')!=='light')document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.toggle('dark','${DEFAULT_THEME}'==='dark')}`,
+              __html: `try{const t=localStorage.getItem('${THEME_STORAGE_KEY}')==='light'?'light':'${DEFAULT_THEME}';document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.dataset.theme=t}catch(e){const t='${DEFAULT_THEME}';document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.dataset.theme=t}`,
             }}
           />
           <HeadContent />

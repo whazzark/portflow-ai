@@ -14,6 +14,7 @@ export const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle('dark', theme === 'dark')
+  document.documentElement.dataset.theme = theme
 }
 
 function readStoredTheme(): Theme {
@@ -25,6 +26,20 @@ function readStoredTheme(): Theme {
   }
 }
 
+function readInitialTheme(): Theme {
+  if (typeof document === 'undefined') {
+    return DEFAULT_THEME
+  }
+
+  const bootstrappedTheme = document.documentElement.dataset.theme
+
+  if (bootstrappedTheme === 'light' || bootstrappedTheme === 'dark') {
+    return bootstrappedTheme
+  }
+
+  return readStoredTheme()
+}
+
 function writeStoredTheme(theme: Theme) {
   try {
     window.localStorage.setItem(THEME_STORAGE_KEY, theme)
@@ -34,14 +49,11 @@ function writeStoredTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME)
+  const [theme, setThemeState] = useState<Theme>(readInitialTheme)
 
   useEffect(() => {
-    const initial = readStoredTheme()
-
-    setThemeState(initial)
-    applyTheme(initial)
-  }, [])
+    applyTheme(theme)
+  }, [theme])
 
   function setTheme(next: Theme) {
     writeStoredTheme(next)

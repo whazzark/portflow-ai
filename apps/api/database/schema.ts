@@ -7,6 +7,23 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
+export class RememberMeTokenSchema extends BaseModel {
+  static $columns = ['createdAt', 'expiresAt', 'hash', 'id', 'tokenableId', 'updatedAt'] as const
+  $columns = RememberMeTokenSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column()
+  declare hash: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare tokenableId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class UserSchema extends BaseModel {
   static $columns = ['accessStatus', 'activatedAt', 'activatedByUserId', 'cancelledAt', 'cancelledByUserId', 'createdAt', 'deactivatedAt', 'deactivatedByUserId', 'email', 'firstName', 'id', 'invitedAt', 'invitedByUserId', 'lastName', 'password', 'reactivatedAt', 'reactivatedByUserId', 'role', 'updatedAt'] as const
   $columns = UserSchema.$columns
