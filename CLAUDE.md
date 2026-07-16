@@ -35,7 +35,7 @@ Issues and specs are tracked in GitHub Issues, driven through the `gh` CLI. Exte
 
 ### Triage labels
 
-The tracker speaks the standard `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix` triage roles, expressed as GitHub labels and issue states. See `docs/agents/triage-labels.md`.
+Every open non-PR issue has exactly one mutually exclusive execution-state label: `triage:needs-triage`, `triage:needs-info`, `triage:ready-for-human`, or `agent:ready`. Only explicit human qualification with `agent:ready` authorizes local Orca execution. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
