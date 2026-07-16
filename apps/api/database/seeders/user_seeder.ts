@@ -36,6 +36,8 @@ const DEMO_USERS: Array<{
 ]
 
 export default class UserSeeder extends BaseSeeder {
+  static environment = ['development', 'test']
+
   async run() {
     for (const demoUser of DEMO_USERS) {
       const existingUser = await User.query().whereRaw('LOWER(email) = ?', [demoUser.email]).first()
