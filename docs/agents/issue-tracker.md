@@ -6,10 +6,10 @@ Issues and specs for this repo live in [GitHub Issues](https://github.com/whazza
 
 - One delivery unit per epic: an issue carrying the `epic` label whose body holds the full spec (problem statement, solution, user stories, implementation and testing decisions, out of scope).
 - Implementation issues are sub-issues of their epic. Each body holds "What to build", acceptance criteria as a checklist, and its dependencies under "Blocked by" as `#N` references.
-- Unspecified ideas are issues labeled `needs-triage`, backed by short cards under `.tracker/ideas/<feature-slug>.md` linked from the issue body until they are promoted into an epic.
+- Unspecified ideas are issues labeled `triage:needs-triage`, backed by short cards under `.tracker/ideas/<feature-slug>.md` linked from the issue body until they are promoted into an epic.
 - Delivery priority is a `priority:P0`, `priority:P1`, or `priority:P2` label; an issue without one is unprioritized.
 - Milestones group epics by roadmap objective; the project's `Sprint` field carries sprint sequencing.
-- Triage state is expressed with labels (see `triage-labels.md`); comments and conversation history live as issue comments.
+- Every open non-PR issue has exactly one mutually exclusive execution-state label (see `triage-labels.md`); comments and conversation history live as issue comments.
 
 An issue is delivered by checking off its acceptance criteria and closing it. An epic is done when all its sub-issues are closed; GitHub rolls sub-issue progress up automatically.
 
