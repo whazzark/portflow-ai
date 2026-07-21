@@ -12,29 +12,6 @@ const ACTIVE_USER = {
   email: 'active.user@portflow.test',
 }
 
-async function openUserMenu() {
-  const trigger = await screen.findByRole(
-    'button',
-    {
-      name: 'Open user menu for Claire Martin',
-    },
-    { timeout: 3_000 },
-  )
-  fireEvent.mouseDown(trigger)
-
-  return screen.findByRole('menu')
-}
-
-test('redirects unauthenticated access to the protected frame to the login screen', async () => {
-  const { router } = renderApp('/')
-
-  expect(
-    await screen.findByRole('heading', { name: 'Keep every handoff on track' }),
-  ).toBeInTheDocument()
-  expect(router.state.location.pathname).toBe('/login')
-  expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
-})
-
 test('renders the protected frame with navigation for an authenticated user', async () => {
   server.use(http.get(`${API_BASE_URL}/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })))
 
@@ -65,7 +42,8 @@ test('renders the protected frame with navigation for an authenticated user', as
   expect(screen.getByText('Rotation progress')).toBeInTheDocument()
   expect(screen.getByRole('table', { name: 'Recent rotations' })).toBeInTheDocument()
 
-  const menu = await openUserMenu()
+  fireEvent.mouseDown(profileTrigger)
+  const menu = await screen.findByRole('menu')
 
   expect(within(menu).getByText('CM')).toBeInTheDocument()
   expect(within(menu).getByText('Claire Martin')).toBeInTheDocument()
@@ -77,22 +55,4 @@ test('renders the protected frame with navigation for an authenticated user', as
   expect(within(menu).getByText('Coming soon')).toBeInTheDocument()
   expect(within(menu).getByRole('menuitem', { name: 'Log out' })).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/')
-})
-
-test('opens the application sidebar from the mobile menu trigger', async () => {
-  const previousInnerWidth = window.innerWidth
-  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 })
-  server.use(http.get(`${API_BASE_URL}/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })))
-
-  try {
-    renderApp('/')
-
-    const trigger = await screen.findByRole('button', { name: 'Toggle Sidebar' })
-    fireEvent.click(trigger)
-
-    const sidebar = await screen.findByRole('dialog', { name: 'Sidebar' })
-    expect(within(sidebar).getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
-  } finally {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: previousInnerWidth })
-  }
 })
