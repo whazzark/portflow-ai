@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { GuestLayout } from '@/features/layout/ui/guest-layout'
+import { GuestLayout } from '@/components/layout/guest-layout'
 import { isUnauthorizedError } from '@/libraries/tuyau/api-error'
 import { ensureSessionUser } from '@/libraries/tuyau/session'
 
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_guest')({
       throw error
     }
 
-    throw redirect({ to: '/' })
+    throw redirect({ to: '/', search: { section: 'rotations' } })
   },
   component: GuestLayout,
 })

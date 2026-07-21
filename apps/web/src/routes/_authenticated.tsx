@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { AuthenticatedLayout } from '@/features/layout/ui/authenticated-layout'
+import { AuthenticatedLayout } from '@/components/layout/authenticated-layout'
 import { isUnauthorizedError } from '@/libraries/tuyau/api-error'
 import { ensureSessionUser } from '@/libraries/tuyau/session'
 

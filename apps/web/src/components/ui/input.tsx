@@ -1,5 +1,5 @@
 import { Input as InputPrimitive } from '@base-ui/react/input'
-import type * as React from 'react'
+import * as React from 'react'
 
 import { classnames } from '@/libraries/shadcn/helpers'
 
