@@ -1,11 +1,14 @@
-import { LoginForm } from '@/features/auth/ui/login-form'
 import { Brand } from '@/components/brand/brand'
+import { LoginForm } from '@/features/auth/ui/login-form'
 
 export function LoginScreen() {
   return (
     <div className="w-full max-w-sm">
       <div className="mb-7">
-        <Brand tone="inverse" className="font-mono text-primary text-xs uppercase tracking-[0.16em]" />
+        <Brand
+          tone="inverse"
+          className="font-mono text-primary text-xs uppercase tracking-[0.16em]"
+        />
         <h1 className="mt-7 font-semibold text-3xl leading-tight tracking-tight">
           Keep every handoff on track
         </h1>
