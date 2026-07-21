@@ -17,7 +17,7 @@ or installed `node_modules` source), not from training-data memory.
 
 Read directly:
 - `apps/web/src/test/msw/handlers.ts`, `apps/web/src/test/msw/server.ts`, `apps/web/src/test/setup.ts`
-- `apps/web/src/libraries/auth/auth-flow.test.tsx`
+- `apps/web/src/features/auth/__tests__/auth-flow.test.tsx`
 - `apps/web/src/libraries/tuyau/client.ts`
 - `apps/web/package.json`
 - `apps/api/app/exceptions/handler.ts`
@@ -32,8 +32,8 @@ Findings:
   `setup.ts` wires the canonical lifecycle: `beforeAll(() => server.listen({ onUnhandledRequest:
   'error' }))`, `afterEach(() => { server.resetHandlers(); cleanup() })`, `afterAll(() =>
   server.close())`.
-- `apps/web/src/libraries/auth/auth-flow.test.tsx` has 5 tests, two of which (`signs in with valid
-  credentials`, `signs out and returns to the login screen`) use a `let signedIn = false`/`true`
+- `apps/web/src/features/auth/__tests__/auth-flow.test.tsx` has 5 tests, two of which (`logs in with valid
+  credentials`, `logs out and returns to the login screen`) use a `let isLoggedIn = false`/`true`
   closure variable, flipped by a `server.use(http.post(...))` login/logout handler and read by a
   `server.use(http.get(...))` `/auth/me` handler — a genuine stateful, multi-request-per-test
   scenario, already working today against MSW.
@@ -75,7 +75,7 @@ Findings:
   matching the `afterEach` reset already in place.
 - **Stateful multi-request pattern**: not something MSW's docs need to call out specially — MSW
   handlers are plain JS functions passed to `http.get`/`http.post`, so any closure variable
-  (`let signedIn = false`) is trivially readable/writable across requests within one test, as
+  (`let isLoggedIn = false`) is trivially readable/writable across requests within one test, as
   **already proven working** in `auth-flow.test.tsx` today. No framework-level "state" feature is
   needed or missing.
 - **Fidelity**: intercepts at the actual network/`fetch` layer, underneath `ky`. Concretely (read
@@ -239,7 +239,7 @@ Stated plainly, the deciding factors:
    theoretical and not supported by where this repo's time is actually going.
 3. **Setup/maintenance cost favors MSW by a wide and widening margin.** It is already built,
    already matches MSW's own documented Node.js pattern nearly verbatim, and already proves out the
-   stateful multi-request pattern the auth-flow suite needs (`let signedIn = false`, flipped by one
+   stateful multi-request pattern the auth-flow suite needs (`let isLoggedIn = false`, flipped by one
    handler, read by another) with plain JS closures — no framework feature needed. The two
    alternatives both require hand-built infrastructure (a mock-response builder matching Tuyau's
    real output shape, or a hand-rolled request router) that would need to be built now and

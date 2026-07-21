@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { SessionProvider } from '@/features/auth/context/session-context'
 import { DEFAULT_THEME, THEME_STORAGE_KEY, ThemeProvider } from '@/libraries/theme/theme-provider'
 import { ensureSessionUser } from '@/libraries/tuyau/session'
@@ -50,12 +51,14 @@ function RootComponent() {
         </head>
         <body>
           <QueryClientProvider client={queryClient}>
-            <ThemeProvider>
-              <SessionProvider>
-                <Outlet />
-              </SessionProvider>
-              <Toaster />
-            </ThemeProvider>
+            <TooltipProvider>
+              <ThemeProvider>
+                <SessionProvider>
+                  <Outlet />
+                </SessionProvider>
+                <Toaster />
+              </ThemeProvider>
+            </TooltipProvider>
           </QueryClientProvider>
           <Scripts />
         </body>
