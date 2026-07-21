@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import {
   isOperationsOverviewSection,
   OperationsOverview,
-  type OperationsOverviewSection,
 } from '@/features/operations/ui/operations-overview'
 
 export const Route = createFileRoute('/_authenticated/')({
@@ -18,7 +17,7 @@ function HomePage() {
 
   return (
     <OperationsOverview
-      section={section as OperationsOverviewSection}
+      section={section}
       onSectionChange={(nextSection) => navigate({ search: { section: nextSection } })}
     />
   )

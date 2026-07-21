@@ -19,7 +19,7 @@ site, npm registry, or GitHub), not from training-data memory.
 
 Read directly (all under `apps/web/`):
 `vitest.config.ts`, `src/test/setup.ts`, `src/test/msw/{handlers,server}.ts`,
-`src/test/render-app.tsx`, `src/libraries/auth/auth-flow.test.tsx`,
+`src/test/render-app.tsx`, `src/features/auth/__tests__/auth-flow.test.tsx`,
 `src/libraries/tuyau/api-error.test.ts`, `src/routes/__root.tsx`, `package.json`.
 
 - Stack: Vitest `4.1.10`, `jsdom` `29.1.1`, `@testing-library/react` `16.3.2`,

@@ -17,7 +17,7 @@ or installed `node_modules` source), not from training-data memory.
 
 Read directly:
 - `apps/web/src/test/msw/handlers.ts`, `apps/web/src/test/msw/server.ts`, `apps/web/src/test/setup.ts`
-- `apps/web/src/libraries/auth/auth-flow.test.tsx`
+- `apps/web/src/features/auth/__tests__/auth-flow.test.tsx`
 - `apps/web/src/libraries/tuyau/client.ts`
 - `apps/web/package.json`
 - `apps/api/app/exceptions/handler.ts`
@@ -32,7 +32,7 @@ Findings:
   `setup.ts` wires the canonical lifecycle: `beforeAll(() => server.listen({ onUnhandledRequest:
   'error' }))`, `afterEach(() => { server.resetHandlers(); cleanup() })`, `afterAll(() =>
   server.close())`.
-- `apps/web/src/libraries/auth/auth-flow.test.tsx` has 5 tests, two of which (`logs in with valid
+- `apps/web/src/features/auth/__tests__/auth-flow.test.tsx` has 5 tests, two of which (`logs in with valid
   credentials`, `logs out and returns to the login screen`) use a `let isLoggedIn = false`/`true`
   closure variable, flipped by a `server.use(http.post(...))` login/logout handler and read by a
   `server.use(http.get(...))` `/auth/me` handler — a genuine stateful, multi-request-per-test
