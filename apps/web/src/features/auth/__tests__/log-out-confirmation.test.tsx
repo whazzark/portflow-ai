@@ -8,12 +8,7 @@ test('requires confirmation before logging out', () => {
   const onOpenChange = vi.fn()
 
   render(
-    <LogOutConfirmation
-      isPending={false}
-      onConfirm={onConfirm}
-      onOpenChange={onOpenChange}
-      open
-    />,
+    <LogOutConfirmation isPending={false} onConfirm={onConfirm} onOpenChange={onOpenChange} open />,
   )
 
   const confirmation = screen.getByRole('alertdialog')
@@ -32,12 +27,7 @@ test('allows the user to cancel logging out', () => {
   const onOpenChange = vi.fn()
 
   render(
-    <LogOutConfirmation
-      isPending={false}
-      onConfirm={onConfirm}
-      onOpenChange={onOpenChange}
-      open
-    />,
+    <LogOutConfirmation isPending={false} onConfirm={onConfirm} onOpenChange={onOpenChange} open />,
   )
 
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))

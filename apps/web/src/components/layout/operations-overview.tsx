@@ -38,7 +38,7 @@ export function OperationsOverview() {
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">
+          <h1 className="font-heading font-semibold text-3xl tracking-tight">
             Operations overview
           </h1>
           <Badge variant="secondary">Demo data</Badge>
@@ -81,7 +81,7 @@ export function OperationsOverview() {
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <StatusIndicator label="In progress" variant="success" />
-            <p className="text-sm text-muted-foreground">Responsible: Marie Laurent</p>
+            <p className="text-muted-foreground text-sm">Responsible: Marie Laurent</p>
           </CardContent>
         </Card>
       </div>
