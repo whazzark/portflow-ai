@@ -8,7 +8,7 @@ import {
   API_BASE_URL,
   mockAuthenticatedSession,
   openLogoutConfirmation,
-} from './logout-test-helpers'
+} from './helpers'
 
 test('keeps confirmation open and shows the API error when logout fails', async () => {
   server.use(

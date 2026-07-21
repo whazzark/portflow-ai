@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
-import { API_BASE_URL, renderLogin, submitLogin } from './login-test-helpers'
+import { API_BASE_URL, renderLogin, submitLogin } from './helpers'
 
 test('shows API validation details on the corresponding field', async () => {
   const user = userEvent.setup()

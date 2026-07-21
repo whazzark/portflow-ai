@@ -8,7 +8,7 @@ import {
   API_BASE_URL,
   mockAuthenticatedSession,
   openLogoutConfirmation,
-} from './logout-test-helpers'
+} from './helpers'
 
 test('cancels logout without ending the session', async () => {
   let logoutRequestCount = 0

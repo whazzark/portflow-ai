@@ -8,7 +8,7 @@ import {
   API_BASE_URL,
   mockAuthenticatedSession,
   openLogoutConfirmation,
-} from './logout-test-helpers'
+} from './helpers'
 
 test('disables confirmation controls while logout is pending', async () => {
   let releaseLogout: (() => void) | undefined

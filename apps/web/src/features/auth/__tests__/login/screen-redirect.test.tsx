@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
-import { ACTIVE_USER, API_BASE_URL, renderLogin, submitLogin } from './login-test-helpers'
+import { ACTIVE_USER, API_BASE_URL, renderLogin, submitLogin } from './helpers'
 
 test('redirects to home after logging in directly from the login screen', async () => {
   const user = userEvent.setup()

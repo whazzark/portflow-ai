@@ -3,7 +3,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
-import { ACTIVE_USER, API_BASE_URL } from './session-test-helpers'
+import { ACTIVE_USER, API_BASE_URL } from './helpers'
 
 test('shares one auth.me cache entry across home and login while authenticated', async () => {
   let meRequestCount = 0

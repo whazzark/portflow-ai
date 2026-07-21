@@ -3,7 +3,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
-import { ACTIVE_USER, API_BASE_URL, openLogoutConfirmation } from './logout-test-helpers'
+import { ACTIVE_USER, API_BASE_URL, openLogoutConfirmation } from './helpers'
 
 test('clears the session and redirects to login after successful logout', async () => {
   let signedIn = true

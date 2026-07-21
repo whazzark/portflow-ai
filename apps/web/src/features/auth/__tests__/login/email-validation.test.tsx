@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
-import { renderLogin } from './login-test-helpers'
+import { renderLogin } from './helpers'
 
 test('validates email when focus leaves an invalid field', async () => {
   const user = userEvent.setup()

@@ -3,7 +3,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
-import { API_BASE_URL } from './session-test-helpers'
+import { API_BASE_URL } from './helpers'
 
 test('shows a distinct error when session restoration fails for a reason other than being unauthenticated', async () => {
   server.use(
