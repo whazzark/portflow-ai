@@ -78,3 +78,21 @@ test('renders the protected frame with navigation for an authenticated user', as
   expect(within(menu).getByRole('menuitem', { name: 'Log out' })).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/')
 })
+
+test('opens the application sidebar from the mobile menu trigger', async () => {
+  const previousInnerWidth = window.innerWidth
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 })
+  server.use(http.get(`${API_BASE_URL}/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })))
+
+  try {
+    renderApp('/')
+
+    const trigger = await screen.findByRole('button', { name: 'Toggle Sidebar' })
+    fireEvent.click(trigger)
+
+    const sidebar = await screen.findByRole('dialog', { name: 'Sidebar' })
+    expect(within(sidebar).getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
+  } finally {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: previousInnerWidth })
+  }
+})
