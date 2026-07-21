@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_guest')({
       throw error
     }
 
-    throw redirect({ to: '/' })
+    throw redirect({ to: '/', search: { section: 'rotations' } })
   },
   component: GuestLayout,
 })

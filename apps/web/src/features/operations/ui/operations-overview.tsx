@@ -19,13 +19,28 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+export const OPERATIONS_OVERVIEW_SECTIONS = ['rotations', 'attention'] as const
+export type OperationsOverviewSection = (typeof OPERATIONS_OVERVIEW_SECTIONS)[number]
+
+export function isOperationsOverviewSection(value: unknown): value is OperationsOverviewSection {
+  return (
+    typeof value === 'string' &&
+    OPERATIONS_OVERVIEW_SECTIONS.includes(value as OperationsOverviewSection)
+  )
+}
+
+type OperationsOverviewProps = {
+  section: OperationsOverviewSection
+  onSectionChange: (section: OperationsOverviewSection) => void
+}
+
 const rotations = [
   { id: 'ROT-000184', truck: 'BF-472-ND', status: 'At weighbridge', tonnage: '28.450 t' },
   { id: 'ROT-000183', truck: 'DT-891-KR', status: 'In transit', tonnage: '27.980 t' },
   { id: 'ROT-000182', truck: 'GA-216-PL', status: 'Completed', tonnage: '29.120 t' },
 ]
 
-export function OperationsOverview() {
+export function OperationsOverview({ section, onSectionChange }: OperationsOverviewProps) {
   return (
     <div className="flex flex-1 flex-col gap-6 p-6 lg:p-10">
       <Breadcrumb>
@@ -86,7 +101,12 @@ export function OperationsOverview() {
         </Card>
       </div>
 
-      <Tabs defaultValue="rotations">
+      <Tabs
+        value={section}
+        onValueChange={(value) => {
+          if (isOperationsOverviewSection(value)) onSectionChange(value)
+        }}
+      >
         <TabsList aria-label="Operations overview sections">
           <TabsTrigger value="rotations">Rotations</TabsTrigger>
           <TabsTrigger value="attention">Attention</TabsTrigger>
