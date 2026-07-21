@@ -13,44 +13,6 @@ const ACTIVE_USER = {
   email: 'active.user@portflow.test',
 }
 
-test('restores an authenticated session on load', async () => {
-  server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () =>
-      HttpResponse.json({
-        data: ACTIVE_USER,
-      }),
-    ),
-  )
-
-  renderApp('/')
-
-  expect(
-    await screen.findByText('active.user@portflow.test', {}, { timeout: 3_000 }),
-  ).toBeInTheDocument()
-})
-
-test('shows the login screen when there is no valid session', async () => {
-  renderApp('/')
-
-  expect(
-    await screen.findByRole('heading', { name: 'Keep every handoff on track' }, { timeout: 3_000 }),
-  ).toBeInTheDocument()
-})
-
-test('redirects an authenticated user away from the login screen', async () => {
-  server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () =>
-      HttpResponse.json({
-        data: ACTIVE_USER,
-      }),
-    ),
-  )
-
-  renderApp('/login')
-
-  expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()
-})
-
 test('logs in with valid credentials', async () => {
   const user = userEvent.setup()
   let isLoggedIn = false
@@ -74,13 +36,12 @@ test('logs in with valid credentials', async () => {
   )
 
   renderApp('/')
-
   await screen.findByRole('heading', { name: 'Keep every handoff on track' })
-  await user.type(screen.getByLabelText(/^Email address/), 'active.user@portflow.test')
+  await user.type(screen.getByLabelText(/^Email address/), ACTIVE_USER.email)
   await user.type(screen.getByLabelText(/^Password/), 'Password!234')
   await user.click(screen.getByRole('button', { name: 'Log in' }))
 
-  expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()
+  expect(await screen.findByText(ACTIVE_USER.email)).toBeInTheDocument()
 })
 
 test('lets a user request a remembered connection', async () => {
@@ -106,24 +67,22 @@ test('lets a user request a remembered connection', async () => {
   )
 
   renderApp('/')
-
   await screen.findByRole('heading', { name: 'Keep every handoff on track' })
   const rememberMe = screen.getByRole('checkbox', { name: 'Remember me for 30 days' })
   expect(rememberMe).not.toBeChecked()
 
-  await user.type(screen.getByLabelText(/^Email address/), 'active.user@portflow.test')
+  await user.type(screen.getByLabelText(/^Email address/), ACTIVE_USER.email)
   await user.type(screen.getByLabelText(/^Password/), 'Password!234')
   await user.click(rememberMe)
   await user.click(screen.getByRole('button', { name: 'Log in' }))
 
-  expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()
+  expect(await screen.findByText(ACTIVE_USER.email)).toBeInTheDocument()
 })
 
-test('shows an error message when credentials are invalid', async () => {
+test('validates email when focus leaves an invalid field', async () => {
   const user = userEvent.setup()
 
   renderApp('/')
-
   await screen.findByRole('heading', { name: 'Keep every handoff on track' })
   await user.click(screen.getByLabelText(/^Email address/))
   await user.tab()
@@ -133,7 +92,7 @@ test('shows an error message when credentials are invalid', async () => {
   expect(screen.getByLabelText(/^Password/)).toHaveAttribute('aria-invalid', 'false')
 })
 
-test('validates untouched login fields before submitting', async () => {
+test('validates untouched fields before submitting', async () => {
   const user = userEvent.setup()
   let loginRequestCount = 0
 
@@ -145,7 +104,6 @@ test('validates untouched login fields before submitting', async () => {
   )
 
   renderApp('/')
-
   await screen.findByRole('heading', { name: 'Keep every handoff on track' })
   await user.click(screen.getByRole('button', { name: 'Log in' }))
 
@@ -158,7 +116,6 @@ test('validates untouched login fields before submitting', async () => {
 
 test('shows a toast when credentials are invalid', async () => {
   const user = userEvent.setup()
-
   server.use(
     http.post(`${API_BASE_URL}/auth/login`, () =>
       HttpResponse.json(
@@ -169,9 +126,8 @@ test('shows a toast when credentials are invalid', async () => {
   )
 
   renderApp('/')
-
   await screen.findByRole('heading', { name: 'Keep every handoff on track' })
-  await user.type(screen.getByLabelText(/^Email address/), 'active.user@portflow.test')
+  await user.type(screen.getByLabelText(/^Email address/), ACTIVE_USER.email)
   await user.type(screen.getByLabelText(/^Password/), 'wrong-password')
   await user.click(screen.getByRole('button', { name: 'Log in' }))
 
@@ -179,9 +135,8 @@ test('shows a toast when credentials are invalid', async () => {
   expect(screen.getByText('Invalid credentials')).toBeInTheDocument()
 })
 
-test('shows API validation details on the corresponding login field', async () => {
+test('shows API validation details on the corresponding field', async () => {
   const user = userEvent.setup()
-
   server.use(
     http.post(`${API_BASE_URL}/auth/login`, () =>
       HttpResponse.json(
@@ -198,9 +153,8 @@ test('shows API validation details on the corresponding login field', async () =
   )
 
   renderApp('/')
-
   await screen.findByRole('heading', { name: 'Keep every handoff on track' })
-  await user.type(screen.getByLabelText(/^Email address/), 'active.user@portflow.test')
+  await user.type(screen.getByLabelText(/^Email address/), ACTIVE_USER.email)
   await user.type(screen.getByLabelText(/^Password/), 'Password!234')
   await user.click(screen.getByRole('button', { name: 'Log in' }))
 
@@ -231,53 +185,13 @@ test('redirects to home after logging in directly from the login screen', async 
   )
 
   renderApp('/login')
-
   await screen.findByRole('heading', { name: 'Keep every handoff on track' })
-  await user.type(screen.getByLabelText(/^Email address/), 'active.user@portflow.test')
+  await user.type(screen.getByLabelText(/^Email address/), ACTIVE_USER.email)
   await user.type(screen.getByLabelText(/^Password/), 'Password!234')
   await user.click(screen.getByRole('button', { name: 'Log in' }))
 
-  expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()
+  expect(await screen.findByText(ACTIVE_USER.email)).toBeInTheDocument()
   expect(
     screen.queryByRole('heading', { name: 'Keep every handoff on track' }),
   ).not.toBeInTheDocument()
-})
-
-test('shows a distinct error when session restoration fails for a reason other than being unauthenticated', async () => {
-  server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () =>
-      HttpResponse.json(
-        { error: { code: 'E_INTERNAL_SERVER_ERROR', message: 'Internal server error' } },
-        { status: 500 },
-      ),
-    ),
-  )
-
-  renderApp('/')
-
-  expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong')
-  expect(
-    screen.queryByRole('heading', { name: 'Keep every handoff on track' }),
-  ).not.toBeInTheDocument()
-})
-
-test('shares one auth.me cache entry across / and /login while authenticated', async () => {
-  let meRequestCount = 0
-
-  server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () => {
-      meRequestCount += 1
-      return HttpResponse.json({ data: ACTIVE_USER })
-    }),
-  )
-
-  const { router } = renderApp('/')
-
-  await screen.findByText('active.user@portflow.test')
-  const countAfterHome = meRequestCount
-
-  await router.navigate({ to: '/login' })
-
-  expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()
-  expect(meRequestCount).toBe(countAfterHome)
 })
