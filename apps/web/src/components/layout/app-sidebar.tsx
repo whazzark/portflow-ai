@@ -50,7 +50,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
 
       <SidebarFooter>
         <ThemeToggle />
-        <SidebarSeparator className="mx-0" />
+        <SidebarSeparator className="mx-0 data-horizontal:w-full" />
         <UserMenu user={user} />
       </SidebarFooter>
     </Sidebar>
