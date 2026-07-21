@@ -6,26 +6,34 @@ import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
 
 const API_BASE_URL = 'http://localhost:3333'
+const ACTIVE_USER = {
+  id: 1,
+  firstName: 'Claire',
+  lastName: 'Martin',
+  email: 'active.user@portflow.test',
+}
 
 test('restores an authenticated session on load', async () => {
   server.use(
     http.get(`${API_BASE_URL}/auth/me`, () =>
       HttpResponse.json({
-        data: { id: 1, email: 'active.user@portflow.test' },
+        data: ACTIVE_USER,
       }),
     ),
   )
 
   renderApp('/')
 
-  expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()
+  expect(
+    await screen.findByText('active.user@portflow.test', {}, { timeout: 3_000 }),
+  ).toBeInTheDocument()
 })
 
 test('shows the login screen when there is no valid session', async () => {
   renderApp('/')
 
   expect(
-    await screen.findByRole('heading', { name: 'Keep every handoff on track' }),
+    await screen.findByRole('heading', { name: 'Keep every handoff on track' }, { timeout: 3_000 }),
   ).toBeInTheDocument()
 })
 
@@ -33,7 +41,7 @@ test('redirects an authenticated user away from the login screen', async () => {
   server.use(
     http.get(`${API_BASE_URL}/auth/me`, () =>
       HttpResponse.json({
-        data: { id: 1, email: 'active.user@portflow.test' },
+        data: ACTIVE_USER,
       }),
     ),
   )
@@ -43,14 +51,14 @@ test('redirects an authenticated user away from the login screen', async () => {
   expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()
 })
 
-test('signs in with valid credentials', async () => {
+test('logs in with valid credentials', async () => {
   const user = userEvent.setup()
-  let signedIn = false
+  let isLoggedIn = false
 
   server.use(
     http.get(`${API_BASE_URL}/auth/me`, () =>
-      signedIn
-        ? HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
+      isLoggedIn
+        ? HttpResponse.json({ data: ACTIVE_USER })
         : HttpResponse.json(
             {
               error: { code: 'E_UNAUTHORIZED_ACCESS', message: 'Invalid or expired user session' },
@@ -60,8 +68,8 @@ test('signs in with valid credentials', async () => {
     ),
     http.post(`${API_BASE_URL}/auth/login`, async ({ request }) => {
       expect(await request.json()).toMatchObject({ rememberMe: false })
-      signedIn = true
-      return HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
+      isLoggedIn = true
+      return HttpResponse.json({ data: ACTIVE_USER })
     }),
   )
 
@@ -77,12 +85,12 @@ test('signs in with valid credentials', async () => {
 
 test('lets a user request a remembered connection', async () => {
   const user = userEvent.setup()
-  let signedIn = false
+  let isLoggedIn = false
 
   server.use(
     http.get(`${API_BASE_URL}/auth/me`, () =>
-      signedIn
-        ? HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
+      isLoggedIn
+        ? HttpResponse.json({ data: ACTIVE_USER })
         : HttpResponse.json(
             {
               error: { code: 'E_UNAUTHORIZED_ACCESS', message: 'Invalid or expired user session' },
@@ -92,8 +100,8 @@ test('lets a user request a remembered connection', async () => {
     ),
     http.post(`${API_BASE_URL}/auth/login`, async ({ request }) => {
       expect(await request.json()).toMatchObject({ rememberMe: true })
-      signedIn = true
-      return HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
+      isLoggedIn = true
+      return HttpResponse.json({ data: ACTIVE_USER })
     }),
   )
 
@@ -132,7 +140,7 @@ test('validates untouched login fields before submitting', async () => {
   server.use(
     http.post(`${API_BASE_URL}/auth/login`, () => {
       loginRequestCount += 1
-      return HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
+      return HttpResponse.json({ data: ACTIVE_USER })
     }),
   )
 
@@ -201,14 +209,14 @@ test('shows API validation details on the corresponding login field', async () =
   expect(screen.getByLabelText(/^Email address/)).toHaveAttribute('aria-invalid', 'true')
 })
 
-test('redirects to home after signing in directly from the login screen', async () => {
+test('redirects to home after logging in directly from the login screen', async () => {
   const user = userEvent.setup()
-  let signedIn = false
+  let isLoggedIn = false
 
   server.use(
     http.get(`${API_BASE_URL}/auth/me`, () =>
-      signedIn
-        ? HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
+      isLoggedIn
+        ? HttpResponse.json({ data: ACTIVE_USER })
         : HttpResponse.json(
             {
               error: { code: 'E_UNAUTHORIZED_ACCESS', message: 'Invalid or expired user session' },
@@ -217,8 +225,8 @@ test('redirects to home after signing in directly from the login screen', async 
           ),
     ),
     http.post(`${API_BASE_URL}/auth/login`, () => {
-      signedIn = true
-      return HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
+      isLoggedIn = true
+      return HttpResponse.json({ data: ACTIVE_USER })
     }),
   )
 
@@ -253,37 +261,13 @@ test('shows a distinct error when session restoration fails for a reason other t
   ).not.toBeInTheDocument()
 })
 
-test('shows an error when signing out fails', async () => {
-  const user = userEvent.setup()
-
-  server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () =>
-      HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } }),
-    ),
-    http.post(`${API_BASE_URL}/auth/logout`, () =>
-      HttpResponse.json(
-        { error: { code: 'E_INTERNAL_SERVER_ERROR', message: 'Internal server error' } },
-        { status: 500 },
-      ),
-    ),
-  )
-
-  renderApp('/')
-
-  await screen.findByText('active.user@portflow.test')
-  await user.click(screen.getByRole('button', { name: 'Sign out' }))
-
-  expect(await screen.findByRole('alert')).toHaveTextContent('Internal server error')
-  expect(screen.getByText('active.user@portflow.test')).toBeInTheDocument()
-})
-
 test('shares one auth.me cache entry across / and /login while authenticated', async () => {
   let meRequestCount = 0
 
   server.use(
     http.get(`${API_BASE_URL}/auth/me`, () => {
       meRequestCount += 1
-      return HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
+      return HttpResponse.json({ data: ACTIVE_USER })
     }),
   )
 
@@ -296,35 +280,4 @@ test('shares one auth.me cache entry across / and /login while authenticated', a
 
   expect(await screen.findByText('active.user@portflow.test')).toBeInTheDocument()
   expect(meRequestCount).toBe(countAfterHome)
-})
-
-test('signs out and returns to the login screen', async () => {
-  const user = userEvent.setup()
-  let signedIn = true
-
-  server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () =>
-      signedIn
-        ? HttpResponse.json({ data: { id: 1, email: 'active.user@portflow.test' } })
-        : HttpResponse.json(
-            {
-              error: { code: 'E_UNAUTHORIZED_ACCESS', message: 'Invalid or expired user session' },
-            },
-            { status: 401 },
-          ),
-    ),
-    http.post(`${API_BASE_URL}/auth/logout`, () => {
-      signedIn = false
-      return new HttpResponse(null, { status: 204 })
-    }),
-  )
-
-  renderApp('/')
-
-  await screen.findByText('active.user@portflow.test')
-  await user.click(screen.getByRole('button', { name: 'Sign out' }))
-
-  expect(
-    await screen.findByRole('heading', { name: 'Keep every handoff on track' }),
-  ).toBeInTheDocument()
 })

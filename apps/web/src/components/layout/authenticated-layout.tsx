@@ -1,6 +1,7 @@
 import { Outlet } from '@tanstack/react-router'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { useSession } from '@/features/auth/context/use-session'
-import { Nav } from '@/features/layout/ui/nav'
+import { AppSidebar } from '@/components/layout/app-sidebar'
 
 export function AuthenticatedLayout() {
   const session = useSession()
@@ -10,11 +11,11 @@ export function AuthenticatedLayout() {
   }
 
   return (
-    <>
-      <Nav user={session.user} />
-      <main>
+    <SidebarProvider>
+      <AppSidebar user={session.user} />
+      <SidebarInset>
         <Outlet />
-      </main>
-    </>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
