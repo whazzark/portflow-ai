@@ -1,4 +1,6 @@
 import { LayoutDashboardIcon } from 'lucide-react'
+import { Brand } from '@/components/brand/brand'
+import { UserMenu } from '@/components/layout/user-menu'
 import {
   Sidebar,
   SidebarContent,
@@ -13,18 +15,19 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar'
 import type { SessionUser } from '@/features/auth/context/session-context'
-import { UserMenu } from '@/components/layout/user-menu'
 import { ThemeToggle } from '@/libraries/theme/theme-toggle'
 
 export function AppSidebar({ user }: { user: SessionUser }) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
-          <span className="flex size-7 items-center justify-center rounded-md bg-sidebar-primary font-mono font-semibold text-sidebar-primary-foreground text-xs">
-            PF
-          </span>
-          <span className="font-semibold group-data-[collapsible=icon]:hidden">Portflow</span>
+        <div className="flex h-10 items-center justify-center px-2 group-data-[collapsible=icon]:px-0">
+          <Brand tone="inverse" className="w-32 group-data-[collapsible=icon]:hidden" />
+          <Brand
+            tone="inverse"
+            variant="mark"
+            className="hidden group-data-[collapsible=icon]:block"
+          />
         </div>
       </SidebarHeader>
 
