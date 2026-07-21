@@ -41,10 +41,12 @@ test('renders the protected frame with navigation for an authenticated user', as
   const { router } = renderApp('/')
 
   const nav = await screen.findByRole('navigation', { name: 'Primary' })
+  const sidebar = screen.getByRole('complementary', { name: 'Application sidebar' })
 
   expect(screen.getByText('Claire Martin')).toBeInTheDocument()
   expect(screen.getByText('active.user@portflow.test')).toBeInTheDocument()
   expect(nav).toHaveAccessibleName('Primary')
+  expect(sidebar).toContainElement(nav)
   const themeToggle = screen.getByRole('switch', { name: 'Switch to light theme' })
   const profileTrigger = screen.getByRole('button', {
     name: 'Open user menu for Claire Martin',

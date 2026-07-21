@@ -19,7 +19,7 @@ import { ThemeToggle } from '@/libraries/theme/theme-toggle'
 
 export function AppSidebar({ user }: { user: SessionUser }) {
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" aria-label="Application sidebar">
       <SidebarHeader>
         <div className="flex h-10 items-center justify-center px-2 group-data-[collapsible=icon]:px-0">
           <Brand tone="inverse" className="w-32 group-data-[collapsible=icon]:hidden" />

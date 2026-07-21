@@ -149,7 +149,7 @@ function Sidebar({
   children,
   dir,
   ...props
-}: React.ComponentProps<'div'> & {
+}: React.ComponentProps<'aside'> & {
   side?: 'left' | 'right'
   variant?: 'sidebar' | 'floating' | 'inset'
   collapsible?: 'offcanvas' | 'icon' | 'none'
@@ -158,7 +158,7 @@ function Sidebar({
 
   if (collapsible === 'none') {
     return (
-      <div
+      <aside
         data-slot="sidebar"
         className={classnames(
           'flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground',
@@ -167,7 +167,7 @@ function Sidebar({
         {...props}
       >
         {children}
-      </div>
+      </aside>
     )
   }
 
@@ -191,7 +191,13 @@ function Sidebar({
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <aside
+            data-slot="sidebar"
+            className="flex h-full w-full flex-col"
+            aria-label={props['aria-label']}
+          >
+            {children}
+          </aside>
         </SheetContent>
       </Sheet>
     )
@@ -218,7 +224,7 @@ function Sidebar({
             : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon)',
         )}
       />
-      <div
+      <aside
         data-slot="sidebar-container"
         data-side={side}
         className={classnames(
@@ -238,7 +244,7 @@ function Sidebar({
         >
           {children}
         </div>
-      </div>
+      </aside>
     </div>
   )
 }
