@@ -95,3 +95,34 @@ export class CustomerSchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 }
+
+export class DockSchema extends BaseModel {
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivationComment', 'reactivatedAt', 'reactivatedByUserId', 'status', 'updatedAt'] as const
+  $columns = DockSchema.$columns
+  @column()
+  declare archiveComment: string | null
+  @column.dateTime()
+  declare archivedAt: DateTime | null
+  @column()
+  declare archivedByUserId: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare latitude: number
+  @column()
+  declare longitude: number
+  @column()
+  declare name: string
+  @column()
+  declare reactivationComment: string | null
+  @column.dateTime()
+  declare reactivatedAt: DateTime | null
+  @column()
+  declare reactivatedByUserId: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}

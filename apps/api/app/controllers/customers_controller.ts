@@ -6,7 +6,6 @@ import ListAvailableCustomersUseCase from '#customers/available/list_available_c
 import CreateCustomerUseCase from '#customers/create/create_customer_use_case'
 import ListCustomersUseCase from '#customers/list/list_customers_use_case'
 import ReactivateCustomerUseCase from '#customers/reactivate/reactivate_customer_use_case'
-import { CustomerUpdateFieldsException } from '#customers/shared/customer_exceptions'
 import CustomerPolicy from '#customers/shared/customer_policy'
 import CustomerTransformer from '#customers/shared/customer_transformer'
 import {
@@ -70,10 +69,6 @@ export default class CustomersController {
     await bouncer.with(CustomerPolicy).authorize('update')
 
     const payload = await request.validateUsing(updateCustomerValidator)
-
-    if (payload.code === undefined && payload.companyName === undefined) {
-      throw new CustomerUpdateFieldsException()
-    }
 
     const customer = await this.updateCustomerUseCase.handle({ id: params.id, ...payload })
 
