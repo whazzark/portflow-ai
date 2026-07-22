@@ -1,3 +1,5 @@
+import { DateTime } from 'luxon'
+
 import Customer from '#models/customer'
 
 import CustomerRepository, {
@@ -11,43 +13,41 @@ const isUniqueViolation = (error: unknown) => {
     return false
   }
 
-  const candidate = error as { code?: string; message?: string }
+  const candidate = error as { code?: string; constraint?: string; message?: string }
   return candidate.code === '23505' || candidate.code === 'SQLITE_CONSTRAINT_UNIQUE'
 }
 
-const duplicateKind = (error: unknown): CustomerWriteResult => {
-  const message = String((error as { message?: string }).message ?? '')
+const duplicateKind = (error: unknown): CustomerWriteResult | null => {
+  const candidate = error as { constraint?: string; message?: string }
+  const message = String(candidate.message ?? '')
+  const constraint = String(candidate.constraint ?? '')
 
-  if (message.includes('company_name')) {
+  if (
+    constraint.includes('customers_company_name_unique') ||
+    message.includes('customers_company_name_unique')
+  ) {
     return { kind: 'DUPLICATE_COMPANY_NAME' }
   }
 
-  return { kind: 'DUPLICATE_CODE' }
+  if (constraint.includes('customers_code_unique') || message.includes('customers_code_unique')) {
+    return { kind: 'DUPLICATE_CODE' }
+  }
+
+  return null
 }
 
 export default class LucidCustomerRepository extends CustomerRepository {
   async create(command: CreateCustomerCommand): Promise<CustomerWriteResult> {
-    const duplicateCode = await Customer.query()
-      .whereRaw('LOWER(code) = ?', [command.code.toLowerCase()])
-      .first()
-    if (duplicateCode) {
-      return { kind: 'DUPLICATE_CODE' }
-    }
-
-    const duplicateCompanyName = await Customer.query()
-      .whereRaw('LOWER(company_name) = ?', [command.companyName.toLowerCase()])
-      .first()
-    if (duplicateCompanyName) {
-      return { kind: 'DUPLICATE_COMPANY_NAME' }
-    }
-
     try {
       const customer = await Customer.create({ ...command, status: command.status ?? 'AVAILABLE' })
 
       return { kind: 'CREATED', customer }
     } catch (error) {
       if (isUniqueViolation(error)) {
-        return duplicateKind(error)
+        const duplicate = duplicateKind(error)
+        if (duplicate) {
+          return duplicate
+        }
       }
 
       throw error
@@ -67,47 +67,43 @@ export default class LucidCustomerRepository extends CustomerRepository {
   }
 
   async updateAvailable(command: UpdateCustomerCommand): Promise<CustomerWriteResult> {
-    const customer = await Customer.find(command.id)
-
-    if (!customer) {
-      return { kind: 'NOT_FOUND' }
-    }
-    if (customer.status !== 'AVAILABLE') {
-      return { kind: 'ARCHIVED' }
-    }
-
-    if (command.code !== undefined) {
-      const duplicateCode = await Customer.query()
-        .whereRaw('LOWER(code) = ?', [command.code.toLowerCase()])
-        .whereNot('id', command.id)
-        .first()
-      if (duplicateCode) {
-        return { kind: 'DUPLICATE_CODE' }
-      }
-    }
-
-    if (command.companyName !== undefined) {
-      const duplicateCompanyName = await Customer.query()
-        .whereRaw('LOWER(company_name) = ?', [command.companyName.toLowerCase()])
-        .whereNot('id', command.id)
-        .first()
-      if (duplicateCompanyName) {
-        return { kind: 'DUPLICATE_COMPANY_NAME' }
-      }
-    }
-
-    customer.merge({
+    const values = {
       ...(command.code === undefined ? {} : { code: command.code }),
       ...(command.companyName === undefined ? {} : { companyName: command.companyName }),
-    })
+      updatedAt: DateTime.now().toISO(),
+    }
 
     try {
-      await customer.save()
+      const [affectedRows] = await Customer.query()
+        .where('id', command.id)
+        .where('status', 'AVAILABLE')
+        .update(values)
+
+      if (affectedRows === 0) {
+        const customer = await Customer.find(command.id)
+
+        if (!customer) {
+          return { kind: 'NOT_FOUND' }
+        }
+        if (customer.status !== 'AVAILABLE') {
+          return { kind: 'ARCHIVED' }
+        }
+
+        return { kind: 'NOT_FOUND' }
+      }
+
+      const customer = await Customer.find(command.id)
+      if (!customer) {
+        return { kind: 'NOT_FOUND' }
+      }
 
       return { kind: 'UPDATED', customer }
     } catch (error) {
       if (isUniqueViolation(error)) {
-        return duplicateKind(error)
+        const duplicate = duplicateKind(error)
+        if (duplicate) {
+          return duplicate
+        }
       }
 
       throw error

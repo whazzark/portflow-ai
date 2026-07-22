@@ -21,6 +21,6 @@ router
     router.get('/:id', [controllers.Customers, 'show']).as('show')
     router.patch('/:id', [controllers.Customers, 'update']).as('update')
   })
-  .prefix('/customers')
+  .prefix('/api/v1/customers')
   .as('customers')
   .use(middleware.auth())

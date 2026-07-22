@@ -2,9 +2,22 @@
 /// <reference path="../manifest.d.ts" />
 
 import type { ExtractBody, ExtractErrorResponse, ExtractQuery, ExtractQueryForGet, ExtractResponse } from '@tuyau/core/types'
-import type { InferInput, SimpleError } from '@vinejs/vine/types'
+import type { InferInput } from '@vinejs/vine/types'
 
 export type ParamValue = string | number | bigint | boolean
+export type ValidationErrorResponse = {
+  error: {
+    code: 'E_VALIDATION_ERROR'
+    message: string
+    details: Array<{
+      field: string
+      message: string
+      rule: string
+      index?: number
+      meta?: Record<string, unknown>
+    }>
+  }
+}
 
 export interface Registry {
   'health.show': {
@@ -28,7 +41,7 @@ export interface Registry {
       params: {}
       query: ExtractQuery<InferInput<(typeof import('#auth/login/login_validator').loginValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/login_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/login_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/login_controller').default['store']>>> | { status: 422; response: ValidationErrorResponse }
     }
   }
   'auth.me': {
@@ -57,19 +70,19 @@ export interface Registry {
   }
   'customers.store': {
     methods: ["POST"]
-    pattern: '/customers'
+    pattern: '/api/v1/customers'
     types: {
       body: ExtractBody<InferInput<(typeof import('#customers/shared/customer_validator').createCustomerValidator)>>
       paramsTuple: []
       params: {}
       query: ExtractQuery<InferInput<(typeof import('#customers/shared/customer_validator').createCustomerValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['store']>>> | { status: 422; response: ValidationErrorResponse }
     }
   }
   'customers.index': {
     methods: ["GET","HEAD"]
-    pattern: '/customers'
+    pattern: '/api/v1/customers'
     types: {
       body: {}
       paramsTuple: []
@@ -81,7 +94,7 @@ export interface Registry {
   }
   'customers.available': {
     methods: ["GET","HEAD"]
-    pattern: '/customers/available'
+    pattern: '/api/v1/customers/available'
     types: {
       body: {}
       paramsTuple: []
@@ -93,7 +106,7 @@ export interface Registry {
   }
   'customers.show': {
     methods: ["GET","HEAD"]
-    pattern: '/customers/:id'
+    pattern: '/api/v1/customers/:id'
     types: {
       body: {}
       paramsTuple: [ParamValue]
@@ -105,14 +118,14 @@ export interface Registry {
   }
   'customers.update': {
     methods: ["PATCH"]
-    pattern: '/customers/:id'
+    pattern: '/api/v1/customers/:id'
     types: {
       body: ExtractBody<InferInput<(typeof import('#customers/shared/customer_validator').updateCustomerValidator)>>
       paramsTuple: [ParamValue]
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#customers/shared/customer_validator').updateCustomerValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['update']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['update']>>> | { status: 422; response: ValidationErrorResponse }
     }
   }
 }

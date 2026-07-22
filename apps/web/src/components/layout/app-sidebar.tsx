@@ -55,9 +55,9 @@ const NAVIGATION_GROUPS: NavigationGroup[] = [
     label: 'Site references',
     items: [
       { label: 'Customers', icon: ContactIcon },
-      { label: 'Fleet', icon: TruckIcon },
-      { label: 'Operational checkpoints', icon: MapPinIcon },
-      { label: 'Storage', icon: WarehouseIcon },
+      { label: 'Trucks', icon: TruckIcon },
+      { label: 'Checkpoints', icon: MapPinIcon },
+      { label: 'Warehouses', icon: WarehouseIcon },
     ],
   },
 ]

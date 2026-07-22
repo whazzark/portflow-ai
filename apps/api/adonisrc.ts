@@ -25,7 +25,14 @@ export default defineConfig({
   ],
   preloads: [() => import('#start/routes'), () => import('#start/kernel')],
   hooks: {
-    init: [indexEntities({ transformers: { enabled: true } }), generateRegistry(), indexPolicies()],
+    init: [
+      indexEntities({ transformers: { enabled: true } }),
+      generateRegistry({
+        validationErrorType:
+          "{ error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } }",
+      }),
+      indexPolicies(),
+    ],
   },
   tests: {
     suites: [

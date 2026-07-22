@@ -8,7 +8,7 @@ export default class extends BaseSchema {
       table.uuid('id').primary()
       table.string('code').notNullable()
       table.string('company_name').notNullable()
-      table.string('status').notNullable().defaultTo('AVAILABLE')
+      table.enum('status', ['AVAILABLE', 'ARCHIVED']).notNullable().defaultTo('AVAILABLE')
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').notNullable()
     })
