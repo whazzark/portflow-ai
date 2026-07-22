@@ -14,11 +14,13 @@ import {
   DockInUseException,
   DockNotFoundException,
   DuplicateDockNameException,
-  InvalidDockCoordinatesException,
-  InvalidDockNameException,
 } from '#docks/shared/dock_exceptions'
 import UpdateDockUseCase from '#docks/update/update_dock_use_case'
 import ClosedDischargeUsageChecker from '#site_references/shared/closed_discharge_usage_checker'
+import {
+  InvalidSiteReferenceCoordinatesException,
+  InvalidSiteReferenceNameException,
+} from '#site_references/shared/site_reference_exceptions'
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 import UnusedChecker from '#site_references/shared/unused_checker'
 import UsedChecker from '#site_references/shared/used_checker'
@@ -50,6 +52,41 @@ test.group('Dock use cases', (group) => {
     assert.equal(updated.name, 'Corrected Dock')
     assert.equal(updated.latitude, 48.12)
     assert.equal(updated.longitude, 2.34)
+  })
+
+  test('rejects empty names and illegal coordinates during creation', async ({ assert }) => {
+    const useCase = await app.container.make(CreateDockUseCase)
+
+    await assert.rejects(
+      () => useCase.handle({ name: '   ', latitude: 0, longitude: 0 }),
+      InvalidSiteReferenceNameException,
+    )
+    await assert.rejects(
+      () => useCase.handle({ name: 'Dock', latitude: 90.1, longitude: 0 }),
+      InvalidSiteReferenceCoordinatesException,
+    )
+    await assert.rejects(
+      () => useCase.handle({ name: 'Dock', latitude: 0, longitude: -180.1 }),
+      InvalidSiteReferenceCoordinatesException,
+    )
+  })
+
+  test('rejects empty names and illegal coordinates during updates', async ({ assert }) => {
+    const dock = await DockFactory.create()
+    const useCase = await app.container.make(UpdateDockUseCase)
+
+    await assert.rejects(
+      () => useCase.handle({ id: dock.id, name: '   ' }),
+      InvalidSiteReferenceNameException,
+    )
+    await assert.rejects(
+      () => useCase.handle({ id: dock.id, latitude: 90.1 }),
+      InvalidSiteReferenceCoordinatesException,
+    )
+    await assert.rejects(
+      () => useCase.handle({ id: dock.id, longitude: -180.1 }),
+      InvalidSiteReferenceCoordinatesException,
+    )
   })
 
   test('archives an unused dock and records lifecycle metadata', async ({ assert }) => {
@@ -95,41 +132,6 @@ test.group('Dock use cases', (group) => {
     assert.equal(reactivated.id, dock.id)
     assert.equal(reactivated.status, 'AVAILABLE')
     assert.equal(reactivated.reactivatedByUserId, actor.id)
-  })
-
-  test('rejects empty names and illegal coordinates during creation', async ({ assert }) => {
-    const useCase = await app.container.make(CreateDockUseCase)
-
-    await assert.rejects(
-      () => useCase.handle({ name: '   ', latitude: 0, longitude: 0 }),
-      InvalidDockNameException,
-    )
-    await assert.rejects(
-      () => useCase.handle({ name: 'Dock', latitude: 90.1, longitude: 0 }),
-      InvalidDockCoordinatesException,
-    )
-    await assert.rejects(
-      () => useCase.handle({ name: 'Dock', latitude: 0, longitude: -180.1 }),
-      InvalidDockCoordinatesException,
-    )
-  })
-
-  test('rejects empty names and illegal coordinates during updates', async ({ assert }) => {
-    const dock = await DockFactory.create()
-    const useCase = await app.container.make(UpdateDockUseCase)
-
-    await assert.rejects(
-      () => useCase.handle({ id: dock.id, name: '   ' }),
-      InvalidDockNameException,
-    )
-    await assert.rejects(
-      () => useCase.handle({ id: dock.id, latitude: 90.1 }),
-      InvalidDockCoordinatesException,
-    )
-    await assert.rejects(
-      () => useCase.handle({ id: dock.id, longitude: -180.1 }),
-      InvalidDockCoordinatesException,
-    )
   })
 
   test('rejects mutation attempts for a missing dock', async ({ assert }) => {

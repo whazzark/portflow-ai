@@ -1,13 +1,13 @@
 import vine from '@vinejs/vine'
 import { nonBlank } from '#site_references/shared/site_reference_validator'
 
-export const createDockValidator = vine.create({
+export const createWeighingAreaValidator = vine.create({
   name: vine.string().use(nonBlank()).minLength(1).maxLength(255),
   latitude: vine.number().min(-90).max(90),
   longitude: vine.number().min(-180).max(180),
 })
 
-export const updateDockValidator = vine.create(
+export const updateWeighingAreaValidator = vine.create(
   vine.object({
     name: vine
       .string()
@@ -32,10 +32,10 @@ export const updateDockValidator = vine.create(
   }),
 )
 
-export const archiveDockValidator = vine.create({
+export const archiveWeighingAreaValidator = vine.create({
   comment: vine.string().nullable().optional(),
 })
 
-export const reactivateDockValidator = vine.create({
+export const reactivateWeighingAreaValidator = vine.create({
   comment: vine.string().nullable().optional(),
 })

@@ -1,4 +1,4 @@
-export const SITE_REFERENCE_TYPES = ['CUSTOMER', 'DOCK'] as const
+export const SITE_REFERENCE_TYPES = ['CUSTOMER', 'DOCK', 'WEIGHING_AREA'] as const
 export type SiteReferenceType = (typeof SITE_REFERENCE_TYPES)[number]
 
 export type SiteReferenceUsageInput = {

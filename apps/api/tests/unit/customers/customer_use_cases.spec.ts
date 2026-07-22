@@ -15,6 +15,10 @@ import UpdateCustomerUseCase from '#customers/update/update_customer_use_case'
 import { CustomerFactory } from '#database/factories/customer_factory'
 import { UserFactory } from '#database/factories/user_factory'
 import ClosedDischargeUsageChecker from '#site_references/shared/closed_discharge_usage_checker'
+import {
+  InvalidSiteReferenceCodeException,
+  InvalidSiteReferenceNameException,
+} from '#site_references/shared/site_reference_exceptions'
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 import UnusedChecker from '#site_references/shared/unused_checker'
 import UsedChecker from '#site_references/shared/used_checker'
@@ -40,6 +44,31 @@ test.group('Customer use cases', (group) => {
     await assert.rejects(
       () => useCase.handle({ code: 'NEW-CODE', companyName: ' acme logistics ' }),
       DuplicateCustomerCompanyNameException,
+    )
+  })
+
+  test('rejects blank customer identities at the use-case seam', async ({ assert }) => {
+    const useCase = await app.container.make(CreateCustomerUseCase)
+
+    await assert.rejects(
+      () => useCase.handle({ code: '   ', companyName: 'Acme' }),
+      InvalidSiteReferenceCodeException,
+    )
+    await assert.rejects(
+      () => useCase.handle({ code: 'ACME-01', companyName: '   ' }),
+      InvalidSiteReferenceNameException,
+    )
+
+    const customer = await CustomerFactory.create()
+    const updateUseCase = await app.container.make(UpdateCustomerUseCase)
+
+    await assert.rejects(
+      () => updateUseCase.handle({ id: customer.id, code: '   ' }),
+      InvalidSiteReferenceCodeException,
+    )
+    await assert.rejects(
+      () => updateUseCase.handle({ id: customer.id, companyName: '   ' }),
+      InvalidSiteReferenceNameException,
     )
   })
 

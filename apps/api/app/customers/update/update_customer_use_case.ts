@@ -6,8 +6,9 @@ import {
   DuplicateCustomerCodeException,
   DuplicateCustomerCompanyNameException,
 } from '#customers/shared/customer_exceptions'
-import { normalizeCompanyName, normalizeCustomerCode } from '#customers/shared/normalize_customer'
+import { assertValidCustomerCode } from '#customers/shared/normalize_customer'
 import CustomerRepository from '#customers/shared/repositories/customer_repository'
+import { assertValidSiteReferenceName } from '#site_references/shared/normalize_site_reference'
 
 export type UpdateCustomerInput = {
   id: string
@@ -22,10 +23,10 @@ export default class UpdateCustomerUseCase {
   async handle(input: UpdateCustomerInput) {
     const result = await this.customerRepository.updateAvailable({
       id: input.id,
-      ...(input.code === undefined ? {} : { code: normalizeCustomerCode(input.code) }),
+      ...(input.code === undefined ? {} : { code: assertValidCustomerCode(input.code) }),
       ...(input.companyName === undefined
         ? {}
-        : { companyName: normalizeCompanyName(input.companyName) }),
+        : { companyName: assertValidSiteReferenceName(input.companyName) }),
     })
 
     if (result.kind === 'NOT_FOUND') {
