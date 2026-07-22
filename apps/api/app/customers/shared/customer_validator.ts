@@ -9,3 +9,11 @@ export const updateCustomerValidator = vine.create({
   code: vine.string().trim().minLength(1).maxLength(255).optional(),
   companyName: vine.string().trim().minLength(1).maxLength(255).optional(),
 })
+
+export const archiveCustomerValidator = vine.create({
+  comment: vine.string().nullable().optional(),
+})
+
+export const reactivateCustomerValidator = vine.create({
+  comment: vine.string().nullable().optional(),
+})

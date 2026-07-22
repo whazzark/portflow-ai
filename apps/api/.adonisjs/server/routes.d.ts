@@ -13,6 +13,8 @@ export type ScannedRoutes = {
     'customers.available': { paramsTuple?: []; params?: {} }
     'customers.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'customers.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'customers.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   GET: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -32,6 +34,8 @@ export type ScannedRoutes = {
     'auth.login': { paramsTuple?: []; params?: {} }
     'auth.logout': { paramsTuple?: []; params?: {} }
     'customers.store': { paramsTuple?: []; params?: {} }
+    'customers.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'customers.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PATCH: {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
