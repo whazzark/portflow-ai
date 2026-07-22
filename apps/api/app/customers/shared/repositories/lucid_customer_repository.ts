@@ -3,8 +3,10 @@ import { DateTime } from 'luxon'
 import Customer from '#models/customer'
 
 import CustomerRepository, {
+  type ArchiveCustomerCommand,
   type CreateCustomerCommand,
   type CustomerWriteResult,
+  type ReactivateCustomerCommand,
   type UpdateCustomerCommand,
 } from './customer_repository.ts'
 
@@ -108,5 +110,65 @@ export default class LucidCustomerRepository extends CustomerRepository {
 
       throw error
     }
+  }
+
+  async archiveAvailable(command: ArchiveCustomerCommand): Promise<CustomerWriteResult> {
+    const [affectedRows] = await Customer.query()
+      .where('id', command.id)
+      .where('status', 'AVAILABLE')
+      .update({
+        status: 'ARCHIVED',
+        archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
+        archivedByUserId: command.archivedByUserId,
+        archiveComment: command.archiveComment,
+        updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
+      })
+
+    if (affectedRows === 0) {
+      const customer = await Customer.find(command.id)
+
+      if (!customer) {
+        return { kind: 'NOT_FOUND' }
+      }
+
+      return customer.status === 'ARCHIVED' ? { kind: 'ALREADY_ARCHIVED' } : { kind: 'NOT_FOUND' }
+    }
+
+    const customer = await Customer.find(command.id)
+    if (!customer) {
+      return { kind: 'NOT_FOUND' }
+    }
+
+    return { kind: 'UPDATED', customer }
+  }
+
+  async reactivateArchived(command: ReactivateCustomerCommand): Promise<CustomerWriteResult> {
+    const [affectedRows] = await Customer.query()
+      .where('id', command.id)
+      .where('status', 'ARCHIVED')
+      .update({
+        status: 'AVAILABLE',
+        reactivatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+        reactivatedByUserId: command.reactivatedByUserId,
+        reactivationComment: command.reactivationComment,
+        updatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+      })
+
+    if (affectedRows === 0) {
+      const customer = await Customer.find(command.id)
+
+      if (!customer) {
+        return { kind: 'NOT_FOUND' }
+      }
+
+      return customer.status === 'AVAILABLE' ? { kind: 'ALREADY_AVAILABLE' } : { kind: 'NOT_FOUND' }
+    }
+
+    const customer = await Customer.find(command.id)
+    if (!customer) {
+      return { kind: 'NOT_FOUND' }
+    }
+
+    return { kind: 'UPDATED', customer }
   }
 }

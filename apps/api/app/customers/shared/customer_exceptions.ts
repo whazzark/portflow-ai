@@ -35,3 +35,21 @@ export class CustomerUpdateFieldsException extends Exception {
   static code = 'E_CUSTOMER_UPDATE_FIELDS_REQUIRED'
   static message = 'At least one customer field must be provided'
 }
+
+export class CustomerInUseException extends Exception {
+  static status = 409
+  static code = 'E_CUSTOMER_IN_USE'
+  static message = 'Customer is used by a planned or active discharge'
+}
+
+export class CustomerAlreadyArchivedException extends Exception {
+  static status = 409
+  static code = 'E_CUSTOMER_ALREADY_ARCHIVED'
+  static message = 'Customer is already archived'
+}
+
+export class CustomerAlreadyAvailableException extends Exception {
+  static status = 409
+  static code = 'E_CUSTOMER_ALREADY_AVAILABLE'
+  static message = 'Customer is already available'
+}
