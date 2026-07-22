@@ -15,12 +15,14 @@ const ACTIVE_USER = {
 test('opens the application sidebar from the mobile menu trigger', async () => {
   const previousInnerWidth = window.innerWidth
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 })
-  server.use(http.get(`${API_BASE_URL}/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })))
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })),
+  )
 
   try {
     renderApp('/')
 
-    const trigger = await screen.findByRole('button', { name: 'Toggle Sidebar' })
+    const trigger = await screen.findByRole('button', { name: 'Open sidebar' })
     fireEvent.click(trigger)
 
     const sidebar = await screen.findByRole('dialog', { name: 'Sidebar' })

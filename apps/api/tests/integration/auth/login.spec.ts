@@ -7,7 +7,7 @@ test.group('Auth login', () => {
     const activeUser = await UserFactory.apply('active').create()
 
     const response = await client
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD })
 
     response.assertStatus(200)
@@ -20,7 +20,7 @@ test.group('Auth login', () => {
     const activeUser = await UserFactory.apply('active').create()
 
     const response = await client
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD, rememberMe: true })
 
     response.assertStatus(200)
@@ -32,7 +32,7 @@ test.group('Auth login', () => {
     const activeUser = await UserFactory.apply('active').create()
 
     const response = await client
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .json({ email: activeUser.email, password: 'wrong-password' })
 
     response.assertStatus(401)
@@ -49,7 +49,7 @@ test.group('Auth login', () => {
     const deactivatedUser = await UserFactory.apply('active', 'deactivated').create()
 
     const response = await client
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .json({ email: deactivatedUser.email, password: USER_FACTORY_PASSWORD })
 
     response.assertStatus(401)
@@ -60,7 +60,9 @@ test.group('Auth login', () => {
   })
 
   test('rejects a malformed login payload with a validation error', async ({ assert, client }) => {
-    const response = await client.post('/auth/login').json({ email: 'not-an-email', password: 'x' })
+    const response = await client
+      .post('/api/v1/auth/login')
+      .json({ email: 'not-an-email', password: 'x' })
 
     response.assertStatus(422)
     assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')

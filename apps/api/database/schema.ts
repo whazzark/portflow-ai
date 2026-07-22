@@ -66,3 +66,20 @@ export class UserSchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
 }
+
+export class CustomerSchema extends BaseModel {
+  static $columns = ['code', 'companyName', 'createdAt', 'id', 'status', 'updatedAt'] as const
+  $columns = CustomerSchema.$columns
+  @column()
+  declare code: string
+  @column()
+  declare companyName: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}

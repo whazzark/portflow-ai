@@ -12,7 +12,7 @@ import {
 
 test('keeps confirmation open and shows the API error when logout fails', async () => {
   server.use(
-    http.post(`${API_BASE_URL}/auth/logout`, () =>
+    http.post(`${API_BASE_URL}/api/v1/auth/logout`, () =>
       HttpResponse.json(
         { error: { code: 'E_INTERNAL_SERVER_ERROR', message: 'Logout service unavailable' } },
         { status: 500 },

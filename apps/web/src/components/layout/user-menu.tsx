@@ -19,6 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { SessionUser } from '@/features/auth/context/session-context'
 import { useLogout } from '@/features/auth/mutations/use-logout'
 import { LogOutConfirmation } from '@/features/auth/ui/log-out-confirmation'
@@ -26,7 +27,7 @@ import { formatFullName, getInitials } from '@/features/users/helpers/name'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
 export function UserMenu({ user }: { user: SessionUser }) {
-  const { isMobile } = useSidebar()
+  const { isMobile, state } = useSidebar()
   const logout = useLogout()
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
@@ -66,21 +67,28 @@ export function UserMenu({ user }: { user: SessionUser }) {
       <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none">
         <SidebarMenuItem>
           <DropdownMenu modal={false} open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
-            <DropdownMenuTrigger
-              aria-label={`Open user menu for ${fullName}`}
-              render={<SidebarMenuButton size="lg" />}
-            >
-              <Avatar>
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-              <span className="min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="block truncate font-medium">{fullName}</span>
-                <span className="block truncate text-sidebar-foreground/70 text-xs">
-                  {user.email}
-                </span>
-              </span>
-              <ChevronUpIcon className="ml-auto group-data-[collapsible=icon]:hidden" />
-            </DropdownMenuTrigger>
+            <Tooltip>
+              <TooltipTrigger render={<span className="block w-full" />}>
+                <DropdownMenuTrigger
+                  aria-label={`Open user menu for ${fullName}`}
+                  render={<SidebarMenuButton size="lg" />}
+                >
+                  <Avatar>
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                  <span className="min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                    <span className="block truncate font-medium">{fullName}</span>
+                    <span className="block truncate text-sidebar-foreground/70 text-xs">
+                      {user.email}
+                    </span>
+                  </span>
+                  <ChevronUpIcon className="ml-auto group-data-[collapsible=icon]:hidden" />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="right" hidden={state !== 'collapsed' || isMobile}>
+                {fullName}
+              </TooltipContent>
+            </Tooltip>
 
             {isUserMenuOpen && (
               <DropdownMenuContent

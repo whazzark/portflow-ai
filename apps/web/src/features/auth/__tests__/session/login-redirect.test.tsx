@@ -6,7 +6,9 @@ import { renderApp } from '@/test/render-app'
 import { ACTIVE_USER, API_BASE_URL } from './helpers'
 
 test('redirects an authenticated user away from the login screen', async () => {
-  server.use(http.get(`${API_BASE_URL}/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })))
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })),
+  )
   renderApp('/login')
   expect(await screen.findByText(ACTIVE_USER.email)).toBeInTheDocument()
 })

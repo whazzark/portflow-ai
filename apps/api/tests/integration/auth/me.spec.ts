@@ -4,7 +4,7 @@ import { USER_FACTORY_PASSWORD, UserFactory } from '#database/factories/user_fac
 
 test.group('Auth me', () => {
   test('rejects unauthenticated access', async ({ assert, client }) => {
-    const response = await client.get('/auth/me')
+    const response = await client.get('/api/v1/auth/me')
 
     response.assertStatus(401)
     assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
@@ -13,7 +13,7 @@ test.group('Auth me', () => {
   test('rejects a session when its user is no longer active', async ({ assert, client }) => {
     const activeUser = await UserFactory.apply('active').create()
     const loginResponse = await client
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD })
 
     loginResponse.assertStatus(200)
@@ -22,14 +22,16 @@ test.group('Auth me', () => {
     activeUser.accessStatus = 'DEACTIVATED'
     await activeUser.save()
 
-    const unauthenticatedResponse = await client.get('/auth/me')
+    const unauthenticatedResponse = await client.get('/api/v1/auth/me')
     const sessionCookie = loginResponse.cookie('adonis-session')
 
     if (!sessionCookie) {
       throw new Error('Expected an authenticated session cookie')
     }
 
-    const response = await client.get('/auth/me').cookie('adonis-session', sessionCookie.value)
+    const response = await client
+      .get('/api/v1/auth/me')
+      .cookie('adonis-session', sessionCookie.value)
 
     unauthenticatedResponse.assertStatus(401)
     response.assertStatus(401)
@@ -42,7 +44,7 @@ test.group('Auth me', () => {
       activeUser.accessStatus = accessStatus
       await activeUser.save()
 
-      const response = await client.get('/auth/me').loginAs(activeUser)
+      const response = await client.get('/api/v1/auth/me').loginAs(activeUser)
 
       response.assertStatus(401)
       assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
@@ -52,7 +54,7 @@ test.group('Auth me', () => {
   test('returns the current authenticated user', async ({ assert, client }) => {
     const activeUser = await UserFactory.apply('active').create()
 
-    const response = await client.get('/auth/me').loginAs(activeUser)
+    const response = await client.get('/api/v1/auth/me').loginAs(activeUser)
 
     response.assertStatus(200)
     assert.equal(response.body().data.id, activeUser.id)
@@ -65,7 +67,7 @@ test.group('Auth me', () => {
   }) => {
     const activeUser = await UserFactory.apply('active').create()
     const loginResponse = await client
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD, rememberMe: true })
     const rememberedCookie = loginResponse.cookie('remember_web')
 
@@ -74,7 +76,7 @@ test.group('Auth me', () => {
     }
 
     const response = await client
-      .get('/auth/me')
+      .get('/api/v1/auth/me')
       .encryptedCookie('remember_web', rememberedCookie.value)
 
     response.assertStatus(200)
@@ -82,7 +84,7 @@ test.group('Auth me', () => {
     response.assertCookie('adonis-session')
 
     const staleResponse = await client
-      .get('/auth/me')
+      .get('/api/v1/auth/me')
       .encryptedCookie('remember_web', rememberedCookie.value)
 
     staleResponse.assertStatus(401)
@@ -92,7 +94,7 @@ test.group('Auth me', () => {
   test('rejects a remembered session after its absolute expiration', async ({ assert, client }) => {
     const activeUser = await UserFactory.apply('active').create()
 
-    const response = await client.get('/auth/me').withSession({
+    const response = await client.get('/api/v1/auth/me').withSession({
       auth_web: activeUser.id,
       remembered_connection_expires_at: Date.now() - 1,
     })
