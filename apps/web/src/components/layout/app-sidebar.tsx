@@ -78,7 +78,7 @@ function NavigationMenuItem({ item }: { item: NavigationItem }) {
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton disabled title={`${item.label} — Coming soon`}>
+      <SidebarMenuButton disabled tooltip={`${item.label} — Coming soon`}>
         <Icon />
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
         <Badge variant="secondary" className="ml-auto group-data-[collapsible=icon]:hidden">

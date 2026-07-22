@@ -1,11 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from '@/components/ui/breadcrumb'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress'
 import { StatusIndicator } from '@/components/ui/status-indicator'
@@ -43,14 +37,6 @@ const rotations = [
 export function OperationsOverview({ section, onSectionChange }: OperationsOverviewProps) {
   return (
     <div className="flex flex-1 flex-col gap-6 p-6 lg:p-10">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbPage>Overview</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <h1 className="font-heading font-semibold text-3xl tracking-tight">

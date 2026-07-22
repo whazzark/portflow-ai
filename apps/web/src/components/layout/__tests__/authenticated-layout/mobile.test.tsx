@@ -22,7 +22,7 @@ test('opens the application sidebar from the mobile menu trigger', async () => {
   try {
     renderApp('/')
 
-    const trigger = await screen.findByRole('button', { name: 'Toggle Sidebar' })
+    const trigger = await screen.findByRole('button', { name: 'Open sidebar' })
     fireEvent.click(trigger)
 
     const sidebar = await screen.findByRole('dialog', { name: 'Sidebar' })
