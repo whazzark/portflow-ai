@@ -4,9 +4,11 @@ import Customer from '#models/customer'
 
 import CustomerRepository, {
   type ArchiveCustomerCommand,
+  type ArchiveCustomerResult,
   type CreateCustomerCommand,
   type CustomerWriteResult,
   type ReactivateCustomerCommand,
+  type ReactivateCustomerResult,
   type UpdateCustomerCommand,
 } from './customer_repository.ts'
 
@@ -112,7 +114,7 @@ export default class LucidCustomerRepository extends CustomerRepository {
     }
   }
 
-  async archiveAvailable(command: ArchiveCustomerCommand): Promise<CustomerWriteResult> {
+  async archiveAvailable(command: ArchiveCustomerCommand): Promise<ArchiveCustomerResult> {
     const [affectedRows] = await Customer.query()
       .where('id', command.id)
       .where('status', 'AVAILABLE')
@@ -139,10 +141,10 @@ export default class LucidCustomerRepository extends CustomerRepository {
       return { kind: 'NOT_FOUND' }
     }
 
-    return { kind: 'UPDATED', customer }
+    return { kind: 'ARCHIVED', customer }
   }
 
-  async reactivateArchived(command: ReactivateCustomerCommand): Promise<CustomerWriteResult> {
+  async reactivateArchived(command: ReactivateCustomerCommand): Promise<ReactivateCustomerResult> {
     const [affectedRows] = await Customer.query()
       .where('id', command.id)
       .where('status', 'ARCHIVED')
@@ -169,6 +171,6 @@ export default class LucidCustomerRepository extends CustomerRepository {
       return { kind: 'NOT_FOUND' }
     }
 
-    return { kind: 'UPDATED', customer }
+    return { kind: 'REACTIVATED', customer }
   }
 }

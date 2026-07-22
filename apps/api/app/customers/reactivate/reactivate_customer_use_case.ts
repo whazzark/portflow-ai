@@ -41,10 +41,6 @@ export default class ReactivateCustomerUseCase {
     if (result.kind === 'ALREADY_AVAILABLE') {
       throw new CustomerAlreadyAvailableException()
     }
-    if (result.kind !== 'UPDATED') {
-      throw new Error(`Unexpected customer reactivation result: ${result.kind}`)
-    }
-
     return result.customer
   }
 }

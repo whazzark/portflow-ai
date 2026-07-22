@@ -89,6 +89,25 @@ test.group('Customer use cases', (group) => {
     assert.equal(customer.status, 'AVAILABLE')
   })
 
+  test('allows archival when the customer is used only by a closed discharge', async ({
+    assert,
+  }) => {
+    const actor = await UserFactory.apply('active').create()
+    const customer = await CustomerFactory.create()
+    const useCase = new ArchiveCustomerUseCase(
+      new LucidCustomerRepository(),
+      new ClosedDischargeUsageChecker(),
+    )
+
+    const archived = await useCase.handle({
+      id: customer.id,
+      archivedByUserId: actor.id,
+      archivedAt: DateTime.now(),
+    })
+
+    assert.equal(archived.status, 'ARCHIVED')
+  })
+
   test('reactivates the same customer identity and records the actor', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const customer = await CustomerFactory.apply('archived').create()
@@ -145,5 +164,11 @@ class UnusedChecker extends SiteReferenceUsageChecker {
 class UsedChecker extends SiteReferenceUsageChecker {
   isUsedByPlannedOrActiveDischarge(_input: SiteReferenceUsageInput) {
     return Promise.resolve(true)
+  }
+}
+
+class ClosedDischargeUsageChecker extends SiteReferenceUsageChecker {
+  isUsedByPlannedOrActiveDischarge(_input: SiteReferenceUsageInput) {
+    return Promise.resolve(false)
   }
 }

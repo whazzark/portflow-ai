@@ -35,7 +35,15 @@ export type CustomerWriteResult =
   | { kind: 'DUPLICATE_COMPANY_NAME' }
   | { kind: 'NOT_FOUND' }
   | { kind: 'ARCHIVED' }
+
+export type ArchiveCustomerResult =
+  | { kind: 'ARCHIVED'; customer: Customer }
+  | { kind: 'NOT_FOUND' }
   | { kind: 'ALREADY_ARCHIVED' }
+
+export type ReactivateCustomerResult =
+  | { kind: 'REACTIVATED'; customer: Customer }
+  | { kind: 'NOT_FOUND' }
   | { kind: 'ALREADY_AVAILABLE' }
 
 export default abstract class CustomerRepository {
@@ -44,6 +52,6 @@ export default abstract class CustomerRepository {
   abstract listAvailable(): Promise<Customer[]>
   abstract findById(id: string): Promise<Customer | null>
   abstract updateAvailable(command: UpdateCustomerCommand): Promise<CustomerWriteResult>
-  abstract archiveAvailable(command: ArchiveCustomerCommand): Promise<CustomerWriteResult>
-  abstract reactivateArchived(command: ReactivateCustomerCommand): Promise<CustomerWriteResult>
+  abstract archiveAvailable(command: ArchiveCustomerCommand): Promise<ArchiveCustomerResult>
+  abstract reactivateArchived(command: ReactivateCustomerCommand): Promise<ReactivateCustomerResult>
 }

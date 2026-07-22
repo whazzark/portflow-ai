@@ -55,10 +55,6 @@ export default class ArchiveCustomerUseCase {
     if (result.kind === 'ALREADY_ARCHIVED') {
       throw new CustomerAlreadyArchivedException()
     }
-    if (result.kind !== 'UPDATED') {
-      throw new Error(`Unexpected customer archival result: ${result.kind}`)
-    }
-
     return result.customer
   }
 }
