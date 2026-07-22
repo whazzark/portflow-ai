@@ -9,6 +9,13 @@ export default class CustomerTransformer extends BaseTransformer<Customer> {
       'code',
       'companyName',
       'status',
+      'archivedAt',
+      // biome-ignore lint/security/noSecrets: identifier field, not a secret
+      'archivedByUserId',
+      'archiveComment',
+      'reactivatedAt',
+      'reactivatedByUserId',
+      'reactivationComment',
       'createdAt',
       'updatedAt',
     ])

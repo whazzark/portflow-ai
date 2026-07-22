@@ -1,9 +1,14 @@
+import app from '@adonisjs/core/services/app'
 import { test } from '@japa/runner'
 
 import { CustomerFactory } from '#database/factories/customer_factory'
 import { UserFactory } from '#database/factories/user_factory'
+import PlannedOrActiveUsageChecker from '#site_references/shared/planned_or_active_usage_checker'
+import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 
-test.group('Customers administration', () => {
+test.group('Customers administration', (group) => {
+  group.each.teardown(() => app.container.restore(SiteReferenceUsageChecker))
+
   test('rejects unauthenticated customer creation', async ({ assert, client }) => {
     const response = await client.post('/api/v1/customers').json({
       code: 'ACME',
@@ -12,6 +17,17 @@ test.group('Customers administration', () => {
 
     response.assertStatus(401)
     assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+  })
+
+  test('rejects unauthenticated lifecycle transitions', async ({ assert, client }) => {
+    const customer = await CustomerFactory.merge({ code: 'UNAUTH-LIFECYCLE' }).create()
+    const archiveResponse = await client.post(`/api/v1/customers/${customer.id}/archive`).json({})
+    const reactivateResponse = await client.post(`/api/v1/customers/${customer.id}/reactivate`)
+
+    archiveResponse.assertStatus(401)
+    reactivateResponse.assertStatus(401)
+    assert.equal(archiveResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    assert.equal(reactivateResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
   })
 
   test('rejects customer administration for non-admin users', async ({ assert, client }) => {
@@ -168,5 +184,80 @@ test.group('Customers administration', () => {
     assert.equal(existing.code, 'DUPLICATE-01')
     archivedResponse.assertStatus(409)
     assert.equal(archivedResponse.body().error.code, 'E_CUSTOMER_ARCHIVED')
+  })
+
+  test('archives a customer with lifecycle metadata', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const customer = await CustomerFactory.merge({ code: 'ARCHIVE-01' }).create()
+
+    const archiveResponse = await client
+      .post(`/api/v1/customers/${customer.id}/archive`)
+      .loginAs(admin)
+      .json({ comment: 'Retired account' })
+
+    archiveResponse.assertStatus(200)
+    assert.equal(archiveResponse.body().data.id, customer.id)
+    assert.equal(archiveResponse.body().data.status, 'ARCHIVED')
+    assert.equal(archiveResponse.body().data.archiveComment, 'Retired account')
+    assert.equal(archiveResponse.body().data.archivedByUserId, admin.id)
+  })
+
+  test('reactivates the same customer identity with lifecycle metadata', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const customer = await CustomerFactory.apply('archived')
+      .merge({ code: 'REACTIVATE-01' })
+      .create()
+
+    const response = await client
+      .post(`/api/v1/customers/${customer.id}/reactivate`)
+      .loginAs(admin)
+      .json({ comment: 'Returning to operations' })
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.id, customer.id)
+    assert.equal(response.body().data.status, 'AVAILABLE')
+    assert.equal(response.body().data.reactivatedByUserId, admin.id)
+    assert.equal(response.body().data.reactivationComment, 'Returning to operations')
+  })
+
+  test('rejects archival when a planned or active discharge uses the customer', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const customer = await CustomerFactory.merge({ code: 'IN-USE-01' }).create()
+
+    app.container.swap(SiteReferenceUsageChecker, () =>
+      app.container.make(PlannedOrActiveUsageChecker),
+    )
+
+    const response = await client
+      .post(`/api/v1/customers/${customer.id}/archive`)
+      .loginAs(admin)
+      .json({})
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_CUSTOMER_IN_USE')
+  })
+
+  test('rejects archive and reactivate actions for non-admin users', async ({ client }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const available = await CustomerFactory.merge({ code: 'FORBIDDEN-01' }).create()
+    const archived = await CustomerFactory.apply('archived')
+      .merge({ code: 'FORBIDDEN-02' })
+      .create()
+
+    const archiveResponse = await client
+      .post(`/api/v1/customers/${available.id}/archive`)
+      .loginAs(observer)
+    const reactivateResponse = await client
+      .post(`/api/v1/customers/${archived.id}/reactivate`)
+      .loginAs(observer)
+
+    archiveResponse.assertStatus(403)
+    reactivateResponse.assertStatus(403)
   })
 })

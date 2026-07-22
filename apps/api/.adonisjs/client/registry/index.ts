@@ -60,6 +60,18 @@ const routes = {
     tokens: [{"old":"/api/v1/customers/:id","type":0,"val":"api","end":""},{"old":"/api/v1/customers/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/:id","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['customers.update']['types'],
   },
+  'customers.archive': {
+    methods: ["POST"],
+    pattern: '/api/v1/customers/:id/archive',
+    tokens: [{"old":"/api/v1/customers/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/customers/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/:id/archive","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/customers/:id/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['customers.archive']['types'],
+  },
+  'customers.reactivate': {
+    methods: ["POST"],
+    pattern: '/api/v1/customers/:id/reactivate',
+    tokens: [{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['customers.reactivate']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

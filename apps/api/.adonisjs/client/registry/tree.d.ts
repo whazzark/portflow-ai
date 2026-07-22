@@ -16,5 +16,7 @@ export interface ApiDefinition {
     available: typeof routes['customers.available']
     show: typeof routes['customers.show']
     update: typeof routes['customers.update']
+    archive: typeof routes['customers.archive']
+    reactivate: typeof routes['customers.reactivate']
   }
 }

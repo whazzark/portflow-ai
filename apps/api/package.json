@@ -29,6 +29,7 @@
     "#generated/*": "./.adonisjs/server/*.js",
     "#middleware/*": "./app/middleware/*.js",
     "#models/*": "./app/models/*.js",
+    "#site_references/*": "./app/site_references/*.js",
     "#start/*": "./start/*.js",
     "#users/*": "./app/users/*.js"
   },
