@@ -14,9 +14,9 @@ import LucidCustomerRepository from '#customers/shared/repositories/lucid_custom
 import UpdateCustomerUseCase from '#customers/update/update_customer_use_case'
 import { CustomerFactory } from '#database/factories/customer_factory'
 import { UserFactory } from '#database/factories/user_factory'
-import SiteReferenceUsageChecker, {
-  type SiteReferenceUsageInput,
-} from '#site_references/shared/site_reference_usage_checker'
+import ClosedDischargeUsageChecker from '#site_references/shared/closed_discharge_usage_checker'
+import UnusedChecker from '#site_references/shared/unused_checker'
+import UsedChecker from '#site_references/shared/used_checker'
 
 test.group('Customer use cases', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
@@ -154,21 +154,3 @@ test.group('Customer use cases', (group) => {
     )
   })
 })
-
-class UnusedChecker extends SiteReferenceUsageChecker {
-  isUsedByPlannedOrActiveDischarge(_input: SiteReferenceUsageInput) {
-    return Promise.resolve(false)
-  }
-}
-
-class UsedChecker extends SiteReferenceUsageChecker {
-  isUsedByPlannedOrActiveDischarge(_input: SiteReferenceUsageInput) {
-    return Promise.resolve(true)
-  }
-}
-
-class ClosedDischargeUsageChecker extends SiteReferenceUsageChecker {
-  isUsedByPlannedOrActiveDischarge(_input: SiteReferenceUsageInput) {
-    return Promise.resolve(false)
-  }
-}
