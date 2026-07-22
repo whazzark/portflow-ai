@@ -5,19 +5,6 @@ import type { ExtractBody, ExtractErrorResponse, ExtractQuery, ExtractQueryForGe
 import type { InferInput } from '@vinejs/vine/types'
 
 export type ParamValue = string | number | bigint | boolean
-export type ValidationErrorResponse = {
-  error: {
-    code: 'E_VALIDATION_ERROR'
-    message: string
-    details: Array<{
-      field: string
-      message: string
-      rule: string
-      index?: number
-      meta?: Record<string, unknown>
-    }>
-  }
-}
 
 export interface Registry {
   'health.show': {
@@ -41,7 +28,7 @@ export interface Registry {
       params: {}
       query: ExtractQuery<InferInput<(typeof import('#auth/login/login_validator').loginValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/login_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/login_controller').default['store']>>> | { status: 422; response: ValidationErrorResponse }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/login_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'auth.me': {
@@ -77,7 +64,7 @@ export interface Registry {
       params: {}
       query: ExtractQuery<InferInput<(typeof import('#customers/shared/customer_validator').createCustomerValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['store']>>> | { status: 422; response: ValidationErrorResponse }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'customers.index': {
@@ -125,7 +112,7 @@ export interface Registry {
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#customers/shared/customer_validator').updateCustomerValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['update']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['update']>>> | { status: 422; response: ValidationErrorResponse }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
 }
