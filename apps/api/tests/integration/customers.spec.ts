@@ -14,6 +14,17 @@ test.group('Customers administration', () => {
     assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
   })
 
+  test('rejects unauthenticated lifecycle transitions', async ({ assert, client }) => {
+    const customer = await CustomerFactory.merge({ code: 'UNAUTH-LIFECYCLE' }).create()
+    const archiveResponse = await client.post(`/api/v1/customers/${customer.id}/archive`).json({})
+    const reactivateResponse = await client.post(`/api/v1/customers/${customer.id}/reactivate`)
+
+    archiveResponse.assertStatus(401)
+    reactivateResponse.assertStatus(401)
+    assert.equal(archiveResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    assert.equal(reactivateResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+  })
+
   test('rejects customer administration for non-admin users', async ({ assert, client }) => {
     const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
 
@@ -168,5 +179,97 @@ test.group('Customers administration', () => {
     assert.equal(existing.code, 'DUPLICATE-01')
     archivedResponse.assertStatus(409)
     assert.equal(archivedResponse.body().error.code, 'E_CUSTOMER_ARCHIVED')
+  })
+
+  test('archives a customer, preserves historical visibility, and removes it from selections', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const customer = await CustomerFactory.merge({ code: 'ARCHIVE-01' }).create()
+
+    const archiveResponse = await client
+      .post(`/api/v1/customers/${customer.id}/archive`)
+      .loginAs(admin)
+      .json({ comment: 'Retired account' })
+    const availableResponse = await client.get('/api/v1/customers/available').loginAs(admin)
+    const detailResponse = await client.get(`/api/v1/customers/${customer.id}`).loginAs(admin)
+
+    archiveResponse.assertStatus(200)
+    assert.equal(archiveResponse.body().data.status, 'ARCHIVED')
+    assert.equal(archiveResponse.body().data.archiveComment, 'Retired account')
+    assert.equal(archiveResponse.body().data.archivedByUserId, admin.id)
+    assert.notInclude(
+      availableResponse.body().data.map((item: { id: string }) => item.id),
+      customer.id,
+    )
+    detailResponse.assertStatus(200)
+    assert.equal(detailResponse.body().data.id, customer.id)
+    assert.equal(detailResponse.body().data.status, 'ARCHIVED')
+  })
+
+  test('reactivates the same customer identity and makes it selectable again', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const customer = await CustomerFactory.apply('archived')
+      .merge({ code: 'REACTIVATE-01' })
+      .create()
+
+    const response = await client
+      .post(`/api/v1/customers/${customer.id}/reactivate`)
+      .loginAs(admin)
+      .json({ comment: 'Returning to operations' })
+    const availableResponse = await client.get('/api/v1/customers/available').loginAs(admin)
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.id, customer.id)
+    assert.equal(response.body().data.status, 'AVAILABLE')
+    assert.equal(response.body().data.reactivatedByUserId, admin.id)
+    assert.equal(response.body().data.reactivationComment, 'Returning to operations')
+    assert.include(
+      availableResponse.body().data.map((item: { id: string }) => item.id),
+      customer.id,
+    )
+  })
+
+  test('rejects archive and reactivate actions for non-admin users', async ({ client }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const available = await CustomerFactory.merge({ code: 'FORBIDDEN-01' }).create()
+    const archived = await CustomerFactory.apply('archived')
+      .merge({ code: 'FORBIDDEN-02' })
+      .create()
+
+    const archiveResponse = await client
+      .post(`/api/v1/customers/${available.id}/archive`)
+      .loginAs(observer)
+    const reactivateResponse = await client
+      .post(`/api/v1/customers/${archived.id}/reactivate`)
+      .loginAs(observer)
+
+    archiveResponse.assertStatus(403)
+    reactivateResponse.assertStatus(403)
+  })
+
+  test('maps repeated lifecycle transitions to conflicts', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const available = await CustomerFactory.merge({ code: 'CONFLICT-AVAILABLE' }).create()
+    const archived = await CustomerFactory.apply('archived')
+      .merge({ code: 'CONFLICT-ARCHIVED' })
+      .create()
+
+    const archiveResponse = await client
+      .post(`/api/v1/customers/${archived.id}/archive`)
+      .loginAs(admin)
+      .json({})
+    const reactivateResponse = await client
+      .post(`/api/v1/customers/${available.id}/reactivate`)
+      .loginAs(admin)
+
+    archiveResponse.assertStatus(409)
+    reactivateResponse.assertStatus(409)
+    assert.equal(archiveResponse.body().error.code, 'E_CUSTOMER_ALREADY_ARCHIVED')
+    assert.equal(reactivateResponse.body().error.code, 'E_CUSTOMER_ALREADY_AVAILABLE')
   })
 })
