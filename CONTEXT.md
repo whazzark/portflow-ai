@@ -132,6 +132,10 @@ _Avoid_: port, location, tenant
 A reusable customer, transport company, truck, dock, weighing area, warehouse, or warehouse door managed for the site's discharge operations.
 _Avoid_: lookup value, configuration record
 
+**Checkpoint**:
+The interface category grouping the site's docks and weighing areas, where trucks are respectively loaded and weighed during discharge operations. A checkpoint is not a separate site reference and does not replace the distinct identities or business rules of docks and weighing areas.
+_Avoid_: checkpoint entity, operational checkpoint record
+
 **Available Site Reference**:
 A site reference that is not archived and can be selected for new operational usages.
 _Avoid_: active resource, enabled resource

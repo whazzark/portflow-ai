@@ -8,7 +8,7 @@ import { ACTIVE_USER, API_BASE_URL } from './helpers'
 test('shares one auth.me cache entry across home and login while authenticated', async () => {
   let meRequestCount = 0
   server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () => {
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => {
       meRequestCount += 1
       return HttpResponse.json({ data: ACTIVE_USER })
     }),

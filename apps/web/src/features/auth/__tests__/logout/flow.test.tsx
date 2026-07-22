@@ -14,7 +14,7 @@ test('cancels logout without ending the session', async () => {
   let logoutRequestCount = 0
 
   server.use(
-    http.post(`${API_BASE_URL}/auth/logout`, () => {
+    http.post(`${API_BASE_URL}/api/v1/auth/logout`, () => {
       logoutRequestCount += 1
       return new HttpResponse(null, { status: 204 })
     }),

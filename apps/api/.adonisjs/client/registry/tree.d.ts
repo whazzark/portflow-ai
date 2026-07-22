@@ -10,4 +10,11 @@ export interface ApiDefinition {
     me: typeof routes['auth.me']
     logout: typeof routes['auth.logout']
   }
+  customers: {
+    store: typeof routes['customers.store']
+    index: typeof routes['customers.index']
+    available: typeof routes['customers.available']
+    show: typeof routes['customers.show']
+    update: typeof routes['customers.update']
+  }
 }

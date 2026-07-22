@@ -8,7 +8,7 @@ import { renderApp } from '@/test/render-app'
 test('persists the selected operations section in the URL', async () => {
   const user = userEvent.setup()
   server.use(
-    http.get('http://localhost:3333/auth/me', () =>
+    http.get('http://localhost:3333/api/v1/auth/me', () =>
       HttpResponse.json({
         data: {
           id: 1,

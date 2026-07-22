@@ -9,7 +9,7 @@ test('validates untouched fields before submitting', async () => {
   const user = userEvent.setup()
   let loginRequestCount = 0
   server.use(
-    http.post(`${API_BASE_URL}/auth/login`, () => {
+    http.post(`${API_BASE_URL}/api/v1/auth/login`, () => {
       loginRequestCount += 1
       return HttpResponse.json({ data: ACTIVE_USER })
     }),

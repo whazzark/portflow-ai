@@ -498,6 +498,7 @@ function SidebarMenuButton({
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
   } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const { isMobile, state } = useSidebar()
+  const isDisabled = props.disabled
   const comp = useRender({
     defaultTagName: 'button',
     props: mergeProps<'button'>(
@@ -506,7 +507,7 @@ function SidebarMenuButton({
       },
       props,
     ),
-    render: !tooltip ? render : <TooltipTrigger render={render} />,
+    render: !tooltip || isDisabled ? render : <TooltipTrigger render={render} />,
     state: {
       slot: 'sidebar-menu-button',
       sidebar: 'menu-button',
@@ -527,7 +528,11 @@ function SidebarMenuButton({
 
   return (
     <Tooltip>
-      {comp}
+      {isDisabled ? (
+        <TooltipTrigger render={<span className="block w-full" />}>{comp}</TooltipTrigger>
+      ) : (
+        comp
+      )}
       <TooltipContent
         side="right"
         align="center"

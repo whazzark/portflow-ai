@@ -20,6 +20,8 @@
   },
   "imports": {
     "#auth/*": "./app/auth/*.js",
+    "#abilities/*": "./app/abilities/*.js",
+    "#customers/*": "./app/customers/*.js",
     "#controllers/*": "./app/controllers/*.js",
     "#config/*": "./config/*.js",
     "#database/*": "./database/*.js",
@@ -32,6 +34,7 @@
   },
   "dependencies": {
     "@adonisjs/auth": "^10.1.0",
+    "@adonisjs/bouncer": "^4.0.0",
     "@adonisjs/core": "^7.3.4",
     "@adonisjs/cors": "^3.0.0",
     "@adonisjs/lucid": "^22.4.2",

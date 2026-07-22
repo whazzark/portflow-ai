@@ -10,25 +10,47 @@ const ACTIVE_USER = {
   firstName: 'Claire',
   lastName: 'Martin',
   email: 'active.user@portflow.test',
+  role: 'ORGANIZATION_ADMIN',
+  accessStatus: 'ACTIVE',
 }
 
 test('renders the protected frame with navigation for an authenticated user', async () => {
-  server.use(http.get(`${API_BASE_URL}/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })))
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })),
+  )
 
   const { router } = renderApp('/')
 
   const nav = await screen.findByRole('navigation', { name: 'Primary' })
   const sidebar = screen.getByRole('complementary', { name: 'Application sidebar' })
+  const header = screen.getByRole('banner')
 
   expect(screen.getByText('Claire Martin')).toBeInTheDocument()
   expect(screen.getByText('active.user@portflow.test')).toBeInTheDocument()
   expect(nav).toHaveAccessibleName('Primary')
   expect(sidebar).toContainElement(nav)
+  expect(within(header).getByRole('navigation', { name: 'breadcrumb' })).toHaveTextContent(
+    'Overview',
+  )
+  expect(within(header).getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument()
+  expect(within(nav).getByText('Monitoring')).toBeInTheDocument()
+  expect(within(nav).getByText('Operations')).toBeInTheDocument()
+  expect(within(nav).getByText('Site references')).toBeInTheDocument()
+  expect(within(nav).getByText('Administration')).toBeInTheDocument()
+  expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/')
+  expect(within(nav).getByRole('button', { name: /Discharges/ })).toBeDisabled()
+  expect(within(nav).getByRole('button', { name: /Rotation validation/ })).toBeDisabled()
+  expect(within(nav).getByRole('button', { name: /Customers/ })).toBeDisabled()
+  expect(within(nav).getByRole('button', { name: /Trucks/ })).toBeDisabled()
+  expect(within(nav).getByRole('button', { name: /Checkpoints/ })).toBeDisabled()
+  expect(within(nav).getByRole('button', { name: /Warehouses/ })).toBeDisabled()
+  expect(within(nav).getByRole('button', { name: /Users/ })).toBeDisabled()
+  expect(within(nav).getAllByText('Coming soon')).toHaveLength(7)
   const themeToggle = screen.getByRole('switch', { name: 'Switch to light theme' })
   const profileTrigger = screen.getByRole('button', {
     name: 'Open user menu for Claire Martin',
   })
-  const accountSeparator = screen.getAllByRole('separator').at(-1)
+  const accountSeparator = within(sidebar).getAllByRole('separator').at(-1)
 
   expect(themeToggle).toHaveAttribute('aria-checked', 'true')
   expect(accountSeparator).toBeDefined()
@@ -41,6 +63,17 @@ test('renders the protected frame with navigation for an authenticated user', as
   expect(screen.getByRole('heading', { name: 'Operations overview' })).toBeInTheDocument()
   expect(screen.getByText('Rotation progress')).toBeInTheDocument()
   expect(screen.getByRole('table', { name: 'Recent rotations' })).toBeInTheDocument()
+
+  fireEvent.click(within(header).getByRole('button', { name: 'Collapse sidebar' }))
+  expect(document.querySelector('[data-slot="sidebar"][data-state]')).toHaveAttribute(
+    'data-state',
+    'collapsed',
+  )
+  expect(within(header).getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument()
+
+  const comingSoonItem = within(nav).getByRole('button', { name: /Customers/ })
+  fireEvent.pointerEnter(comingSoonItem.parentElement as HTMLElement)
+  expect(comingSoonItem.parentElement).toHaveAttribute('data-base-ui-tooltip-trigger', '')
 
   fireEvent.mouseDown(profileTrigger)
   const menu = await screen.findByRole('menu')
@@ -55,4 +88,24 @@ test('renders the protected frame with navigation for an authenticated user', as
   expect(within(menu).getByText('Coming soon')).toBeInTheDocument()
   expect(within(menu).getByRole('menuitem', { name: 'Log out' })).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/')
+})
+
+test('hides user administration from non-administrative roles', async () => {
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () =>
+      HttpResponse.json({
+        data: {
+          ...ACTIVE_USER,
+          role: 'OPERATIONS_LEAD',
+        },
+      }),
+    ),
+  )
+
+  renderApp('/')
+
+  const nav = await screen.findByRole('navigation', { name: 'Primary' })
+
+  expect(within(nav).queryByText('Administration')).not.toBeInTheDocument()
+  expect(within(nav).queryByRole('button', { name: /Users/ })).not.toBeInTheDocument()
 })

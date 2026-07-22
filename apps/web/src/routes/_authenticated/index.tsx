@@ -5,6 +5,7 @@ import {
 } from '@/features/operations/ui/operations-overview'
 
 export const Route = createFileRoute('/_authenticated/')({
+  staticData: { breadcrumb: 'Overview' },
   validateSearch: (search: Record<string, unknown>) => ({
     section: isOperationsOverviewSection(search.section) ? search.section : 'rotations',
   }),
