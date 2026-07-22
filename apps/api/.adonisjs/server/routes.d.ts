@@ -15,6 +15,13 @@ export type ScannedRoutes = {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'docks.store': { paramsTuple?: []; params?: {} }
+    'docks.index': { paramsTuple?: []; params?: {} }
+    'docks.available': { paramsTuple?: []; params?: {} }
+    'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'docks.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   GET: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -22,6 +29,9 @@ export type ScannedRoutes = {
     'customers.index': { paramsTuple?: []; params?: {} }
     'customers.available': { paramsTuple?: []; params?: {} }
     'customers.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'docks.index': { paramsTuple?: []; params?: {} }
+    'docks.available': { paramsTuple?: []; params?: {} }
+    'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   HEAD: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -29,6 +39,9 @@ export type ScannedRoutes = {
     'customers.index': { paramsTuple?: []; params?: {} }
     'customers.available': { paramsTuple?: []; params?: {} }
     'customers.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'docks.index': { paramsTuple?: []; params?: {} }
+    'docks.available': { paramsTuple?: []; params?: {} }
+    'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   POST: {
     'auth.login': { paramsTuple?: []; params?: {} }
@@ -36,9 +49,13 @@ export type ScannedRoutes = {
     'customers.store': { paramsTuple?: []; params?: {} }
     'customers.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'docks.store': { paramsTuple?: []; params?: {} }
+    'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'docks.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PATCH: {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

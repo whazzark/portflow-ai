@@ -17,24 +17,44 @@ export const UserFactory = factory
       password: null,
       role: faker.helpers.arrayElement(USER_ROLES),
       accessStatus: 'PENDING' as const,
+      invitedAt: null,
+      invitedByUserId: null,
+      activatedAt: null,
+      activatedByUserId: null,
+      cancelledAt: null,
+      cancelledByUserId: null,
+      deactivatedAt: null,
+      deactivatedByUserId: null,
+      reactivatedAt: null,
+      reactivatedByUserId: null,
     }
   })
   .state('active', async (user) => {
     user.accessStatus = 'ACTIVE'
     user.password = await hashedFactoryPassword
     user.activatedAt = DateTime.now()
+    user.activatedByUserId = null
+    user.cancelledAt = null
+    user.cancelledByUserId = null
+    user.deactivatedAt = null
+    user.deactivatedByUserId = null
+    user.reactivatedAt = null
+    user.reactivatedByUserId = null
   })
   .state('deactivated', (user) => {
     user.accessStatus = 'DEACTIVATED'
     user.deactivatedAt = DateTime.now()
+    user.deactivatedByUserId = null
   })
   .state('cancelled', (user) => {
     user.accessStatus = 'CANCELLED'
     user.cancelledAt = DateTime.now()
+    user.cancelledByUserId = null
   })
   .state('reactivated', async (user) => {
     user.accessStatus = 'ACTIVE'
     user.password = await hashedFactoryPassword
     user.reactivatedAt = DateTime.now()
+    user.reactivatedByUserId = null
   })
   .build()

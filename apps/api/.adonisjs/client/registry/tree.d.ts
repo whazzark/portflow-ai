@@ -19,4 +19,13 @@ export interface ApiDefinition {
     archive: typeof routes['customers.archive']
     reactivate: typeof routes['customers.reactivate']
   }
+  docks: {
+    store: typeof routes['docks.store']
+    index: typeof routes['docks.index']
+    available: typeof routes['docks.available']
+    show: typeof routes['docks.show']
+    update: typeof routes['docks.update']
+    archive: typeof routes['docks.archive']
+    reactivate: typeof routes['docks.reactivate']
+  }
 }

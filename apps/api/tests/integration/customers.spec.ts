@@ -132,10 +132,9 @@ test.group('Customers administration', (group) => {
     }
     assert.equal(missingCodeResponse.body().error.details[0].field, 'code')
     emptyUpdateResponse.assertStatus(422)
-    assert.deepEqual(emptyUpdateResponse.body().error, {
-      code: 'E_CUSTOMER_UPDATE_FIELDS_REQUIRED',
-      message: 'At least one customer field must be provided',
-    })
+    assert.equal(emptyUpdateResponse.body().error.code, 'E_VALIDATION_ERROR')
+    assert.equal(emptyUpdateResponse.body().error.details[0].field, 'code')
+    assert.equal(emptyUpdateResponse.body().error.details[0].rule, 'required')
   })
 
   test('lists archived customers but excludes them from available selections', async ({
