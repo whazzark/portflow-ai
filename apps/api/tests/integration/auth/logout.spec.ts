@@ -4,7 +4,7 @@ import { USER_FACTORY_PASSWORD, UserFactory } from '#database/factories/user_fac
 
 test.group('Auth logout', () => {
   test('rejects unauthenticated access', async ({ assert, client }) => {
-    const response = await client.post('/auth/logout')
+    const response = await client.post('/api/v1/auth/logout')
 
     response.assertStatus(401)
     assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
@@ -13,7 +13,7 @@ test.group('Auth logout', () => {
   test('clears the session and signs the user out', async ({ client }) => {
     const activeUser = await UserFactory.apply('active').create()
 
-    const response = await client.post('/auth/logout').loginAs(activeUser)
+    const response = await client.post('/api/v1/auth/logout').loginAs(activeUser)
 
     response.assertStatus(204)
     response.assertSessionMissing('auth_web')
@@ -25,7 +25,7 @@ test.group('Auth logout', () => {
   }) => {
     const activeUser = await UserFactory.apply('active').create()
     const loginResponse = await client
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD, rememberMe: true })
     const rememberedCookie = loginResponse.cookie('remember_web')
     const sessionCookie = loginResponse.cookie('adonis-session')
@@ -35,7 +35,7 @@ test.group('Auth logout', () => {
     }
 
     const logoutResponse = await client
-      .post('/auth/logout')
+      .post('/api/v1/auth/logout')
       .cookie('adonis-session', sessionCookie.value)
       .encryptedCookie('remember_web', rememberedCookie.value)
 
@@ -43,7 +43,7 @@ test.group('Auth logout', () => {
     logoutResponse.assertSessionMissing('auth_web')
 
     const restoredSessionResponse = await client
-      .get('/auth/me')
+      .get('/api/v1/auth/me')
       .encryptedCookie('remember_web', rememberedCookie.value)
 
     restoredSessionResponse.assertStatus(401)
@@ -56,10 +56,10 @@ test.group('Auth logout', () => {
   }) => {
     const activeUser = await UserFactory.apply('active').create()
     const firstLoginResponse = await client
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD, rememberMe: true })
     const secondLoginResponse = await client
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD, rememberMe: true })
     const firstRememberedCookie = firstLoginResponse.cookie('remember_web')
     const firstSessionCookie = firstLoginResponse.cookie('adonis-session')
@@ -70,17 +70,17 @@ test.group('Auth logout', () => {
     }
 
     const logoutResponse = await client
-      .post('/auth/logout')
+      .post('/api/v1/auth/logout')
       .cookie('adonis-session', firstSessionCookie.value)
       .encryptedCookie('remember_web', firstRememberedCookie.value)
 
     logoutResponse.assertStatus(204)
 
     const firstBrowserResponse = await client
-      .get('/auth/me')
+      .get('/api/v1/auth/me')
       .encryptedCookie('remember_web', firstRememberedCookie.value)
     const secondBrowserResponse = await client
-      .get('/auth/me')
+      .get('/api/v1/auth/me')
       .encryptedCookie('remember_web', secondRememberedCookie.value)
 
     firstBrowserResponse.assertStatus(401)

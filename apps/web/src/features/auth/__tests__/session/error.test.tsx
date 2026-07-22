@@ -7,7 +7,7 @@ import { API_BASE_URL } from './helpers'
 
 test('shows a distinct error when session restoration fails for a reason other than being unauthenticated', async () => {
   server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () =>
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () =>
       HttpResponse.json(
         { error: { code: 'E_INTERNAL_SERVER_ERROR', message: 'Internal server error' } },
         { status: 500 },

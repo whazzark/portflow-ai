@@ -15,7 +15,7 @@ test('disables confirmation controls while logout is pending', async () => {
 
   server.use(
     http.post(
-      `${API_BASE_URL}/auth/logout`,
+      `${API_BASE_URL}/api/v1/auth/logout`,
       () =>
         new Promise<Response>((resolve) => {
           releaseLogout = () => resolve(new HttpResponse(null, { status: 204 }))

@@ -9,7 +9,7 @@ test('clears the session and redirects to login after successful logout', async 
   let signedIn = true
 
   server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () =>
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () =>
       signedIn
         ? HttpResponse.json({ data: ACTIVE_USER })
         : HttpResponse.json(
@@ -19,7 +19,7 @@ test('clears the session and redirects to login after successful logout', async 
             { status: 401 },
           ),
     ),
-    http.post(`${API_BASE_URL}/auth/logout`, () => {
+    http.post(`${API_BASE_URL}/api/v1/auth/logout`, () => {
       signedIn = false
       return new HttpResponse(null, { status: 204 })
     }),

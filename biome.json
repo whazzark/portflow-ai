@@ -30,6 +30,7 @@
         "noSecrets": "error"
       },
       "style": {
+        "useBlockStatements": "error",
         "useNodejsImportProtocol": "error"
       },
       "suspicious": {

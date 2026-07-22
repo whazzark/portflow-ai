@@ -8,7 +8,7 @@ import { API_BASE_URL, renderLogin, submitLogin } from './helpers'
 test('shows API validation details on the corresponding field', async () => {
   const user = userEvent.setup()
   server.use(
-    http.post(`${API_BASE_URL}/auth/login`, () =>
+    http.post(`${API_BASE_URL}/api/v1/auth/login`, () =>
       HttpResponse.json(
         {
           error: {
