@@ -23,6 +23,8 @@ router
         router.get('/available', [controllers.Customers, 'available']).as('available')
         router.get('/:id', [controllers.Customers, 'show']).as('show')
         router.patch('/:id', [controllers.Customers, 'update']).as('update')
+        router.post('/:id/archive', [controllers.Customers, 'archive']).as('archive')
+        router.post('/:id/reactivate', [controllers.Customers, 'reactivate']).as('reactivate')
       })
       .prefix('/customers')
       .as('customers')
