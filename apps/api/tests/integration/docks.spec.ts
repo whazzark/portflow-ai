@@ -4,42 +4,16 @@ import { DockFactory } from '#database/factories/dock_factory'
 import { UserFactory } from '#database/factories/user_factory'
 
 test.group('Docks administration', () => {
-  test('rejects unauthenticated access to dock endpoints', async ({ assert, client }) => {
-    const dock = await DockFactory.create()
-    const responses = await Promise.all([
-      client.get('/api/v1/docks'),
-      client.post('/api/v1/docks').json({ name: 'North', latitude: 1, longitude: 2 }),
-      client.get('/api/v1/docks/available'),
-      client.get(`/api/v1/docks/${dock.id}`),
-      client.patch(`/api/v1/docks/${dock.id}`).json({ name: 'Updated' }),
-      client.post(`/api/v1/docks/${dock.id}/archive`).json({}),
-      client.post(`/api/v1/docks/${dock.id}/reactivate`).json({}),
-    ])
-
-    for (const response of responses) {
-      response.assertStatus(401)
-      assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
-    }
-  })
-
-  test('rejects dock administration for non-admin users', async ({ assert, client }) => {
+  test('rejects unauthenticated and unauthorized dock creation', async ({ assert, client }) => {
     const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
-    const dock = await DockFactory.create()
-    const responses = await Promise.all([
-      client.get('/api/v1/docks').loginAs(observer),
-      client
-        .post('/api/v1/docks')
-        .loginAs(observer)
-        .json({ name: 'North', latitude: 1, longitude: 2 }),
-      client.patch(`/api/v1/docks/${dock.id}`).loginAs(observer).json({ name: 'Updated' }),
-      client.post(`/api/v1/docks/${dock.id}/archive`).loginAs(observer).json({}),
-      client.post(`/api/v1/docks/${dock.id}/reactivate`).loginAs(observer).json({}),
-    ])
+    const payload = { name: 'North', latitude: 1, longitude: 2 }
+    const unauthenticatedResponse = await client.post('/api/v1/docks').json(payload)
+    const unauthorizedResponse = await client.post('/api/v1/docks').loginAs(observer).json(payload)
 
-    for (const response of responses) {
-      response.assertStatus(403)
-      assert.equal(response.body().error.code, 'E_AUTHORIZATION_FAILURE')
-    }
+    unauthenticatedResponse.assertStatus(401)
+    assert.equal(unauthenticatedResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    unauthorizedResponse.assertStatus(403)
+    assert.equal(unauthorizedResponse.body().error.code, 'E_AUTHORIZATION_FAILURE')
   })
 
   test('creates and exposes a normalized dock', async ({ assert, client }) => {
@@ -66,7 +40,7 @@ test.group('Docks administration', () => {
     ])
   })
 
-  test('rejects invalid dock coordinates', async ({ assert, client }) => {
+  test('rejects invalid dock coordinates during creation', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const response = await client
       .post('/api/v1/docks')
@@ -76,6 +50,17 @@ test.group('Docks administration', () => {
     response.assertStatus(422)
     assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
     assert.equal(response.body().error.details[0].field, 'latitude')
+  })
+
+  test('rejects unauthenticated and unauthorized dock listing', async ({ assert, client }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const unauthenticatedResponse = await client.get('/api/v1/docks')
+    const unauthorizedResponse = await client.get('/api/v1/docks').loginAs(observer)
+
+    unauthenticatedResponse.assertStatus(401)
+    assert.equal(unauthenticatedResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    unauthorizedResponse.assertStatus(403)
+    assert.equal(unauthorizedResponse.body().error.code, 'E_AUTHORIZATION_FAILURE')
   })
 
   test('lists available and archived docks', async ({ assert, client }) => {
@@ -89,6 +74,13 @@ test.group('Docks administration', () => {
       response.body().data.map((dock: { id: string }) => dock.id),
       [available.id, archived.id],
     )
+  })
+
+  test('rejects unauthenticated access to available docks', async ({ assert, client }) => {
+    const response = await client.get('/api/v1/docks/available')
+
+    response.assertStatus(401)
+    assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
   })
 
   test('lists only available docks for active users', async ({ assert, client }) => {
@@ -108,6 +100,14 @@ test.group('Docks administration', () => {
     )
   })
 
+  test('rejects unauthenticated dock inspection', async ({ assert, client }) => {
+    const dock = await DockFactory.create()
+    const response = await client.get(`/api/v1/docks/${dock.id}`)
+
+    response.assertStatus(401)
+    assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+  })
+
   test('shows an archived dock with its current coordinates', async ({ assert, client }) => {
     const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
     const dock = await DockFactory.apply('archived')
@@ -120,6 +120,23 @@ test.group('Docks administration', () => {
     assert.equal(response.body().data.status, 'ARCHIVED')
     assert.equal(response.body().data.latitude, 48.4)
     assert.equal(response.body().data.longitude, 2.7)
+  })
+
+  test('rejects unauthenticated and unauthorized dock updates', async ({ assert, client }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const dock = await DockFactory.create()
+    const unauthenticatedResponse = await client
+      .patch(`/api/v1/docks/${dock.id}`)
+      .json({ name: 'Updated' })
+    const unauthorizedResponse = await client
+      .patch(`/api/v1/docks/${dock.id}`)
+      .loginAs(observer)
+      .json({ name: 'Updated' })
+
+    unauthenticatedResponse.assertStatus(401)
+    assert.equal(unauthenticatedResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    unauthorizedResponse.assertStatus(403)
+    assert.equal(unauthorizedResponse.body().error.code, 'E_AUTHORIZATION_FAILURE')
   })
 
   test('updates a dock while preserving its identity', async ({ assert, client }) => {
@@ -136,7 +153,7 @@ test.group('Docks administration', () => {
     assert.equal(response.body().data.latitude, 49)
   })
 
-  test('rejects an empty update with the shared validation envelope', async ({
+  test('rejects empty dock updates with the shared validation envelope', async ({
     assert,
     client,
   }) => {
@@ -172,6 +189,21 @@ test.group('Docks administration', () => {
     }
   })
 
+  test('rejects unauthenticated and unauthorized dock archival', async ({ assert, client }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const dock = await DockFactory.create()
+    const unauthenticatedResponse = await client.post(`/api/v1/docks/${dock.id}/archive`).json({})
+    const unauthorizedResponse = await client
+      .post(`/api/v1/docks/${dock.id}/archive`)
+      .loginAs(observer)
+      .json({})
+
+    unauthenticatedResponse.assertStatus(401)
+    assert.equal(unauthenticatedResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    unauthorizedResponse.assertStatus(403)
+    assert.equal(unauthorizedResponse.body().error.code, 'E_AUTHORIZATION_FAILURE')
+  })
+
   test('archives a dock with lifecycle metadata', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const dock = await DockFactory.merge({ name: 'Lifecycle Dock' }).create()
@@ -185,6 +217,23 @@ test.group('Docks administration', () => {
     assert.equal(response.body().data.status, 'ARCHIVED')
     assert.equal(response.body().data.archiveComment, 'Retired')
     assert.equal(response.body().data.archivedByUserId, admin.id)
+  })
+
+  test('rejects unauthenticated and unauthorized dock reactivation', async ({ assert, client }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const dock = await DockFactory.apply('archived').create()
+    const unauthenticatedResponse = await client
+      .post(`/api/v1/docks/${dock.id}/reactivate`)
+      .json({})
+    const unauthorizedResponse = await client
+      .post(`/api/v1/docks/${dock.id}/reactivate`)
+      .loginAs(observer)
+      .json({})
+
+    unauthenticatedResponse.assertStatus(401)
+    assert.equal(unauthenticatedResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    unauthorizedResponse.assertStatus(403)
+    assert.equal(unauthorizedResponse.body().error.code, 'E_AUTHORIZATION_FAILURE')
   })
 
   test('reactivates the same dock identity with lifecycle metadata', async ({ assert, client }) => {
