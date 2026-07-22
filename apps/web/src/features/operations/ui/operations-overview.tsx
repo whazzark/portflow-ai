@@ -104,7 +104,9 @@ export function OperationsOverview({ section, onSectionChange }: OperationsOverv
       <Tabs
         value={section}
         onValueChange={(value) => {
-          if (isOperationsOverviewSection(value)) onSectionChange(value)
+          if (isOperationsOverviewSection(value)) {
+            onSectionChange(value)
+          }
         }}
       >
         <TabsList aria-label="Operations overview sections">
