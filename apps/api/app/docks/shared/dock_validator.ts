@@ -13,9 +13,20 @@ export const updateDockValidator = vine.create(
       .minLength(1)
       .maxLength(255)
       .optional()
+      .requiredWhen((field) => Object.hasOwn(field.parent, field.name))
       .requiredIfMissing(['latitude', 'longitude']),
-    latitude: vine.number().min(-90).max(90).optional(),
-    longitude: vine.number().min(-180).max(180).optional(),
+    latitude: vine
+      .number()
+      .min(-90)
+      .max(90)
+      .optional()
+      .requiredWhen((field) => Object.hasOwn(field.parent, field.name)),
+    longitude: vine
+      .number()
+      .min(-180)
+      .max(180)
+      .optional()
+      .requiredWhen((field) => Object.hasOwn(field.parent, field.name)),
   }),
 )
 

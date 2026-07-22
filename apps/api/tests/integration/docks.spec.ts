@@ -142,12 +142,34 @@ test.group('Docks administration', () => {
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const dock = await DockFactory.merge({ name: 'Validation Dock' }).create()
-    const response = await client.patch(`/api/v1/docks/${dock.id}`).loginAs(admin).json({})
+    const emptyUpdateResponse = await client
+      .patch(`/api/v1/docks/${dock.id}`)
+      .loginAs(admin)
+      .json({})
+    const whitespaceNameResponse = await client
+      .patch(`/api/v1/docks/${dock.id}`)
+      .loginAs(admin)
+      .json({ name: '   ', latitude: 49 })
+    const emptyLatitudeResponse = await client
+      .patch(`/api/v1/docks/${dock.id}`)
+      .loginAs(admin)
+      .json({ name: 'Valid Dock', latitude: '' })
+    const emptyLongitudeResponse = await client
+      .patch(`/api/v1/docks/${dock.id}`)
+      .loginAs(admin)
+      .json({ name: 'Valid Dock', longitude: '   ' })
 
-    response.assertStatus(422)
-    assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
-    assert.equal(response.body().error.details[0].field, 'name')
-    assert.equal(response.body().error.details[0].rule, 'required')
+    for (const [response, field] of [
+      [emptyUpdateResponse, 'name'],
+      [whitespaceNameResponse, 'name'],
+      [emptyLatitudeResponse, 'latitude'],
+      [emptyLongitudeResponse, 'longitude'],
+    ] as const) {
+      response.assertStatus(422)
+      assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+      assert.equal(response.body().error.details[0].field, field)
+      assert.equal(response.body().error.details[0].rule, 'required')
+    }
   })
 
   test('archives a dock with lifecycle metadata', async ({ assert, client }) => {
