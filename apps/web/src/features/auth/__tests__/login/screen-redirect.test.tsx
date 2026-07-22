@@ -9,7 +9,7 @@ test('redirects to home after logging in directly from the login screen', async 
   const user = userEvent.setup()
   let isLoggedIn = false
   server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () =>
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () =>
       isLoggedIn
         ? HttpResponse.json({ data: ACTIVE_USER })
         : HttpResponse.json(
@@ -19,7 +19,7 @@ test('redirects to home after logging in directly from the login screen', async 
             { status: 401 },
           ),
     ),
-    http.post(`${API_BASE_URL}/auth/login`, () => {
+    http.post(`${API_BASE_URL}/api/v1/auth/login`, () => {
       isLoggedIn = true
       return HttpResponse.json({ data: ACTIVE_USER })
     }),

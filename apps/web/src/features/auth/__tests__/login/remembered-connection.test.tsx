@@ -9,7 +9,7 @@ test('lets a user request a remembered connection', async () => {
   const user = userEvent.setup()
   let isLoggedIn = false
   server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () =>
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () =>
       isLoggedIn
         ? HttpResponse.json({ data: ACTIVE_USER })
         : HttpResponse.json(
@@ -19,7 +19,7 @@ test('lets a user request a remembered connection', async () => {
             { status: 401 },
           ),
     ),
-    http.post(`${API_BASE_URL}/auth/login`, async ({ request }) => {
+    http.post(`${API_BASE_URL}/api/v1/auth/login`, async ({ request }) => {
       expect(await request.json()).toMatchObject({ rememberMe: true })
       isLoggedIn = true
       return HttpResponse.json({ data: ACTIVE_USER })

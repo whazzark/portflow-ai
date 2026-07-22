@@ -15,7 +15,9 @@ const ACTIVE_USER = {
 }
 
 test('renders the protected frame with navigation for an authenticated user', async () => {
-  server.use(http.get(`${API_BASE_URL}/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })))
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })),
+  )
 
   const { router } = renderApp('/')
 
@@ -57,6 +59,12 @@ test('renders the protected frame with navigation for an authenticated user', as
   expect(screen.getByText('Rotation progress')).toBeInTheDocument()
   expect(screen.getByRole('table', { name: 'Recent rotations' })).toBeInTheDocument()
 
+  fireEvent.keyDown(window, { key: 'b', metaKey: true })
+  expect(document.querySelector('[data-slot="sidebar"][data-state]')).toHaveAttribute(
+    'data-state',
+    'collapsed',
+  )
+
   fireEvent.mouseDown(profileTrigger)
   const menu = await screen.findByRole('menu')
 
@@ -74,7 +82,7 @@ test('renders the protected frame with navigation for an authenticated user', as
 
 test('hides user administration from non-administrative roles', async () => {
   server.use(
-    http.get(`${API_BASE_URL}/auth/me`, () =>
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () =>
       HttpResponse.json({
         data: {
           ...ACTIVE_USER,

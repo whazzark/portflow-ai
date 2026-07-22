@@ -11,7 +11,9 @@ export const ACTIVE_USER = {
 }
 
 export function mockAuthenticatedSession() {
-  server.use(http.get(`${API_BASE_URL}/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })))
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })),
+  )
 }
 
 export async function openLogoutConfirmation() {
