@@ -20,8 +20,8 @@ export interface ApiDefinition {
     reactivate: typeof routes['customers.reactivate']
   }
   docks: {
-    store: typeof routes['docks.store']
     index: typeof routes['docks.index']
+    store: typeof routes['docks.store']
     available: typeof routes['docks.available']
     show: typeof routes['docks.show']
     update: typeof routes['docks.update']

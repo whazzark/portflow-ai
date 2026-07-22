@@ -22,9 +22,11 @@ export default class UpdateDockUseCase {
       ...(input.latitude === undefined ? {} : { latitude: input.latitude }),
       ...(input.longitude === undefined ? {} : { longitude: input.longitude }),
     }
+
     if (values.name === '') {
       throw new InvalidDockNameException()
     }
+
     if (
       (values.latitude !== undefined && !isLegalLatitude(values.latitude)) ||
       (values.longitude !== undefined && !isLegalLongitude(values.longitude))
@@ -33,18 +35,23 @@ export default class UpdateDockUseCase {
     }
 
     const result = await this.dockRepository.updateAvailable({ id: input.id, ...values })
+
     if (result.kind === 'NOT_FOUND') {
       throw new DockNotFoundException()
     }
+
     if (result.kind === 'ARCHIVED') {
       throw new ArchivedDockReadOnlyException()
     }
+
     if (result.kind === 'DUPLICATE_NAME') {
       throw new DuplicateDockNameException()
     }
+
     if (result.kind !== 'UPDATED') {
       throw new Error(`Unexpected dock update result: ${result.kind}`)
     }
+
     return result.dock
   }
 }

@@ -15,8 +15,8 @@ export type ScannedRoutes = {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'docks.store': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
+    'docks.store': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
     'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

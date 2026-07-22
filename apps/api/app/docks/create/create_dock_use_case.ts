@@ -16,20 +16,25 @@ export default class CreateDockUseCase {
 
   async handle(input: CreateDockInput) {
     const name = normalizeDockName(input.name)
+
     if (!name) {
       throw new InvalidDockNameException()
     }
+
     if (!isLegalLatitude(input.latitude) || !isLegalLongitude(input.longitude)) {
       throw new InvalidDockCoordinatesException()
     }
 
     const result = await this.dockRepository.create({ ...input, name })
+
     if (result.kind === 'DUPLICATE_NAME') {
       throw new DuplicateDockNameException()
     }
+
     if (result.kind !== 'CREATED') {
       throw new Error(`Unexpected dock creation result: ${result.kind}`)
     }
+
     return result.dock
   }
 }

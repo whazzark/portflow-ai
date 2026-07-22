@@ -72,17 +72,17 @@ const routes = {
     tokens: [{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"reactivate","end":""}],
     types: placeholder as Registry['customers.reactivate']['types'],
   },
-  'docks.store': {
-    methods: ["POST"],
-    pattern: '/api/v1/docks',
-    tokens: [{"old":"/api/v1/docks","type":0,"val":"api","end":""},{"old":"/api/v1/docks","type":0,"val":"v1","end":""},{"old":"/api/v1/docks","type":0,"val":"docks","end":""}],
-    types: placeholder as Registry['docks.store']['types'],
-  },
   'docks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/docks',
     tokens: [{"old":"/api/v1/docks","type":0,"val":"api","end":""},{"old":"/api/v1/docks","type":0,"val":"v1","end":""},{"old":"/api/v1/docks","type":0,"val":"docks","end":""}],
     types: placeholder as Registry['docks.index']['types'],
+  },
+  'docks.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/docks',
+    tokens: [{"old":"/api/v1/docks","type":0,"val":"api","end":""},{"old":"/api/v1/docks","type":0,"val":"v1","end":""},{"old":"/api/v1/docks","type":0,"val":"docks","end":""}],
+    types: placeholder as Registry['docks.store']['types'],
   },
   'docks.available': {
     methods: ["GET","HEAD"],

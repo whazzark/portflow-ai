@@ -31,8 +31,8 @@ router
 
     router
       .group(() => {
-        router.post('/', [controllers.Docks, 'store']).as('store')
         router.get('/', [controllers.Docks, 'index']).as('index')
+        router.post('/', [controllers.Docks, 'store']).as('store')
         router.get('/available', [controllers.Docks, 'available']).as('available')
         router.get('/:id', [controllers.Docks, 'show']).as('show')
         router.patch('/:id', [controllers.Docks, 'update']).as('update')

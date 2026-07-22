@@ -1,13 +1,11 @@
 import type { DateTime } from 'luxon'
 
 import type Dock from '#models/dock'
-import type { DockStatus } from '#models/dock'
 
 export type CreateDockCommand = {
   name: string
   latitude: number
   longitude: number
-  status?: DockStatus
 }
 
 export type UpdateDockCommand = {

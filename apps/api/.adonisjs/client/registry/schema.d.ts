@@ -139,18 +139,6 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['reactivate']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
-  'docks.store': {
-    methods: ["POST"]
-    pattern: '/api/v1/docks'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#docks/shared/dock_validator').createDockValidator)>>
-      paramsTuple: []
-      params: {}
-      query: ExtractQuery<InferInput<(typeof import('#docks/shared/dock_validator').createDockValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
   'docks.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/docks'
@@ -161,6 +149,18 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['index']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['index']>>>
+    }
+  }
+  'docks.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/docks'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#docks/shared/dock_validator').createDockValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#docks/shared/dock_validator').createDockValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'docks.available': {

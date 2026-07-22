@@ -17,12 +17,14 @@ import DockRepository from './dock_repository.ts'
 export default class LucidDockRepository extends DockRepository {
   async create(command: CreateDockCommand): Promise<DockWriteResult> {
     try {
-      const dock = await Dock.create({ ...command, status: command.status ?? 'AVAILABLE' })
+      const dock = await Dock.create({ ...command, status: 'AVAILABLE' })
+
       return { kind: 'CREATED', dock }
     } catch (error) {
       if (isUniqueViolation(error)) {
         return { kind: 'DUPLICATE_NAME' }
       }
+
       throw error
     }
   }
@@ -55,21 +57,26 @@ export default class LucidDockRepository extends DockRepository {
 
       if (affectedRows === 0) {
         const dock = await Dock.find(command.id)
+
         if (!dock) {
           return { kind: 'NOT_FOUND' }
         }
+
         if (dock.status !== 'AVAILABLE') {
           return { kind: 'ARCHIVED' }
         }
+
         return { kind: 'NOT_FOUND' }
       }
 
       const dock = await Dock.find(command.id)
+
       return dock ? { kind: 'UPDATED', dock } : { kind: 'NOT_FOUND' }
     } catch (error) {
       if (isUniqueViolation(error)) {
         return { kind: 'DUPLICATE_NAME' }
       }
+
       throw error
     }
   }
@@ -88,13 +95,16 @@ export default class LucidDockRepository extends DockRepository {
 
     if (affectedRows === 0) {
       const dock = await Dock.find(command.id)
+
       if (!dock) {
         return { kind: 'NOT_FOUND' }
       }
+
       return dock.status === 'ARCHIVED' ? { kind: 'ALREADY_ARCHIVED' } : { kind: 'NOT_FOUND' }
     }
 
     const dock = await Dock.find(command.id)
+
     return dock ? { kind: 'ARCHIVED', dock } : { kind: 'NOT_FOUND' }
   }
 
@@ -112,13 +122,16 @@ export default class LucidDockRepository extends DockRepository {
 
     if (affectedRows === 0) {
       const dock = await Dock.find(command.id)
+
       if (!dock) {
         return { kind: 'NOT_FOUND' }
       }
+
       return dock.status === 'AVAILABLE' ? { kind: 'ALREADY_AVAILABLE' } : { kind: 'NOT_FOUND' }
     }
 
     const dock = await Dock.find(command.id)
+
     return dock ? { kind: 'REACTIVATED', dock } : { kind: 'NOT_FOUND' }
   }
 }

@@ -30,18 +30,6 @@ export default class DocksController {
     private reactivateDockUseCase: ReactivateDockUseCase,
   ) {}
 
-  async store({ bouncer, request, response, serialize }: HttpContext) {
-    await bouncer.with(DockPolicy).authorize('create')
-
-    const payload = await request.validateUsing(createDockValidator)
-
-    const dock = await this.createDockUseCase.handle(payload)
-
-    response.status(201)
-
-    return serialize(DockTransformer.transform(dock))
-  }
-
   async index({ bouncer, serialize }: HttpContext) {
     await bouncer.with(DockPolicy).authorize('list')
 
@@ -62,6 +50,18 @@ export default class DocksController {
     await bouncer.with(DockPolicy).authorize('view')
 
     const dock = await this.getDockUseCase.handle(params.id)
+
+    return serialize(DockTransformer.transform(dock))
+  }
+
+  async store({ bouncer, request, response, serialize }: HttpContext) {
+    await bouncer.with(DockPolicy).authorize('create')
+
+    const payload = await request.validateUsing(createDockValidator)
+
+    const dock = await this.createDockUseCase.handle(payload)
+
+    response.status(201)
 
     return serialize(DockTransformer.transform(dock))
   }

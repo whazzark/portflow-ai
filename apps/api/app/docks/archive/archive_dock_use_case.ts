@@ -25,9 +25,11 @@ export default class ArchiveDockUseCase {
 
   async handle(input: ArchiveDockInput) {
     const dock = await this.dockRepository.findById(input.id)
+
     if (!dock) {
       throw new DockNotFoundException()
     }
+
     if (dock.status === 'ARCHIVED') {
       throw new DockAlreadyArchivedException()
     }
@@ -36,6 +38,7 @@ export default class ArchiveDockUseCase {
       referenceType: 'DOCK',
       referenceId: input.id,
     })
+
     if (isInUse) {
       throw new DockInUseException()
     }
@@ -46,12 +49,15 @@ export default class ArchiveDockUseCase {
       archivedByUserId: input.archivedByUserId,
       archiveComment: input.comment?.trim() || null,
     })
+
     if (result.kind === 'NOT_FOUND') {
       throw new DockNotFoundException()
     }
+
     if (result.kind === 'ALREADY_ARCHIVED') {
       throw new DockAlreadyArchivedException()
     }
+
     return result.dock
   }
 }

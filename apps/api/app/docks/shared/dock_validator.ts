@@ -1,7 +1,7 @@
 import vine from '@vinejs/vine'
 
 export const createDockValidator = vine.create({
-  name: vine.string().trim().minLength(1).maxLength(255),
+  name: vine.string().minLength(1).maxLength(255),
   latitude: vine.number().min(-90).max(90),
   longitude: vine.number().min(-180).max(180),
 })
@@ -10,7 +10,6 @@ export const updateDockValidator = vine.create(
   vine.object({
     name: vine
       .string()
-      .trim()
       .minLength(1)
       .maxLength(255)
       .optional()

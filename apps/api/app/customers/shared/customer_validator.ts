@@ -7,14 +7,8 @@ export const createCustomerValidator = vine.create({
 
 export const updateCustomerValidator = vine.create(
   vine.object({
-    code: vine
-      .string()
-      .trim()
-      .minLength(1)
-      .maxLength(255)
-      .optional()
-      .requiredIfMissing('companyName'),
-    companyName: vine.string().trim().minLength(1).maxLength(255).optional(),
+    code: vine.string().minLength(1).maxLength(255).optional().requiredIfMissing('companyName'),
+    companyName: vine.string().minLength(1).maxLength(255).optional(),
   }),
 )
 

@@ -17,9 +17,11 @@ export default class ReactivateDockUseCase {
 
   async handle(input: ReactivateDockInput) {
     const dock = await this.dockRepository.findById(input.id)
+
     if (!dock) {
       throw new DockNotFoundException()
     }
+
     if (dock.status === 'AVAILABLE') {
       throw new DockAlreadyAvailableException()
     }
@@ -30,12 +32,15 @@ export default class ReactivateDockUseCase {
       reactivatedByUserId: input.reactivatedByUserId,
       reactivationComment: input.comment?.trim() || null,
     })
+
     if (result.kind === 'NOT_FOUND') {
       throw new DockNotFoundException()
     }
+
     if (result.kind === 'ALREADY_AVAILABLE') {
       throw new DockAlreadyAvailableException()
     }
+
     return result.dock
   }
 }
