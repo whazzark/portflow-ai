@@ -34,7 +34,7 @@ export interface Registry {
   }
   'auth.login': {
     methods: ["POST"]
-    pattern: '/auth/login'
+    pattern: '/api/v1/auth/login'
     types: {
       body: ExtractBody<InferInput<(typeof import('#auth/login/login_validator').loginValidator)>>
       paramsTuple: []
@@ -46,7 +46,7 @@ export interface Registry {
   }
   'auth.me': {
     methods: ["GET","HEAD"]
-    pattern: '/auth/me'
+    pattern: '/api/v1/auth/me'
     types: {
       body: {}
       paramsTuple: []
@@ -58,7 +58,7 @@ export interface Registry {
   }
   'auth.logout': {
     methods: ["POST"]
-    pattern: '/auth/logout'
+    pattern: '/api/v1/auth/logout'
     types: {
       body: {}
       paramsTuple: []
