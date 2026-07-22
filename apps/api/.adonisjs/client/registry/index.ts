@@ -30,6 +30,36 @@ const routes = {
     tokens: [{"old":"/auth/logout","type":0,"val":"auth","end":""},{"old":"/auth/logout","type":0,"val":"logout","end":""}],
     types: placeholder as Registry['auth.logout']['types'],
   },
+  'customers.store': {
+    methods: ["POST"],
+    pattern: '/customers',
+    tokens: [{"old":"/customers","type":0,"val":"customers","end":""}],
+    types: placeholder as Registry['customers.store']['types'],
+  },
+  'customers.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/customers',
+    tokens: [{"old":"/customers","type":0,"val":"customers","end":""}],
+    types: placeholder as Registry['customers.index']['types'],
+  },
+  'customers.available': {
+    methods: ["GET","HEAD"],
+    pattern: '/customers/available',
+    tokens: [{"old":"/customers/available","type":0,"val":"customers","end":""},{"old":"/customers/available","type":0,"val":"available","end":""}],
+    types: placeholder as Registry['customers.available']['types'],
+  },
+  'customers.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/customers/:id',
+    tokens: [{"old":"/customers/:id","type":0,"val":"customers","end":""},{"old":"/customers/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['customers.show']['types'],
+  },
+  'customers.update': {
+    methods: ["PATCH"],
+    pattern: '/customers/:id',
+    tokens: [{"old":"/customers/:id","type":0,"val":"customers","end":""},{"old":"/customers/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['customers.update']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

@@ -1,3 +1,4 @@
+import { indexPolicies } from '@adonisjs/bouncer'
 import { indexEntities } from '@adonisjs/core'
 import { defineConfig } from '@adonisjs/core/app'
 import { generateRegistry } from '@tuyau/core/hooks'
@@ -7,6 +8,7 @@ export default defineConfig({
     () => import('@adonisjs/core/commands'),
     () => import('@adonisjs/lucid/commands'),
     () => import('@adonisjs/session/commands'),
+    () => import('@adonisjs/bouncer/commands'),
   ],
   providers: [
     () => import('@adonisjs/core/providers/app_provider'),
@@ -19,10 +21,11 @@ export default defineConfig({
     () => import('./providers/repositories_provider.js'),
     () => import('@adonisjs/session/session_provider'),
     () => import('@adonisjs/auth/auth_provider'),
+    () => import('@adonisjs/bouncer/bouncer_provider'),
   ],
   preloads: [() => import('#start/routes'), () => import('#start/kernel')],
   hooks: {
-    init: [indexEntities({ transformers: { enabled: true } }), generateRegistry()],
+    init: [indexEntities({ transformers: { enabled: true } }), generateRegistry(), indexPolicies()],
   },
   tests: {
     suites: [

@@ -12,3 +12,15 @@ router
   })
   .prefix('/auth')
   .as('auth')
+
+router
+  .group(() => {
+    router.post('/', [controllers.Customers, 'store']).as('store')
+    router.get('/', [controllers.Customers, 'index']).as('index')
+    router.get('/available', [controllers.Customers, 'available']).as('available')
+    router.get('/:id', [controllers.Customers, 'show']).as('show')
+    router.patch('/:id', [controllers.Customers, 'update']).as('update')
+  })
+  .prefix('/customers')
+  .as('customers')
+  .use(middleware.auth())
