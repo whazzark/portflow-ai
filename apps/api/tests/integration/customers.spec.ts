@@ -123,6 +123,14 @@ test.group('Customers administration', (group) => {
       .patch(`/api/v1/customers/${customer.id}`)
       .loginAs(admin)
       .json({})
+    const whitespaceCodeUpdateResponse = await client
+      .patch(`/api/v1/customers/${customer.id}`)
+      .loginAs(admin)
+      .json({ code: '   ', companyName: 'Valid Company' })
+    const whitespaceCompanyNameUpdateResponse = await client
+      .patch(`/api/v1/customers/${customer.id}`)
+      .loginAs(admin)
+      .json({ code: 'VALIDATION-02', companyName: '   ' })
 
     for (const response of [missingCodeResponse, emptyCodeResponse, oversizedCodeResponse]) {
       response.assertStatus(422)
@@ -132,10 +140,17 @@ test.group('Customers administration', (group) => {
     }
     assert.equal(missingCodeResponse.body().error.details[0].field, 'code')
     emptyUpdateResponse.assertStatus(422)
-    assert.deepEqual(emptyUpdateResponse.body().error, {
-      code: 'E_CUSTOMER_UPDATE_FIELDS_REQUIRED',
-      message: 'At least one customer field must be provided',
-    })
+    assert.equal(emptyUpdateResponse.body().error.code, 'E_VALIDATION_ERROR')
+    assert.equal(emptyUpdateResponse.body().error.details[0].field, 'code')
+    assert.equal(emptyUpdateResponse.body().error.details[0].rule, 'required')
+    whitespaceCodeUpdateResponse.assertStatus(422)
+    assert.equal(whitespaceCodeUpdateResponse.body().error.code, 'E_VALIDATION_ERROR')
+    assert.equal(whitespaceCodeUpdateResponse.body().error.details[0].field, 'code')
+    assert.equal(whitespaceCodeUpdateResponse.body().error.details[0].rule, 'required')
+    whitespaceCompanyNameUpdateResponse.assertStatus(422)
+    assert.equal(whitespaceCompanyNameUpdateResponse.body().error.code, 'E_VALIDATION_ERROR')
+    assert.equal(whitespaceCompanyNameUpdateResponse.body().error.details[0].field, 'companyName')
+    assert.equal(whitespaceCompanyNameUpdateResponse.body().error.details[0].rule, 'required')
   })
 
   test('lists archived customers but excludes them from available selections', async ({

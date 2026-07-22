@@ -28,6 +28,19 @@ router
       })
       .prefix('/customers')
       .as('customers')
+
+    router
+      .group(() => {
+        router.get('/', [controllers.Docks, 'index']).as('index')
+        router.post('/', [controllers.Docks, 'store']).as('store')
+        router.get('/available', [controllers.Docks, 'available']).as('available')
+        router.get('/:id', [controllers.Docks, 'show']).as('show')
+        router.patch('/:id', [controllers.Docks, 'update']).as('update')
+        router.post('/:id/archive', [controllers.Docks, 'archive']).as('archive')
+        router.post('/:id/reactivate', [controllers.Docks, 'reactivate']).as('reactivate')
+      })
+      .prefix('/docks')
+      .as('docks')
   })
   .prefix('/api/v1')
   .use(middleware.auth())

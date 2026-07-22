@@ -72,6 +72,48 @@ const routes = {
     tokens: [{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"reactivate","end":""}],
     types: placeholder as Registry['customers.reactivate']['types'],
   },
+  'docks.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/docks',
+    tokens: [{"old":"/api/v1/docks","type":0,"val":"api","end":""},{"old":"/api/v1/docks","type":0,"val":"v1","end":""},{"old":"/api/v1/docks","type":0,"val":"docks","end":""}],
+    types: placeholder as Registry['docks.index']['types'],
+  },
+  'docks.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/docks',
+    tokens: [{"old":"/api/v1/docks","type":0,"val":"api","end":""},{"old":"/api/v1/docks","type":0,"val":"v1","end":""},{"old":"/api/v1/docks","type":0,"val":"docks","end":""}],
+    types: placeholder as Registry['docks.store']['types'],
+  },
+  'docks.available': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/docks/available',
+    tokens: [{"old":"/api/v1/docks/available","type":0,"val":"api","end":""},{"old":"/api/v1/docks/available","type":0,"val":"v1","end":""},{"old":"/api/v1/docks/available","type":0,"val":"docks","end":""},{"old":"/api/v1/docks/available","type":0,"val":"available","end":""}],
+    types: placeholder as Registry['docks.available']['types'],
+  },
+  'docks.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/docks/:id',
+    tokens: [{"old":"/api/v1/docks/:id","type":0,"val":"api","end":""},{"old":"/api/v1/docks/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/docks/:id","type":0,"val":"docks","end":""},{"old":"/api/v1/docks/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['docks.show']['types'],
+  },
+  'docks.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/docks/:id',
+    tokens: [{"old":"/api/v1/docks/:id","type":0,"val":"api","end":""},{"old":"/api/v1/docks/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/docks/:id","type":0,"val":"docks","end":""},{"old":"/api/v1/docks/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['docks.update']['types'],
+  },
+  'docks.archive': {
+    methods: ["POST"],
+    pattern: '/api/v1/docks/:id/archive',
+    tokens: [{"old":"/api/v1/docks/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/docks/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/docks/:id/archive","type":0,"val":"docks","end":""},{"old":"/api/v1/docks/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/docks/:id/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['docks.archive']['types'],
+  },
+  'docks.reactivate': {
+    methods: ["POST"],
+    pattern: '/api/v1/docks/:id/reactivate',
+    tokens: [{"old":"/api/v1/docks/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/docks/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/docks/:id/reactivate","type":0,"val":"docks","end":""},{"old":"/api/v1/docks/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/docks/:id/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['docks.reactivate']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

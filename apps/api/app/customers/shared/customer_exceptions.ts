@@ -30,12 +30,6 @@ export class ForbiddenCustomerAccessException extends Exception {
   static message = 'You are not allowed to administer customers'
 }
 
-export class CustomerUpdateFieldsException extends Exception {
-  static status = 422
-  static code = 'E_CUSTOMER_UPDATE_FIELDS_REQUIRED'
-  static message = 'At least one customer field must be provided'
-}
-
 export class CustomerInUseException extends Exception {
   static status = 409
   static code = 'E_CUSTOMER_IN_USE'

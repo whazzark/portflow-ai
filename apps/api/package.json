@@ -22,6 +22,7 @@
     "#auth/*": "./app/auth/*.js",
     "#abilities/*": "./app/abilities/*.js",
     "#customers/*": "./app/customers/*.js",
+    "#docks/*": "./app/docks/*.js",
     "#controllers/*": "./app/controllers/*.js",
     "#config/*": "./config/*.js",
     "#database/*": "./database/*.js",
@@ -30,6 +31,7 @@
     "#middleware/*": "./app/middleware/*.js",
     "#models/*": "./app/models/*.js",
     "#site_references/*": "./app/site_references/*.js",
+    "#shared/*": "./app/shared/*.js",
     "#start/*": "./start/*.js",
     "#users/*": "./app/users/*.js"
   },

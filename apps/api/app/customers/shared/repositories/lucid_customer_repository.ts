@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon'
 
 import Customer from '#models/customer'
+import isUniqueViolation from '#shared/database/is_unique_violation'
 
 import CustomerRepository, {
   type ArchiveCustomerCommand,
@@ -11,15 +12,6 @@ import CustomerRepository, {
   type ReactivateCustomerResult,
   type UpdateCustomerCommand,
 } from './customer_repository.ts'
-
-const isUniqueViolation = (error: unknown) => {
-  if (!error || typeof error !== 'object') {
-    return false
-  }
-
-  const candidate = error as { code?: string; constraint?: string; message?: string }
-  return candidate.code === '23505' || candidate.code === 'SQLITE_CONSTRAINT_UNIQUE'
-}
 
 const duplicateKind = (error: unknown): CustomerWriteResult | null => {
   const candidate = error as { constraint?: string; message?: string }
