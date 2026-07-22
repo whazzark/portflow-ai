@@ -6,7 +6,9 @@ import { UserFactory } from '#database/factories/user_factory'
 import PlannedOrActiveUsageChecker from '#site_references/shared/planned_or_active_usage_checker'
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 
-test.group('Customers administration', () => {
+test.group('Customers administration', (group) => {
+  group.each.teardown(() => app.container.restore(SiteReferenceUsageChecker))
+
   test('rejects unauthenticated customer creation', async ({ assert, client }) => {
     const response = await client.post('/api/v1/customers').json({
       code: 'ACME',
@@ -228,19 +230,17 @@ test.group('Customers administration', () => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const customer = await CustomerFactory.merge({ code: 'IN-USE-01' }).create()
 
-    app.container.swap(SiteReferenceUsageChecker, () => new PlannedOrActiveUsageChecker())
+    app.container.swap(SiteReferenceUsageChecker, () =>
+      app.container.make(PlannedOrActiveUsageChecker),
+    )
 
-    try {
-      const response = await client
-        .post(`/api/v1/customers/${customer.id}/archive`)
-        .loginAs(admin)
-        .json({})
+    const response = await client
+      .post(`/api/v1/customers/${customer.id}/archive`)
+      .loginAs(admin)
+      .json({})
 
-      response.assertStatus(409)
-      assert.equal(response.body().error.code, 'E_CUSTOMER_IN_USE')
-    } finally {
-      app.container.restore(SiteReferenceUsageChecker)
-    }
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_CUSTOMER_IN_USE')
   })
 
   test('rejects archive and reactivate actions for non-admin users', async ({ client }) => {

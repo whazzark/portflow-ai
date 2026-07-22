@@ -1,3 +1,4 @@
+import app from '@adonisjs/core/services/app'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
@@ -10,19 +11,20 @@ import {
   CustomerAlreadyAvailableException,
   DuplicateCustomerCompanyNameException,
 } from '#customers/shared/customer_exceptions'
-import LucidCustomerRepository from '#customers/shared/repositories/lucid_customer_repository'
 import UpdateCustomerUseCase from '#customers/update/update_customer_use_case'
 import { CustomerFactory } from '#database/factories/customer_factory'
 import { UserFactory } from '#database/factories/user_factory'
 import ClosedDischargeUsageChecker from '#site_references/shared/closed_discharge_usage_checker'
+import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 import UnusedChecker from '#site_references/shared/unused_checker'
 import UsedChecker from '#site_references/shared/used_checker'
 
 test.group('Customer use cases', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
+  group.each.teardown(() => app.container.restore(SiteReferenceUsageChecker))
 
   test('normalizes the code and company name during creation', async ({ assert }) => {
-    const useCase = new CreateCustomerUseCase(new LucidCustomerRepository())
+    const useCase = await app.container.make(CreateCustomerUseCase)
 
     const customer = await useCase.handle({ code: '  acme-01 ', companyName: '  Acme  ' })
 
@@ -33,7 +35,7 @@ test.group('Customer use cases', (group) => {
 
   test('rejects a duplicate company name regardless of case', async ({ assert }) => {
     await CustomerFactory.merge({ companyName: 'Acme Logistics' }).create()
-    const useCase = new CreateCustomerUseCase(new LucidCustomerRepository())
+    const useCase = await app.container.make(CreateCustomerUseCase)
 
     await assert.rejects(
       () => useCase.handle({ code: 'NEW-CODE', companyName: ' acme logistics ' }),
@@ -43,7 +45,7 @@ test.group('Customer use cases', (group) => {
 
   test('keeps archived customers read-only', async ({ assert }) => {
     const archived = await CustomerFactory.apply('archived').create()
-    const useCase = new UpdateCustomerUseCase(new LucidCustomerRepository())
+    const useCase = await app.container.make(UpdateCustomerUseCase)
 
     await assert.rejects(
       () => useCase.handle({ id: archived.id, code: 'NEW-CODE' }),
@@ -55,7 +57,10 @@ test.group('Customer use cases', (group) => {
     const actor = await UserFactory.apply('active').create()
     const customer = await CustomerFactory.create()
     const archivedAt = DateTime.fromISO('2026-07-22T12:00:00.000+02:00')
-    const useCase = new ArchiveCustomerUseCase(new LucidCustomerRepository(), new UnusedChecker())
+
+    app.container.swap(SiteReferenceUsageChecker, () => app.container.make(UnusedChecker))
+
+    const useCase = await app.container.make(ArchiveCustomerUseCase)
 
     const archived = await useCase.handle({
       id: customer.id,
@@ -74,7 +79,10 @@ test.group('Customer use cases', (group) => {
     assert,
   }) => {
     const customer = await CustomerFactory.create()
-    const useCase = new ArchiveCustomerUseCase(new LucidCustomerRepository(), new UsedChecker())
+
+    app.container.swap(SiteReferenceUsageChecker, () => app.container.make(UsedChecker))
+
+    const useCase = await app.container.make(ArchiveCustomerUseCase)
 
     await assert.rejects(
       () =>
@@ -94,10 +102,12 @@ test.group('Customer use cases', (group) => {
   }) => {
     const actor = await UserFactory.apply('active').create()
     const customer = await CustomerFactory.create()
-    const useCase = new ArchiveCustomerUseCase(
-      new LucidCustomerRepository(),
-      new ClosedDischargeUsageChecker(),
+
+    app.container.swap(SiteReferenceUsageChecker, () =>
+      app.container.make(ClosedDischargeUsageChecker),
     )
+
+    const useCase = await app.container.make(ArchiveCustomerUseCase)
 
     const archived = await useCase.handle({
       id: customer.id,
@@ -112,7 +122,7 @@ test.group('Customer use cases', (group) => {
     const actor = await UserFactory.apply('active').create()
     const customer = await CustomerFactory.apply('archived').create()
     const reactivatedAt = DateTime.fromISO('2026-07-22T13:00:00.000+02:00')
-    const useCase = new ReactivateCustomerUseCase(new LucidCustomerRepository())
+    const useCase = await app.container.make(ReactivateCustomerUseCase)
 
     const reactivated = await useCase.handle({
       id: customer.id,
@@ -131,8 +141,11 @@ test.group('Customer use cases', (group) => {
   test('rejects repeating an archive or reactivation transition', async ({ assert }) => {
     const available = await CustomerFactory.create()
     const archived = await CustomerFactory.apply('archived').create()
-    const archive = new ArchiveCustomerUseCase(new LucidCustomerRepository(), new UnusedChecker())
-    const reactivate = new ReactivateCustomerUseCase(new LucidCustomerRepository())
+
+    app.container.swap(SiteReferenceUsageChecker, () => app.container.make(UnusedChecker))
+
+    const archive = await app.container.make(ArchiveCustomerUseCase)
+    const reactivate = await app.container.make(ReactivateCustomerUseCase)
 
     await assert.rejects(
       () =>
