@@ -90,7 +90,10 @@ export function LifecycleActions({ className, customer, onSuccess }: LifecycleAc
           </FieldGroup>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void submit()}>
+            <AlertDialogAction
+              disabled={mutations.archive.isPending || mutations.reactivate.isPending}
+              onClick={() => { void submit() }}
+            >
               {archived ? 'Reactivate' : 'Archive'}
             </AlertDialogAction>
           </AlertDialogFooter>

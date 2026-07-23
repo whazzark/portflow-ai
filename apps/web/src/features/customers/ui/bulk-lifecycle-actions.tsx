@@ -81,7 +81,10 @@ export function BulkLifecycleActions({
             {customers.length} selected
           </span>
           <Button
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              setError(null)
+              setOpen(true)
+            }}
             size="sm"
             variant={isArchived ? 'default' : 'destructive'}
           >
@@ -133,6 +136,7 @@ export function BulkLifecycleActions({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              disabled={mutations.archiveMany.isPending || mutations.reactivateMany.isPending}
               onClick={(event) => {
                 event.preventDefault()
                 void submit()
