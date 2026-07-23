@@ -23,7 +23,9 @@ test.group('Customers administration', (group) => {
     const customer = await CustomerFactory.merge({ code: 'UNAUTH-LIFECYCLE' }).create()
     const archiveResponse = await client.post(`/api/v1/customers/${customer.id}/archive`).json({})
     const reactivateResponse = await client.post(`/api/v1/customers/${customer.id}/reactivate`)
-    const bulkArchiveResponse = await client.post('/api/v1/customers/archive').json({ ids: [customer.id] })
+    const bulkArchiveResponse = await client
+      .post('/api/v1/customers/archive')
+      .json({ ids: [customer.id] })
     const bulkReactivateResponse = await client
       .post('/api/v1/customers/reactivate')
       .json({ ids: [customer.id] })
@@ -184,9 +186,12 @@ test.group('Customers administration', (group) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const customer = await CustomerFactory.merge({ code: 'BULK-DUPLICATE-ID' }).create()
 
-    const archiveResponse = await client.post('/api/v1/customers/archive').loginAs(admin).json({
-      ids: [customer.id, customer.id],
-    })
+    const archiveResponse = await client
+      .post('/api/v1/customers/archive')
+      .loginAs(admin)
+      .json({
+        ids: [customer.id, customer.id],
+      })
     const reactivateResponse = await client
       .post('/api/v1/customers/reactivate')
       .loginAs(admin)
@@ -283,15 +288,21 @@ test.group('Customers administration', (group) => {
     assert.equal(response.body().data.reactivationComment, 'Returning to operations')
   })
 
-  test('archives multiple customers atomically with a shared comment', async ({ assert, client }) => {
+  test('archives multiple customers atomically with a shared comment', async ({
+    assert,
+    client,
+  }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const first = await CustomerFactory.merge({ code: 'BULK-ARCHIVE-01' }).create()
     const second = await CustomerFactory.merge({ code: 'BULK-ARCHIVE-02' }).create()
 
-    const response = await client.post('/api/v1/customers/archive').loginAs(admin).json({
-      ids: [first.id, second.id],
-      comment: '  Portfolio cleanup  ',
-    })
+    const response = await client
+      .post('/api/v1/customers/archive')
+      .loginAs(admin)
+      .json({
+        ids: [first.id, second.id],
+        comment: '  Portfolio cleanup  ',
+      })
 
     response.assertStatus(200)
     assert.deepEqual(
@@ -299,10 +310,12 @@ test.group('Customers administration', (group) => {
       [first.id, second.id],
     )
     assert.deepEqual(
-      response.body().data.map((customer: { status: string; archiveComment: string }) => [
-        customer.status,
-        customer.archiveComment,
-      ]),
+      response
+        .body()
+        .data.map((customer: { status: string; archiveComment: string }) => [
+          customer.status,
+          customer.archiveComment,
+        ]),
       [
         ['ARCHIVED', 'Portfolio cleanup'],
         ['ARCHIVED', 'Portfolio cleanup'],
@@ -318,19 +331,26 @@ test.group('Customers administration', (group) => {
     const first = await CustomerFactory.merge({ code: 'BULK-BLOCKED-01' }).create()
     const second = await CustomerFactory.merge({ code: 'BULK-BLOCKED-02' }).create()
 
-    app.container.swap(SiteReferenceUsageChecker, () => app.container.make(PlannedOrActiveUsageChecker))
+    app.container.swap(SiteReferenceUsageChecker, () =>
+      app.container.make(PlannedOrActiveUsageChecker),
+    )
 
-    const response = await client.post('/api/v1/customers/archive').loginAs(admin).json({
-      ids: [first.id, second.id],
-    })
+    const response = await client
+      .post('/api/v1/customers/archive')
+      .loginAs(admin)
+      .json({
+        ids: [first.id, second.id],
+      })
 
     response.assertStatus(409)
     assert.equal(response.body().error.code, 'E_CUSTOMER_BULK_ARCHIVE_BLOCKED')
     assert.deepEqual(
-      response.body().error.meta.blockedCustomers.map((customer: { id: string; reason: string }) => [
-        customer.id,
-        customer.reason,
-      ]),
+      response
+        .body()
+        .error.meta.blockedCustomers.map((customer: { id: string; reason: string }) => [
+          customer.id,
+          customer.reason,
+        ]),
       [
         [first.id, 'IN_USE'],
         [second.id, 'IN_USE'],
@@ -342,22 +362,34 @@ test.group('Customers administration', (group) => {
     assert.equal(second.status, 'AVAILABLE')
   })
 
-  test('reactivates multiple archived customers with a shared comment', async ({ assert, client }) => {
+  test('reactivates multiple archived customers with a shared comment', async ({
+    assert,
+    client,
+  }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
-    const first = await CustomerFactory.apply('archived').merge({ code: 'BULK-REACTIVATE-01' }).create()
-    const second = await CustomerFactory.apply('archived').merge({ code: 'BULK-REACTIVATE-02' }).create()
+    const first = await CustomerFactory.apply('archived')
+      .merge({ code: 'BULK-REACTIVATE-01' })
+      .create()
+    const second = await CustomerFactory.apply('archived')
+      .merge({ code: 'BULK-REACTIVATE-02' })
+      .create()
 
-    const response = await client.post('/api/v1/customers/reactivate').loginAs(admin).json({
-      ids: [first.id, second.id],
-      comment: '  Back in service  ',
-    })
+    const response = await client
+      .post('/api/v1/customers/reactivate')
+      .loginAs(admin)
+      .json({
+        ids: [first.id, second.id],
+        comment: '  Back in service  ',
+      })
 
     response.assertStatus(200)
     assert.deepEqual(
-      response.body().data.map((customer: { status: string; reactivationComment: string }) => [
-        customer.status,
-        customer.reactivationComment,
-      ]),
+      response
+        .body()
+        .data.map((customer: { status: string; reactivationComment: string }) => [
+          customer.status,
+          customer.reactivationComment,
+        ]),
       [
         ['AVAILABLE', 'Back in service'],
         ['AVAILABLE', 'Back in service'],

@@ -2,8 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { customerQueries } from '@/features/customers/queries/customer-queries'
 import { CustomersError } from '@/features/customers/ui/customers-error'
-import { CustomersPending } from '@/features/customers/ui/customers-pending'
 import { CustomersPage } from '@/features/customers/ui/customers-page'
+import { CustomersPending } from '@/features/customers/ui/customers-pending'
 
 const customerSearchSchema = z.object({
   q: z.string().catch(''),

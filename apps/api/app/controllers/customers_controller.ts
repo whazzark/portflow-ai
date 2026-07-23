@@ -11,11 +11,11 @@ import ReactivateCustomersUseCase from '#customers/reactivate/reactivate_custome
 import CustomerPolicy from '#customers/shared/customer_policy'
 import CustomerTransformer from '#customers/shared/customer_transformer'
 import {
-  archiveCustomerValidator,
   archiveCustomersValidator,
+  archiveCustomerValidator,
   createCustomerValidator,
-  reactivateCustomerValidator,
   reactivateCustomersValidator,
+  reactivateCustomerValidator,
   updateCustomerValidator,
 } from '#customers/shared/customer_validator'
 import GetCustomerUseCase from '#customers/show/get_customer_use_case'
