@@ -91,7 +91,7 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['available']>>>
     }
   }
-  'customers.archiveMany': {
+  'customers.archive_many': {
     methods: ["POST"]
     pattern: '/api/v1/customers/archive'
     types: {
@@ -103,7 +103,7 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['archiveMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
-  'customers.reactivateMany': {
+  'customers.reactivate_many': {
     methods: ["POST"]
     pattern: '/api/v1/customers/reactivate'
     types: {
