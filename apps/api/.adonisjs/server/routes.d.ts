@@ -11,6 +11,8 @@ export type ScannedRoutes = {
     'customers.store': { paramsTuple?: []; params?: {} }
     'customers.index': { paramsTuple?: []; params?: {} }
     'customers.available': { paramsTuple?: []; params?: {} }
+    'customers.archiveMany': { paramsTuple?: []; params?: {} }
+    'customers.reactivateMany': { paramsTuple?: []; params?: {} }
     'customers.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -60,6 +62,8 @@ export type ScannedRoutes = {
     'auth.login': { paramsTuple?: []; params?: {} }
     'auth.logout': { paramsTuple?: []; params?: {} }
     'customers.store': { paramsTuple?: []; params?: {} }
+    'customers.archiveMany': { paramsTuple?: []; params?: {} }
+    'customers.reactivateMany': { paramsTuple?: []; params?: {} }
     'customers.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.store': { paramsTuple?: []; params?: {} }

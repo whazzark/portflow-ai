@@ -9,7 +9,7 @@ export default class CustomerPolicy extends BasePolicy {
   }
 
   list(user: User): AuthorizerResponse {
-    return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
+    return user.accessStatus === 'ACTIVE'
   }
 
   view(user: User): AuthorizerResponse {

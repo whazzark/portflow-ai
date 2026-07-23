@@ -1,6 +1,9 @@
 import type { DateTime } from 'luxon'
+import type { BulkCustomerLifecycleBlocker } from '#customers/shared/customer_lifecycle_blockers'
 import type Customer from '#models/customer'
 import type { CustomerStatus } from '#models/customer'
+
+export type { BulkCustomerLifecycleBlocker } from '#customers/shared/customer_lifecycle_blockers'
 
 export type CreateCustomerCommand = {
   code: string
@@ -28,6 +31,24 @@ export type ReactivateCustomerCommand = {
   reactivationComment: string | null
 }
 
+export type ArchiveCustomersCommand = {
+  ids: string[]
+  archivedAt: DateTime
+  archivedByUserId: string
+  archiveComment: string | null
+}
+
+export type ReactivateCustomersCommand = {
+  ids: string[]
+  reactivatedAt: DateTime
+  reactivatedByUserId: string
+  reactivationComment: string | null
+}
+
+export type BulkCustomerLifecycleResult =
+  | { kind: 'ARCHIVED' | 'REACTIVATED'; customers: Customer[] }
+  | { kind: 'BLOCKED'; blockers: BulkCustomerLifecycleBlocker[] }
+
 export type CustomerWriteResult =
   | { kind: 'CREATED'; customer: Customer }
   | { kind: 'UPDATED'; customer: Customer }
@@ -51,7 +72,14 @@ export default abstract class CustomerRepository {
   abstract list(): Promise<Customer[]>
   abstract listAvailable(): Promise<Customer[]>
   abstract findById(id: string): Promise<Customer | null>
+  abstract findManyByIds(ids: string[]): Promise<Customer[]>
   abstract updateAvailable(command: UpdateCustomerCommand): Promise<CustomerWriteResult>
   abstract archiveAvailable(command: ArchiveCustomerCommand): Promise<ArchiveCustomerResult>
   abstract reactivateArchived(command: ReactivateCustomerCommand): Promise<ReactivateCustomerResult>
+  abstract archiveAvailableMany(
+    command: ArchiveCustomersCommand,
+  ): Promise<BulkCustomerLifecycleResult>
+  abstract reactivateArchivedMany(
+    command: ReactivateCustomersCommand,
+  ): Promise<BulkCustomerLifecycleResult>
 }

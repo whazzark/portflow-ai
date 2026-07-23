@@ -47,3 +47,29 @@ export class CustomerAlreadyAvailableException extends Exception {
   static code = 'E_CUSTOMER_ALREADY_AVAILABLE'
   static message = 'Customer is already available'
 }
+
+export class BulkCustomerArchiveBlockedException extends Exception {
+  static status = 409
+  static code = 'E_CUSTOMER_BULK_ARCHIVE_BLOCKED'
+  static message = 'One or more customers could not be archived'
+
+  declare meta: { blockedCustomers: unknown[] }
+
+  constructor(blockedCustomers: unknown[]) {
+    super()
+    this.meta = { blockedCustomers }
+  }
+}
+
+export class BulkCustomerReactivationBlockedException extends Exception {
+  static status = 409
+  static code = 'E_CUSTOMER_BULK_REACTIVATION_BLOCKED'
+  static message = 'One or more customers could not be reactivated'
+
+  declare meta: { blockedCustomers: unknown[] }
+
+  constructor(blockedCustomers: unknown[]) {
+    super()
+    this.meta = { blockedCustomers }
+  }
+}

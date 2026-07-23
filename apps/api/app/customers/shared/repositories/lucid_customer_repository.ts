@@ -1,15 +1,22 @@
 import { DateTime } from 'luxon'
-
+import {
+  findBulkBlockers,
+  indexCustomersById,
+  orderCustomers,
+} from '#customers/shared/customer_lifecycle_blockers'
 import Customer from '#models/customer'
 import isUniqueViolation from '#shared/database/is_unique_violation'
 
 import CustomerRepository, {
   type ArchiveCustomerCommand,
   type ArchiveCustomerResult,
+  type ArchiveCustomersCommand,
+  type BulkCustomerLifecycleResult,
   type CreateCustomerCommand,
   type CustomerWriteResult,
   type ReactivateCustomerCommand,
   type ReactivateCustomerResult,
+  type ReactivateCustomersCommand,
   type UpdateCustomerCommand,
 } from './customer_repository.ts'
 
@@ -60,6 +67,10 @@ export default class LucidCustomerRepository extends CustomerRepository {
 
   findById(id: string): Promise<Customer | null> {
     return Customer.find(id)
+  }
+
+  findManyByIds(ids: string[]): Promise<Customer[]> {
+    return Customer.query().whereIn('id', ids)
   }
 
   async updateAvailable(command: UpdateCustomerCommand): Promise<CustomerWriteResult> {
@@ -164,5 +175,75 @@ export default class LucidCustomerRepository extends CustomerRepository {
     }
 
     return { kind: 'REACTIVATED', customer }
+  }
+
+  archiveAvailableMany(command: ArchiveCustomersCommand): Promise<BulkCustomerLifecycleResult> {
+    return Customer.transaction(async (trx) => {
+      const customers = await Customer.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      const customersById = indexCustomersById(customers)
+      const blockers = findBulkBlockers(command.ids, customersById, 'AVAILABLE')
+
+      if (blockers.length > 0) {
+        return { kind: 'BLOCKED', blockers }
+      }
+
+      const [affectedRows] = await Customer.query({ client: trx })
+        .whereIn('id', command.ids)
+        .where('status', 'AVAILABLE')
+        .update({
+          status: 'ARCHIVED',
+          archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
+          archivedByUserId: command.archivedByUserId,
+          archiveComment: command.archiveComment,
+          updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
+        })
+
+      if (affectedRows !== command.ids.length) {
+        throw new Error('Customer bulk archive changed during transaction')
+      }
+
+      const archived = await Customer.query({ client: trx }).whereIn('id', command.ids)
+
+      return {
+        kind: 'ARCHIVED',
+        customers: orderCustomers(command.ids, indexCustomersById(archived)),
+      }
+    })
+  }
+
+  reactivateArchivedMany(
+    command: ReactivateCustomersCommand,
+  ): Promise<BulkCustomerLifecycleResult> {
+    return Customer.transaction(async (trx) => {
+      const customers = await Customer.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      const customersById = indexCustomersById(customers)
+      const blockers = findBulkBlockers(command.ids, customersById, 'ARCHIVED')
+
+      if (blockers.length > 0) {
+        return { kind: 'BLOCKED', blockers }
+      }
+
+      const [affectedRows] = await Customer.query({ client: trx })
+        .whereIn('id', command.ids)
+        .where('status', 'ARCHIVED')
+        .update({
+          status: 'AVAILABLE',
+          reactivatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+          reactivatedByUserId: command.reactivatedByUserId,
+          reactivationComment: command.reactivationComment,
+          updatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+        })
+
+      if (affectedRows !== command.ids.length) {
+        throw new Error('Customer bulk reactivation changed during transaction')
+      }
+
+      const reactivated = await Customer.query({ client: trx }).whereIn('id', command.ids)
+
+      return {
+        kind: 'REACTIVATED',
+        customers: orderCustomers(command.ids, indexCustomersById(reactivated)),
+      }
+    })
   }
 }

@@ -2,7 +2,7 @@
 /// <reference path="../manifest.d.ts" />
 
 import type { ExtractBody, ExtractErrorResponse, ExtractQuery, ExtractQueryForGet, ExtractResponse } from '@tuyau/core/types'
-import type { InferInput, SimpleError } from '@vinejs/vine/types'
+import type { InferInput } from '@vinejs/vine/types'
 
 export type ParamValue = string | number | bigint | boolean
 
@@ -28,7 +28,7 @@ export interface Registry {
       params: {}
       query: ExtractQuery<InferInput<(typeof import('#auth/login/login_validator').loginValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/login_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/login_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/login_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'auth.me': {
@@ -64,7 +64,7 @@ export interface Registry {
       params: {}
       query: ExtractQuery<InferInput<(typeof import('#customers/shared/customer_validator').createCustomerValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'customers.index': {
@@ -91,6 +91,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['available']>>>
     }
   }
+  'customers.archiveMany': {
+    methods: ["POST"]
+    pattern: '/api/v1/customers/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#customers/shared/customer_validator').archiveCustomersValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#customers/shared/customer_validator').archiveCustomersValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['archiveMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['archiveMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'customers.reactivateMany': {
+    methods: ["POST"]
+    pattern: '/api/v1/customers/reactivate'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#customers/shared/customer_validator').reactivateCustomersValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#customers/shared/customer_validator').reactivateCustomersValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['reactivateMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['reactivateMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'customers.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/customers/:id'
@@ -112,7 +136,7 @@ export interface Registry {
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#customers/shared/customer_validator').updateCustomerValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['update']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'customers.archive': {
@@ -124,7 +148,7 @@ export interface Registry {
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#customers/shared/customer_validator').archiveCustomerValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['archive']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['archive']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'customers.reactivate': {
@@ -136,7 +160,7 @@ export interface Registry {
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#customers/shared/customer_validator').reactivateCustomerValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['reactivate']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['reactivate']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'docks.index': {
@@ -160,7 +184,7 @@ export interface Registry {
       params: {}
       query: ExtractQuery<InferInput<(typeof import('#docks/shared/dock_validator').createDockValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'docks.available': {
@@ -196,7 +220,7 @@ export interface Registry {
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#docks/shared/dock_validator').updateDockValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['update']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'docks.archive': {
@@ -208,7 +232,7 @@ export interface Registry {
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#docks/shared/dock_validator').archiveDockValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['archive']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['archive']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'docks.reactivate': {
@@ -220,7 +244,7 @@ export interface Registry {
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#docks/shared/dock_validator').reactivateDockValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['reactivate']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['reactivate']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'weighingAreas.index': {
@@ -244,7 +268,7 @@ export interface Registry {
       params: {}
       query: ExtractQuery<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').createWeighingAreaValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'weighingAreas.available': {
@@ -280,7 +304,7 @@ export interface Registry {
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').updateWeighingAreaValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['update']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'weighingAreas.archive': {
@@ -292,7 +316,7 @@ export interface Registry {
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').archiveWeighingAreaValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['archive']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['archive']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'weighingAreas.reactivate': {
@@ -304,7 +328,7 @@ export interface Registry {
       params: { id: ParamValue }
       query: ExtractQuery<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').reactivateWeighingAreaValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['reactivate']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['reactivate']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
 }

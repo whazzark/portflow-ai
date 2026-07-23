@@ -33,3 +33,13 @@ export const archiveCustomerValidator = vine.create({
 export const reactivateCustomerValidator = vine.create({
   comment: vine.string().nullable().optional(),
 })
+
+export const archiveCustomersValidator = vine.create({
+  ids: vine.array(vine.string().uuid()).minLength(1).distinct(),
+  comment: vine.string().nullable().optional(),
+})
+
+export const reactivateCustomersValidator = vine.create({
+  ids: vine.array(vine.string().uuid()).minLength(1).distinct(),
+  comment: vine.string().nullable().optional(),
+})

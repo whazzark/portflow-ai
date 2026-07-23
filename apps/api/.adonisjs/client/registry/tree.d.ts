@@ -14,6 +14,8 @@ export interface ApiDefinition {
     store: typeof routes['customers.store']
     index: typeof routes['customers.index']
     available: typeof routes['customers.available']
+    archiveMany: typeof routes['customers.archiveMany']
+    reactivateMany: typeof routes['customers.reactivateMany']
     show: typeof routes['customers.show']
     update: typeof routes['customers.update']
     archive: typeof routes['customers.archive']

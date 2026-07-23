@@ -21,6 +21,8 @@ router
         router.post('/', [controllers.Customers, 'store']).as('store')
         router.get('/', [controllers.Customers, 'index']).as('index')
         router.get('/available', [controllers.Customers, 'available']).as('available')
+        router.post('/archive', [controllers.Customers, 'archiveMany']).as('archiveMany')
+        router.post('/reactivate', [controllers.Customers, 'reactivateMany']).as('reactivateMany')
         router.get('/:id', [controllers.Customers, 'show']).as('show')
         router.patch('/:id', [controllers.Customers, 'update']).as('update')
         router.post('/:id/archive', [controllers.Customers, 'archive']).as('archive')

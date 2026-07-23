@@ -34,12 +34,12 @@ export default class ArchiveDockUseCase {
       throw new DockAlreadyArchivedException()
     }
 
-    const isInUse = await this.usageChecker.isUsedByPlannedOrActiveDischarge({
+    const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
       referenceType: 'DOCK',
-      referenceId: input.id,
+      referenceIds: [input.id],
     })
 
-    if (isInUse) {
+    if (usedIds.has(input.id)) {
       throw new DockInUseException()
     }
 
