@@ -23,11 +23,19 @@ test.group('Customers administration', (group) => {
     const customer = await CustomerFactory.merge({ code: 'UNAUTH-LIFECYCLE' }).create()
     const archiveResponse = await client.post(`/api/v1/customers/${customer.id}/archive`).json({})
     const reactivateResponse = await client.post(`/api/v1/customers/${customer.id}/reactivate`)
+    const bulkArchiveResponse = await client.post('/api/v1/customers/archive').json({ ids: [customer.id] })
+    const bulkReactivateResponse = await client
+      .post('/api/v1/customers/reactivate')
+      .json({ ids: [customer.id] })
 
     archiveResponse.assertStatus(401)
     reactivateResponse.assertStatus(401)
+    bulkArchiveResponse.assertStatus(401)
+    bulkReactivateResponse.assertStatus(401)
     assert.equal(archiveResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
     assert.equal(reactivateResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    assert.equal(bulkArchiveResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    assert.equal(bulkReactivateResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
   })
 
   test('rejects customer administration for non-admin users', async ({ assert, client }) => {
@@ -98,6 +106,25 @@ test.group('Customers administration', (group) => {
     assert.equal(archivedResponse.body().data.status, 'ARCHIVED')
   })
 
+  test('allows active operational users to browse all customers read-only', async ({
+    assert,
+    client,
+  }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const available = await CustomerFactory.merge({ code: 'BROWSE-AVAILABLE' }).create()
+    const archived = await CustomerFactory.apply('archived')
+      .merge({ code: 'BROWSE-ARCHIVED' })
+      .create()
+
+    const response = await client.get('/api/v1/customers').loginAs(observer)
+
+    response.assertStatus(200)
+    assert.includeMembers(
+      response.body().data.map((customer: { id: string }) => customer.id),
+      [available.id, archived.id],
+    )
+  })
+
   test('rejects invalid customer payloads with the shared validation envelope', async ({
     assert,
     client,
@@ -151,6 +178,24 @@ test.group('Customers administration', (group) => {
     assert.equal(whitespaceCompanyNameUpdateResponse.body().error.code, 'E_VALIDATION_ERROR')
     assert.equal(whitespaceCompanyNameUpdateResponse.body().error.details[0].field, 'companyName')
     assert.equal(whitespaceCompanyNameUpdateResponse.body().error.details[0].rule, 'required')
+  })
+
+  test('rejects duplicate customer IDs in bulk lifecycle requests', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const customer = await CustomerFactory.merge({ code: 'BULK-DUPLICATE-ID' }).create()
+
+    const archiveResponse = await client.post('/api/v1/customers/archive').loginAs(admin).json({
+      ids: [customer.id, customer.id],
+    })
+    const reactivateResponse = await client
+      .post('/api/v1/customers/reactivate')
+      .loginAs(admin)
+      .json({ ids: [customer.id, customer.id] })
+
+    for (const response of [archiveResponse, reactivateResponse]) {
+      response.assertStatus(422)
+      assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+    }
   })
 
   test('lists archived customers but excludes them from available selections', async ({
@@ -238,6 +283,88 @@ test.group('Customers administration', (group) => {
     assert.equal(response.body().data.reactivationComment, 'Returning to operations')
   })
 
+  test('archives multiple customers atomically with a shared comment', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const first = await CustomerFactory.merge({ code: 'BULK-ARCHIVE-01' }).create()
+    const second = await CustomerFactory.merge({ code: 'BULK-ARCHIVE-02' }).create()
+
+    const response = await client.post('/api/v1/customers/archive').loginAs(admin).json({
+      ids: [first.id, second.id],
+      comment: '  Portfolio cleanup  ',
+    })
+
+    response.assertStatus(200)
+    assert.deepEqual(
+      response.body().data.map((customer: { id: string }) => customer.id),
+      [first.id, second.id],
+    )
+    assert.deepEqual(
+      response.body().data.map((customer: { status: string; archiveComment: string }) => [
+        customer.status,
+        customer.archiveComment,
+      ]),
+      [
+        ['ARCHIVED', 'Portfolio cleanup'],
+        ['ARCHIVED', 'Portfolio cleanup'],
+      ],
+    )
+  })
+
+  test('reports all bulk archive blockers without changing any customer', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const first = await CustomerFactory.merge({ code: 'BULK-BLOCKED-01' }).create()
+    const second = await CustomerFactory.merge({ code: 'BULK-BLOCKED-02' }).create()
+
+    app.container.swap(SiteReferenceUsageChecker, () => app.container.make(PlannedOrActiveUsageChecker))
+
+    const response = await client.post('/api/v1/customers/archive').loginAs(admin).json({
+      ids: [first.id, second.id],
+    })
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_CUSTOMER_BULK_ARCHIVE_BLOCKED')
+    assert.deepEqual(
+      response.body().error.meta.blockedCustomers.map((customer: { id: string; reason: string }) => [
+        customer.id,
+        customer.reason,
+      ]),
+      [
+        [first.id, 'IN_USE'],
+        [second.id, 'IN_USE'],
+      ],
+    )
+    await first.refresh()
+    await second.refresh()
+    assert.equal(first.status, 'AVAILABLE')
+    assert.equal(second.status, 'AVAILABLE')
+  })
+
+  test('reactivates multiple archived customers with a shared comment', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const first = await CustomerFactory.apply('archived').merge({ code: 'BULK-REACTIVATE-01' }).create()
+    const second = await CustomerFactory.apply('archived').merge({ code: 'BULK-REACTIVATE-02' }).create()
+
+    const response = await client.post('/api/v1/customers/reactivate').loginAs(admin).json({
+      ids: [first.id, second.id],
+      comment: '  Back in service  ',
+    })
+
+    response.assertStatus(200)
+    assert.deepEqual(
+      response.body().data.map((customer: { status: string; reactivationComment: string }) => [
+        customer.status,
+        customer.reactivationComment,
+      ]),
+      [
+        ['AVAILABLE', 'Back in service'],
+        ['AVAILABLE', 'Back in service'],
+      ],
+    )
+  })
+
   test('rejects archival when a planned or active discharge uses the customer', async ({
     assert,
     client,
@@ -271,8 +398,18 @@ test.group('Customers administration', (group) => {
     const reactivateResponse = await client
       .post(`/api/v1/customers/${archived.id}/reactivate`)
       .loginAs(observer)
+    const bulkArchiveResponse = await client
+      .post('/api/v1/customers/archive')
+      .loginAs(observer)
+      .json({ ids: [available.id] })
+    const bulkReactivateResponse = await client
+      .post('/api/v1/customers/reactivate')
+      .loginAs(observer)
+      .json({ ids: [archived.id] })
 
     archiveResponse.assertStatus(403)
     reactivateResponse.assertStatus(403)
+    bulkArchiveResponse.assertStatus(403)
+    bulkReactivateResponse.assertStatus(403)
   })
 })

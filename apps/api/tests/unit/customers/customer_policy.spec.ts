@@ -26,7 +26,8 @@ test.group('Customer policy', () => {
     const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).make()
 
     assert.isFalse(policy.create(lead))
-    assert.isFalse(policy.list(observer))
+    assert.isTrue(policy.list(lead))
+    assert.isTrue(policy.list(observer))
     assert.isTrue(policy.view(lead))
     assert.isFalse(policy.update(observer))
   })
