@@ -4,8 +4,9 @@ import {
   DuplicateCustomerCodeException,
   DuplicateCustomerCompanyNameException,
 } from '#customers/shared/customer_exceptions'
-import { normalizeCompanyName, normalizeCustomerCode } from '#customers/shared/normalize_customer'
+import { assertValidCustomerCode } from '#customers/shared/normalize_customer'
 import CustomerRepository from '#customers/shared/repositories/customer_repository'
+import { assertValidSiteReferenceName } from '#site_references/shared/normalize_site_reference'
 
 export type CreateCustomerInput = {
   code: string
@@ -18,8 +19,8 @@ export default class CreateCustomerUseCase {
 
   async handle(input: CreateCustomerInput) {
     const result = await this.customerRepository.create({
-      code: normalizeCustomerCode(input.code),
-      companyName: normalizeCompanyName(input.companyName),
+      code: assertValidCustomerCode(input.code),
+      companyName: assertValidSiteReferenceName(input.companyName),
     })
 
     if (result.kind === 'DUPLICATE_CODE') {

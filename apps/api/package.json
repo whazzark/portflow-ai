@@ -33,7 +33,8 @@
     "#site_references/*": "./app/site_references/*.js",
     "#shared/*": "./app/shared/*.js",
     "#start/*": "./start/*.js",
-    "#users/*": "./app/users/*.js"
+    "#users/*": "./app/users/*.js",
+    "#weighing_areas/*": "./app/weighing_areas/*.js"
   },
   "dependencies": {
     "@adonisjs/auth": "^10.1.0",

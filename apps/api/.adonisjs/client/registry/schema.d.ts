@@ -223,4 +223,88 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['reactivate']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'weighingAreas.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/weighing-areas'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['index']>>>
+    }
+  }
+  'weighingAreas.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/weighing-areas'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').createWeighingAreaValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').createWeighingAreaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'weighingAreas.available': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/weighing-areas/available'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['available']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['available']>>>
+    }
+  }
+  'weighingAreas.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/weighing-areas/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['show']>>>
+    }
+  }
+  'weighingAreas.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/weighing-areas/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').updateWeighingAreaValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').updateWeighingAreaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'weighingAreas.archive': {
+    methods: ["POST"]
+    pattern: '/api/v1/weighing-areas/:id/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').archiveWeighingAreaValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').archiveWeighingAreaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['archive']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['archive']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'weighingAreas.reactivate': {
+    methods: ["POST"]
+    pattern: '/api/v1/weighing-areas/:id/reactivate'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').reactivateWeighingAreaValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').reactivateWeighingAreaValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['reactivate']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['reactivate']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
 }

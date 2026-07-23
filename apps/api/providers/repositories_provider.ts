@@ -8,6 +8,8 @@ import NoDischargeSiteReferenceUsageChecker from '#site_references/shared/no_dis
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 import LucidUserRepository from '#users/shared/repositories/lucid_user_repository'
 import UserRepository from '#users/shared/repositories/user_repository'
+import LucidWeighingAreaRepository from '#weighing_areas/shared/repositories/lucid_weighing_area_repository'
+import WeighingAreaRepository from '#weighing_areas/shared/repositories/weighing_area_repository'
 
 export default class RepositoriesProvider {
   constructor(protected app: ApplicationService) {}
@@ -23,6 +25,10 @@ export default class RepositoriesProvider {
 
     this.app.container.bind(DockRepository, () => {
       return this.app.container.make(LucidDockRepository)
+    })
+
+    this.app.container.bind(WeighingAreaRepository, () => {
+      return this.app.container.make(LucidWeighingAreaRepository)
     })
 
     this.app.container.bind(SiteReferenceUsageChecker, () => {

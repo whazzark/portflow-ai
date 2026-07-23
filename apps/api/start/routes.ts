@@ -41,6 +41,19 @@ router
       })
       .prefix('/docks')
       .as('docks')
+
+    router
+      .group(() => {
+        router.get('/', [controllers.WeighingAreas, 'index']).as('index')
+        router.post('/', [controllers.WeighingAreas, 'store']).as('store')
+        router.get('/available', [controllers.WeighingAreas, 'available']).as('available')
+        router.get('/:id', [controllers.WeighingAreas, 'show']).as('show')
+        router.patch('/:id', [controllers.WeighingAreas, 'update']).as('update')
+        router.post('/:id/archive', [controllers.WeighingAreas, 'archive']).as('archive')
+        router.post('/:id/reactivate', [controllers.WeighingAreas, 'reactivate']).as('reactivate')
+      })
+      .prefix('/weighing-areas')
+      .as('weighingAreas')
   })
   .prefix('/api/v1')
   .use(middleware.auth())
