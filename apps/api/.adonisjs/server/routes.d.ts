@@ -22,6 +22,13 @@ export type ScannedRoutes = {
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighingAreas.index': { paramsTuple?: []; params?: {} }
+    'weighingAreas.store': { paramsTuple?: []; params?: {} }
+    'weighingAreas.available': { paramsTuple?: []; params?: {} }
+    'weighingAreas.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighingAreas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighingAreas.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighingAreas.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   GET: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -32,6 +39,9 @@ export type ScannedRoutes = {
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
     'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighingAreas.index': { paramsTuple?: []; params?: {} }
+    'weighingAreas.available': { paramsTuple?: []; params?: {} }
+    'weighingAreas.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   HEAD: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -42,6 +52,9 @@ export type ScannedRoutes = {
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
     'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighingAreas.index': { paramsTuple?: []; params?: {} }
+    'weighingAreas.available': { paramsTuple?: []; params?: {} }
+    'weighingAreas.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   POST: {
     'auth.login': { paramsTuple?: []; params?: {} }
@@ -52,10 +65,14 @@ export type ScannedRoutes = {
     'docks.store': { paramsTuple?: []; params?: {} }
     'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighingAreas.store': { paramsTuple?: []; params?: {} }
+    'weighingAreas.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighingAreas.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PATCH: {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighingAreas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

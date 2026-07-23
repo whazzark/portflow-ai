@@ -1,24 +1,28 @@
 import { inject } from '@adonisjs/core'
-
-import {
-  ArchivedDockReadOnlyException,
-  DockNotFoundException,
-  DuplicateDockNameException,
-} from '#docks/shared/dock_exceptions'
-import DockRepository from '#docks/shared/repositories/dock_repository'
 import {
   assertLegalSiteReferenceLatitude,
   assertLegalSiteReferenceLongitude,
   assertValidSiteReferenceName,
 } from '#site_references/shared/normalize_site_reference'
+import WeighingAreaRepository from '#weighing_areas/shared/repositories/weighing_area_repository'
+import {
+  ArchivedWeighingAreaReadOnlyException,
+  DuplicateWeighingAreaNameException,
+  WeighingAreaNotFoundException,
+} from '#weighing_areas/shared/weighing_area_exceptions'
 
-export type UpdateDockInput = { id: string; name?: string; latitude?: number; longitude?: number }
+export type UpdateWeighingAreaInput = {
+  id: string
+  name?: string
+  latitude?: number
+  longitude?: number
+}
 
 @inject()
-export default class UpdateDockUseCase {
-  constructor(private dockRepository: DockRepository) {}
+export default class UpdateWeighingAreaUseCase {
+  constructor(private repository: WeighingAreaRepository) {}
 
-  async handle(input: UpdateDockInput) {
+  async handle(input: UpdateWeighingAreaInput) {
     const values = {
       ...(input.name === undefined ? {} : { name: assertValidSiteReferenceName(input.name) }),
       ...(input.latitude === undefined ? {} : { latitude: input.latitude }),
@@ -33,24 +37,20 @@ export default class UpdateDockUseCase {
       assertLegalSiteReferenceLongitude(values.longitude)
     }
 
-    const result = await this.dockRepository.updateAvailable({ id: input.id, ...values })
+    const result = await this.repository.updateAvailable({ id: input.id, ...values })
 
     if (result.kind === 'NOT_FOUND') {
-      throw new DockNotFoundException()
+      throw new WeighingAreaNotFoundException()
     }
 
     if (result.kind === 'ARCHIVED') {
-      throw new ArchivedDockReadOnlyException()
+      throw new ArchivedWeighingAreaReadOnlyException()
     }
 
     if (result.kind === 'DUPLICATE_NAME') {
-      throw new DuplicateDockNameException()
+      throw new DuplicateWeighingAreaNameException()
     }
 
-    if (result.kind !== 'UPDATED') {
-      throw new Error(`Unexpected dock update result: ${result.kind}`)
-    }
-
-    return result.dock
+    return result.weighingArea
   }
 }

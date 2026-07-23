@@ -12,18 +12,6 @@ export class DuplicateDockNameException extends Exception {
   static message = 'Dock name is already in use'
 }
 
-export class InvalidDockNameException extends Exception {
-  static status = 422
-  static code = 'E_DOCK_NAME_INVALID'
-  static message = 'Dock name must not be empty'
-}
-
-export class InvalidDockCoordinatesException extends Exception {
-  static status = 422
-  static code = 'E_DOCK_COORDINATES_INVALID'
-  static message = 'Dock coordinates are invalid'
-}
-
 export class ArchivedDockReadOnlyException extends Exception {
   static status = 409
   static code = 'E_DOCK_ARCHIVED'

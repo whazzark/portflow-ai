@@ -114,6 +114,48 @@ const routes = {
     tokens: [{"old":"/api/v1/docks/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/docks/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/docks/:id/reactivate","type":0,"val":"docks","end":""},{"old":"/api/v1/docks/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/docks/:id/reactivate","type":0,"val":"reactivate","end":""}],
     types: placeholder as Registry['docks.reactivate']['types'],
   },
+  'weighingAreas.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/weighing-areas',
+    tokens: [{"old":"/api/v1/weighing-areas","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas","type":0,"val":"weighing-areas","end":""}],
+    types: placeholder as Registry['weighingAreas.index']['types'],
+  },
+  'weighingAreas.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/weighing-areas',
+    tokens: [{"old":"/api/v1/weighing-areas","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas","type":0,"val":"weighing-areas","end":""}],
+    types: placeholder as Registry['weighingAreas.store']['types'],
+  },
+  'weighingAreas.available': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/weighing-areas/available',
+    tokens: [{"old":"/api/v1/weighing-areas/available","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas/available","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas/available","type":0,"val":"weighing-areas","end":""},{"old":"/api/v1/weighing-areas/available","type":0,"val":"available","end":""}],
+    types: placeholder as Registry['weighingAreas.available']['types'],
+  },
+  'weighingAreas.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/weighing-areas/:id',
+    tokens: [{"old":"/api/v1/weighing-areas/:id","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas/:id","type":0,"val":"weighing-areas","end":""},{"old":"/api/v1/weighing-areas/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['weighingAreas.show']['types'],
+  },
+  'weighingAreas.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/weighing-areas/:id',
+    tokens: [{"old":"/api/v1/weighing-areas/:id","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas/:id","type":0,"val":"weighing-areas","end":""},{"old":"/api/v1/weighing-areas/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['weighingAreas.update']['types'],
+  },
+  'weighingAreas.archive': {
+    methods: ["POST"],
+    pattern: '/api/v1/weighing-areas/:id/archive',
+    tokens: [{"old":"/api/v1/weighing-areas/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas/:id/archive","type":0,"val":"weighing-areas","end":""},{"old":"/api/v1/weighing-areas/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/weighing-areas/:id/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['weighingAreas.archive']['types'],
+  },
+  'weighingAreas.reactivate': {
+    methods: ["POST"],
+    pattern: '/api/v1/weighing-areas/:id/reactivate',
+    tokens: [{"old":"/api/v1/weighing-areas/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas/:id/reactivate","type":0,"val":"weighing-areas","end":""},{"old":"/api/v1/weighing-areas/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/weighing-areas/:id/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['weighingAreas.reactivate']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

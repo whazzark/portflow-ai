@@ -40,6 +40,19 @@ test.group('Docks administration', () => {
     ])
   })
 
+  test('rejects whitespace-only dock names during creation', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const response = await client
+      .post('/api/v1/docks')
+      .loginAs(admin)
+      .json({ name: '   ', latitude: 48.1, longitude: 2.3 })
+
+    response.assertStatus(422)
+    assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+    assert.equal(response.body().error.details[0].field, 'name')
+    assert.equal(response.body().error.details[0].rule, 'required')
+  })
+
   test('rejects invalid dock coordinates during creation', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const response = await client

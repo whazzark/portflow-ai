@@ -1,14 +1,16 @@
 import vine from '@vinejs/vine'
+import { nonBlank } from '#site_references/shared/site_reference_validator'
 
 export const createCustomerValidator = vine.create({
-  code: vine.string().trim().minLength(1).maxLength(255),
-  companyName: vine.string().trim().minLength(1).maxLength(255),
+  code: vine.string().use(nonBlank()).minLength(1).maxLength(255),
+  companyName: vine.string().use(nonBlank()).minLength(1).maxLength(255),
 })
 
 export const updateCustomerValidator = vine.create(
   vine.object({
     code: vine
       .string()
+      .use(nonBlank())
       .minLength(1)
       .maxLength(255)
       .optional()
@@ -16,6 +18,7 @@ export const updateCustomerValidator = vine.create(
       .requiredIfMissing('companyName'),
     companyName: vine
       .string()
+      .use(nonBlank())
       .minLength(1)
       .maxLength(255)
       .optional()

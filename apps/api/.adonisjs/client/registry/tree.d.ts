@@ -28,4 +28,13 @@ export interface ApiDefinition {
     archive: typeof routes['docks.archive']
     reactivate: typeof routes['docks.reactivate']
   }
+  weighingAreas: {
+    index: typeof routes['weighingAreas.index']
+    store: typeof routes['weighingAreas.store']
+    available: typeof routes['weighingAreas.available']
+    show: typeof routes['weighingAreas.show']
+    update: typeof routes['weighingAreas.update']
+    archive: typeof routes['weighingAreas.archive']
+    reactivate: typeof routes['weighingAreas.reactivate']
+  }
 }

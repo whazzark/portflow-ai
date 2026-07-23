@@ -1,12 +1,12 @@
 import { inject } from '@adonisjs/core'
 
-import {
-  DuplicateDockNameException,
-  InvalidDockCoordinatesException,
-  InvalidDockNameException,
-} from '#docks/shared/dock_exceptions'
-import { isLegalLatitude, isLegalLongitude, normalizeDockName } from '#docks/shared/normalize_dock'
+import { DuplicateDockNameException } from '#docks/shared/dock_exceptions'
 import DockRepository from '#docks/shared/repositories/dock_repository'
+import {
+  assertLegalSiteReferenceLatitude,
+  assertLegalSiteReferenceLongitude,
+  assertValidSiteReferenceName,
+} from '#site_references/shared/normalize_site_reference'
 
 export type CreateDockInput = { name: string; latitude: number; longitude: number }
 
@@ -15,15 +15,9 @@ export default class CreateDockUseCase {
   constructor(private dockRepository: DockRepository) {}
 
   async handle(input: CreateDockInput) {
-    const name = normalizeDockName(input.name)
-
-    if (!name) {
-      throw new InvalidDockNameException()
-    }
-
-    if (!isLegalLatitude(input.latitude) || !isLegalLongitude(input.longitude)) {
-      throw new InvalidDockCoordinatesException()
-    }
+    const name = assertValidSiteReferenceName(input.name)
+    assertLegalSiteReferenceLatitude(input.latitude)
+    assertLegalSiteReferenceLongitude(input.longitude)
 
     const result = await this.dockRepository.create({ ...input, name })
 
