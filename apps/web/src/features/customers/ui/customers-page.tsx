@@ -8,6 +8,7 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
+import { isAdministrator } from '@/features/auth/policies/permissions'
 import { customerQueries } from '@/features/customers/queries/customer-queries'
 import { BulkLifecycleActions } from '@/features/customers/ui/bulk-lifecycle-actions'
 import { CustomerSection } from '@/features/customers/ui/customer-section'
@@ -38,7 +39,7 @@ export function CustomersPage() {
   const customers = customersQuery.data.data
   const availableCustomers = customers.filter((customer) => customer.status === 'AVAILABLE')
   const archivedCustomers = customers.filter((customer) => customer.status === 'ARCHIVED')
-  const canAdminister = user.role === 'OPERATIONS_ADMIN' || user.role === 'ORGANIZATION_ADMIN'
+  const canAdminister = isAdministrator(user)
 
   const updateSearch = (value: string) => {
     setSelectedCustomerIds(new Set())

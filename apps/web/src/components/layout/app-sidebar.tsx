@@ -20,6 +20,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar'
 import type { SessionUser } from '@/features/auth/context/session-context'
+import { isAdministrator } from '@/features/auth/policies/permissions'
 import { ThemeToggle } from '@/libraries/theme/theme-toggle'
 
 const NAVIGATION_GROUPS: NavigationGroupType[] = [
@@ -46,7 +47,7 @@ const NAVIGATION_GROUPS: NavigationGroupType[] = [
 ]
 
 export function AppSidebar({ user }: { user: SessionUser }) {
-  const canBrowseUsers = user.role === 'OPERATIONS_ADMIN' || user.role === 'ORGANIZATION_ADMIN'
+  const canBrowseUsers = isAdministrator(user)
 
   return (
     <Sidebar collapsible="icon" aria-label="Application sidebar">
