@@ -109,6 +109,17 @@ test('highlights matching code and company text using the customer search normal
   expect(document.querySelectorAll('mark')[1]).toHaveTextContent('Bêta')
 })
 
+test('highlights a multi-word company search', async () => {
+  const user = userEvent.setup()
+  mockCustomers()
+
+  renderCustomers()
+  await screen.findByRole('table', { name: 'Available customers' })
+  await user.type(screen.getByRole('textbox', { name: 'Search customers' }), 'Acme Log')
+
+  expect(document.querySelector('mark')).toHaveTextContent('Acme Log')
+})
+
 test('sorts each customer table and updates the URL state', async () => {
   const user = userEvent.setup()
   mockCustomers()

@@ -1,8 +1,11 @@
 export function normalizeSearch(value: string) {
+  return normalizeSearchCharacters(value).trim()
+}
+
+function normalizeSearchCharacters(value: string) {
   return value
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
-    .trim()
     .toLocaleLowerCase('en')
 }
 
@@ -24,7 +27,7 @@ export function searchSegments(value: string, search: string): SearchSegment[] {
   const originalIndexes: number[] = []
 
   characters.forEach((character, index) => {
-    for (const normalizedCharacter of Array.from(normalizeSearch(character))) {
+    for (const normalizedCharacter of Array.from(normalizeSearchCharacters(character))) {
       normalizedValue.push(normalizedCharacter)
       originalIndexes.push(index)
     }
