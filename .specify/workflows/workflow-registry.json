@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "workflows": {
+    "speckit": {
+      "name": "Full SDD Cycle",
+      "version": "1.0.0",
+      "description": "Runs specify \u2192 plan \u2192 tasks \u2192 implement with review gates",
+      "source": "bundled",
+      "installed_at": "2026-07-27T20:08:58.892269+00:00",
+      "updated_at": "2026-07-27T20:08:58.892280+00:00"
+    },
+    "portflow-feature": {
+      "name": "Portflow Full Spec-Driven Delivery",
+      "version": "1.0.0",
+      "description": "Codex-only specification, planning, implementation, verification, and convergence with human gates",
+      "source": ".specify/workflows/portflow-feature",
+      "installed_at": "2026-07-27T20:11:30.862673+00:00",
+      "updated_at": "2026-07-27T20:11:30.862938+00:00"
+    },
+    "portflow-existing-feature": {
+      "name": "Portflow Existing Spec Delivery",
+      "version": "1.0.0",
+      "description": "Codex-only clarification, planning, implementation, verification, and convergence for an existing spec",
+      "source": ".specify/workflows/portflow-existing-feature",
+      "installed_at": "2026-07-27T21:05:29.658051+00:00",
+      "updated_at": "2026-07-27T21:05:29.658280+00:00"
+    }
+  }
+}

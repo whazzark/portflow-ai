@@ -1,0 +1,90 @@
+schema_version: "1.0"
+
+workflow:
+  id: "portflow-feature"
+  name: "Portflow Full Spec-Driven Delivery"
+  version: "1.0.0"
+  author: "Portflow"
+  description: "Codex-only specification, planning, implementation, verification, and convergence with human gates"
+
+requires:
+  speckit_version: ">=0.14.2"
+  integrations:
+    any: ["codex"]
+
+inputs:
+  spec:
+    type: string
+    required: true
+    prompt: "Describe the feature and GitHub issue; set SPECIFY_FEATURE_DIRECTORY through pnpm spec:workflow"
+
+steps:
+  - id: specify
+    command: speckit.specify
+    integration: codex
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: clarify
+    command: speckit.clarify
+    integration: codex
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-spec
+    type: gate
+    message: "Review spec.md and resolve every product decision before planning."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: plan
+    command: speckit.plan
+    integration: codex
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: checklist
+    command: speckit.checklist
+    integration: codex
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-plan
+    type: gate
+    message: "Review plan.md and checklist before implementation tasks are generated."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: tasks
+    command: speckit.tasks
+    integration: codex
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: analyze
+    command: speckit.analyze
+    integration: codex
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: implement
+    command: speckit.implement
+    integration: codex
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: fast-checks
+    type: shell
+    run: "pnpm check && pnpm typecheck && pnpm test && pnpm test:spec-kit"
+
+  - id: converge
+    command: speckit.converge
+    integration: codex
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: final-review
+    type: gate
+    message: "Review the implementation, checks, convergence report, and Draft PR before marking it ready."
+    options: [approve, reject]
+    on_reject: abort

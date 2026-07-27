@@ -1,0 +1,1017 @@
+{
+  "generatedAt": "2026-07-27T22:10:55.700Z",
+  "repository": "whazzark/portflow-ai",
+  "allIssueCount": 165,
+  "openIssueCount": 119,
+  "closedIssueCount": 46,
+  "roadmapCount": 30,
+  "featureCount": 135,
+  "targetSpecStatuses": {
+    "Intake": [117, 118, 119, 120, 121, 122, 123, 124, 144, 180],
+    "Spec Draft": [
+      1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+      28, 29, 30, 31, 32, 33, 34, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+      55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
+      78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100,
+      101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 147
+    ],
+    "Ready": [],
+    "Done": [
+      2, 3, 35, 36, 39, 40, 115, 116, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 140,
+      141, 142, 145, 146, 148, 149, 150, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165,
+      166, 167, 168, 169, 170, 171, 172
+    ]
+  },
+  "mappings": [
+    {
+      "issue": 1,
+      "kind": "roadmap",
+      "path": "specs/user-administration/user-access-status-foundation/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 2,
+      "kind": "feature",
+      "path": "specs/user-administration/user-access-status-foundation/persist-user-access-status-and-lifecycle-metadata/spec.md",
+      "parent": 1
+    },
+    {
+      "issue": 3,
+      "kind": "feature",
+      "path": "specs/user-administration/user-access-status-foundation/restrict-login-to-active-users/spec.md",
+      "parent": 1
+    },
+    {
+      "issue": 4,
+      "kind": "feature",
+      "path": "specs/user-administration/user-access-status-foundation/filter-user-list-access-by-role-and-status/spec.md",
+      "parent": 1
+    },
+    {
+      "issue": 5,
+      "kind": "feature",
+      "path": "specs/user-administration/user-access-status-foundation/browse-and-filter-users-from-the-web-workbench/spec.md",
+      "parent": 1
+    },
+    {
+      "issue": 6,
+      "kind": "roadmap",
+      "path": "specs/user-administration/invitation-onboarding/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 7,
+      "kind": "feature",
+      "path": "specs/user-administration/invitation-onboarding/invite-a-pending-user-with-a-confidential-activation-link/spec.md",
+      "parent": 6
+    },
+    {
+      "issue": 8,
+      "kind": "feature",
+      "path": "specs/user-administration/invitation-onboarding/accept-an-invitation-and-open-an-authenticated-session/spec.md",
+      "parent": 6
+    },
+    {
+      "issue": 9,
+      "kind": "feature",
+      "path": "specs/user-administration/invitation-onboarding/renew-a-pending-user-activation-link/spec.md",
+      "parent": 6
+    },
+    {
+      "issue": 10,
+      "kind": "feature",
+      "path": "specs/user-administration/invitation-onboarding/invite-and-accept-an-invitation-through-the-frontend/spec.md",
+      "parent": 6
+    },
+    {
+      "issue": 11,
+      "kind": "roadmap",
+      "path": "specs/user-administration/invitation-administration/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 12,
+      "kind": "feature",
+      "path": "specs/user-administration/invitation-administration/cancel-a-pending-invitation/spec.md",
+      "parent": 11
+    },
+    {
+      "issue": 13,
+      "kind": "feature",
+      "path": "specs/user-administration/invitation-administration/restore-a-cancelled-invitation-with-a-new-activation-link/spec.md",
+      "parent": 11
+    },
+    {
+      "issue": 14,
+      "kind": "feature",
+      "path": "specs/user-administration/invitation-administration/remove-a-never-activated-user-permanently/spec.md",
+      "parent": 11
+    },
+    {
+      "issue": 15,
+      "kind": "feature",
+      "path": "specs/user-administration/invitation-administration/manage-invitation-lifecycle-from-the-web-workbench/spec.md",
+      "parent": 11
+    },
+    {
+      "issue": 16,
+      "kind": "roadmap",
+      "path": "specs/user-administration/password-reset/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 17,
+      "kind": "feature",
+      "path": "specs/user-administration/password-reset/reset-an-active-user-password/spec.md",
+      "parent": 16
+    },
+    {
+      "issue": 18,
+      "kind": "feature",
+      "path": "specs/user-administration/password-reset/initiate-and-complete-a-password-reset-through-the-frontend/spec.md",
+      "parent": 16
+    },
+    {
+      "issue": 19,
+      "kind": "roadmap",
+      "path": "specs/user-administration/user-deactivation-hardening/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 20,
+      "kind": "feature",
+      "path": "specs/user-administration/user-deactivation-hardening/reject-ineligible-user-deactivation/spec.md",
+      "parent": 19
+    },
+    {
+      "issue": 21,
+      "kind": "feature",
+      "path": "specs/user-administration/user-deactivation-hardening/preserve-the-last-active-organization-admin/spec.md",
+      "parent": 19
+    },
+    {
+      "issue": 22,
+      "kind": "feature",
+      "path": "specs/user-administration/user-deactivation-hardening/deactivate-a-user-from-the-web-workbench/spec.md",
+      "parent": 19
+    },
+    {
+      "issue": 23,
+      "kind": "roadmap",
+      "path": "specs/user-administration/user-identity-update/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 24,
+      "kind": "feature",
+      "path": "specs/user-administration/user-identity-update/update-another-user-identity/spec.md",
+      "parent": 23
+    },
+    {
+      "issue": 25,
+      "kind": "feature",
+      "path": "specs/user-administration/user-identity-update/let-active-users-update-their-identity/spec.md",
+      "parent": 23
+    },
+    {
+      "issue": 26,
+      "kind": "feature",
+      "path": "specs/user-administration/user-identity-update/update-user-identity-from-the-web-workbench/spec.md",
+      "parent": 23
+    },
+    {
+      "issue": 27,
+      "kind": "roadmap",
+      "path": "specs/user-administration/user-role-change/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 28,
+      "kind": "feature",
+      "path": "specs/user-administration/user-role-change/change-another-eligible-user-role/spec.md",
+      "parent": 27
+    },
+    {
+      "issue": 29,
+      "kind": "feature",
+      "path": "specs/user-administration/user-role-change/protect-self-role-changes-and-the-final-organization-admin/spec.md",
+      "parent": 27
+    },
+    {
+      "issue": 30,
+      "kind": "feature",
+      "path": "specs/user-administration/user-role-change/change-a-user-s-role-from-the-web-workbench/spec.md",
+      "parent": 27
+    },
+    {
+      "issue": 31,
+      "kind": "roadmap",
+      "path": "specs/user-administration/user-reactivation/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 32,
+      "kind": "feature",
+      "path": "specs/user-administration/user-reactivation/reactivate-a-user-with-fresh-credentials/spec.md",
+      "parent": 31
+    },
+    {
+      "issue": 33,
+      "kind": "feature",
+      "path": "specs/user-administration/user-reactivation/reactivate-a-user-from-the-web-workbench/spec.md",
+      "parent": 31
+    },
+    {
+      "issue": 34,
+      "kind": "roadmap",
+      "path": "specs/site-references/customer-reference-and-site-reference-lifecycle-foundation/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 35,
+      "kind": "feature",
+      "path": "specs/site-references/customer-reference-and-site-reference-lifecycle-foundation/create-list-and-update-customers/spec.md",
+      "parent": 34
+    },
+    {
+      "issue": 36,
+      "kind": "feature",
+      "path": "specs/site-references/customer-reference-and-site-reference-lifecycle-foundation/archive-and-reactivate-customers/spec.md",
+      "parent": 34
+    },
+    {
+      "issue": 37,
+      "kind": "feature",
+      "path": "specs/site-references/customer-reference-and-site-reference-lifecycle-foundation/administer-customers-from-the-web-workbench/spec.md",
+      "parent": 34
+    },
+    {
+      "issue": 38,
+      "kind": "roadmap",
+      "path": "specs/site-references/operational-checkpoints/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 39,
+      "kind": "feature",
+      "path": "specs/site-references/operational-checkpoints/administer-dock-references/spec.md",
+      "parent": 38
+    },
+    {
+      "issue": 40,
+      "kind": "feature",
+      "path": "specs/site-references/operational-checkpoints/administer-weighing-area-references/spec.md",
+      "parent": 38
+    },
+    {
+      "issue": 41,
+      "kind": "feature",
+      "path": "specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/spec.md",
+      "parent": 38
+    },
+    {
+      "issue": 42,
+      "kind": "roadmap",
+      "path": "specs/site-references/storage-topology/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 43,
+      "kind": "feature",
+      "path": "specs/site-references/storage-topology/administer-warehouse-footprints/spec.md",
+      "parent": 42
+    },
+    {
+      "issue": 44,
+      "kind": "feature",
+      "path": "specs/site-references/storage-topology/administer-contained-warehouse-doors/spec.md",
+      "parent": 42
+    },
+    {
+      "issue": 45,
+      "kind": "feature",
+      "path": "specs/site-references/storage-topology/archive-and-reactivate-warehouses-safely/spec.md",
+      "parent": 42
+    },
+    {
+      "issue": 46,
+      "kind": "feature",
+      "path": "specs/site-references/storage-topology/administer-warehouses-and-warehouse-doors-from-the-web-workbench/spec.md",
+      "parent": 42
+    },
+    {
+      "issue": 47,
+      "kind": "roadmap",
+      "path": "specs/site-references/fleet-references/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 48,
+      "kind": "feature",
+      "path": "specs/site-references/fleet-references/create-list-and-update-transport-companies/spec.md",
+      "parent": 47
+    },
+    {
+      "issue": 49,
+      "kind": "feature",
+      "path": "specs/site-references/fleet-references/administer-trucks-and-provider-assignments/spec.md",
+      "parent": 47
+    },
+    {
+      "issue": 50,
+      "kind": "feature",
+      "path": "specs/site-references/fleet-references/archive-and-reactivate-transport-companies-safely/spec.md",
+      "parent": 47
+    },
+    {
+      "issue": 51,
+      "kind": "feature",
+      "path": "specs/site-references/fleet-references/administer-transport-companies-and-trucks-from-the-web-workbench/spec.md",
+      "parent": 47
+    },
+    {
+      "issue": 52,
+      "kind": "roadmap",
+      "path": "specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 53,
+      "kind": "feature",
+      "path": "specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/prepare-a-discharge-with-product-lots-and-shifts/spec.md",
+      "parent": 52
+    },
+    {
+      "issue": 54,
+      "kind": "feature",
+      "path": "specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/plan-warehouse-door-and-checkpoint-assignments/spec.md",
+      "parent": 52
+    },
+    {
+      "issue": 55,
+      "kind": "feature",
+      "path": "specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/plan-the-discharge-truck-pool-and-shift-subsets/spec.md",
+      "parent": 52
+    },
+    {
+      "issue": 56,
+      "kind": "feature",
+      "path": "specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/confirm-discharge-start-with-atomic-conflict-protection/spec.md",
+      "parent": 52
+    },
+    {
+      "issue": 57,
+      "kind": "feature",
+      "path": "specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/create-a-planned-discharge-from-the-frontend/spec.md",
+      "parent": 52
+    },
+    {
+      "issue": 58,
+      "kind": "feature",
+      "path": "specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/consult-a-prepared-discharge-in-the-web-workbench/spec.md",
+      "parent": 52
+    },
+    {
+      "issue": 59,
+      "kind": "feature",
+      "path": "specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/update-discharge-resource-planning-from-the-frontend/spec.md",
+      "parent": 52
+    },
+    {
+      "issue": 60,
+      "kind": "feature",
+      "path": "specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/confirm-discharge-start-with-visible-conflict-handling/spec.md",
+      "parent": 52
+    },
+    {
+      "issue": 61,
+      "kind": "feature",
+      "path": "specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/browse-the-discharges-list-in-the-web-workbench/spec.md",
+      "parent": 52
+    },
+    {
+      "issue": 62,
+      "kind": "roadmap",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 63,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/create-and-inspect-planned-shifts/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 64,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/replan-order-and-remove-future-shifts/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 65,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/start-the-first-shift-and-activate-the-discharge/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 66,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/protect-and-reassign-shift-responsibility/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 67,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/start-and-complete-shift-downtimes/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 68,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/complete-shifts-safely/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 69,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/start-the-next-shift-after-handover/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 70,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/correct-shift-actual-times/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 71,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/correct-and-cancel-shift-downtimes/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 72,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/shift-workspace-start-live-view-and-completion/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 73,
+      "kind": "feature",
+      "path": "specs/discharge-execution/shift-execution-and-downtimes/downtime-recording-and-shift-downtime-corrections/spec.md",
+      "parent": 62
+    },
+    {
+      "issue": 74,
+      "kind": "roadmap",
+      "path": "specs/discharge-execution/runtime-discharge-resource-changes/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 75,
+      "kind": "feature",
+      "path": "specs/discharge-execution/runtime-discharge-resource-changes/reassign-an-active-discharge-dock/spec.md",
+      "parent": 74
+    },
+    {
+      "issue": 76,
+      "kind": "feature",
+      "path": "specs/discharge-execution/runtime-discharge-resource-changes/assign-and-release-trucks-during-an-active-discharge/spec.md",
+      "parent": 74
+    },
+    {
+      "issue": 77,
+      "kind": "feature",
+      "path": "specs/discharge-execution/runtime-discharge-resource-changes/change-effective-warehouse-door-assignments/spec.md",
+      "parent": 74
+    },
+    {
+      "issue": 78,
+      "kind": "feature",
+      "path": "specs/discharge-execution/runtime-discharge-resource-changes/adjust-active-shift-resources/spec.md",
+      "parent": 74
+    },
+    {
+      "issue": 79,
+      "kind": "feature",
+      "path": "specs/discharge-execution/runtime-discharge-resource-changes/discharge-detail-dock-reassignment-truck-pool-and-door-assignment-changes/spec.md",
+      "parent": 74
+    },
+    {
+      "issue": 80,
+      "kind": "feature",
+      "path": "specs/discharge-execution/runtime-discharge-resource-changes/shift-resource-adjustments-in-the-shift-workspace/spec.md",
+      "parent": 74
+    },
+    {
+      "issue": 81,
+      "kind": "roadmap",
+      "path": "specs/discharge-execution/rotation-execution-and-weighings/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 82,
+      "kind": "feature",
+      "path": "specs/discharge-execution/rotation-execution-and-weighings/start-and-inspect-an-in-progress-rotation/spec.md",
+      "parent": 81
+    },
+    {
+      "issue": 83,
+      "kind": "feature",
+      "path": "specs/discharge-execution/rotation-execution-and-weighings/record-loaded-reweighings-and-resolve-capacity-exceedances/spec.md",
+      "parent": 81
+    },
+    {
+      "issue": 84,
+      "kind": "feature",
+      "path": "specs/discharge-execution/rotation-execution-and-weighings/complete-or-continue-from-empty-return-confirmation/spec.md",
+      "parent": 81
+    },
+    {
+      "issue": 85,
+      "kind": "feature",
+      "path": "specs/discharge-execution/rotation-execution-and-weighings/correct-and-cancel-unvalidated-rotations/spec.md",
+      "parent": 81
+    },
+    {
+      "issue": 86,
+      "kind": "feature",
+      "path": "specs/discharge-execution/rotation-execution-and-weighings/start-a-rotation-and-record-the-empty-weighing-in-the-shift-workspace/spec.md",
+      "parent": 81
+    },
+    {
+      "issue": 87,
+      "kind": "feature",
+      "path": "specs/discharge-execution/rotation-execution-and-weighings/record-loaded-weighing-and-confirm-empty-return-in-the-shift-workspace/spec.md",
+      "parent": 81
+    },
+    {
+      "issue": 88,
+      "kind": "roadmap",
+      "path": "specs/reporting-and-audit/rotation-validation/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 89,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/rotation-validation/validate-a-completed-rotation-irreversibly/spec.md",
+      "parent": 88
+    },
+    {
+      "issue": 90,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/rotation-validation/browse-the-rotation-validation-queue/spec.md",
+      "parent": 88
+    },
+    {
+      "issue": 91,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/rotation-validation/build-the-rotation-validation-queue-screen/spec.md",
+      "parent": 88
+    },
+    {
+      "issue": 92,
+      "kind": "roadmap",
+      "path": "specs/reporting-and-audit/rotation-adjustments/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 93,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/rotation-adjustments/record-and-inspect-an-immutable-rotation-adjustment/spec.md",
+      "parent": 92
+    },
+    {
+      "issue": 94,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/rotation-adjustments/project-effective-rotation-values-and-capacity-breaches/spec.md",
+      "parent": 92
+    },
+    {
+      "issue": 95,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/rotation-adjustments/build-the-rotation-adjustment-creation-ui/spec.md",
+      "parent": 92
+    },
+    {
+      "issue": 96,
+      "kind": "roadmap",
+      "path": "specs/reporting-and-audit/discharge-closure/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 97,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/discharge-closure/review-discharge-closure-readiness/spec.md",
+      "parent": 96
+    },
+    {
+      "issue": 98,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/discharge-closure/close-a-discharge-and-release-its-resources/spec.md",
+      "parent": 96
+    },
+    {
+      "issue": 99,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/discharge-closure/review-discharge-closure-readiness-from-the-frontend/spec.md",
+      "parent": 96
+    },
+    {
+      "issue": 100,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/discharge-closure/close-a-discharge-from-the-frontend/spec.md",
+      "parent": 96
+    },
+    {
+      "issue": 101,
+      "kind": "roadmap",
+      "path": "specs/reporting-and-audit/transversal-discharge-activity-log/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 102,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/transversal-discharge-activity-log/establish-the-typed-activity-log-append-contract/spec.md",
+      "parent": 101
+    },
+    {
+      "issue": 103,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/transversal-discharge-activity-log/browse-a-filtered-discharge-activity-log/spec.md",
+      "parent": 101
+    },
+    {
+      "issue": 104,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/transversal-discharge-activity-log/consult-the-activity-log-tab-in-discharge-detail/spec.md",
+      "parent": 101
+    },
+    {
+      "issue": 105,
+      "kind": "roadmap",
+      "path": "specs/reporting-and-audit/historical-reference-capture-in-report-snapshots/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 106,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/historical-reference-capture-in-report-snapshots/build-deterministic-report-snapshot-payloads/spec.md",
+      "parent": 105
+    },
+    {
+      "issue": 107,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/historical-reference-capture-in-report-snapshots/generate-immutable-report-snapshots-asynchronously/spec.md",
+      "parent": 105
+    },
+    {
+      "issue": 108,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/historical-reference-capture-in-report-snapshots/list-and-download-immutable-report-snapshots/spec.md",
+      "parent": 105
+    },
+    {
+      "issue": 109,
+      "kind": "feature",
+      "path": "specs/reporting-and-audit/historical-reference-capture-in-report-snapshots/build-the-report-snapshots-screen/spec.md",
+      "parent": 105
+    },
+    {
+      "issue": 110,
+      "kind": "roadmap",
+      "path": "specs/operations-dashboard/operations-dashboard-and-sse/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 111,
+      "kind": "feature",
+      "path": "specs/operations-dashboard/operations-dashboard-and-sse/consult-active-discharge-progress/spec.md",
+      "parent": 110
+    },
+    {
+      "issue": 112,
+      "kind": "feature",
+      "path": "specs/operations-dashboard/operations-dashboard-and-sse/show-shift-context-and-downtime-attention/spec.md",
+      "parent": 110
+    },
+    {
+      "issue": 113,
+      "kind": "feature",
+      "path": "specs/operations-dashboard/operations-dashboard-and-sse/keep-the-dashboard-synchronized-through-sse/spec.md",
+      "parent": 110
+    },
+    {
+      "issue": 114,
+      "kind": "roadmap",
+      "path": "specs/authenticated-shell/authenticated-shell/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 115,
+      "kind": "feature",
+      "path": "specs/authenticated-shell/authenticated-shell/authenticate-the-web-shell-against-the-api-session/spec.md",
+      "parent": 114
+    },
+    {
+      "issue": 116,
+      "kind": "feature",
+      "path": "specs/authenticated-shell/authenticated-shell/expose-the-protected-application-frame-and-minimal-navigation/spec.md",
+      "parent": 114
+    },
+    {
+      "issue": 117,
+      "kind": "feature",
+      "path": "specs/authenticated-shell/authenticated-shell/force-a-password-change-after-login/spec.md",
+      "parent": 114
+    },
+    {
+      "issue": 118,
+      "kind": "feature",
+      "path": "specs/standalone/confirm-self-service-email-changes/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 119,
+      "kind": "feature",
+      "path": "specs/standalone/customer-access-model/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 120,
+      "kind": "feature",
+      "path": "specs/standalone/discharge-suspension/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 121,
+      "kind": "feature",
+      "path": "specs/standalone/preserve-the-current-session-during-invitation-acceptance/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 122,
+      "kind": "feature",
+      "path": "specs/standalone/send-invitation-emails/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 123,
+      "kind": "feature",
+      "path": "specs/standalone/send-password-reset-emails/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 124,
+      "kind": "feature",
+      "path": "specs/standalone/user-access-status-change-history/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 127,
+      "kind": "roadmap",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 128,
+      "kind": "feature",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/test-pyramid-shape-and-philosophy-for-apps-web/spec.md",
+      "parent": 127
+    },
+    {
+      "issue": 129,
+      "kind": "feature",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/component-integration-test-framework-landscape-for-react-19-tanstack-start/spec.md",
+      "parent": 127
+    },
+    {
+      "issue": 130,
+      "kind": "feature",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/frontend-api-mocking-strategy-options/spec.md",
+      "parent": 127
+    },
+    {
+      "issue": 131,
+      "kind": "feature",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/e2e-tooling-options-for-tanstack-start-apps/spec.md",
+      "parent": 127
+    },
+    {
+      "issue": 132,
+      "kind": "feature",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/ci-constraints-for-frontend-testing/spec.md",
+      "parent": 127
+    },
+    {
+      "issue": 133,
+      "kind": "feature",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/benchmark-vitest-browser-mode-vs-jsdom-for-apps-web-s-feature-level-suite/spec.md",
+      "parent": 127
+    },
+    {
+      "issue": 134,
+      "kind": "feature",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/choose-the-feature-level-test-framework-and-rendering-approach/spec.md",
+      "parent": 127
+    },
+    {
+      "issue": 135,
+      "kind": "feature",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/choose-the-feature-level-api-mocking-strategy/spec.md",
+      "parent": 127
+    },
+    {
+      "issue": 136,
+      "kind": "feature",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/choose-e2e-tooling-and-ci-trigger-for-apps-web/spec.md",
+      "parent": 127
+    },
+    {
+      "issue": 137,
+      "kind": "feature",
+      "path": "specs/standalone/frontend-testing-strategy-for-apps-web/write-adr-0009-and-apps-web-claude-md-from-the-locked-frontend-testing-decisions/spec.md",
+      "parent": 127
+    },
+    {
+      "issue": 140,
+      "kind": "feature",
+      "path": "specs/authenticated-shell/establish-the-shadcn-ui-design-system-foundation/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 141,
+      "kind": "feature",
+      "path": "specs/authenticated-shell/redesign-the-auth-routes-on-the-design-system/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 142,
+      "kind": "feature",
+      "path": "specs/authenticated-shell/redesign-the-authenticated-nav-shell-on-the-design-system/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 144,
+      "kind": "roadmap",
+      "path": "specs/standalone/carte-connexion-memorisee/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 145,
+      "kind": "feature",
+      "path": "specs/standalone/carte-connexion-memorisee/choisir-le-mecanisme-de-connexion-memorisee-adonisjs/spec.md",
+      "parent": 144
+    },
+    {
+      "issue": 146,
+      "kind": "feature",
+      "path": "specs/standalone/carte-connexion-memorisee/definir-le-contrat-de-connexion-memorisee/spec.md",
+      "parent": 144
+    },
+    {
+      "issue": 147,
+      "kind": "roadmap",
+      "path": "specs/standalone/connexion-memorisee-30-jours/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 148,
+      "kind": "feature",
+      "path": "specs/standalone/connexion-memorisee-30-jours/refuser-l-acces-des-users-non-actifs-a-la-requete-suivante/spec.md",
+      "parent": 147
+    },
+    {
+      "issue": 149,
+      "kind": "feature",
+      "path": "specs/standalone/connexion-memorisee-30-jours/ouvrir-et-restaurer-une-connexion-memorisee-30-jours/spec.md",
+      "parent": 147
+    },
+    {
+      "issue": 150,
+      "kind": "feature",
+      "path": "specs/standalone/connexion-memorisee-30-jours/revoquer-la-connexion-memorisee-du-navigateur-courant/spec.md",
+      "parent": 147
+    },
+    {
+      "issue": 154,
+      "kind": "roadmap",
+      "path": "specs/standalone/epic-ai-development-factory/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 155,
+      "kind": "roadmap",
+      "path": "specs/standalone/ai-001-establish-ai-orchestration-foundations/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 156,
+      "kind": "roadmap",
+      "path": "specs/standalone/ai-001-establish-ai-orchestration-foundations/ai-002-implement-the-local-orca-coordinator/roadmap.md",
+      "parent": 155
+    },
+    {
+      "issue": 157,
+      "kind": "roadmap",
+      "path": "specs/standalone/wayfinder-local-orca-ai-orchestration-to-draft-pr/roadmap.md",
+      "parent": null
+    },
+    {
+      "issue": 158,
+      "kind": "feature",
+      "path": "specs/standalone/wayfinder-local-orca-ai-orchestration-to-draft-pr/decide-the-local-mvp-operating-boundaries/spec.md",
+      "parent": 157
+    },
+    {
+      "issue": 159,
+      "kind": "feature",
+      "path": "specs/standalone/wayfinder-local-orca-ai-orchestration-to-draft-pr/normalize-issue-qualification-and-ux-routing-labels/spec.md",
+      "parent": 157
+    },
+    {
+      "issue": 160,
+      "kind": "feature",
+      "path": "specs/standalone/wayfinder-local-orca-ai-orchestration-to-draft-pr/choose-execution-identity-secrets-and-durable-run-records/spec.md",
+      "parent": 157
+    },
+    {
+      "issue": 161,
+      "kind": "feature",
+      "path": "specs/standalone/wayfinder-local-orca-ai-orchestration-to-draft-pr/specify-the-orca-task-graph-and-recovery-protocol/spec.md",
+      "parent": 157
+    },
+    {
+      "issue": 162,
+      "kind": "feature",
+      "path": "specs/standalone/wayfinder-local-orca-ai-orchestration-to-draft-pr/define-the-orca-command-and-preflight-contract/spec.md",
+      "parent": 157
+    },
+    {
+      "issue": 163,
+      "kind": "feature",
+      "path": "specs/standalone/decide-the-compatibility-window-for-migrating-legacy-triage-labels/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 164,
+      "kind": "feature",
+      "path": "specs/standalone/define-the-orca-task-topology-lifecycle-and-recovery-handoffs/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 165,
+      "kind": "feature",
+      "path": "specs/standalone/define-the-local-execution-identity-and-secret-access-contract/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 166,
+      "kind": "feature",
+      "path": "specs/standalone/define-the-github-run-record-format-and-worktree-cleanup-lifecycle/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 167,
+      "kind": "feature",
+      "path": "specs/standalone/migrate-the-repository-to-explicit-orca-execution-states/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 168,
+      "kind": "feature",
+      "path": "specs/standalone/start-a-qualified-issue-with-a-trusted-local-preflight/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 169,
+      "kind": "feature",
+      "path": "specs/standalone/provision-an-idempotent-issue-linked-orca-run/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 170,
+      "kind": "feature",
+      "path": "specs/standalone/dispatch-and-journal-an-isolated-implementer-handoff/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 171,
+      "kind": "feature",
+      "path": "specs/standalone/create-a-reviewed-and-validated-draft-pr-from-an-orca-run/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 172,
+      "kind": "feature",
+      "path": "specs/standalone/recover-and-clean-up-a-completed-orca-run-safely/spec.md",
+      "parent": null
+    },
+    {
+      "issue": 180,
+      "kind": "feature",
+      "path": "specs/standalone/show-customer-discharges-in-the-customer-detail-workbench/spec.md",
+      "parent": null
+    }
+  ]
+}

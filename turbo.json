@@ -1,6 +1,12 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalPassThroughEnv": [
+    "GITHUB_EVENT_PATH",
+    "GITHUB_REPOSITORY",
+    "GITHUB_BASE_REF",
+    "SPECIFY_FEATURE_DIRECTORY"
+  ],
   "tasks": {
     "dev": {
       "cache": false,

@@ -21,6 +21,14 @@ coverage/
 tmp/
 .turbo/
 .claude/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/speckit-*/
+!.agents/skills/speckit-*/**
+.specify/workflows/runs/
+.specify/migration-backup/
+.specify/feature.json
 
 # Generated
 apps/web/src/routeTree.gen.ts
