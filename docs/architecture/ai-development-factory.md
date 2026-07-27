@@ -2,69 +2,52 @@
 
 ## Purpose
 
-This document captures the architectural vision for AI-assisted development in Portflow.
+Portflow uses Codex-only Spec Kit workflows to turn human-approved intent into tested delivery artifacts and a Draft Pull Request. Product decisions, final validation, and merge remain human responsibilities.
 
-## Principles
+## Source-of-truth model
 
-- Product discovery and business decisions remain human.
-- GitHub Issues are the functional source of truth.
-- AI automates implementation, not product thinking.
-- Every change ends as a Draft Pull Request.
-- Final validation and merge remain human.
-
-## High-level workflow
-
-Issue GitHub -> Coordinator -> UX Review (optional) -> Implementer -> Checks -> Reviewer -> Validator -> Draft PR -> Human validation
-
-## Agent responsibilities
-
-### Coordinator
-- Reads issues and dependencies.
-- Chooses the execution workflow.
-- Selects the required agents.
-- Coordinates execution.
-
-### Implementer
-- Implements the issue.
-- Uses TDD.
-- Respects repository conventions.
-
-### Reviewer
-- Reviews the diff.
-- Verifies specification, architecture, security and tests.
-
-### Validator
-- Runs smoke tests.
-- Performs targeted regression checks.
-- Validates acceptance criteria.
-
-### UX/UI Reviewer
-- Reviews mockups before implementation.
-- Verifies accessibility, responsive behaviour and Design System consistency.
-
-## Repository structure
-
-```
-.ai/
-  agents/
-  workflows/
-  policies/
-  templates/
+```text
+GitHub Issue / Project
+        ↓ intake, priority, dependencies
+Spec Kit roadmap or feature spec
+        ↓ spec → plan → tasks
+Codex workflow
+        ↓ implementation and verification
+Draft PR
+        ↓ fresh Codex review + human approval
+Merged delivery
 ```
 
-`AGENTS.md` contains global rules.
+- Issues are short intake/tracking records.
+- `roadmap.md` decomposes large epics.
+- `spec.md` defines behavior.
+- `plan.md` defines the technical approach.
+- `tasks.md` defines executable work.
+- `CONTEXT.md` and ADRs preserve durable knowledge.
 
-`CLAUDE.md` files contain local development conventions.
+## Codex roles
 
-## Automation
+- **Specifier**: writes and clarifies intent.
+- **Planner**: maps intent to architecture, boundaries, tests, and rollout.
+- **Implementer**: follows the approved tasks with TDD.
+- **Reviewer**: uses a fresh context to check the diff against spec, plan, architecture, security, and tests.
+- **Validator**: runs deterministic checks and relevant browser journeys.
+- **Coordinator**: later automation may distribute independent tasks across Codex worktrees; it must not bypass Spec Kit gates.
 
-Eligible GitHub issue -> agent:ready -> Orca orchestration -> Draft Pull Request.
+## Workflow
 
-## Model routing
+`specify → clarify → spec review → plan → checklist → plan review → tasks → analyze → implement → checks → converge → fresh review → human merge`
 
-- Coordinator: Terra
-- Implementer: Sol
-- Reviewer: Sol
-- Validator: Luna
+The project workflow is `.specify/workflows/portflow-feature/workflow.yml`. Workflow runs may pause and resume at human gates. Shell steps are repository-owned fixed commands; arbitrary agent output must never be interpolated into them.
 
-Model selection depends on risk and task complexity.
+Use the [Spec Kit operator guide](../agents/spec-kit.md) for the supported commands, feature-path guardrails, gate handling, and maintenance procedure.
+
+## Automation boundaries
+
+- Spec Kit owns artifact lifecycle, workflow state, and gates.
+- Codex owns all AI work.
+- Orca may own worktree/process supervision when parallel execution is introduced.
+- GitHub Actions owns deterministic CI.
+- GitHub Project owns delivery status.
+
+No `tools/ai-orchestrator` package is required until a concrete coordination capability exceeds these boundaries.

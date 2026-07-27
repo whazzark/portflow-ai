@@ -1,41 +1,16 @@
-name: PR Template Check
+name: PR Contract Check
 
 on:
   pull_request:
 
 jobs:
-  pr-template-check:
+  pr-contract-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check PR body follows the template
-        env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          fail=0
+      - uses: actions/checkout@v7
 
-          if ! grep -qiE '(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]+#[0-9]+' <<< "$PR_BODY"; then
-            echo "::error::PR body must reference the issue it closes, e.g. 'Closes #12'."
-            fail=1
-          fi
+      - name: Test Spec Kit guardrails
+        run: node --test scripts/spec-kit/*.test.mjs
 
-          summary=$(awk '/^## Summary/{f=1; next} /^## /{f=0} f' <<< "$PR_BODY" | sed 's/<!--.*-->//g' | tr -d '[:space:]')
-          if [ -z "$summary" ]; then
-            echo "::error::## Summary section must not be empty."
-            fail=1
-          fi
-
-          db_section=$(awk '/^## Database/{f=1; next} /^## /{f=0} f' <<< "$PR_BODY")
-          db_checked=$(grep -ciE '^[[:space:]]*-[[:space:]]*\[[xX]\]' <<< "$db_section" || true)
-          if [ "${db_checked:-0}" -ne 1 ]; then
-            echo "::error::## Database section must have exactly one box checked ('No migration' or 'Migration included and reversible')."
-            fail=1
-          fi
-
-          checklist_section=$(awk '/^## Checklist/{f=1; next} /^## /{f=0} f' <<< "$PR_BODY")
-          unchecked=$(grep -c '^[[:space:]]*-[[:space:]]*\[ \]' <<< "$checklist_section" || true)
-          if [ "${unchecked:-0}" -ne 0 ]; then
-            echo "::error::All items in ## Checklist must be checked before merging."
-            fail=1
-          fi
-
-          exit $fail
+      - name: Validate progressive PR contract
+        run: node scripts/spec-kit/validate-pr.mjs
