@@ -76,26 +76,29 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
       const someSelected = visibleIds.some((id) => selected.has(id))
 
       return (
-        <Checkbox
-          aria-label={`Select all ${isArchived ? 'archived' : 'available'} customers`}
-          aria-checked={someSelected && !allSelected ? 'mixed' : allSelected}
-          checked={allSelected}
-          disabled={visibleIds.length === 0}
-          onCheckedChange={(checked) =>
-            table.options.meta?.onSelectVisible?.(checked === true, visibleIds)
-          }
-        />
+        <span className="flex h-full items-center justify-center">
+          <Checkbox
+            aria-label={`Select all ${isArchived ? 'archived' : 'available'} customers`}
+            aria-checked={someSelected && !allSelected ? 'mixed' : allSelected}
+            checked={allSelected}
+            disabled={visibleIds.length === 0}
+            onCheckedChange={(checked) =>
+              table.options.meta?.onSelectVisible?.(checked === true, visibleIds)
+            }
+          />
+        </span>
       )
     },
     cell: ({ row, table }) => (
-      <Checkbox
-        aria-label={`Select customer ${row.original.code}`}
-        checked={table.options.meta?.selectedIds?.has(row.original.id) ?? false}
-        onClick={(event) => event.stopPropagation()}
-        onCheckedChange={(checked) =>
-          table.options.meta?.onSelectVisible?.(checked === true, [row.original.id])
-        }
-      />
+      <span className="flex h-full items-center justify-center">
+        <Checkbox
+          aria-label={`Select customer ${row.original.code}`}
+          checked={table.options.meta?.selectedIds?.has(row.original.id) ?? false}
+          onCheckedChange={(checked) =>
+            table.options.meta?.onSelectVisible?.(checked === true, [row.original.id])
+          }
+        />
+      </span>
     ),
   }
 
@@ -108,7 +111,7 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
       cell: ({ row, table }) => (
         <Button
           aria-label={`View customer ${row.original.code}`}
-          className="h-auto px-0 font-medium font-mono after:absolute after:inset-0 after:rounded-md after:content-[''] hover:bg-transparent focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
+          className="h-auto px-0 font-medium font-mono hover:bg-transparent"
           onClick={() => table.options.meta?.onSelect?.(row.original.id)}
           variant="ghost"
         >
@@ -219,6 +222,11 @@ export function CustomerTable({
       )}
     >
       <Table aria-label={isArchived ? 'Archived customers' : 'Available customers'}>
+        <colgroup>
+          {table.getVisibleLeafColumns().map((column) => (
+            <col className={column.id === 'selection' ? 'w-10' : undefined} key={column.id} />
+          ))}
+        </colgroup>
         <TableHeader className="md:sticky md:top-0 md:z-10 md:bg-background">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -233,6 +241,9 @@ export function CustomerTable({
                         : direction === 'desc'
                           ? 'descending'
                           : 'none'
+                    }
+                    className={
+                      header.column.id === 'selection' ? 'w-10 min-w-10 max-w-10 p-0' : undefined
                     }
                     key={header.id}
                   >
@@ -257,26 +268,49 @@ export function CustomerTable({
         </TableHeader>
         <TableBody>
           {rows.length > 0 ? (
-            rows.map((row) => (
-              <TableRow
-                className={
-                  isArchived
-                    ? 'relative cursor-pointer text-muted-foreground'
-                    : 'relative cursor-pointer'
-                }
-                onClick={() => onSelect(row.original.id)}
-                key={row.id}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    className={cell.column.id === 'selection' ? 'relative z-10' : undefined}
-                    key={cell.id}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+            rows.map((row) => {
+              const isSelected = selectedIds.has(row.original.id)
+
+              return (
+                <TableRow
+                  aria-selected={isSelected}
+                  className={classnames(
+                    'cursor-pointer transition-colors aria-selected:bg-primary/5 aria-selected:hover:bg-primary/10',
+                    isArchived && 'text-muted-foreground',
+                  )}
+                  onClick={() => onSelect(row.original.id)}
+                  key={row.id}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      className={
+                        cell.column.id === 'selection'
+                          ? 'relative w-10 min-w-10 max-w-10 p-0'
+                          : undefined
+                      }
+                      onClick={
+                        cell.column.id === 'selection'
+                          ? (event) => event.stopPropagation()
+                          : undefined
+                      }
+                      key={cell.id}
+                    >
+                      {cell.column.id === 'selection' && (
+                        <span
+                          aria-hidden="true"
+                          className={classnames(
+                            'pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-primary transition-opacity duration-150',
+                            isSelected ? 'opacity-100' : 'opacity-0',
+                          )}
+                          data-slot="customer-selection-indicator"
+                        />
+                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              )
+            })
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length}>
