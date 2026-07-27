@@ -32,7 +32,8 @@ L'architecture cible documentée dans le MVP mentionne aussi une future applicat
 Le domaine et le périmètre du MVP sont décrits dans :
 
 - [CONTEXT.md](./CONTEXT.md) pour le vocabulaire métier ;
-- les issues `epic` du [GitHub Issues](https://github.com/whazzark/portflow-ai/issues) pour le périmètre produit détaillé ;
+- les roadmaps et specs versionnées sous [`specs/`](./specs) pour le périmètre fonctionnel détaillé ;
+- les [GitHub Issues](https://github.com/whazzark/portflow-ai/issues) pour l'intake, les discussions et la traçabilité ;
 - le [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) pour l'ordre de livraison (README du project et descriptions des milestones) ;
 - [docs/adr](./docs/adr) et [apps/api/docs/adr](./apps/api/docs/adr) pour les décisions d'architecture.
 
@@ -50,7 +51,7 @@ Le domaine et le périmètre du MVP sont décrits dans :
 - création et consultation initiale des Discharges ;
 - planification initiale des ressources de déchargement.
 
-Le détail exact du statut de livraison est piloté par [GitHub Issues](https://github.com/whazzark/portflow-ai/issues) et le [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5).
+Le détail exact du statut de livraison est piloté par le [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5), tandis que les specs canoniques sont versionnées sous [`specs/`](./specs).
 
 ## Stack technique
 
@@ -81,6 +82,9 @@ Ces éléments sont documentés, mais pas tous implémentés dans ce dépôt auj
 │   └── docker-compose.yml  # PostgreSQL local + profile `prod` (images api/web)
 ├── docs/
 │   └── adr/                # ADRs racine
+├── specs/                  # Roadmaps et spécifications Spec Kit canoniques
+├── .specify/               # Constitution, templates et workflows Spec Kit
+├── scripts/spec-kit/       # Validation et migration déterministes
 ├── CONTEXT.md              # Glossaire métier
 ├── AGENTS.md               # Conventions agentiques du repo
 ├── package.json
@@ -274,27 +278,31 @@ Les rôles métier documentés sont :
 - `OPERATIONS_ADMIN`
 - `ORGANIZATION_ADMIN`
 
-La hiérarchie des permissions est décrite dans [CONTEXT.md](./CONTEXT.md) et dans les issues `epic` liées aux utilisateurs sur [GitHub Issues](https://github.com/whazzark/portflow-ai/issues).
+La hiérarchie des permissions est décrite dans [CONTEXT.md](./CONTEXT.md), les specs sous [`specs/`](./specs) et les ADR liés aux utilisateurs.
 
 ## Documentation produit et architecture
 
 Pour naviguer dans le projet :
 
 - [CONTEXT.md](./CONTEXT.md) : glossaire métier canonique ;
-- [GitHub Issues](https://github.com/whazzark/portflow-ai/issues) : périmètre fonctionnel détaillé (issues `epic`) ;
+- [`specs/`](./specs) : specs fonctionnelles et roadmaps Spec Kit ;
+- [GitHub Issues](https://github.com/whazzark/portflow-ai/issues) : intake, discussions et liens de traçabilité ;
 - [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) : plan de livraison ;
 - [docs/adr](./docs/adr) : ADRs racine ;
 - [apps/api/docs/adr](./apps/api/docs/adr) : ADRs spécifiques à l'API ;
-- [docs/agents/issue-tracker.md](./docs/agents/issue-tracker.md) : fonctionnement du tracker (GitHub Issues).
+- [docs/agents/issue-tracker.md](./docs/agents/issue-tracker.md) : fonctionnement du tracker (GitHub Issues) ;
+- [docs/agents/spec-kit.md](./docs/agents/spec-kit.md) : guide opératoire Codex + Spec Kit.
 
 ## Workflow projet
 
 La source canonique de planification est GitHub :
 
-- [GitHub Issues](https://github.com/whazzark/portflow-ai/issues) : specs (issues `epic`) et issues d'implémentation ;
+- [GitHub Issues](https://github.com/whazzark/portflow-ai/issues) : intake et coordination du delivery ;
+- [docs/architecture/ai-development-factory.md](./docs/architecture/ai-development-factory.md) : workflow Codex + Spec Kit ;
+- [docs/agents/spec-kit.md](./docs/agents/spec-kit.md) : commandes quotidiennes, gates, maintenance et dépannage ;
 - [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) : statut, priorité et découpage en sprints.
 
-Les idées non encore spécifiées restent sous [`.tracker/ideas/`](./.tracker/ideas/).
+Les idées non encore spécifiées entrent par les [GitHub Issues](https://github.com/whazzark/portflow-ai/issues).
 
 Les conventions de contribution et de delivery agentique sont décrites dans :
 

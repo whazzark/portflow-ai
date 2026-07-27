@@ -1,29 +1,35 @@
 # Issue tracker: GitHub Issues
 
-Issues and specs for this repo live in [GitHub Issues](https://github.com/whazzark/portflow-ai/issues). Planning state (status, priority, sprint) lives in the [Portflow Roadmap GitHub Project](https://github.com/users/whazzark/projects/5). This tracker is the canonical source for product delivery work; do not maintain specs or detailed backlogs as files in the repository. Interact with it through the `gh` CLI.
+GitHub Issues are the intake and coordination surface for Portflow. They carry the problem statement needed to start discovery, priority, milestone, parent/sub-issue relationships, and discussion history. The detailed functional contract lives in the linked Spec Kit artifact under `specs/`.
 
-## Conventions
+## Canonical ownership
 
-- One delivery unit per epic: an issue carrying the `epic` label whose body holds the full spec (problem statement, solution, user stories, implementation and testing decisions, out of scope).
-- Implementation issues are sub-issues of their epic. Each body holds "What to build", acceptance criteria as a checklist, and its dependencies under "Blocked by" as `#N` references.
-- Unspecified ideas are issues labeled `triage:needs-triage`, backed by short cards under `.tracker/ideas/<feature-slug>.md` linked from the issue body until they are promoted into an epic.
-- Delivery priority is a `priority:P0`, `priority:P1`, or `priority:P2` label; an issue without one is unprioritized.
-- Milestones group epics by roadmap objective; the project's `Sprint` field carries sprint sequencing.
-- Every open non-PR issue has exactly one mutually exclusive execution-state label (see `triage-labels.md`); comments and conversation history live as issue comments.
+- `specs/<roadmap-or-feature>/` owns detailed behavior, acceptance scenarios, assumptions, dependencies, and implementation artifacts.
+- `CONTEXT.md` owns ubiquitous domain language.
+- ADRs own durable architectural decisions.
+- GitHub Project owns delivery status, priority, milestone, and sprint.
+- Issues retain their stable number as the traceability anchor and link to the canonical spec or roadmap.
 
-An issue is delivered by checking off its acceptance criteria and closing it. An epic is done when all its sub-issues are closed; GitHub rolls sub-issue progress up automatically.
+An issue body is a short tracking stub after migration. It must not become a second editable copy of the spec.
 
-## Specs and backlog
+## Spec hierarchy
 
-- An epic owns its problem, solution, product decisions, testing decisions, status, and priority.
-- Follow the [spec decoupling rule](./spec-decoupling-rule.md) when choosing its boundary.
-- Keep unspecified ideas under `.tracker/ideas/` until they are promoted into an epic.
-- Do not create hand-maintained backlog indexes or duplicate spec summaries under `docs/`.
+- An epic becomes `specs/<domain>/<epic-slug>/roadmap.md` and lists independently deliverable sub-specs.
+- A child delivery issue becomes `specs/<domain>/<epic-slug>/<feature-slug>/spec.md`; standalone work uses `specs/standalone/<feature-slug>/spec.md`.
+- Closed historical child issues are represented by `spec.md` artifacts marked `Done (historical)` and linked from their roadmap.
+- A feature directory must contain the GitHub issue number in its metadata even when the path is organized by domain rather than issue number.
 
-## When a skill says "publish to the issue tracker"
+## Creating and updating work
 
-Create a GitHub issue with `gh issue create`, following the body conventions above. Attach it to its epic as a sub-issue, set an explicit `priority:*` label, and add it to the project.
+The [Spec Kit operator guide](./spec-kit.md) is the canonical command reference.
 
-## When a skill says "fetch the relevant ticket"
+1. Create or select the GitHub intake issue.
+2. Assign priority and milestone in the Project.
+3. Create or update the linked spec with `$speckit-specify` and `$speckit-clarify`.
+4. Open a Draft PR once the spec is reviewable.
+5. Move the Project item through Spec Review, Plan Review, Ready, In Progress, Review, and Done as gates pass.
+6. Keep issue comments for product discussion; update the spec when a decision changes behavior.
 
-Read the issue with `gh issue view <number>`. The user will normally pass the issue number or URL directly.
+When publishing a new issue from a generated task list, keep the issue short and link it to the relevant spec. Do not copy `tasks.md` into the issue body.
+
+Administrative migration, validation, and cutover commands are documented centrally in the [Spec Kit operator guide](./spec-kit.md).
