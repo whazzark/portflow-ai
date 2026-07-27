@@ -3,10 +3,14 @@ import testUtils from '@adonisjs/core/services/test_utils'
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
 import ArchiveCustomerUseCase from '#customers/archive/archive_customer_use_case'
+import ArchiveCustomersUseCase from '#customers/archive/archive_customers_use_case'
 import CreateCustomerUseCase from '#customers/create/create_customer_use_case'
 import ReactivateCustomerUseCase from '#customers/reactivate/reactivate_customer_use_case'
+import ReactivateCustomersUseCase from '#customers/reactivate/reactivate_customers_use_case'
 import {
   ArchivedCustomerReadOnlyException,
+  BulkCustomerArchiveBlockedException,
+  BulkCustomerReactivationBlockedException,
   CustomerAlreadyArchivedException,
   CustomerAlreadyAvailableException,
   DuplicateCustomerCompanyNameException,
@@ -194,5 +198,86 @@ test.group('Customer use cases', (group) => {
         }),
       CustomerAlreadyAvailableException,
     )
+  })
+
+  test('archives several unused customers atomically with a normalized comment', async ({
+    assert,
+  }) => {
+    const actor = await UserFactory.apply('active').create()
+    const customers = await CustomerFactory.createMany(2)
+    app.container.swap(SiteReferenceUsageChecker, () => app.container.make(UnusedChecker))
+
+    const useCase = await app.container.make(ArchiveCustomersUseCase)
+    const archived = await useCase.handle({
+      ids: customers.map((customer) => customer.id),
+      archivedByUserId: actor.id,
+      archivedAt: DateTime.fromISO('2026-07-22T14:00:00.000+02:00'),
+      comment: '  Portfolio cleanup  ',
+    })
+
+    assert.deepEqual(
+      archived.map((customer) => customer.id),
+      customers.map((customer) => customer.id),
+    )
+    assert.isTrue(archived.every((customer) => customer.status === 'ARCHIVED'))
+    assert.isTrue(archived.every((customer) => customer.archiveComment === 'Portfolio cleanup'))
+  })
+
+  test('reports archive blockers without mutating any customer', async ({ assert }) => {
+    const available = await CustomerFactory.create()
+    const archived = await CustomerFactory.apply('archived').create()
+    const useCase = await app.container.make(ArchiveCustomersUseCase)
+
+    await assert.rejects(
+      () =>
+        useCase.handle({
+          ids: [available.id, archived.id, 'missing-customer'],
+          archivedByUserId: available.id,
+          archivedAt: DateTime.now(),
+        }),
+      BulkCustomerArchiveBlockedException,
+    )
+    await available.refresh()
+    assert.equal(available.status, 'AVAILABLE')
+  })
+
+  test('reactivates several archived customers with a normalized comment', async ({ assert }) => {
+    const actor = await UserFactory.apply('active').create()
+    const customers = await CustomerFactory.apply('archived').createMany(2)
+    const useCase = await app.container.make(ReactivateCustomersUseCase)
+
+    const reactivated = await useCase.handle({
+      ids: customers.map((customer) => customer.id),
+      reactivatedByUserId: actor.id,
+      reactivatedAt: DateTime.fromISO('2026-07-22T15:00:00.000+02:00'),
+      comment: '  Returning to operations  ',
+    })
+
+    assert.deepEqual(
+      reactivated.map((customer) => customer.id),
+      customers.map((customer) => customer.id),
+    )
+    assert.isTrue(reactivated.every((customer) => customer.status === 'AVAILABLE'))
+    assert.isTrue(
+      reactivated.every((customer) => customer.reactivationComment === 'Returning to operations'),
+    )
+  })
+
+  test('reports reactivation blockers without mutating any customer', async ({ assert }) => {
+    const archived = await CustomerFactory.apply('archived').create()
+    const available = await CustomerFactory.create()
+    const useCase = await app.container.make(ReactivateCustomersUseCase)
+
+    await assert.rejects(
+      () =>
+        useCase.handle({
+          ids: [archived.id, available.id, 'missing-customer'],
+          reactivatedByUserId: available.id,
+          reactivatedAt: DateTime.now(),
+        }),
+      BulkCustomerReactivationBlockedException,
+    )
+    await archived.refresh()
+    assert.equal(archived.status, 'ARCHIVED')
   })
 })

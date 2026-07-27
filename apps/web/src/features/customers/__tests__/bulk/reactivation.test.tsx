@@ -7,12 +7,19 @@ import { mockCustomers, renderCustomers } from '../support/test-helpers'
 
 test('reactivates selected archived customers', async () => {
   let requestBody: unknown
+  let currentCustomers = CUSTOMERS
 
   mockCustomers()
   server.use(
+    http.get(`${API_BASE_URL}/api/v1/customers`, () =>
+      HttpResponse.json({ data: currentCustomers }),
+    ),
     http.post(`${API_BASE_URL}/api/v1/customers/reactivate`, async ({ request }) => {
       requestBody = await request.json()
-      return HttpResponse.json({ data: CUSTOMERS })
+      currentCustomers = currentCustomers.map((customer) =>
+        customer.status === 'ARCHIVED' ? { ...customer, status: 'AVAILABLE' } : customer,
+      )
+      return HttpResponse.json({ data: currentCustomers })
     }),
   )
 
@@ -31,4 +38,6 @@ test('reactivates selected archived customers', async () => {
   )
 
   await waitFor(() => expect(requestBody).toEqual({ ids: ['archived-1'], comment: null }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: 'Archived (0)' })).toBeInTheDocument())
+  expect(screen.getByRole('tab', { name: 'Available (3)' })).toBeInTheDocument()
 })

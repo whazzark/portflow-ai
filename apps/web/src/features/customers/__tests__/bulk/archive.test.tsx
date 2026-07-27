@@ -12,7 +12,11 @@ test('archives the visible selected customers with one shared request', async ()
   server.use(
     http.post(`${API_BASE_URL}/api/v1/customers/archive`, async ({ request }) => {
       requestBody = await request.json()
-      return HttpResponse.json({ data: CUSTOMERS })
+      return HttpResponse.json({
+        data: CUSTOMERS.map((customer) =>
+          customer.status === 'AVAILABLE' ? { ...customer, status: 'ARCHIVED' } : customer,
+        ),
+      })
     }),
   )
 
