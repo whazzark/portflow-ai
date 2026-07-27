@@ -18,7 +18,7 @@ const customersRoute = getRouteApi('/_authenticated/customers')
 
 export function CustomersPage() {
   const {
-    q,
+    search,
     status,
     availableSort,
     availableOrder,
@@ -50,7 +50,7 @@ export function CustomersPage() {
 
   const updateSearch = (value: string) => {
     setSelectedCustomerIds(new Set())
-    void navigate({ search: (previous) => ({ ...previous, q: value }) })
+    void navigate({ search: (previous) => ({ ...previous, search: value }) })
   }
 
   const updateStatus = (nextStatus: string) => {
@@ -107,7 +107,7 @@ export function CustomersPage() {
               id="customer-search"
               onChange={(event) => updateSearch(event.target.value)}
               placeholder="Search by code or company name"
-              value={q}
+              value={search}
             />
           </div>
         </Field>
@@ -145,7 +145,7 @@ export function CustomersPage() {
               onSelect={(customerId) =>
                 navigate({ search: (previous) => ({ ...previous, customerId, mode: 'view' }) })
               }
-              search={q}
+              search={search}
               sorting={[{ id: activeSort, desc: activeOrder === 'desc' }]}
               onSortingChange={updateSorting(status)}
               canAdminister={canAdminister}
@@ -162,7 +162,7 @@ export function CustomersPage() {
               onSelect={(customerId) =>
                 navigate({ search: (previous) => ({ ...previous, customerId, mode: 'view' }) })
               }
-              search={q}
+              search={search}
               sorting={[{ id: activeSort, desc: activeOrder === 'desc' }]}
               onSortingChange={updateSorting(status)}
               canAdminister={canAdminister}

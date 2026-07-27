@@ -68,14 +68,14 @@ test('switches status tabs and filters the active customer list', async () => {
       'No matching customers',
     ),
   ).toBeInTheDocument()
-  expect(router.state.location.search).toMatchObject({ q: 'beta', status: 'archived' })
+  expect(router.state.location.search).toMatchObject({ search: 'beta', status: 'archived' })
 })
 
 test('restores customer filters from the initial URL', async () => {
   mockCustomers()
 
   const filters = new URLSearchParams({
-    q: 'beta',
+    search: 'beta',
     status: 'archived',
     availableSort: 'companyName',
     availableOrder: 'desc',
@@ -87,7 +87,7 @@ test('restores customer filters from the initial URL', async () => {
   expect(await screen.findByRole('table', { name: 'Archived customers' })).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Search customers' })).toHaveValue('beta')
   expect(router.state.location.search).toMatchObject({
-    q: 'beta',
+    search: 'beta',
     status: 'archived',
     availableSort: 'companyName',
     availableOrder: 'desc',
