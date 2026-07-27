@@ -16,21 +16,25 @@ const customerSearchSchema = z
     archivedSort: z.enum(['code', 'companyName', 'archiveComment']).catch('code'),
     archivedOrder: z.enum(['asc', 'desc']).catch('asc'),
   })
-  .transform((search) => {
-    if (search.mode === 'create') {
-      return { ...search, customerId: undefined }
-    }
 
-    if ((search.mode === 'edit' || search.mode === 'view') && !search.customerId) {
-      return { ...search, mode: undefined }
-    }
+type CustomerSearch = z.infer<typeof customerSearchSchema>
 
-    return search
-  })
+function normalizeCustomerSearch(search: CustomerSearch): CustomerSearch {
+  if (search.mode === 'create') {
+    return { ...search, customerId: undefined }
+  }
+
+  if ((search.mode === 'edit' || search.mode === 'view') && !search.customerId) {
+    return { ...search, mode: undefined }
+  }
+
+  return search
+}
 
 export const Route = createFileRoute('/_authenticated/customers')({
   staticData: { breadcrumb: 'Customers' },
-  validateSearch: (search: Record<string, unknown>) => customerSearchSchema.parse(search),
+  validateSearch: (search: Record<string, unknown>): CustomerSearch =>
+    normalizeCustomerSearch(customerSearchSchema.parse(search)),
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(customerQueries.list()),
   pendingComponent: CustomersPending,
   errorComponent: CustomersError,
