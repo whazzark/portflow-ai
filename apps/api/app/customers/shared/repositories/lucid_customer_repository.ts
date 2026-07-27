@@ -58,7 +58,7 @@ export default class LucidCustomerRepository extends CustomerRepository {
   }
 
   list(): Promise<Customer[]> {
-    return Customer.query().orderBy('code', 'asc')
+    return Customer.query().preload('archivedBy').preload('reactivatedBy').orderBy('code', 'asc')
   }
 
   listAvailable(): Promise<Customer[]> {
@@ -66,7 +66,7 @@ export default class LucidCustomerRepository extends CustomerRepository {
   }
 
   findById(id: string): Promise<Customer | null> {
-    return Customer.find(id)
+    return Customer.query().where('id', id).preload('archivedBy').preload('reactivatedBy').first()
   }
 
   findManyByIds(ids: string[]): Promise<Customer[]> {

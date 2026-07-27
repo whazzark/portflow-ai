@@ -68,10 +68,12 @@ test.group('Customers administration', (group) => {
     assert.equal(createResponse.body().data.companyName, 'Acme   Logistics')
     assert.equal(createResponse.body().data.status, 'AVAILABLE')
     assert.deepEqual(Object.keys(createResponse.body().data).sort(), [
+      'archivedBy',
       'code',
       'companyName',
       'createdAt',
       'id',
+      'reactivatedBy',
       'status',
       'updatedAt',
     ])
@@ -189,7 +191,13 @@ test.group('Customers administration', (group) => {
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
     const available = await CustomerFactory.merge({ code: 'AVAILABLE-01' }).create()
+    available.reactivatedByUserId = admin.id
+    available.reactivationComment = 'Returned to service'
+    await available.save()
     const archived = await CustomerFactory.apply('archived').merge({ code: 'ARCHIVED-01' }).create()
+    archived.archivedByUserId = admin.id
+    archived.archiveComment = 'Legacy account'
+    await archived.save()
 
     const listResponse = await client.get('/api/v1/customers').loginAs(admin)
     const availableResponse = await client.get('/api/v1/customers/available').loginAs(admin)
@@ -199,6 +207,16 @@ test.group('Customers administration', (group) => {
     assert.includeMembers(
       listResponse.body().data.map((customer: { id: string }) => customer.id),
       [available.id, archived.id],
+    )
+    assert.deepEqual(
+      listResponse.body().data.find((customer: { id: string }) => customer.id === archived.id)
+        .archivedBy,
+      { id: admin.id, firstName: admin.firstName, lastName: admin.lastName },
+    )
+    assert.deepEqual(
+      listResponse.body().data.find((customer: { id: string }) => customer.id === available.id)
+        .reactivatedBy,
+      { id: admin.id, firstName: admin.firstName, lastName: admin.lastName },
     )
     assert.includeMembers(
       availableResponse.body().data.map((customer: { id: string }) => customer.id),

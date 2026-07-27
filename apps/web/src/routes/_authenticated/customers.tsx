@@ -11,9 +11,9 @@ const customerSearchSchema = z
     status: z.enum(['available', 'archived']).catch('available'),
     customerId: z.string().optional().catch(undefined),
     mode: z.enum(['create', 'edit', 'view']).optional().catch(undefined),
-    availableSort: z.enum(['code', 'companyName', 'updatedAt']).catch('code'),
+    availableSort: z.enum(['code', 'companyName', 'reactivationComment']).catch('code'),
     availableOrder: z.enum(['asc', 'desc']).catch('asc'),
-    archivedSort: z.enum(['code', 'companyName', 'updatedAt']).catch('code'),
+    archivedSort: z.enum(['code', 'companyName', 'archiveComment']).catch('code'),
     archivedOrder: z.enum(['asc', 'desc']).catch('asc'),
   })
   .transform((search) => {

@@ -12,6 +12,18 @@ test('renders customers through status tabs with available selected by default',
 
   expect(within(available).getByText('ACME-01')).toBeInTheDocument()
   expect(within(available).getByText('BETA-02')).toBeInTheDocument()
+  expect(
+    within(available).getByRole('columnheader', { name: /Reactivation comment/ }),
+  ).toBeInTheDocument()
+  expect(within(available).getByText('Returned to service')).toBeInTheDocument()
+  expect(
+    within(available).getByRole('columnheader', { name: /Reactivated by/ }),
+  ).toBeInTheDocument()
+  expect(within(available).getByText('Claire Martin')).toBeInTheDocument()
+  expect(within(available).getByText('CM')).toBeInTheDocument()
+  expect(
+    within(available).queryByRole('columnheader', { name: /Last updated/ }),
+  ).not.toBeInTheDocument()
   expect(screen.queryByRole('table', { name: 'Archived customers' })).not.toBeInTheDocument()
   expect(screen.getByRole('tab', { name: /Available \(2\)/ })).toHaveAttribute(
     'aria-selected',
@@ -35,6 +47,17 @@ test('switches status tabs and filters the active customer list', async () => {
   await user.click(screen.getByRole('tab', { name: /Archived \(1\)/ }))
 
   expect(await screen.findByRole('table', { name: 'Archived customers' })).toBeInTheDocument()
+  const archived = screen.getByRole('table', { name: 'Archived customers' })
+  expect(
+    within(archived).getByRole('columnheader', { name: /Archive comment/ }),
+  ).toBeInTheDocument()
+  expect(within(archived).getByText('No longer used')).toBeInTheDocument()
+  expect(within(archived).getByRole('columnheader', { name: /Archived by/ })).toBeInTheDocument()
+  expect(within(archived).getByText('Claire Martin')).toBeInTheDocument()
+  expect(within(archived).getByText('CM')).toBeInTheDocument()
+  expect(
+    within(archived).queryByRole('columnheader', { name: /Last updated/ }),
+  ).not.toBeInTheDocument()
   expect(screen.queryByText('ACME-01')).not.toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({ status: 'archived' })
 
@@ -46,6 +69,31 @@ test('switches status tabs and filters the active customer list', async () => {
     ),
   ).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({ q: 'beta', status: 'archived' })
+})
+
+test('restores customer filters from the initial URL', async () => {
+  mockCustomers()
+
+  const filters = new URLSearchParams({
+    q: 'beta',
+    status: 'archived',
+    availableSort: 'companyName',
+    availableOrder: 'desc',
+    archivedSort: 'archiveComment',
+    archivedOrder: 'desc',
+  })
+  const { router } = renderCustomers(`/customers?${filters}`)
+
+  expect(await screen.findByRole('table', { name: 'Archived customers' })).toBeInTheDocument()
+  expect(screen.getByRole('textbox', { name: 'Search customers' })).toHaveValue('beta')
+  expect(router.state.location.search).toMatchObject({
+    q: 'beta',
+    status: 'archived',
+    availableSort: 'companyName',
+    availableOrder: 'desc',
+    archivedSort: 'archiveComment',
+    archivedOrder: 'desc',
+  })
 })
 
 test('highlights matching code and company text using the customer search normalization', async () => {

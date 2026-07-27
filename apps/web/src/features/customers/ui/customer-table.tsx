@@ -23,7 +23,24 @@ import {
 } from '@/components/ui/table'
 import { customerMatchesSearch } from '@/features/customers/helpers/customer-search'
 import type { CustomerDto } from '@/features/customers/types'
+import { formatFullName } from '@/features/users/helpers/name'
+import { UserAvatar } from '@/features/users/ui/user-avatar'
 import { classnames } from '@/libraries/shadcn/helpers'
+
+type LifecycleUser = NonNullable<CustomerDto['archivedBy']>
+
+function lifecycleUserCell(user: LifecycleUser | null) {
+  if (!user) {
+    return 'Unknown'
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <UserAvatar aria-hidden={true} size="sm" user={user} />
+      <span>{formatFullName(user)}</span>
+    </div>
+  )
+}
 
 declare module '@tanstack/react-table' {
   interface TableMeta<TData extends import('@tanstack/react-table').RowData> {
@@ -113,12 +130,40 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
         />
       ),
     },
-    {
-      accessorKey: 'updatedAt',
-      header: 'Last updated',
-      sortingFn: 'datetime',
-      cell: ({ getValue }) => new Date(getValue<string>()).toLocaleDateString('en-GB'),
-    },
+    ...(isArchived
+      ? [
+          {
+            accessorKey: 'archiveComment',
+            header: 'Archive comment',
+            sortingFn: 'text' as const,
+            cell: ({ row }: { row: { original: CustomerDto } }) =>
+              row.original.archiveComment ?? '—',
+          } satisfies ColumnDef<CustomerDto>,
+          {
+            accessorKey: 'archivedBy',
+            header: 'Archived by',
+            enableSorting: false,
+            cell: ({ row }: { row: { original: CustomerDto } }) => {
+              return lifecycleUserCell(row.original.archivedBy)
+            },
+          } satisfies ColumnDef<CustomerDto>,
+        ]
+      : [
+          {
+            accessorKey: 'reactivationComment',
+            header: 'Reactivation comment',
+            sortingFn: 'text' as const,
+            cell: ({ row }: { row: { original: CustomerDto } }) =>
+              row.original.reactivationComment ?? '—',
+          } satisfies ColumnDef<CustomerDto>,
+          {
+            accessorKey: 'reactivatedBy',
+            header: 'Reactivated by',
+            enableSorting: false,
+            cell: ({ row }: { row: { original: CustomerDto } }) =>
+              lifecycleUserCell(row.original.reactivatedBy),
+          } satisfies ColumnDef<CustomerDto>,
+        ]),
   ]
 }
 
