@@ -88,26 +88,6 @@ test.group('Customers administration', (group) => {
     assert.equal(updateResponse.body().data.companyName, 'Acme Maritime')
   })
 
-  test('allows active operational users to resolve available and archived customers', async ({
-    assert,
-    client,
-  }) => {
-    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
-    const available = await CustomerFactory.merge({ code: 'VISIBLE-01' }).create()
-    const archived = await CustomerFactory.apply('archived').merge({ code: 'HISTORIC-01' }).create()
-
-    const availableResponse = await client
-      .get(`/api/v1/customers/${available.id}`)
-      .loginAs(observer)
-    const archivedResponse = await client.get(`/api/v1/customers/${archived.id}`).loginAs(observer)
-
-    availableResponse.assertStatus(200)
-    archivedResponse.assertStatus(200)
-    assert.equal(availableResponse.body().data.id, available.id)
-    assert.equal(archivedResponse.body().data.id, archived.id)
-    assert.equal(archivedResponse.body().data.status, 'ARCHIVED')
-  })
-
   test('allows active operational users to browse all customers read-only', async ({
     assert,
     client,

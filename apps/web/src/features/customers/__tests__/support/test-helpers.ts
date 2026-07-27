@@ -10,6 +10,6 @@ export function mockCustomers(user = ADMIN, customers = CUSTOMERS) {
   )
 }
 
-export function renderCustomers() {
-  return renderApp('/customers')
+export function renderCustomers(initialPath = '/customers') {
+  return renderApp(initialPath)
 }

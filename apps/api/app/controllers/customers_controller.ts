@@ -18,7 +18,6 @@ import {
   reactivateCustomerValidator,
   updateCustomerValidator,
 } from '#customers/shared/customer_validator'
-import GetCustomerUseCase from '#customers/show/get_customer_use_case'
 import UpdateCustomerUseCase from '#customers/update/update_customer_use_case'
 
 @inject()
@@ -27,7 +26,6 @@ export default class CustomersController {
     private createCustomerUseCase: CreateCustomerUseCase,
     private listCustomersUseCase: ListCustomersUseCase,
     private listAvailableCustomersUseCase: ListAvailableCustomersUseCase,
-    private getCustomerUseCase: GetCustomerUseCase,
     private updateCustomerUseCase: UpdateCustomerUseCase,
     private archiveCustomerUseCase: ArchiveCustomerUseCase,
     private reactivateCustomerUseCase: ReactivateCustomerUseCase,
@@ -61,14 +59,6 @@ export default class CustomersController {
     const customers = await this.listAvailableCustomersUseCase.handle()
 
     return serialize(CustomerTransformer.transform(customers))
-  }
-
-  async show({ bouncer, params, serialize }: HttpContext) {
-    await bouncer.with(CustomerPolicy).authorize('view')
-
-    const customer = await this.getCustomerUseCase.handle(params.id)
-
-    return serialize(CustomerTransformer.transform(customer))
   }
 
   async update({ bouncer, params, request, serialize }: HttpContext) {

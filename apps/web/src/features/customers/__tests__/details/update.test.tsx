@@ -11,15 +11,17 @@ test('lets administrators inspect and update an available customer in the sheet'
     companyName: 'Acme Maritime',
     updatedAt: '2026-01-05T00:00:00.000Z',
   }
-  let current = CUSTOMERS[0]
+  let currentCustomers = CUSTOMERS
 
   mockCustomers()
   server.use(
-    http.get(`${API_BASE_URL}/api/v1/customers/available-1`, () =>
-      HttpResponse.json({ data: current }),
+    http.get(`${API_BASE_URL}/api/v1/customers`, () =>
+      HttpResponse.json({ data: currentCustomers }),
     ),
     http.patch(`${API_BASE_URL}/api/v1/customers/available-1`, () => {
-      current = updated
+      currentCustomers = currentCustomers.map((customer) =>
+        customer.id === updated.id ? updated : customer,
+      )
       return HttpResponse.json({ data: updated })
     }),
   )
@@ -36,6 +38,12 @@ test('lets administrators inspect and update an available customer in the sheet'
   expect((await within(dialog).findAllByText('Acme Logistics')).length).toBeGreaterThan(0)
 
   fireEvent.click(screen.getByRole('button', { name: 'Edit customer' }))
+  expect(await screen.findByRole('heading', { name: 'Edit customer' })).toBeInTheDocument()
+  fireEvent.click(await screen.findByRole('button', { name: 'Back to customer details' }))
+  expect(await screen.findByRole('heading', { name: 'Acme Logistics' })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Edit customer' })).not.toBeInTheDocument()
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit customer' }))
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Acme Maritime' },
   })

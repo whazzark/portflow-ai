@@ -5,16 +5,28 @@ import { CustomersError } from '@/features/customers/ui/customers-error'
 import { CustomersPage } from '@/features/customers/ui/customers-page'
 import { CustomersPending } from '@/features/customers/ui/customers-pending'
 
-const customerSearchSchema = z.object({
-  q: z.string().catch(''),
-  status: z.enum(['available', 'archived']).catch('available'),
-  customerId: z.string().optional().catch(undefined),
-  mode: z.enum(['create', 'edit', 'view']).optional().catch(undefined),
-  availableSort: z.enum(['code', 'companyName', 'updatedAt']).catch('code'),
-  availableOrder: z.enum(['asc', 'desc']).catch('asc'),
-  archivedSort: z.enum(['code', 'companyName', 'updatedAt']).catch('code'),
-  archivedOrder: z.enum(['asc', 'desc']).catch('asc'),
-})
+const customerSearchSchema = z
+  .object({
+    q: z.string().catch(''),
+    status: z.enum(['available', 'archived']).catch('available'),
+    customerId: z.string().optional().catch(undefined),
+    mode: z.enum(['create', 'edit', 'view']).optional().catch(undefined),
+    availableSort: z.enum(['code', 'companyName', 'updatedAt']).catch('code'),
+    availableOrder: z.enum(['asc', 'desc']).catch('asc'),
+    archivedSort: z.enum(['code', 'companyName', 'updatedAt']).catch('code'),
+    archivedOrder: z.enum(['asc', 'desc']).catch('asc'),
+  })
+  .transform((search) => {
+    if (search.mode === 'create') {
+      return { ...search, customerId: undefined }
+    }
+
+    if ((search.mode === 'edit' || search.mode === 'view') && !search.customerId) {
+      return { ...search, mode: undefined }
+    }
+
+    return search
+  })
 
 export const Route = createFileRoute('/_authenticated/customers')({
   staticData: { breadcrumb: 'Customers' },

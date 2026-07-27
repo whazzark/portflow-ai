@@ -20,10 +20,9 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 type LifecycleActionsProps = {
   className?: string
   customer: CustomerDto
-  onSuccess: () => void
 }
 
-export function LifecycleActions({ className, customer, onSuccess }: LifecycleActionsProps) {
+export function LifecycleActions({ className, customer }: LifecycleActionsProps) {
   const mutations = useCustomerMutations()
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
@@ -45,7 +44,6 @@ export function LifecycleActions({ className, customer, onSuccess }: LifecycleAc
 
       setOpen(false)
       setComment('')
-      onSuccess()
       toast.success(archived ? 'Customer reactivated' : 'Customer archived')
     } catch (error) {
       toast.error(archived ? 'Unable to reactivate customer' : 'Unable to archive customer', {

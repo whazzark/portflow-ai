@@ -16,7 +16,6 @@ export interface ApiDefinition {
     available: typeof routes['customers.available']
     archiveMany: typeof routes['customers.archive_many']
     reactivateMany: typeof routes['customers.reactivate_many']
-    show: typeof routes['customers.show']
     update: typeof routes['customers.update']
     archive: typeof routes['customers.archive']
     reactivate: typeof routes['customers.reactivate']

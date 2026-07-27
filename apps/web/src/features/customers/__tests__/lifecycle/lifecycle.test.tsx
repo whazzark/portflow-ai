@@ -9,11 +9,14 @@ import { mockCustomers, renderCustomers } from '../support/test-helpers'
 test('archives and reactivates a customer with explicit lifecycle actions', async () => {
   const initialCustomer: CustomerDto = { ...CUSTOMERS[0], status: 'AVAILABLE' }
   let current: CustomerDto = initialCustomer
+  let currentCustomers = CUSTOMERS.map((customer) =>
+    customer.id === initialCustomer.id ? initialCustomer : customer,
+  )
 
   mockCustomers()
   server.use(
-    http.get(`${API_BASE_URL}/api/v1/customers/available-1`, () =>
-      HttpResponse.json({ data: current }),
+    http.get(`${API_BASE_URL}/api/v1/customers`, () =>
+      HttpResponse.json({ data: currentCustomers }),
     ),
     http.post(`${API_BASE_URL}/api/v1/customers/available-1/archive`, () => {
       current = {
@@ -23,6 +26,9 @@ test('archives and reactivates a customer with explicit lifecycle actions', asyn
         archiveComment: 'Retired account',
         archivedAt: '2026-01-05T00:00:00.000Z',
       }
+      currentCustomers = currentCustomers.map((customer) =>
+        customer.id === current.id ? current : customer,
+      )
       return HttpResponse.json({ data: current })
     }),
     http.post(`${API_BASE_URL}/api/v1/customers/available-1/reactivate`, () => {
@@ -35,6 +41,9 @@ test('archives and reactivates a customer with explicit lifecycle actions', asyn
         reactivationComment: 'Returning to operations',
         reactivatedAt: '2026-01-06T00:00:00.000Z',
       }
+      currentCustomers = currentCustomers.map((customer) =>
+        customer.id === current.id ? current : customer,
+      )
       return HttpResponse.json({ data: current })
     }),
   )

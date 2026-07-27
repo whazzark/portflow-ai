@@ -4,17 +4,10 @@ import { tuyauQuery } from '@/libraries/tuyau/client'
 export function useCustomerMutations() {
   const queryClient = useQueryClient()
 
-  const invalidateCustomers = async (customerId?: string) => {
+  const invalidateCustomers = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: tuyauQuery.customers.index.queryKey() }),
       queryClient.invalidateQueries({ queryKey: tuyauQuery.customers.available.queryKey() }),
-      ...(customerId
-        ? [
-            queryClient.invalidateQueries({
-              queryKey: tuyauQuery.customers.show.queryKey({ params: { id: customerId } }),
-            }),
-          ]
-        : []),
     ])
   }
 
@@ -25,17 +18,17 @@ export function useCustomerMutations() {
   )
   const update = useMutation(
     tuyauQuery.customers.update.mutationOptions({
-      onSuccess: (_data, variables) => invalidateCustomers(String(variables.params.id)),
+      onSuccess: () => invalidateCustomers(),
     }),
   )
   const archive = useMutation(
     tuyauQuery.customers.archive.mutationOptions({
-      onSuccess: (_data, variables) => invalidateCustomers(String(variables.params.id)),
+      onSuccess: () => invalidateCustomers(),
     }),
   )
   const reactivate = useMutation(
     tuyauQuery.customers.reactivate.mutationOptions({
-      onSuccess: (_data, variables) => invalidateCustomers(String(variables.params.id)),
+      onSuccess: () => invalidateCustomers(),
     }),
   )
   const archiveMany = useMutation(

@@ -1,17 +1,10 @@
 import { fireEvent, screen, within } from '@testing-library/react'
-import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
-import { server } from '@/test/msw/server'
-import { API_BASE_URL, CUSTOMERS, OBSERVER } from '../support/fixtures'
+import { OBSERVER } from '../support/fixtures'
 import { mockCustomers, renderCustomers } from '../support/test-helpers'
 
 test('does not expose customer mutations to observers in the detail sheet', async () => {
   mockCustomers(OBSERVER)
-  server.use(
-    http.get(`${API_BASE_URL}/api/v1/customers/available-1`, () =>
-      HttpResponse.json({ data: CUSTOMERS[0] }),
-    ),
-  )
 
   renderCustomers()
   fireEvent.click(await screen.findByRole('button', { name: 'View customer ACME-01' }))
@@ -21,4 +14,25 @@ test('does not expose customer mutations to observers in the detail sheet', asyn
   expect(within(dialog).queryByRole('button', { name: 'Edit customer' })).not.toBeInTheDocument()
   expect(within(dialog).queryByRole('button', { name: 'Archive customer' })).not.toBeInTheDocument()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }))
+})
+
+test('does not expose customer creation when an observer opens the create URL directly', async () => {
+  mockCustomers(OBSERVER)
+
+  const { router } = renderCustomers()
+  await screen.findByRole('table', { name: 'Available customers' })
+  router.history.push('/customers?mode=create')
+
+  expect(screen.queryByRole('heading', { name: 'Create customer' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create customer' })).not.toBeInTheDocument()
+})
+
+test('closes an inspection URL that has no customer id', async () => {
+  mockCustomers()
+
+  const { router } = renderCustomers()
+  await screen.findByRole('table', { name: 'Available customers' })
+  router.history.push('/customers?mode=view')
+
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })

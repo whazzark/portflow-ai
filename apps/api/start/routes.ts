@@ -23,7 +23,6 @@ router
         router.get('/available', [controllers.Customers, 'available']).as('available')
         router.post('/archive', [controllers.Customers, 'archiveMany']).as('archive_many')
         router.post('/reactivate', [controllers.Customers, 'reactivateMany']).as('reactivate_many')
-        router.get('/:id', [controllers.Customers, 'show']).as('show')
         router.patch('/:id', [controllers.Customers, 'update']).as('update')
         router.post('/:id/archive', [controllers.Customers, 'archive']).as('archive')
         router.post('/:id/reactivate', [controllers.Customers, 'reactivate']).as('reactivate')

@@ -60,12 +60,6 @@ const routes = {
     tokens: [{"old":"/api/v1/customers/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/customers/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/reactivate","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/reactivate","type":0,"val":"reactivate","end":""}],
     types: placeholder as Registry['customers.reactivate_many']['types'],
   },
-  'customers.show': {
-    methods: ["GET","HEAD"],
-    pattern: '/api/v1/customers/:id',
-    tokens: [{"old":"/api/v1/customers/:id","type":0,"val":"api","end":""},{"old":"/api/v1/customers/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/:id","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/:id","type":1,"val":"id","end":""}],
-    types: placeholder as Registry['customers.show']['types'],
-  },
   'customers.update': {
     methods: ["PATCH"],
     pattern: '/api/v1/customers/:id',

@@ -11,15 +11,9 @@ type CustomerDetailsProps = {
   canAdminister: boolean
   customer: CustomerDto
   onEdit: () => void
-  onLifecycleSuccess: () => void
 }
 
-export function CustomerDetails({
-  canAdminister,
-  customer,
-  onEdit,
-  onLifecycleSuccess,
-}: CustomerDetailsProps) {
+export function CustomerDetails({ canAdminister, customer, onEdit }: CustomerDetailsProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <SheetHeader className="shrink-0 border-b">
@@ -64,16 +58,12 @@ export function CustomerDetails({
       {canAdminister && customer.status === 'AVAILABLE' && (
         <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
           <Button onClick={onEdit}>Edit customer</Button>
-          <LifecycleActions customer={customer} onSuccess={onLifecycleSuccess} />
+          <LifecycleActions customer={customer} />
         </SheetFooter>
       )}
       {canAdminister && customer.status === 'ARCHIVED' && (
         <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:justify-end">
-          <LifecycleActions
-            className="sm:ml-auto"
-            customer={customer}
-            onSuccess={onLifecycleSuccess}
-          />
+          <LifecycleActions className="sm:ml-auto" customer={customer} />
         </SheetFooter>
       )}
     </div>

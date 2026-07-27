@@ -40,6 +40,13 @@ export function CustomersPage() {
   const availableCustomers = customers.filter((customer) => customer.status === 'AVAILABLE')
   const archivedCustomers = customers.filter((customer) => customer.status === 'ARCHIVED')
   const canAdminister = isAdministrator(user)
+  const sheetMode =
+    mode === 'create' && !canAdminister
+      ? undefined
+      : (mode === 'edit' || mode === 'view') && !customerId
+        ? undefined
+        : mode
+  const sheetCustomerId = sheetMode === 'create' ? undefined : customerId
 
   const updateSearch = (value: string) => {
     setSelectedCustomerIds(new Set())
@@ -175,8 +182,13 @@ export function CustomersPage() {
       )}
       <CustomerSheet
         canAdminister={canAdminister}
-        customerId={customerId}
-        mode={mode}
+        customerId={sheetCustomerId}
+        customer={
+          sheetCustomerId
+            ? customers.find((customer) => customer.id === sheetCustomerId)
+            : undefined
+        }
+        mode={sheetMode}
         onChange={(next) =>
           navigate({
             search: (previous) => ({
