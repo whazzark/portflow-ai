@@ -63,7 +63,6 @@ test('keeps selection controls and the selected-row indicator inside the selecti
     expect(checkbox.parentElement).toHaveClass('flex', 'h-full', 'items-center', 'justify-center')
   }
 
-  expect(table.querySelector('colgroup col')).toHaveClass('w-10')
   expect(within(table).getAllByRole('columnheader')[0]).toHaveClass('w-10', 'p-0')
   const firstRow = within(table).getAllByRole('row')[1]
   const selectionCell = within(firstRow).getAllByRole('cell')[0]

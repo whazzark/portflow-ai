@@ -222,11 +222,6 @@ export function CustomerTable({
       )}
     >
       <Table aria-label={isArchived ? 'Archived customers' : 'Available customers'}>
-        <colgroup>
-          {table.getVisibleLeafColumns().map((column) => (
-            <col className={column.id === 'selection' ? 'w-10' : undefined} key={column.id} />
-          ))}
-        </colgroup>
         <TableHeader className="md:sticky md:top-0 md:z-10 md:bg-background">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
