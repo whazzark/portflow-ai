@@ -49,6 +49,11 @@ Verify list/status/search/sort behavior, URL-restored state, detail opening, cre
 - **SC-004**: Starting from the customer workbench, use keyboard or pointer input with a stopwatch to locate a known customer, open details, and begin the intended lifecycle action. Record the elapsed time; the scenario passes at 60 seconds or less.
 - **SC-005**: In the normal test environment, start timing when an accepted lifecycle response is received and stop when the refreshed list/detail state and lifecycle metadata are visible. The scenario passes at 2 seconds or less and must not use a full-page reload.
 
+### Manual verification record
+
+- **2026-07-28, seeded PostgreSQL + authenticated Chromium**: SC-004 completed in **469 ms** using customer `ATL-CER` (search, detail opening, and archive action start); passed the 60-second threshold.
+- **2026-07-28, same run**: SC-005 completed in **29 ms** from accepted archive response to the archived state and archive metadata becoming visible in the existing detail view; no full-page reload; passed the 2-second threshold. Mutation round trip was 58 ms.
+
 ## Repository gates
 
 ```bash
