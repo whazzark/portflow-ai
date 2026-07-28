@@ -30,7 +30,7 @@ const customerSearchSchema = z
 
 export const Route = createFileRoute('/_authenticated/customers')({
   staticData: { breadcrumb: 'Customers' },
-  validateSearch: (search: Record<string, unknown>) => customerSearchSchema.parse(search),
+  validateSearch: customerSearchSchema,
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(customerQueries.list()),
   pendingComponent: CustomersPending,
   errorComponent: CustomersError,
