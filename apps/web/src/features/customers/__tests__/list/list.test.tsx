@@ -71,6 +71,26 @@ test('switches status tabs and filters the active customer list', async () => {
   expect(router.state.location.search).toMatchObject({ search: 'beta', status: 'archived' })
 })
 
+test('searches lifecycle comments in the active customer list', async () => {
+  const user = userEvent.setup()
+  mockCustomers()
+
+  renderCustomers()
+  const available = await screen.findByRole('table', { name: 'Available customers' })
+
+  await user.type(screen.getByRole('textbox', { name: 'Search customers' }), 'returned')
+
+  expect(within(available).getByText('BETA-02')).toBeInTheDocument()
+  expect(within(available).queryByText('ACME-01')).not.toBeInTheDocument()
+
+  await user.click(screen.getByRole('tab', { name: /Archived \(1\)/ }))
+  await user.clear(screen.getByRole('textbox', { name: 'Search customers' }))
+  await user.type(screen.getByRole('textbox', { name: 'Search customers' }), 'no longer used')
+
+  const archived = screen.getByRole('table', { name: 'Archived customers' })
+  expect(within(archived).getByText('OLD-03')).toBeInTheDocument()
+})
+
 test('restores customer filters from the initial URL', async () => {
   mockCustomers()
 

@@ -106,7 +106,7 @@ export function CustomersPage() {
               className="pl-9"
               id="customer-search"
               onChange={(event) => updateSearch(event.target.value)}
-              placeholder="Search by code or company name"
+              placeholder="Search by code, company name, or lifecycle comment"
               value={search}
             />
           </div>

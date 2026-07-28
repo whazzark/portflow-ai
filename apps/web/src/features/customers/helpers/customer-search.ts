@@ -8,7 +8,10 @@ export function customerMatchesSearch(customer: CustomerDto, search: string) {
     return true
   }
 
-  return [customer.code, customer.companyName].some((value) =>
-    normalizeSearch(value).includes(normalizedSearch),
-  )
+  return [
+    customer.code,
+    customer.companyName,
+    customer.reactivationComment,
+    customer.archiveComment,
+  ].some((value) => value !== null && normalizeSearch(value).includes(normalizedSearch))
 }
