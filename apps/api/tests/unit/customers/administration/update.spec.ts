@@ -26,7 +26,7 @@ test.group('UpdateCustomerUseCase', (group) => {
     const customer = await CustomerFactory.create()
     const repository = {
       updateAvailable: async () => ({ kind: 'UPDATED' as const, customer }),
-    } as CustomerRepository
+    } as unknown as CustomerRepository
     app.container.swap(CustomerRepository, () => repository)
     const updated = await (await app.container.make(UpdateCustomerUseCase)).handle({
       id: customer.id,
@@ -62,7 +62,7 @@ test.group('UpdateCustomerUseCase', (group) => {
       () =>
         ({
           updateAvailable: async () => ({ kind: 'NOT_FOUND' as const }),
-        }) as CustomerRepository,
+        }) as unknown as CustomerRepository,
     )
     await assert.rejects(
       () =>
@@ -76,7 +76,7 @@ test.group('UpdateCustomerUseCase', (group) => {
       () =>
         ({
           updateAvailable: async () => ({ kind: 'DUPLICATE_COMPANY_NAME' as const }),
-        }) as CustomerRepository,
+        }) as unknown as CustomerRepository,
     )
     await assert.rejects(
       () =>

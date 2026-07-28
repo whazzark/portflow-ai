@@ -45,7 +45,7 @@ test.group('CreateCustomerUseCase', (group) => {
       () =>
         ({
           create: async () => ({ kind: 'DUPLICATE_CODE' as const }),
-        }) as CustomerRepository,
+        }) as unknown as CustomerRepository,
     )
     await assert.rejects(
       () =>

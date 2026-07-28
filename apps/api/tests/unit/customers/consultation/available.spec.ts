@@ -16,7 +16,7 @@ test.group('ListAvailableCustomersUseCase', (group) => {
       () =>
         ({
           listAvailable: async () => customers,
-        }) as CustomerRepository,
+        }) as unknown as CustomerRepository,
     )
     const result = await (await app.container.make(ListAvailableCustomersUseCase)).handle()
 
@@ -29,7 +29,7 @@ test.group('ListAvailableCustomersUseCase', (group) => {
       () =>
         ({
           listAvailable: async () => [],
-        }) as CustomerRepository,
+        }) as unknown as CustomerRepository,
     )
     const result = await (await app.container.make(ListAvailableCustomersUseCase)).handle()
 

@@ -14,7 +14,7 @@ test.group('ListCustomersUseCase', (group) => {
     const customers = await CustomerFactory.createMany(2)
     app.container.swap(
       CustomerRepository,
-      () => ({ list: async () => customers }) as CustomerRepository,
+      () => ({ list: async () => customers }) as unknown as CustomerRepository,
     )
     const result = await (await app.container.make(ListCustomersUseCase)).handle()
 
@@ -22,7 +22,10 @@ test.group('ListCustomersUseCase', (group) => {
   })
 
   test('preserves an empty repository result', async ({ assert }) => {
-    app.container.swap(CustomerRepository, () => ({ list: async () => [] }) as CustomerRepository)
+    app.container.swap(
+      CustomerRepository,
+      () => ({ list: async () => [] }) as unknown as CustomerRepository,
+    )
     const result = await (await app.container.make(ListCustomersUseCase)).handle()
 
     assert.isEmpty(result)
