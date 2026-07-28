@@ -94,14 +94,17 @@ export default class CustomersController {
     await bouncer.with(CustomerPolicy).authorize('archive')
 
     const payload = await request.validateUsing(archiveCustomersValidator)
-    const customers = await this.archiveCustomersUseCase.handle({
+    const result = await this.archiveCustomersUseCase.handle({
       ids: payload.ids,
       archivedByUserId: user.id,
       archivedAt: DateTime.now(),
       comment: payload.comment,
     })
 
-    return serialize(CustomerTransformer.transform(customers))
+    return serialize({
+      updatedCustomers: CustomerTransformer.transform(result.updatedCustomers),
+      blockedCustomers: result.blockedCustomers,
+    })
   }
 
   async reactivate({ auth, bouncer, params, request, serialize }: HttpContext) {
@@ -127,13 +130,16 @@ export default class CustomersController {
     await bouncer.with(CustomerPolicy).authorize('reactivate')
 
     const payload = await request.validateUsing(reactivateCustomersValidator)
-    const customers = await this.reactivateCustomersUseCase.handle({
+    const result = await this.reactivateCustomersUseCase.handle({
       ids: payload.ids,
       reactivatedByUserId: user.id,
       reactivatedAt: DateTime.now(),
       comment: payload.comment,
     })
 
-    return serialize(CustomerTransformer.transform(customers))
+    return serialize({
+      updatedCustomers: CustomerTransformer.transform(result.updatedCustomers),
+      blockedCustomers: result.blockedCustomers,
+    })
   }
 }

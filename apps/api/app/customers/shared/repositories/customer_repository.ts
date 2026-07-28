@@ -45,9 +45,10 @@ export type ReactivateCustomersCommand = {
   reactivationComment: string | null
 }
 
-export type BulkCustomerLifecycleResult =
-  | { kind: 'ARCHIVED' | 'REACTIVATED'; customers: Customer[] }
-  | { kind: 'BLOCKED'; blockers: BulkCustomerLifecycleBlocker[] }
+export type BulkCustomerLifecycleResult = {
+  updatedCustomers: Customer[]
+  blockedCustomers: BulkCustomerLifecycleBlocker[]
+}
 
 export type CustomerWriteResult =
   | { kind: 'CREATED'; customer: Customer }

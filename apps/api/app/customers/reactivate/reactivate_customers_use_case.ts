@@ -1,7 +1,8 @@
 import { inject } from '@adonisjs/core'
 import { DateTime } from 'luxon'
-import { BulkCustomerReactivationBlockedException } from '#customers/shared/customer_exceptions'
-import CustomerRepository from '#customers/shared/repositories/customer_repository'
+import CustomerRepository, {
+  type BulkCustomerLifecycleResult,
+} from '#customers/shared/repositories/customer_repository'
 
 export type ReactivateCustomersInput = {
   ids: string[]
@@ -14,18 +15,12 @@ export type ReactivateCustomersInput = {
 export default class ReactivateCustomersUseCase {
   constructor(private customerRepository: CustomerRepository) {}
 
-  async handle(input: ReactivateCustomersInput) {
-    const result = await this.customerRepository.reactivateArchivedMany({
+  handle(input: ReactivateCustomersInput): Promise<BulkCustomerLifecycleResult> {
+    return this.customerRepository.reactivateArchivedMany({
       ids: input.ids,
       reactivatedAt: input.reactivatedAt,
       reactivatedByUserId: input.reactivatedByUserId,
       reactivationComment: input.comment?.trim() || null,
     })
-
-    if (result.kind === 'BLOCKED') {
-      throw new BulkCustomerReactivationBlockedException(result.blockers)
-    }
-
-    return result.customers
   }
 }
