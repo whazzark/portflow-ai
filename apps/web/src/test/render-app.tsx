@@ -8,7 +8,11 @@ export function renderApp(initialPath: string) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
+        gcTime: Infinity,
         retry: false,
+      },
+      mutations: {
+        gcTime: Infinity,
       },
     },
   })
@@ -18,6 +22,5 @@ export function renderApp(initialPath: string) {
     context: { queryClient },
     history: createMemoryHistory({ initialEntries: [initialPath] }),
   })
-
   return { ...render(<RouterProvider router={router} />), router }
 }

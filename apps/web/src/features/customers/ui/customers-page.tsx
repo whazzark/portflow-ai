@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { customerQueries } from '@/features/customers/queries/customer-queries'
+import type { BulkCustomerLifecycleResult } from '@/features/customers/types'
 import { BulkLifecycleActions } from '@/features/customers/ui/bulk-lifecycle-actions'
 import { CustomerSection } from '@/features/customers/ui/customer-section'
 import { CustomerSheet } from '@/features/customers/ui/customer-sheet'
@@ -28,8 +29,10 @@ export function CustomersPage() {
     mode,
   } = customersRoute.useSearch()
   const navigate = customersRoute.useNavigate()
+
   const user = useAuthenticatedUser()
   const customersQuery = useQuery(customerQueries.list())
+  
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set())
 
   if (!customersQuery.data) {
@@ -177,7 +180,9 @@ export function CustomersPage() {
           customers={activeCustomers.filter((customer) => selectedCustomerIds.has(customer.id))}
           isArchived={isArchived}
           onClear={() => setSelectedCustomerIds(new Set())}
-          onSuccess={() => setSelectedCustomerIds(new Set())}
+          onSuccess={(result: BulkCustomerLifecycleResult) =>
+            setSelectedCustomerIds(new Set(result.blockedCustomers.map((customer) => customer.id)))
+          }
         />
       )}
       <CustomerSheet

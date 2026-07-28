@@ -24,8 +24,10 @@ type LifecycleActionsProps = {
 
 export function LifecycleActions({ className, customer }: LifecycleActionsProps) {
   const mutations = useCustomerMutations()
+
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
+  
   const archived = customer.status === 'ARCHIVED'
 
   const submit = async () => {

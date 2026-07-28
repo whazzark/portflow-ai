@@ -19,7 +19,12 @@ test('reactivates selected archived customers', async () => {
       currentCustomers = currentCustomers.map((customer) =>
         customer.status === 'ARCHIVED' ? { ...customer, status: 'AVAILABLE' } : customer,
       )
-      return HttpResponse.json({ data: currentCustomers })
+      return HttpResponse.json({
+        data: {
+          updatedCustomers: currentCustomers.filter((customer) => customer.status === 'AVAILABLE'),
+          blockedCustomers: [],
+        },
+      })
     }),
   )
 

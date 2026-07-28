@@ -16,17 +16,15 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 import { useCustomerMutations } from '@/features/customers/mutations/use-customer-mutations'
-import type { CustomerDto } from '@/features/customers/types'
+import type { BulkCustomerLifecycleResult, CustomerDto } from '@/features/customers/types'
 import { classnames } from '@/libraries/shadcn/helpers'
 import { parseApiError } from '@/libraries/tuyau/api-error'
-
-type BlockedCustomer = { id: string; code?: string; reason: string }
 
 type BulkLifecycleActionsProps = {
   customers: CustomerDto[]
   isArchived: boolean
   onClear: () => void
-  onSuccess: () => void
+  onSuccess: (result: BulkCustomerLifecycleResult) => void
 }
 
 export function BulkLifecycleActions({
@@ -36,32 +34,35 @@ export function BulkLifecycleActions({
   onSuccess,
 }: BulkLifecycleActionsProps) {
   const mutations = useCustomerMutations()
+  
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
   const [error, setError] = useState<ReturnType<typeof parseApiError> | null>(null)
+  const [blockedCustomers, setBlockedCustomers] = useState<
+    BulkCustomerLifecycleResult['blockedCustomers']
+  >([])
 
   const submit = async () => {
     setError(null)
     try {
       const body = { ids: customers.map((customer) => customer.id), comment: comment || null }
-      if (isArchived) {
-        await mutations.reactivateMany.mutateAsync({ body })
-      } else {
-        await mutations.archiveMany.mutateAsync({ body })
-      }
-
+      const result = isArchived
+        ? await mutations.reactivateMany.mutateAsync({ body })
+        : await mutations.archiveMany.mutateAsync({ body })
+      setBlockedCustomers(result.data.blockedCustomers)
       setOpen(false)
       setComment('')
-      onSuccess()
+      onSuccess(result.data)
       toast.success(
-        `${customers.length} customer${customers.length === 1 ? '' : 's'} ${isArchived ? 'reactivated' : 'archived'}`,
+        result.data.blockedCustomers.length > 0
+          ? `${result.data.updatedCustomers.length} customer${result.data.updatedCustomers.length === 1 ? '' : 's'} ${isArchived ? 'reactivated' : 'archived'}; ${result.data.blockedCustomers.length} unchanged`
+          : `${customers.length} customer${customers.length === 1 ? '' : 's'} ${isArchived ? 'reactivated' : 'archived'}`,
       )
     } catch (cause) {
       setError(parseApiError(cause))
     }
   }
 
-  const blockedCustomers = error ? getBlockedCustomers(error) : []
   const visible = customers.length > 0
 
   return (
@@ -83,6 +84,7 @@ export function BulkLifecycleActions({
           <Button
             onClick={() => {
               setError(null)
+              setBlockedCustomers([])
               setOpen(true)
             }}
             size="sm"
@@ -90,6 +92,20 @@ export function BulkLifecycleActions({
           >
             {isArchived ? 'Reactivate selected' : 'Archive selected'}
           </Button>
+          {blockedCustomers.length > 0 && (
+            <Alert className="max-w-md" variant="destructive">
+              <AlertTitle>Some customers were unchanged</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-4">
+                  {blockedCustomers.map((blocked) => (
+                    <li key={blocked.id}>
+                      {blocked.code ?? blocked.id}: {formatBlockerReason(blocked.reason)}
+                    </li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
           <Button aria-label="Clear selection" onClick={onClear} size="icon-sm" variant="ghost">
             <XIcon aria-hidden="true" />
           </Button>
@@ -110,19 +126,7 @@ export function BulkLifecycleActions({
           {error && (
             <Alert variant="destructive">
               <AlertTitle>{error.message}</AlertTitle>
-              <AlertDescription>
-                {blockedCustomers.length > 0 ? (
-                  <ul className="list-disc pl-4">
-                    {blockedCustomers.map((blocked) => (
-                      <li key={blocked.id}>
-                        {blocked.code ?? blocked.id}: {formatBlockerReason(blocked.reason)}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  error.message
-                )}
-              </AlertDescription>
+              <AlertDescription>{error.message}</AlertDescription>
             </Alert>
           )}
           <Field>
@@ -151,16 +155,9 @@ export function BulkLifecycleActions({
   )
 }
 
-function getBlockedCustomers(error: ReturnType<typeof parseApiError>): BlockedCustomer[] {
-  const meta = error.meta
-  if (!meta || typeof meta !== 'object' || !('blockedCustomers' in meta)) {
-    return []
-  }
-
-  return Array.isArray(meta.blockedCustomers) ? (meta.blockedCustomers as BlockedCustomer[]) : []
-}
-
-function formatBlockerReason(reason: string) {
+function formatBlockerReason(
+  reason: BulkCustomerLifecycleResult['blockedCustomers'][number]['reason'],
+) {
   return (
     {
       IN_USE: 'used by an active or planned discharge',

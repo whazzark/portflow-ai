@@ -12,7 +12,12 @@ test('keeps bulk selection scoped to filtered visible customers', async () => {
   server.use(
     http.post(`${API_BASE_URL}/api/v1/customers/archive`, async ({ request }) => {
       requestBody = await request.json()
-      return HttpResponse.json({ data: CUSTOMERS })
+      return HttpResponse.json({
+        data: {
+          updatedCustomers: CUSTOMERS.filter((customer) => customer.id === 'available-2'),
+          blockedCustomers: [],
+        },
+      })
     }),
   )
 
