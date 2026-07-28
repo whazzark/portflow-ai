@@ -81,6 +81,7 @@ test('searches lifecycle comments in the active customer list', async () => {
   await user.type(screen.getByRole('textbox', { name: 'Search customers' }), 'returned')
 
   expect(within(available).getByText('BETA-02')).toBeInTheDocument()
+  expect(within(available).getByRole('mark')).toHaveTextContent('Returned')
   expect(within(available).queryByText('ACME-01')).not.toBeInTheDocument()
 
   await user.click(screen.getByRole('tab', { name: /Archived \(1\)/ }))
@@ -89,6 +90,7 @@ test('searches lifecycle comments in the active customer list', async () => {
 
   const archived = screen.getByRole('table', { name: 'Archived customers' })
   expect(within(archived).getByText('OLD-03')).toBeInTheDocument()
+  expect(within(archived).getByRole('mark')).toHaveTextContent('No longer used')
 })
 
 test('restores customer filters from the initial URL', async () => {
