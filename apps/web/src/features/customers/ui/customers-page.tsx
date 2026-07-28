@@ -32,7 +32,7 @@ export function CustomersPage() {
 
   const user = useAuthenticatedUser()
   const customersQuery = useQuery(customerQueries.list())
-  
+
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set())
 
   if (!customersQuery.data) {

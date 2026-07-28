@@ -34,7 +34,7 @@ export function BulkLifecycleActions({
   onSuccess,
 }: BulkLifecycleActionsProps) {
   const mutations = useCustomerMutations()
-  
+
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
   const [error, setError] = useState<ReturnType<typeof parseApiError> | null>(null)
