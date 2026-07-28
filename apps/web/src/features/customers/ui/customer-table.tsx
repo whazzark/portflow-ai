@@ -1,4 +1,5 @@
 import {
+  type CellContext,
   type ColumnDef,
   flexRender,
   getCoreRowModel,
@@ -62,7 +63,6 @@ type CustomerTableProps = {
   canAdminister: boolean
   selectedIds: Set<string>
   onSelectionChange: (customerIds: string[]) => void
-  hasBulkActions: boolean
 }
 
 function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<CustomerDto>[] {
@@ -139,8 +139,12 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
             accessorKey: 'archiveComment',
             header: 'Archive comment',
             sortingFn: 'text' as const,
-            cell: ({ row }: { row: { original: CustomerDto } }) =>
-              row.original.archiveComment ?? '—',
+            cell: ({ row, table }: CellContext<CustomerDto, unknown>) => (
+              <HighlightedText
+                search={table.getState().globalFilter as string}
+                value={row.original.archiveComment ?? '—'}
+              />
+            ),
           } satisfies ColumnDef<CustomerDto>,
           {
             accessorKey: 'archivedBy',
@@ -156,8 +160,12 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
             accessorKey: 'reactivationComment',
             header: 'Reactivation comment',
             sortingFn: 'text' as const,
-            cell: ({ row }: { row: { original: CustomerDto } }) =>
-              row.original.reactivationComment ?? '—',
+            cell: ({ row, table }: CellContext<CustomerDto, unknown>) => (
+              <HighlightedText
+                search={table.getState().globalFilter as string}
+                value={row.original.reactivationComment ?? '—'}
+              />
+            ),
           } satisfies ColumnDef<CustomerDto>,
           {
             accessorKey: 'reactivatedBy',
@@ -182,7 +190,6 @@ export function CustomerTable({
   canAdminister,
   selectedIds,
   onSelectionChange,
-  hasBulkActions,
 }: CustomerTableProps) {
   const columns = createColumns(isArchived, canAdminister)
   const table = useReactTable({
@@ -215,12 +222,7 @@ export function CustomerTable({
   const rows = table.getRowModel().rows
 
   return (
-    <div
-      className={classnames(
-        'overflow-hidden rounded-lg border md:flex md:h-full md:min-h-0 md:flex-col md:[&_[data-slot=table-container]]:min-h-0 md:[&_[data-slot=table-container]]:flex-1 md:[&_[data-slot=table-container]]:overflow-auto',
-        hasBulkActions && '[&_[data-slot=table-container]]:pb-20',
-      )}
-    >
+    <div className="overflow-hidden rounded-lg border md:flex md:h-full md:min-h-0 md:flex-col md:[&_[data-slot=table-container]]:min-h-0 md:[&_[data-slot=table-container]]:flex-1 md:[&_[data-slot=table-container]]:overflow-auto">
       <Table aria-label={isArchived ? 'Archived customers' : 'Available customers'}>
         <TableHeader className="md:sticky md:top-0 md:z-10 md:bg-background">
           {table.getHeaderGroups().map((headerGroup) => (

@@ -44,7 +44,6 @@ export function CustomerSection({
         canAdminister={canAdminister}
         selectedIds={selectedIds}
         onSelectionChange={onSelectionChange}
-        hasBulkActions={selectedIds.size > 0}
       />
     </section>
   )

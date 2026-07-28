@@ -71,3 +71,15 @@ test('keeps selection controls and the selected-row indicator inside the selecti
   fireEvent.click(within(firstRow).getByRole('checkbox', { name: 'Select customer ACME-01' }))
   expect(selectionCell.querySelector('[data-slot="customer-selection-indicator"]')).toBeVisible()
 })
+
+test('does not add empty scroll space when selecting all customers', async () => {
+  mockCustomers()
+
+  renderCustomers()
+  const table = await screen.findByRole('table', { name: 'Available customers' })
+  fireEvent.click(within(table).getByRole('checkbox', { name: 'Select all available customers' }))
+
+  expect(table.parentElement?.parentElement).not.toHaveClass(
+    '[&_[data-slot=table-container]]:pb-20',
+  )
+})
