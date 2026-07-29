@@ -5,8 +5,8 @@
 
 ## Source acceptance criteria
 
-- [ ] Resolve all `[NEEDS CLARIFICATION]` markers before plan approval.
-- [ ] Define the actor, scope, intended behavior, and observable acceptance criteria for "Administer Docks and Weighing Areas From the Web Workbench" before planning.
+- [x] Resolve all `[NEEDS CLARIFICATION]` markers before plan approval.
+- [x] Define the actor, scope, intended behavior, and observable acceptance criteria for "Administer Docks and Weighing Areas From the Web Workbench" before planning.
 
 ## Verification
 

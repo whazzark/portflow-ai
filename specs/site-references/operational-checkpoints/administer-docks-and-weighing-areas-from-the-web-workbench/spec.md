@@ -10,17 +10,29 @@
 **Milestone**: 1. Construire le socle des référentiels
 **Domain**: site-references
 
+## Clarifications
+
+### Session 2026-07-29
+
+- Q: Which behavior should GH-41 deliver? → A: Full workbench administration: consultation, search, creation, editing, archiving, and reactivation for docks and weighing areas.
+- Q: Which users may consult and mutate dock and weighing-area references? → A: Any active user may consult; Organization Admins and Operations Admins may create, edit, archive, and reactivate.
+- Q: What identity and location fields do both resource types require? → A: Both docks and weighing areas require a name plus GPS latitude and longitude.
+- Q: When may a dock or weighing area be archived? → A: Archive is blocked by planned or active discharge references; reactivation restores availability.
+- Q: Which lifecycle action model is in scope? → A: Individual and grouped archive/reactivate actions; create and edit remain individual.
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Administer Docks and Weighing Areas From the Web Workbench (Priority: P1)
 
-[NEEDS CLARIFICATION: Define the actor, intended behavior, and user value for "Administer Docks and Weighing Areas From the Web Workbench" before planning.]
+As an active application user, I want to consult dock and weighing-area references from one web workbench, and as an Organization Admin or Operations Admin I want to administer them, so that operational checkpoint references remain accurate and safely available for discharge preparation.
 
 **Independent Test**: Verify the acceptance criteria through the appropriate observable API, feature, or browser seam.
 
 **Acceptance Scenarios**:
 
-1. **Given** the feature's applicable state, **When** the actor performs the described action, **Then** Before planning, this spec defines the actor, scope, outcomes, and observable acceptance criteria for "Administer Docks and Weighing Areas From the Web Workbench".
+1. **Given** an active application user, **When** they open the workbench, **Then** they can consult available and archived docks and weighing areas.
+2. **Given** an Organization Admin or Operations Admin, **When** they use the workbench, **Then** they can create, edit, archive, and reactivate dock and weighing-area references subject to the applicable validation and lifecycle rules.
+3. **Given** an authenticated user without an administration role, **When** they attempt a mutation through the service boundary, **Then** the mutation is refused even if a stale workbench displays an action control.
 
 ## Edge Cases
 
@@ -30,7 +42,11 @@
 
 ### Functional Requirements
 
-- **FR-001**: The feature MUST NOT proceed to planning until the behavioral contract for "Administer Docks and Weighing Areas From the Web Workbench" is explicit and reviewable.
+- **FR-001**: The workbench MUST support consultation, search, creation, editing, archiving, and reactivation for both dock and weighing-area site references.
+- **FR-002**: The authoritative service boundary MUST allow any active application user to consult dock and weighing-area references and MUST authorize their creation, modification, archive, and reactivation only for Organization Admins and Operations Admins.
+- **FR-003**: Each dock and weighing area MUST have a required name and required GPS latitude and longitude; creation and modification MUST reject missing, blank, malformed, or out-of-range values without changing the record.
+- **FR-004**: An archive operation MUST be rejected when the dock or weighing area is referenced by a planned or active discharge; reactivation MUST restore availability without replacing the resource identity or history.
+- **FR-005**: The workbench MUST support individual and selection-scoped grouped archive and reactivation actions; creation and editing MUST remain individual operations.
 
 ## Success Criteria
 
@@ -43,11 +59,14 @@
 
 ## Out of Scope
 
-- Scope cannot be finalized until the missing behavioral contract is clarified.
+- Detailed administration rules for dock and weighing-area identity, location, authorization, and lifecycle transitions are in scope; operational use of these references during a discharge remains out of scope.
 
 ## Assumptions and Clarifications
 
-- [NEEDS CLARIFICATION: Define the actor, scope, intended behavior, and observable acceptance criteria for "Administer Docks and Weighing Areas From the Web Workbench" before plan approval.]
+- Any active application user may consult dock and weighing-area references; only Organization Admins and Operations Admins may create, modify, archive, or reactivate them.
+- Both resource types require a named identity and a GPS location represented by latitude and longitude.
+- Archived docks and weighing areas remain consultable but cannot be selected for new operational use; archive is blocked while either resource is referenced by a planned or active discharge.
+- Grouped lifecycle actions may partially succeed: eligible resources transition, blocked resources remain unchanged, and each result is reported; malformed request-level input is rejected before any resource changes.
 
 ## Source-derived decisions
 

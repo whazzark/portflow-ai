@@ -38,7 +38,7 @@ Merged delivery
 
 `specify → clarify → spec review → plan → checklist → plan review → tasks → analyze → implement → checks → converge → fresh review → human merge`
 
-The project workflows are `.specify/workflows/portflow-feature/workflow.yml` and `.specify/workflows/portflow-existing-feature/workflow.yml`. Before every workflow commit, a human gate approves the deterministic Conventional Commit message. After the first spec artifact (or the clarification step for an existing spec), a fixed shell step publishes the branch, creates the Draft PR, and synchronizes it after subsequent artifacts, implementation, checks, and convergence. Workflow runs may pause and resume at human gates. Shell steps are repository-owned fixed commands; arbitrary agent output must never be interpolated into them.
+The project workflows are `.specify/workflows/portflow-feature/workflow.yml` and `.specify/workflows/portflow-existing-feature/workflow.yml`. Before every workflow commit, a human gate displays and approves the exact deterministic Conventional Commit message. After the first spec artifact (or the clarification step for an existing spec), a fixed shell step publishes the branch, creates the Draft PR, and synchronizes it after subsequent artifacts, implementation, checks, and convergence. Workflow runs may pause and resume at human gates. Shell steps are repository-owned fixed commands; arbitrary agent output must never be interpolated into them.
 
 Use the [Spec Kit operator guide](../agents/spec-kit.md) for the supported commands, feature-path guardrails, gate handling, and maintenance procedure.
 

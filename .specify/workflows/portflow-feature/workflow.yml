@@ -31,7 +31,7 @@ steps:
 
   - id: review-spec-commit
     type: gate
-    message: "Review the proposed commit message printed above before creating the workflow commit."
+    message: "Confirm this commit message: {{ steps.preview-spec-commit.output.stdout }}"
     options: [approve, reject]
     on_reject: abort
 
@@ -50,7 +50,7 @@ steps:
 
   - id: review-clarified-spec-commit
     type: gate
-    message: "Review the proposed commit message printed above before creating the workflow commit."
+    message: "Confirm this commit message: {{ steps.preview-clarified-spec-commit.output.stdout }}"
     options: [approve, reject]
     on_reject: abort
 
@@ -76,7 +76,7 @@ steps:
 
   - id: review-plan-commit
     type: gate
-    message: "Review the proposed commit message printed above before creating the workflow commit."
+    message: "Confirm this commit message: {{ steps.preview-plan-commit.output.stdout }}"
     options: [approve, reject]
     on_reject: abort
 
@@ -96,7 +96,7 @@ steps:
 
   - id: review-checklist-commit
     type: gate
-    message: "Review the proposed commit message printed above before creating the workflow commit."
+    message: "Confirm this commit message: {{ steps.preview-checklist-commit.output.stdout }}"
     options: [approve, reject]
     on_reject: abort
 
@@ -122,7 +122,7 @@ steps:
 
   - id: review-tasks-commit
     type: gate
-    message: "Review the proposed commit message printed above before creating the workflow commit."
+    message: "Confirm this commit message: {{ steps.preview-tasks-commit.output.stdout }}"
     options: [approve, reject]
     on_reject: abort
 
@@ -142,7 +142,7 @@ steps:
 
   - id: review-analysis-commit
     type: gate
-    message: "Review the proposed commit message printed above before creating the workflow commit."
+    message: "Confirm this commit message: {{ steps.preview-analysis-commit.output.stdout }}"
     options: [approve, reject]
     on_reject: abort
 
@@ -162,7 +162,7 @@ steps:
 
   - id: review-implementation-commit
     type: gate
-    message: "Review the proposed commit message printed above before creating the workflow commit."
+    message: "Confirm this commit message: {{ steps.preview-implementation-commit.output.stdout }}"
     options: [approve, reject]
     on_reject: abort
 
@@ -180,7 +180,7 @@ steps:
 
   - id: review-checks-commit
     type: gate
-    message: "Review the proposed commit message printed above before creating the workflow commit."
+    message: "Confirm this commit message: {{ steps.preview-checks-commit.output.stdout }}"
     options: [approve, reject]
     on_reject: abort
 
@@ -200,7 +200,7 @@ steps:
 
   - id: review-convergence-commit
     type: gate
-    message: "Review the proposed commit message printed above before creating the workflow commit."
+    message: "Confirm this commit message: {{ steps.preview-convergence-commit.output.stdout }}"
     options: [approve, reject]
     on_reject: abort
 

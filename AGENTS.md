@@ -30,7 +30,7 @@ Keep the active feature directory in `.specify/feature.json`. Feature directorie
 ## Delivery gates
 
 - Never work directly on `master`; create a branch using `<type>/<issue-number>-<slug>`.
-- Before each workflow commit, a human gate displays and requires approval of the proposed Conventional Commit message. After approval, the workflow creates one Draft PR immediately after the migrated or generated `spec.md` is produced, then synchronizes that PR after each artifact, implementation, and verification step. The same PR receives `plan.md`, `tasks.md`, and implementation commits.
+- Before each workflow commit, a human gate displays the exact proposed Conventional Commit message and requires approval of that message. After approval, the workflow creates one Draft PR immediately after the migrated or generated `spec.md` is produced, then synchronizes that PR after each artifact, implementation, and verification step. The same PR receives `plan.md`, `tasks.md`, and implementation commits.
 - A human must approve the spec before planning and the plan before implementation.
 - Use TDD for business behavior: failing observable test, minimal implementation, green tests, refactor.
 - Before a PR is ready, run `pnpm check`, `pnpm typecheck`, `pnpm test`, affected browser flows when relevant, `$speckit-analyze`, and `$speckit-converge`.
