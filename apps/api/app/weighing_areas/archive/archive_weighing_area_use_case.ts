@@ -35,10 +35,12 @@ export default class ArchiveWeighingAreaUseCase {
     }
 
     if (
-      await this.usageChecker.isUsedByPlannedOrActiveDischarge({
-        referenceType: 'WEIGHING_AREA',
-        referenceId: input.id,
-      })
+      (
+        await this.usageChecker.findUsedByPlannedOrActiveDischarge({
+          referenceType: 'WEIGHING_AREA',
+          referenceIds: [input.id],
+        })
+      ).has(input.id)
     ) {
       throw new WeighingAreaInUseException()
     }

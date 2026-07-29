@@ -7,6 +7,66 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
+export class CustomerSchema extends BaseModel {
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'code', 'companyName', 'createdAt', 'id', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt'] as const
+  $columns = CustomerSchema.$columns
+  @column()
+  declare archiveComment: string | null
+  @column.dateTime()
+  declare archivedAt: DateTime | null
+  @column()
+  declare archivedByUserId: string | null
+  @column()
+  declare code: string
+  @column()
+  declare companyName: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare reactivatedAt: DateTime | null
+  @column()
+  declare reactivatedByUserId: string | null
+  @column()
+  declare reactivationComment: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class DockSchema extends BaseModel {
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt'] as const
+  $columns = DockSchema.$columns
+  @column()
+  declare archiveComment: string | null
+  @column.dateTime()
+  declare archivedAt: DateTime | null
+  @column()
+  declare archivedByUserId: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare latitude: number
+  @column()
+  declare longitude: number
+  @column()
+  declare name: string
+  @column.dateTime()
+  declare reactivatedAt: DateTime | null
+  @column()
+  declare reactivatedByUserId: string | null
+  @column()
+  declare reactivationComment: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class RememberMeTokenSchema extends BaseModel {
   static $columns = ['createdAt', 'expiresAt', 'hash', 'id', 'tokenableId', 'updatedAt'] as const
   $columns = RememberMeTokenSchema.$columns
@@ -67,38 +127,9 @@ export class UserSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
-export class CustomerSchema extends BaseModel {
-  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'code', 'companyName', 'createdAt', 'id', 'reactivationComment', 'reactivatedAt', 'reactivatedByUserId', 'status', 'updatedAt'] as const
-  $columns = CustomerSchema.$columns
-  @column()
-  declare archiveComment: string | null
-  @column.dateTime()
-  declare archivedAt: DateTime | null
-  @column()
-  declare archivedByUserId: string | null
-  @column()
-  declare code: string
-  @column()
-  declare companyName: string
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column({ isPrimary: true })
-  declare id: string
-  @column()
-  declare reactivationComment: string | null
-  @column.dateTime()
-  declare reactivatedAt: DateTime | null
-  @column()
-  declare reactivatedByUserId: string | null
-  @column()
-  declare status: string
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime
-}
-
-export class DockSchema extends BaseModel {
-  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivationComment', 'reactivatedAt', 'reactivatedByUserId', 'status', 'updatedAt'] as const
-  $columns = DockSchema.$columns
+export class WeighingAreaSchema extends BaseModel {
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt'] as const
+  $columns = WeighingAreaSchema.$columns
   @column()
   declare archiveComment: string | null
   @column.dateTime()
@@ -115,32 +146,14 @@ export class DockSchema extends BaseModel {
   declare longitude: number
   @column()
   declare name: string
-  @column()
-  declare reactivationComment: string | null
   @column.dateTime()
   declare reactivatedAt: DateTime | null
   @column()
   declare reactivatedByUserId: string | null
   @column()
+  declare reactivationComment: string | null
+  @column()
   declare status: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
-}
-
-export class WeighingAreaSchema extends BaseModel {
-  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivationComment', 'reactivatedAt', 'reactivatedByUserId', 'status', 'updatedAt'] as const
-  $columns = WeighingAreaSchema.$columns
-  @column() declare archiveComment: string | null
-  @column.dateTime() declare archivedAt: DateTime | null
-  @column() declare archivedByUserId: string | null
-  @column.dateTime({ autoCreate: true }) declare createdAt: DateTime
-  @column({ isPrimary: true }) declare id: string
-  @column() declare latitude: number
-  @column() declare longitude: number
-  @column() declare name: string
-  @column() declare reactivationComment: string | null
-  @column.dateTime() declare reactivatedAt: DateTime | null
-  @column() declare reactivatedByUserId: string | null
-  @column() declare status: string
-  @column.dateTime({ autoCreate: true, autoUpdate: true }) declare updatedAt: DateTime
 }

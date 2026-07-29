@@ -11,7 +11,8 @@ export type ScannedRoutes = {
     'customers.store': { paramsTuple?: []; params?: {} }
     'customers.index': { paramsTuple?: []; params?: {} }
     'customers.available': { paramsTuple?: []; params?: {} }
-    'customers.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'customers.archive_many': { paramsTuple?: []; params?: {} }
+    'customers.reactivate_many': { paramsTuple?: []; params?: {} }
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -35,7 +36,6 @@ export type ScannedRoutes = {
     'auth.me': { paramsTuple?: []; params?: {} }
     'customers.index': { paramsTuple?: []; params?: {} }
     'customers.available': { paramsTuple?: []; params?: {} }
-    'customers.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
     'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -48,7 +48,6 @@ export type ScannedRoutes = {
     'auth.me': { paramsTuple?: []; params?: {} }
     'customers.index': { paramsTuple?: []; params?: {} }
     'customers.available': { paramsTuple?: []; params?: {} }
-    'customers.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
     'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -60,6 +59,8 @@ export type ScannedRoutes = {
     'auth.login': { paramsTuple?: []; params?: {} }
     'auth.logout': { paramsTuple?: []; params?: {} }
     'customers.store': { paramsTuple?: []; params?: {} }
+    'customers.archive_many': { paramsTuple?: []; params?: {} }
+    'customers.reactivate_many': { paramsTuple?: []; params?: {} }
     'customers.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.store': { paramsTuple?: []; params?: {} }

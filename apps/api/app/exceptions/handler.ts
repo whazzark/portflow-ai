@@ -20,9 +20,11 @@ export default class HttpExceptionHandler extends ExceptionHandler {
 
   async handle(error: unknown, ctx: HttpContext) {
     if (error instanceof Exception) {
+      const meta = 'meta' in error ? (error as Exception & { meta?: unknown }).meta : undefined
+
       return ctx.response
         .status(error.status)
-        .send({ error: { code: error.code, message: error.message } })
+        .send({ error: { code: error.code, message: error.message, ...(meta ? { meta } : {}) } })
     }
 
     if (error instanceof ValidationError) {
