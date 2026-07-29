@@ -48,17 +48,18 @@ export function CustomerSheet({
             }}
           />
         ) : !customer ? (
-          <SheetHeader>
-            <SheetTitle>Unable to load customer</SheetTitle>
-            <SheetDescription>
-              <Alert variant="destructive">
-                <AlertTitle>Customer details unavailable</AlertTitle>
-                <AlertDescription>
-                  The customer is no longer available in the list.
-                </AlertDescription>
-              </Alert>
-            </SheetDescription>
-          </SheetHeader>
+          <>
+            <SheetHeader>
+              <SheetTitle>Unable to load customer</SheetTitle>
+              <SheetDescription>
+                The selected customer could not be restored from the current list.
+              </SheetDescription>
+            </SheetHeader>
+            <Alert variant="destructive">
+              <AlertTitle>Customer details unavailable</AlertTitle>
+              <AlertDescription>The customer is no longer available in the list.</AlertDescription>
+            </Alert>
+          </>
         ) : mode === 'edit' && canAdminister && customer.status === 'AVAILABLE' ? (
           <EditCustomerPanel
             customer={customer}

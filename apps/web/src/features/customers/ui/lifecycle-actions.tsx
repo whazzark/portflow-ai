@@ -80,11 +80,12 @@ export function LifecycleActions({ className, customer }: LifecycleActionsProps)
               <FieldLabel htmlFor="lifecycle-comment">Comment (optional)</FieldLabel>
               <Textarea
                 id="lifecycle-comment"
+                maxLength={1000}
                 onChange={(event) => setComment(event.target.value)}
                 value={comment}
               />
               <FieldDescription>
-                Keep a short explanation for the lifecycle change.
+                Keep a short explanation for the lifecycle change (maximum 1,000 characters).
               </FieldDescription>
             </Field>
           </FieldGroup>

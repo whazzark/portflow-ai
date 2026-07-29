@@ -55,7 +55,9 @@ test('archives and reactivates a customer with explicit lifecycle actions', asyn
 
   fireEvent.click(screen.getByRole('button', { name: 'Archive customer' }))
   const archiveDialog = await screen.findByRole('alertdialog')
-  fireEvent.change(within(archiveDialog).getByRole('textbox', { name: 'Comment (optional)' }), {
+  const comment = within(archiveDialog).getByRole('textbox', { name: 'Comment (optional)' })
+  expect(comment).toHaveAttribute('maxlength', '1000')
+  fireEvent.change(comment, {
     target: { value: 'Retired account' },
   })
   fireEvent.click(within(archiveDialog).getByRole('button', { name: 'Archive' }))
