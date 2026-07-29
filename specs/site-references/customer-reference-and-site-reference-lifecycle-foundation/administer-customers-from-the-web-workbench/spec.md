@@ -109,6 +109,7 @@ As an Organization Admin or Operations Admin, I want to archive and reactivate c
 - Parent roadmap: `specs/site-references/customer-reference-and-site-reference-lifecycle-foundation/roadmap.md`.
 - Customer identity and lifecycle domain terms in `CONTEXT.md`, especially `Site Reference`, `Available Site Reference`, `Archived Resource`, and `Site Reference Reactivation`.
 - Customer foundation slices GH-35 and GH-36, which establish the customer record and lifecycle rules used here; this feature owns their web-workbench administration surface and must not duplicate their business invariants.
+- Discharge preparation slice GH-53, which must replace the temporary no-discharge usage adapter with a persistence-backed checker before it introduces the first durable planned or active discharge reference.
 - [ADR 0003](../../../../docs/adr/0003-single-site-without-tenant-isolation.md), [ADR 0005](../../../../docs/adr/0005-tuyau-api-web-contract.md), and [ADR 0008](../../../../docs/adr/0008-vertical-slice-web-frontend-with-explicit-ui-adapters.md).
 
 ## Out of Scope
@@ -126,6 +127,7 @@ As an Organization Admin or Operations Admin, I want to archive and reactivate c
 - One optional comment supplied for a grouped lifecycle action applies to every customer that successfully transitions in that action.
 - Grouped lifecycle operations use partial success for valid selections; malformed request-level input is rejected before any record changes.
 - Customer identity fields use the existing site-reference conventions: trimmed values, 255-character maximum, and case-insensitive uniqueness.
+- **Approved delivery clarification (2026-07-28)**: GH-37 preserves FR-007 through the `SiteReferenceUsageChecker` boundary and verifies both blocked and unblocked outcomes with injected adapters. Because the current schema cannot persist a discharge or customer-discharge reference, production temporarily binds that boundary to `NoDischargeSiteReferenceUsageChecker`. GH-53 is not merge-ready until it replaces this adapter atomically with its persistence-backed discharge model; no deployment may persist such references while the no-discharge adapter remains active.
 
 ## Traceability
 

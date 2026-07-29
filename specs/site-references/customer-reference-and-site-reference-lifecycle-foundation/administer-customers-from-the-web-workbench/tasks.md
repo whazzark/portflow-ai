@@ -98,6 +98,19 @@ description: "Portflow task list grouped by independently deliverable user story
 - [X] T038 [VERIFY] [DOC] Perform the manual SC-005 mutation-refresh timing review described in `specs/site-references/customer-reference-and-site-reference-lifecycle-foundation/administer-customers-from-the-web-workbench/quickstart.md`, recording whether resulting state and lifecycle metadata appear within 2 seconds without a full-page reload.
 - [X] T039 [VERIFY] [DOC] Run `$speckit-analyze` and `$speckit-converge` for `specs/site-references/customer-reference-and-site-reference-lifecycle-foundation/administer-customers-from-the-web-workbench/` and resolve any reported gaps.
 
+## Fresh-review remediation
+
+- [X] T040 [P] [US3] [RED] Add API regressions for case-insensitive duplicate UUIDs, 1,000-character lifecycle comment limits, and mixed blocker request ordering in `apps/api/tests/integration/customers/lifecycle/`.
+- [X] T041 [P] [US3] [RED] Add web regressions for stale `ALREADY_*` and `NOT_FOUND` blocker recovery plus lifecycle comment limits in `apps/web/src/features/customers/__tests__/`.
+- [X] T042 [US3] [GREEN] Canonicalize grouped UUIDs before case-insensitive duplicate validation, enforce trimmed 1,000-character lifecycle comments, and preserve blocker request order in `apps/api/app/customers/shared/customer_validator.ts`, `apps/api/app/customers/shared/customer_lifecycle_blockers.ts`, and `apps/api/app/customers/shared/repositories/lucid_customer_repository.ts`.
+- [X] T043 [US3] [GREEN] Keep stale blockers actionable independently of refreshed list DTOs and expose accessible comment limits in `apps/web/src/features/customers/ui/customers-page.tsx`, `apps/web/src/features/customers/ui/bulk-lifecycle-actions.tsx`, and `apps/web/src/features/customers/ui/lifecycle-actions.tsx`.
+- [X] T044 [US3] [DOC] Record the approved GH-53 persistence dependency and temporary no-discharge production adapter in `spec.md`, `plan.md`, `research.md`, `quickstart.md`, and the PR delivery evidence.
+- [X] T045 [VERIFY] [DOC] Run focused customer API/web suites, `pnpm check`, `pnpm typecheck`, and `pnpm test`.
+- [X] T046 [VERIFY] [DOC] Run `$speckit-analyze` and `$speckit-converge`, resolving any fresh-review remediation gaps.
+- [X] T047 [VERIFY] [DOC] Obtain a new context-free Codex review and resolve or justify every confirmed finding before marking the PR ready.
+- [X] T048 [US3] [RED] Cover stale customer sheet markup, router-level blocker retention after refetch, and exact stale-ID retries without refreshed DTOs in `apps/web/src/features/customers/__tests__/details/stale.test.tsx`, `apps/web/src/features/customers/__tests__/bulk/stale-refresh.test.tsx`, and `apps/web/src/features/customers/__tests__/bulk/stale-blockers.test.tsx`.
+- [X] T049 [US3] [GREEN] Render stale sheet alerts outside paragraph descriptions and retain retry IDs across customer-list refetches in `apps/web/src/features/customers/ui/customer-sheet.tsx` and `apps/web/src/features/customers/ui/customers-page.tsx`.
+
 ## Dependencies and execution order
 
 - Phase 1 precedes Phase 2; the baseline audit identifies which existing seams require implementation changes.

@@ -30,4 +30,5 @@
 ## Notes
 
 - [x] Validation completed in one pass on 2026-07-28; no blocking quality issues remain.
+- [x] Fresh-review clarification approved on 2026-07-28: GH-53 owns the persistent discharge-usage adapter and cannot introduce durable references while the GH-37 no-discharge binding remains active.
 - The existing `contracts/`, `data-model.md`, `plan.md`, and `tasks.md` artifacts were preserved because this invocation updates the already-active feature directory.

@@ -36,7 +36,7 @@ No constitution exception is required.
 | Area | Existing implementation | Planned GH-37 work |
 |---|---|---|
 | API routes | Authenticated customer list, available list, create, update, individual archive/reactivate, and grouped lifecycle routes exist in `apps/api/start/routes.ts`. | Keep route names and paths stable; align grouped response and error contracts with partial success. |
-| Domain/persistence | Customer status, normalized uniqueness, lifecycle metadata, policy, validation, individual transitions, and discharge usage checker exist. | Move grouped eligibility and planned/active usage evaluation into the repository transaction/write boundary; preserve individual invariants. |
+| Domain/persistence | Customer status, normalized uniqueness, lifecycle metadata, policy, validation, individual transitions, and a discharge-usage boundary exist; no discharge persistence exists yet. | Move grouped eligibility and usage evaluation into the repository transaction/write boundary, preserve individual invariants, and retain the explicitly temporary no-discharge adapter until GH-53 supplies the persistent relationship. |
 | Bulk API result | Current bulk use cases preflight and throw a `409` when any blocker exists; repository bulk writes are all-or-nothing. | Return `{ updatedCustomers, blockedCustomers }` for mixed selections with request-order-stable arrays and no changes to blocked records. |
 | Web workbench | `/customers` supports tabs, URL search/sort/detail state, forms, read-only archived details, selection, lifecycle confirmations, and blocker display for conflict errors. | Consume structured mixed results, refresh both customer query families, clear successful selections, and retain actionable blockers for records that were not changed. |
 | Test coverage | Existing unit, integration, and web feature tests cover the delivered baseline and atomic bulk behavior. | Replace atomic bulk assertions and add mixed archive/reactivate, concurrent/stale selection, response ordering, and UI partial-result tests. |
@@ -48,6 +48,8 @@ No constitution exception is required.
 Keep `Customer` as the site-reference entity with stable UUID identity, normalized case-insensitive unique `code` and `companyName`, `AVAILABLE`/`ARCHIVED` status, timestamps, and archive/reactivation actor and comment metadata. Available customers are editable and selectable; archived customers remain readable and read-only until reactivation.
 
 The bulk repository methods must select the complete request set with row locks inside one transaction, classify each row in request order, and re-check planned/active discharge usage for archive immediately before updating eligible rows. Missing, wrong-state, and in-use rows become blockers; eligible rows are updated and returned. The transaction commits the eligible updates even when blockers exist. Duplicate IDs are malformed input and remain a `422`, not a blocker category.
+
+GH-37 does not introduce a discharge table or customer-discharge relationship. Its production binding therefore remains `NoDischargeSiteReferenceUsageChecker`, matching the currently representable state, while tests exercise the real boundary outcomes. GH-53 owns the persistent checker and must replace the no-discharge binding in the same delivery that first makes planned or active references durable.
 
 ### API contract and boundaries
 
@@ -112,6 +114,7 @@ The listed API and web files are existing seams, not evidence that every file ne
 
 - **Partial-success drift**: define one DTO and blocker vocabulary shared by repository, use case, generated client, and UI tests.
 - **Usage race**: perform usage evaluation inside the same transaction/write boundary as the locked customer decision; blocked customers must remain available.
+- **Deferred discharge persistence**: GH-53 must replace `NoDischargeSiteReferenceUsageChecker` before persisting planned or active references; keeping both states deployable together is forbidden by the approved clarification.
 - **Stale selections**: classify current state at mutation time, return `ALREADY_*` blockers, refresh caches, and preserve actionable UI feedback.
 - **Authorization drift**: retain policy checks and protected HTTP integration tests; UI affordance checks are supplementary.
 - **Rollback**: the change is additive to existing customer data. Reverting the bulk behavior removes the new response consumer without deleting customer rows or lifecycle metadata.

@@ -30,6 +30,12 @@
 
 **Alternatives considered**: Recreating or renaming existing customer tables as part of the workbench. That would risk existing references and is not required by GH-37.
 
+## Decision: Defer the persistent discharge usage adapter to GH-53
+
+**Rationale**: The current schema cannot persist a discharge or a customer-discharge reference. GH-37 keeps `SiteReferenceUsageChecker` as the business boundary, evaluates it at the lifecycle write boundary, and verifies blocked/unblocked outcomes with injected adapters. Production may use `NoDischargeSiteReferenceUsageChecker` only while that unrepresentable state remains true. GH-53 must replace the binding atomically when it introduces durable planned or active references.
+
+**Alternatives considered**: Pulling a partial discharge model into GH-37 would merge two coherent delivery units; blocking every archive would reject valid operations in the current system. Both alternatives were rejected during fresh-review remediation on 2026-07-28.
+
 ## Decision: Treat the current grouped lifecycle implementation as a contract gap
 
 **Rationale**: The existing GH-36 implementation preflights the full selection and returns a conflict when any customer is blocked, while the clarified GH-37 contract requires eligible customers to transition and blocked customers to be returned separately. The plan therefore changes the grouped result contract and its tests without duplicating the already-delivered individual lifecycle work.
