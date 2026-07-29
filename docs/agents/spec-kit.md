@@ -60,6 +60,41 @@ The orchestrator supplies `SPECIFY_FEATURE_DIRECTORY` to every Codex phase, prev
 
 Do not use the full implementation workflow for an artifact marked `Done (historical)`. Historical specs record delivered intent; they are not implementation queues.
 
+## Run independent workflows concurrently with Orca
+
+Use the Orca launcher when two or more qualified issues can advance independently:
+
+```bash
+pnpm spec:workflow:orca -- 201
+pnpm spec:workflow:orca -- 202
+```
+
+The launcher performs the same issue, artifact-path, branch, and model-policy preflight as the terminal workflow. It creates one Orca-managed worktree per issue from `origin/master`, links the worktree to the GitHub issue, installs the frozen PNPM dependencies when needed, and starts `pnpm spec:workflow` in a dedicated terminal. The launcher then returns immediately so another issue can start. Orca supervises only the worktree and process; Spec Kit continues to own phases, saved Codex sessions, commit approval, Draft PR synchronization, and every human review gate.
+
+Inspect all Orca-managed workflow states or return to one of their terminals:
+
+```bash
+pnpm spec:workflow:orca -- status
+pnpm spec:workflow:orca -- status --issue 201
+pnpm spec:workflow:orca -- focus --issue 201
+```
+
+After `/pause` or a terminal exit, resume in the existing issue worktree:
+
+```bash
+pnpm spec:workflow:orca -- resume --issue 201
+```
+
+The launcher is idempotent for an active issue: it enforces one issue-to-worktree relationship and never starts a second workflow terminal when the first is still connected. A repository-wide atomic issue lock also rejects duplicate direct or Orca-managed workflow processes across worktrees. Duplicate issue links, branch mismatches, and feature-directory mismatches stop before Codex starts.
+
+Use a dry run to inspect the worktree and fixed terminal command without changing Orca, Git, or GitHub:
+
+```bash
+pnpm spec:workflow:orca -- 201 --dry-run
+```
+
+Each worktree keeps its own ignored `.specify/feature.json` and `.specify/workflows/runs/` state. Concurrent workflows may still conflict when they edit overlapping tracked files; isolation postpones that conflict to rebase or merge rather than resolving it. Orca worktrees are not removed automatically. Remove one explicitly only after its workflow is complete, its branch is pushed, the worktree is clean, and its PR no longer needs local recovery.
+
 ## Gates, status, and resume
 
 The workflow is:
@@ -231,6 +266,9 @@ node scripts/spec-kit/validate-backlog.mjs
 - **A sequential spec directory appeared**: stop the run and restart through `pnpm spec:workflow` with the intended domain path.
 - **Feature directory not found**: confirm the recommended stable path or pass `--feature-dir`; do not create issue-number directories.
 - **Workflow paused**: use `status --issue <number>`, then `resume --issue <number>`. The Codex phase resumes its saved session.
+- **Orca workflow paused**: use `pnpm spec:workflow:orca -- status --issue <number>`, then `pnpm spec:workflow:orca -- resume --issue <number>`.
+- **Orca reports a duplicate workflow**: focus the existing issue terminal or resolve duplicate issue-linked worktrees; do not bypass the repository-wide issue lock.
+- **Orca is unavailable**: start the local runtime with `orca open`, confirm `orca status`, then retry the launcher.
 - **Commit message rejected**: use a supported Conventional Commit type, kebab-case domain scope, uppercase description, and no trailing period.
 - **Integration status warns about modified files**: expected for Portflow customizations; review rather than forcing an upgrade.
 - **PR validation fails**: read the emitted GitHub Actions errors and check the selected change type, spec path, plan/tasks presence, clarification markers, and incomplete tasks.

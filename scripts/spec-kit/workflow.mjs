@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { WorkflowCodex } from './workflow-codex.mjs'
 import { WorkflowGitHub } from './workflow-github.mjs'
+import { acquireWorkflowLock } from './workflow-lock.mjs'
 import {
   branchName,
   configureModelPolicy,
@@ -165,6 +166,22 @@ export class TerminalWorkflow {
     }
 
     const issueNumber = await this.resolveIssueNumber(options)
+    if (options.dryRun) {
+      return this.runIssue(options, issueNumber)
+    }
+
+    const lock = acquireWorkflowLock({
+      root: this.root,
+      issueNumber,
+    })
+    try {
+      return await this.runIssue(options, issueNumber)
+    } finally {
+      lock.release()
+    }
+  }
+
+  async runIssue(options, issueNumber) {
     const issue = this.github.fetchIssue(issueNumber)
     let state = this.loadState(issue.number)
     const featureDirectory = state
@@ -249,11 +266,7 @@ export class TerminalWorkflow {
       this.saveState(state)
     }
 
-    fs.mkdirSync(path.join(this.root, '.specify'), { recursive: true })
-    fs.writeFileSync(
-      path.join(this.root, '.specify', 'feature.json'),
-      `${JSON.stringify({ featureDirectory, issue: issue.number }, null, 2)}\n`,
-    )
+    writeFeatureContext(this.root, featureDirectory, issue.number)
 
     this.write(`\nIssue #${issue.number} — ${issue.title}`)
     this.write(`Branche : ${state.branch}`)
@@ -615,6 +628,14 @@ export class TerminalWorkflow {
     })
     return 'advance'
   }
+}
+
+export function writeFeatureContext(root, featureDirectory, issueNumber) {
+  fs.mkdirSync(path.join(root, '.specify'), { recursive: true })
+  fs.writeFileSync(
+    path.join(root, '.specify', 'feature.json'),
+    `${JSON.stringify({ feature_directory: featureDirectory, issue: issueNumber }, null, 2)}\n`,
+  )
 }
 
 export async function main(argv = process.argv.slice(2), dependencies = {}) {

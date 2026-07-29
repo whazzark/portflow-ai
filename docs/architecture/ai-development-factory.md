@@ -32,7 +32,7 @@ Merged delivery
 - **Implementer**: follows the approved tasks with TDD.
 - **Reviewer**: uses a fresh context to check the diff against spec, plan, architecture, security, and tests.
 - **Validator**: runs deterministic checks and relevant browser journeys.
-- **Coordinator**: later automation may distribute independent tasks across Codex worktrees; it must not bypass Spec Kit gates.
+- **Coordinator**: Orca may supervise independent issue workflows across Codex worktrees; it must not bypass Spec Kit gates.
 
 ## Workflow
 
@@ -46,7 +46,7 @@ Use the [Spec Kit operator guide](../agents/spec-kit.md) for the supported comma
 
 - Spec Kit owns artifact lifecycle, workflow state, and gates.
 - Codex owns all AI work.
-- Orca may own worktree/process supervision when parallel execution is introduced.
+- Orca owns worktree/process supervision for parallel terminal workflows.
 - GitHub Actions owns deterministic CI.
 - GitHub Project owns delivery status.
 
