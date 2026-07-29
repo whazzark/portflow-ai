@@ -4,102 +4,104 @@ description: "Portflow task list grouped by independently deliverable user story
 
 # Tasks: Administer Docks and Weighing Areas From the Web Workbench
 
-**Input**: `spec.md`, `plan.md`, `data-model.md`, `contracts/`, and `quickstart.md` in this feature directory
+**Input**: `spec.md`, `plan.md`, `data-model.md`, `contracts/`, `research.md`, and `quickstart.md` in this feature directory
 **Prerequisites**: Approved spec and plan
-
-## Task format
-
-`- [ ] T001 [P?] [US1] [RED|GREEN|REFACTOR|DOC] Concrete action in an exact path`
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] [SETUP] [DOC] Confirm the active feature metadata and branch workflow in `.specify/feature.json` and repository Git configuration
-- [ ] T002 [P] [SETUP] [GREEN] Install the MapCN registry component and lock `maplibre-gl` in `apps/web/src/components/ui/map.tsx` and `apps/web/package.json`
-- [ ] T003 [P] [SETUP] [DOC] Record the feature verification commands and deferred GH-53 usage-binding constraint in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
+- [ ] T001 [DOC] Confirm the active feature directory and approved GH-41 contracts in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/spec.md`
+- [ ] T002 [P] [SETUP] Add the reversible operational-checkpoint version migration in `apps/api/database/migrations/*_add_operational_checkpoint_versions.ts`
+- [ ] T003 [P] [SETUP] Extend generated database schema types with positive `version` fields in `apps/api/database/schema.ts`
+- [ ] T004 [P] [SETUP] Add version and lifecycle actor relations to the Dock model in `apps/api/app/models/dock.ts`
+- [ ] T005 [P] [SETUP] Add version and lifecycle actor relations to the Weighing Area model in `apps/api/app/models/weighing_area.ts`
+- [ ] T006 [P] [SETUP] Update Dock and Weighing Area factories with version defaults and lifecycle metadata fixtures in `apps/api/database/factories/dock_factory.ts` and `apps/api/database/factories/weighing_area_factory.ts`
 
-## Phase 2: Foundational RED and GREEN
+## Phase 2: Foundational
 
-- [ ] T009 [US1] [RED] Add migration and model tests proving existing rows start at version 1 and successful mutations increment once in `apps/api/tests/unit/docks/dock_concurrency.spec.ts` and `apps/api/tests/unit/weighing_areas/weighing_area_concurrency.spec.ts`
-- [ ] T004 [FOUNDATION] [GREEN] Add the reversible positive `version` columns, defaults, and rollback to `apps/api/database/migrations/*_add_operational_checkpoint_versions.ts`
-- [ ] T005 [P] [FOUNDATION] [GREEN] Update generated database types and schema metadata for versioned docks and weighing areas in `apps/api/database/schema.ts`
-- [ ] T006 [P] [FOUNDATION] [GREEN] Extend Dock and Weighing Area models, factories, and actor relations with version and lifecycle fields in `apps/api/app/models/dock.ts`, `apps/api/app/models/weighing_area.ts`, `apps/api/database/factories/dock_factory.ts`, and `apps/api/database/factories/weighing_area_factory.ts`
-- [ ] T007 [P] [FOUNDATION] [GREEN] Add shared validation and typed blocker/result mechanics for distinct versioned lifecycle items in `apps/api/app/site_references/shared/`
-- [ ] T008 [FOUNDATION] [DOC] Document deterministic grouped classification, conditional writes, and version-increment invariants in `apps/api/app/site_references/shared/`
+- [ ] T007 [FOUNDATION] [RED] Add repository tests proving version `1` migration defaults, one-step increments, stale zero-row writes, rollback compatibility, and preserved coordinate/name constraints in `apps/api/tests/unit/docks/dock_concurrency.spec.ts` and `apps/api/tests/unit/weighing_areas/weighing_area_concurrency.spec.ts`
+- [ ] T008 [FOUNDATION] [GREEN] Implement portable conditional version increments and typed stale/not-found/state outcomes in `apps/api/app/docks/shared/repositories/dock_repository.ts` and `apps/api/app/weighing_areas/shared/repositories/weighing_area_repository.ts`
+- [ ] T009 [FOUNDATION] [GREEN] Implement Lucid conditional writes, lifecycle metadata persistence, actor preloads, and deterministic grouped-row locking in `apps/api/app/docks/shared/repositories/lucid_dock_repository.ts` and `apps/api/app/weighing_areas/shared/repositories/lucid_weighing_area_repository.ts`
+- [ ] T010 [P] [FOUNDATION] [RED] Add shared validation tests for distinct versioned items, UUIDs, positive versions, optional trimmed comments, and request-level rejection in `apps/api/tests/unit/site_references/versioned_lifecycle_validation.spec.ts`
+- [ ] T011 [P] [FOUNDATION] [GREEN] Add genuinely resource-neutral versioned lifecycle validation and blocker result helpers in `apps/api/app/site_references/shared/`
+- [ ] T012 [P] [FOUNDATION] [RED] Add policy tests proving active-user consultation and admin-only mutations for both named resources in `apps/api/tests/unit/docks/dock_policy.spec.ts` and `apps/api/tests/unit/weighing_areas/weighing_area_policy.spec.ts`
+- [ ] T013 [FOUNDATION] [GREEN] Expand named Dock and Weighing Area policies and list/show authorization paths in `apps/api/app/docks/shared/dock_policy.ts`, `apps/api/app/weighing_areas/shared/weighing_area_policy.ts`, and existing list/show use cases
 
 ## Phase 3: User Story 1 - Administer Docks and Weighing Areas From the Web Workbench (Priority: P1)
 
-**Goal**: Active users can consult both named reference types in one accessible workbench, while permitted administrators can create, edit, and individually or collectively archive/reactivate them with validation, authorization, usage blocking, and optimistic concurrency.
+**Goal**: Active users can consult both reference types in one searchable, map-backed workbench; Organization Admins and Operations Admins can create, edit, archive, reactivate, and group lifecycle actions while the API preserves validation, authorization, usage, and optimistic-concurrency invariants.
 
-**Independent test**: Run the focused API unit/integration suites from `quickstart.md` and `pnpm --filter @portflow/web exec vitest run src/features/checkpoints/__tests__ --pool=threads --maxWorkers=1`; verify the authenticated `/checkpoints` journey and the migration rollback/re-run.
+**Independent test**: Run the focused API Japa suites and the router-level MSW feature suite from `quickstart.md`; verify the authenticated `/checkpoints` journey and every acceptance scenario, including observer read-only access, mixed grouped outcomes, stale reload, and map/list fallback.
 
-### API RED: use cases and authorization
+### API Dock slice
 
-- [ ] T010 [P] [US1] [RED] Add Dock conditional update/archive/reactivate tests covering stale, wrong-state, not-found, comment normalization, actor, timestamp, and no-change outcomes in `apps/api/tests/unit/docks/dock_concurrency.spec.ts`
-- [ ] T011 [P] [US1] [RED] Add Weighing Area conditional update/archive/reactivate tests covering stale, wrong-state, not-found, comment normalization, actor, timestamp, and no-change outcomes in `apps/api/tests/unit/weighing_areas/weighing_area_concurrency.spec.ts`
-- [ ] T012 [P] [US1] [RED] Add mixed grouped Dock lifecycle tests for eligible, `NOT_FOUND`, `STALE_VERSION`, `IN_USE`, and `ALREADY_*` items with request-order preservation in `apps/api/tests/unit/docks/dock_bulk_lifecycle.spec.ts`
-- [ ] T013 [P] [US1] [RED] Add mixed grouped Weighing Area lifecycle tests for eligible, `NOT_FOUND`, `STALE_VERSION`, `IN_USE`, and `ALREADY_*` items with request-order preservation in `apps/api/tests/unit/weighing_areas/weighing_area_bulk_lifecycle.spec.ts`
-- [ ] T014 [P] [US1] [RED] Add protected HTTP tests for active-user consultation, admin-only mutations, validation, conflicts, stale `409` codes, grouped `200` partial results, and grouped `422` atomic rejection in `apps/api/tests/integration/docks.spec.ts` and `apps/api/tests/integration/weighing_areas.spec.ts`
+- [ ] T014 [P] [US1] [RED] Add Dock use-case tests for normalized name/GPS validation, same-type uniqueness, cross-type same-name allowance, versioned update, archive usage blocking, reactivation identity/history, actor/time/comment metadata, and stale outcomes in `apps/api/tests/unit/docks/dock_use_cases.spec.ts` and `apps/api/tests/unit/docks/dock_concurrency.spec.ts`
+- [ ] T015 [P] [US1] [RED] Add Dock grouped lifecycle tests for eligible, `NOT_FOUND`, `STALE_VERSION`, `IN_USE`, and wrong-state items, request ordering, partial success, unchanged blockers, and malformed requests in `apps/api/tests/unit/docks/dock_bulk_lifecycle.spec.ts`
+- [ ] T016 [US1] [GREEN] Extend Dock commands, exceptions, validators, and use cases with `expectedVersion`, trimmed comments, stale mapping, and individual lifecycle behavior in `apps/api/app/docks/create/`, `apps/api/app/docks/update/`, `apps/api/app/docks/archive/`, `apps/api/app/docks/reactivate/`, and `apps/api/app/docks/shared/`
+- [ ] T017 [US1] [GREEN] Add named Dock grouped archive and reactivate use cases with usage-checker integration and ordered partial-result mapping in `apps/api/app/docks/archive/` and `apps/api/app/docks/reactivate/`
+- [ ] T018 [US1] [GREEN] Extend the Dock transformer with version and nullable lifecycle actor summaries while preserving named DTO fields in `apps/api/app/docks/shared/dock_transformer.ts`
+- [ ] T019 [US1] [RED] Add Dock HTTP integration coverage for active-user reads, admin/observer authorization, DTO shape, static grouped route ordering, validation, duplicate/wrong-state/in-use/stale errors, and mixed grouped results in `apps/api/tests/integration/docks.spec.ts`
+- [ ] T020 [US1] [GREEN] Add Dock grouped controller actions and register versioned individual/grouped request contracts in `apps/api/app/controllers/docks_controller.ts` and `apps/api/start/routes.ts`
 
-### API GREEN: named Dock and Weighing Area slices
+### API Weighing Area slice
 
-- [ ] T015 [US1] [GREEN] Extend Dock and Weighing Area repositories and types with conditional individual writes and version-aware result unions in `apps/api/app/docks/` and `apps/api/app/weighing_areas/`
-- [ ] T016 [US1] [GREEN] Implement transactional deterministic-lock grouped archive/reactivate repository operations with partial results in `apps/api/app/docks/` and `apps/api/app/weighing_areas/`
-- [ ] T017 [US1] [GREEN] Require positive expected versions, editable-field constraints, GPS/name validation, and lifecycle comment normalization in `apps/api/app/docks/` and `apps/api/app/weighing_areas/`
-- [ ] T018 [US1] [GREEN] Add named stale-version, lifecycle, conflict, and grouped-result use cases while preserving `SiteReferenceUsageChecker` in `apps/api/app/docks/` and `apps/api/app/weighing_areas/`
-- [ ] T019 [US1] [GREEN] Expand list/view policies to active users and retain admin-only mutation policies in `apps/api/app/docks/` and `apps/api/app/weighing_areas/`
-- [ ] T020 [US1] [GREEN] Preload lifecycle actors and expose versioned resource summaries in `apps/api/app/docks/` and `apps/api/app/weighing_areas/`
-- [ ] T021 [US1] [GREEN] Add static grouped archive/reactivate controller actions, request validation, DTOs, and named routes before `/:id` routes in `apps/api/app/controllers/docks_controller.ts`, `apps/api/app/controllers/weighing_areas_controller.ts`, and `apps/api/start/routes.ts`
+- [ ] T021 [P] [US1] [RED] Add Weighing Area use-case tests for normalized name/GPS validation, same-type uniqueness, cross-type same-name allowance, versioned update, archive usage blocking, reactivation identity/history, actor/time/comment metadata, and stale outcomes in `apps/api/tests/unit/weighing_areas/weighing_area_use_cases.spec.ts` and `apps/api/tests/unit/weighing_areas/weighing_area_concurrency.spec.ts`
+- [ ] T022 [P] [US1] [RED] Add Weighing Area grouped lifecycle tests for eligible, `NOT_FOUND`, `STALE_VERSION`, `IN_USE`, and wrong-state items, request ordering, partial success, unchanged blockers, and malformed requests in `apps/api/tests/unit/weighing_areas/weighing_area_bulk_lifecycle.spec.ts`
+- [ ] T023 [US1] [GREEN] Extend Weighing Area commands, exceptions, validators, and use cases with `expectedVersion`, trimmed comments, stale mapping, and individual lifecycle behavior in `apps/api/app/weighing_areas/create/`, `apps/api/app/weighing_areas/update/`, `apps/api/app/weighing_areas/archive/`, `apps/api/app/weighing_areas/reactivate/`, and `apps/api/app/weighing_areas/shared/`
+- [ ] T024 [US1] [GREEN] Add named Weighing Area grouped archive and reactivate use cases with usage-checker integration and ordered partial-result mapping in `apps/api/app/weighing_areas/archive/` and `apps/api/app/weighing_areas/reactivate/`
+- [ ] T025 [US1] [GREEN] Extend the Weighing Area transformer with version and nullable lifecycle actor summaries while preserving named DTO fields in `apps/api/app/weighing_areas/shared/weighing_area_transformer.ts`
+- [ ] T026 [US1] [RED] Add Weighing Area HTTP integration coverage for active-user reads, admin/observer authorization, DTO shape, static grouped route ordering, validation, duplicate/wrong-state/in-use/stale errors, and mixed grouped results in `apps/api/tests/integration/weighing_areas.spec.ts`
+- [ ] T027 [US1] [GREEN] Add Weighing Area grouped controller actions and register versioned individual/grouped request contracts in `apps/api/app/controllers/weighing_areas_controller.ts` and `apps/api/start/routes.ts`
 
-### Web RED: route state, workbench, and mutation behavior
+### Workbench consultation shell
 
-- [ ] T022 [P] [US1] [RED] Add router-level tests for independent type/status/search URL state, list-backed details, and safe invalid detail normalization in `apps/web/src/features/checkpoints/__tests__/route-state.test.tsx`
-- [ ] T023 [P] [US1] [RED] Add feature tests for observer/admin affordances, named queries, forms, GPS validation, and mutation cache invalidation in `apps/web/src/features/checkpoints/__tests__/workbench.test.tsx`
-- [ ] T024 [P] [US1] [RED] Add feature tests for selection-scoped grouped actions, mixed changed/blocked feedback, stale reload prompts, and no automatic retry in `apps/web/src/features/checkpoints/__tests__/lifecycle-actions.test.tsx`
-- [ ] T025 [P] [US1] [RED] Add accessibility/responsive tests for synchronized marker lists, labelled controls, focusable dialogs, overflow containment, and map-unavailable fallback in `apps/web/src/features/checkpoints/__tests__/accessibility.test.tsx`
-- [ ] T026 [P] [US1] [RED] Add MSW handlers for distinct Dock and Weighing Area contracts without mocking Tuyau in `apps/web/src/features/checkpoints/__tests__/msw/handlers.ts`
+- [ ] T028 [P] [US1] [RED] Add router tests for URL-restored visible types, independent Dock/Weighing Area searches and statuses, case-insensitive substring filtering, detail modes, and sidebar navigation in `apps/web/src/features/checkpoints/__tests__/list/`, `apps/web/src/features/checkpoints/__tests__/details/`, and `apps/web/src/routes/_authenticated/checkpoints.test.tsx`
+- [ ] T029 [P] [US1] [GREEN] Add named Dock and Weighing Area query adapters, discriminated workbench view models, URL Zod search state, and route list preloading in `apps/web/src/features/checkpoints/types.ts`, `apps/web/src/features/checkpoints/queries/`, `apps/web/src/features/checkpoints/helpers/`, and `apps/web/src/routes/_authenticated/checkpoints.tsx`
+- [ ] T030 [P] [US1] [GREEN] Add the authenticated checkpoints route shell and link the existing sidebar item to `/checkpoints` in `apps/web/src/routes/_authenticated/checkpoints.tsx` and `apps/web/src/components/layout/app-sidebar.tsx`
+- [ ] T031 [P] [US1] [GREEN] Add the owned MapCN component with MapLibre dependency, theme-aware CARTO styles, attribution, hydration-safe client mounting, distinct Dock/Weighing Area markers, and map-unavailable fallback in `apps/web/src/components/ui/map.tsx`
+- [ ] T032 [US1] [GREEN] Build the synchronized map, filters, accessible marker list, loading/error/empty states, and marker-backed detail sheet in `apps/web/src/features/checkpoints/ui/`
 
-### Web GREEN and REFACTOR: checkpoints workbench
+### Workbench administration and lifecycle UX
 
-- [ ] T027 [US1] [GREEN] Link the enabled Checkpoints navigation item to `/checkpoints` in `apps/web/src/components/layout/app-sidebar.tsx`
-- [ ] T028 [US1] [GREEN] Implement URL-backed authenticated route parsing, list preloading, and safe detail state in `apps/web/src/routes/_authenticated/checkpoints.tsx`
-- [ ] T029 [US1] [GREEN] Implement distinct Dock and Weighing Area query keys, Tuyau builders, DTO adapters, permissions, filtering, and selection state in `apps/web/src/features/checkpoints/queries/`, `apps/web/src/features/checkpoints/types.ts`, and `apps/web/src/features/checkpoints/helpers/`
-- [ ] T030 [US1] [GREEN] Implement the shared resource-aware create/edit form with explicit coordinate strings and server validation feedback in `apps/web/src/features/checkpoints/ui/` and `apps/web/src/features/checkpoints/mutations/`
-- [ ] T031 [US1] [GREEN] Implement individual lifecycle dialogs, versioned mutations, stale reload behavior, and affected-resource query invalidation in `apps/web/src/features/checkpoints/mutations/` and `apps/web/src/features/checkpoints/ui/`
-- [ ] T032 [US1] [GREEN] Implement visible-type/status/search filters, synchronized accessible list, marker selection, detail sheet, selection toolbar, and grouped partial-result feedback in `apps/web/src/features/checkpoints/ui/`
-- [ ] T033 [US1] [GREEN] Implement the client-only MapCN canvas with distinct icons, theme-aware CARTO styles, attribution, loading/error states, and list fallback in `apps/web/src/components/ui/map.tsx` and `apps/web/src/features/checkpoints/ui/`
-- [ ] T034 [US1] [REFACTOR] Align checkpoints components with Channel Marker tokens, shadcn primitives, Lucide semantics, keyboard focus order, and narrow viewport layout in `apps/web/src/features/checkpoints/ui/`
+- [ ] T033 [P] [US1] [RED] Add web tests for observer read-only affordances, GPS validation, create/edit version submission, individual lifecycle confirmation, cache invalidation, and stale reload behavior in `apps/web/src/features/checkpoints/__tests__/details/`, `apps/web/src/features/checkpoints/__tests__/lifecycle/`, and `apps/web/src/features/checkpoints/__tests__/permissions/`
+- [ ] T034 [P] [US1] [RED] Add web tests for visible-scope selection, grouped archive/reactivate submission, mixed changed/blocked feedback, stable blocker reasons, stale selection refresh, and no automatic retry in `apps/web/src/features/checkpoints/__tests__/bulk/`
+- [ ] T035 [US1] [GREEN] Implement shared resource-aware forms, create/edit sheets, server validation mapping, and individual mutation adapters using `useAppForm` and named Tuyau clients in `apps/web/src/features/checkpoints/ui/`, `apps/web/src/features/checkpoints/mutations/`, and `apps/web/src/features/checkpoints/helpers/`
+- [ ] T036 [US1] [GREEN] Implement permission-aware individual lifecycle dialogs and mutations with version echoing, affected-resource cache invalidation, recoverable failures, and explicit stale reload action in `apps/web/src/features/checkpoints/ui/`, `apps/web/src/features/checkpoints/mutations/`, and `apps/web/src/features/checkpoints/queries/`
+- [ ] T037 [US1] [GREEN] Implement type/status/search-scoped selection, keyboard-reachable grouped lifecycle toolbar, confirmation, ordered payloads, and announced per-resource partial-result feedback in `apps/web/src/features/checkpoints/ui/`, `apps/web/src/features/checkpoints/mutations/`, and `apps/web/src/features/checkpoints/types.ts`
+- [ ] T038 [US1] [RED] Add responsive and accessibility regression tests for icon names, text status/reasons, keyboard flow, focus/dialog behavior, accessible map fallback, and no horizontal overflow at required breakpoints in `apps/web/src/features/checkpoints/__tests__/accessibility/` and `apps/web/src/features/checkpoints/__tests__/responsive/`
+- [ ] T039 [US1] [REFACTOR] Align the checkpoints feature with Channel Marker tokens, IBM Plex typography, existing shadcn primitives, named cache keys, and the API/UI boundary rules in `apps/web/src/features/checkpoints/`
 
-### User Story 1 documentation
+## Final Phase: Polish and cross-cutting concerns
 
-- [ ] T035 [US1] [DOC] Update feature-local acceptance notes and manual/browser validation details after implementation in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
-
-## Final verification
-
-- [ ] T036 [VERIFY] [GREEN] Run the focused Dock and Weighing Area API suites and migration validation from `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
-- [ ] T037 [VERIFY] [GREEN] Run the checkpoints Vitest feature suite from `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
-- [ ] T038 [VERIFY] [GREEN] Run `pnpm check` from the repository root
-- [ ] T039 [VERIFY] [GREEN] Run `pnpm typecheck` from the repository root
-- [ ] T040 [VERIFY] [GREEN] Run `pnpm test` from the repository root
-- [ ] T041 [VERIFY] [GREEN] Run the configured authenticated browser journey and verify MapCN/WebGL, CARTO attribution, and responsive behavior when available
-- [ ] T042 [VERIFY] [DOC] Run `$speckit-analyze` and `$speckit-converge` for this feature directory and resolve any actionable findings
+- [ ] T040 [P] [VERIFY] Add migration and disposable PostgreSQL verification notes/results for migrate, rollback, re-migrate, existing version `1`, and successful version `2` writes in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
+- [ ] T041 [P] [VERIFY] Run focused Dock and Weighing Area API suites and the checkpoints MSW router suite using the commands in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
+- [ ] T042 [P] [VERIFY] Run the configured authenticated checkpoints Playwright journey, or record that no such seam is configured, in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
+- [ ] T043 [VERIFY] Run `pnpm check` from the repository root and resolve formatting/lint/type generation failures in affected files
+- [ ] T044 [VERIFY] Run `pnpm typecheck` from the repository root and resolve API Tuyau, route, and web type failures in affected files
+- [ ] T045 [VERIFY] Run `pnpm test` from the repository root and resolve regressions in affected test suites
+- [ ] T046 [VERIFY] Run `$speckit-analyze` against this feature directory and resolve actionable cross-artifact inconsistencies
+- [ ] T047 [VERIFY] Run `$speckit-converge` against this feature directory and append or complete any remaining implementation tasks in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/tasks.md`
 
 ## Dependencies and execution order
 
-- Phase 1 precedes Phase 2. T009 establishes the migration/concurrency RED seam and must precede T004; T004 then precedes T005, T006, and later API implementation. T002 must precede MapCN work.
-- Phase 2 precedes the remaining User Story 1 work. API RED tasks T010–T014 can run in parallel; API GREEN tasks T015–T021 follow the relevant failing tests and share the foundational migration/types.
-- Web RED tasks T022–T026 can run in parallel after the API contracts are fixed; T027–T034 follow those tests and may proceed in parallel by route, data/mutations, and UI files, with T033 dependent on T002.
-- T036–T042 run only after T009–T035 are green. Run T038–T040 together where CI capacity permits; T042 is last.
+1. Phase 1 setup tasks T002-T006 can run in parallel after T001; migration/schema/model/factory changes must be complete before repository tests and implementation.
+2. Phase 2 is blocking. T007-T013 establish versioning, shared validation mechanics, and consultation authorization before either named API slice.
+3. Within User Story 1, the Dock API slice (T014-T020) and Weighing Area API slice (T021-T027) can proceed in parallel after Phase 2; each slice's RED tasks precede its GREEN tasks.
+4. The consultation shell T028-T032 depends on named read DTOs/routes and can proceed alongside the API mutation work once those contracts exist.
+5. Administration UX tests T033-T034 depend on the consultation shell and named mutation contracts; implementation T035-T037 follows the corresponding RED tests. T038 follows the completed responsive UI composition.
+6. T039 is a refactor after the feature behavior is green. Final verification starts only after T039 and all story tests pass.
 
 ### Parallel execution examples
 
-```text
-First TDD checkpoint: T009 (RED), then T004 (GREEN)
-Group A (remaining API RED): T010, T011, T012, T013, T014
-Group B (API slices): T015, T017, T019, T020 (after their tests; avoid same-file edits)
-Group C (web RED): T022, T023, T024, T025, T026
-Group D (web slices): T027, T028, T029, T030, T031, T032, T033 (split by exact files)
-```
+- **API foundation**: T002-T006 in parallel; then T007, T010, and T012 in parallel before T008-T009 and T011-T013.
+- **Named API slices**: Dock work T014-T020 and Weighing Area work T021-T027 are independent after shared foundation and can be assigned to separate workers.
+- **Web shell**: T028-T031 can proceed in parallel after the read contracts; T032 integrates their outputs.
+- **Web administration**: T033 and T034 can be written in parallel; T035 and T036 can proceed in parallel once their contracts are stable, followed by T037-T039.
+- **Verification**: T040-T042 are independent validation activities; T043-T047 remain ordered where later checks consume earlier fixes.
 
 ## Implementation strategy
 
-Deliver the API consultation and individual administration path first, including the reversible version migration and protected HTTP contracts. Add grouped lifecycle partial success next. Then deliver the `/checkpoints` route with URL-backed list/detail state, followed by forms and lifecycle mutations, and finally MapCN/accessibility polish. The MVP is User Story 1's active-user consultation plus administrator create/edit/individual lifecycle behavior; grouped lifecycle and map enhancements complete the full P1 acceptance scope before verification.
+Deliver the MVP as the active-user consultation slice plus one complete named API mutation path: versioned Dock API and `/checkpoints` consultation (T014-T020 and T028-T032). Incrementally add the Weighing Area API, shared workbench administration, grouped partial-success behavior, and responsive/accessibility polish. Preserve TDD checkpoints, keep Dock and Weighing Area contracts distinct, and do not introduce a generic Checkpoint entity or discharge persistence.
+
+## Format validation
+
+All executable tasks use the required checklist form: unchecked checkbox, sequential `T###` ID, optional `[P]`, required `[US1]` only in the user-story phase, a phase label, and an exact repository or feature-artifact path.
