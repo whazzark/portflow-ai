@@ -95,7 +95,7 @@ Dock and Weighing Area models gain `archivedBy` and `reactivatedBy` relations fo
 - **Migration/repository**: prove existing rows start at version `1`, successful conditional writes increment once, stale writes affect zero rows, name indexes stay separate, coordinate checks remain, and rollback/re-run succeeds on supported test/runtime databases.
 - **API use cases**: drive RED tests for normalization, validation defense, read-only archives, actor/comment metadata, usage blocking, version mismatch, same-type uniqueness, cross-type same-name allowance, and partial grouped outcomes for both resource slices.
 - **HTTP integration**: for each protected endpoint cover unauthenticated, observer/admin authorization, validation, named DTO shape, route ordering, successful mutation, duplicate/wrong-state/in-use/stale errors, grouped request validation, mixed outcomes, ordering, and unchanged blockers.
-- **Web feature**: render through the real router/providers with MSW. Keep filtering/selection and the accessible synchronized list testable without WebGL, and cover URL-restored independent per-type state, name-only substring search, distinct type icons, status filtering, observer read-only behavior, GPS create/edit forms, marker/list-backed detail sheets, individual lifecycle, filtered selection, mixed grouped results, stale reload behavior, cache invalidation, loading/retry/empty/map-unavailable states, accessible names, keyboard flow, and narrow-screen containment.
+- **Web feature**: render through the real router/providers with MSW. Keep filtering/selection and the accessible synchronized list testable without WebGL, and cover URL-restored independent per-type state, name-only substring search, distinct type icons, status filtering, observer read-only behavior, GPS create/edit forms, marker/list-backed detail sheets, individual lifecycle, filtered selection, mixed grouped results, stale reload behavior, cache invalidation, loading/retry/empty/map-unavailable states, accessible names, and keyboard flow. Verify responsive containment at viewport widths `375`, `768`, `1024`, and `1440` px: the document must have no page-level horizontal overflow (`document.documentElement.scrollWidth <= window.innerWidth`), and the map/list, filters, detail sheet or dialog, and selection toolbar must remain visible and keyboard reachable without horizontal page scrolling.
 - **TDD checkpoints**: implement one observable slice at a time: persistence/concurrency foundation; Dock API; Weighing Area API; consultation shell; Dock administration; Weighing Area administration; grouped/stale UX; responsive/accessibility regressions.
 - **Browser**: run a real authenticated checkpoints journey if the Playwright seam becomes configured before delivery; otherwise record the absence and use the API integration plus router-level feature suites as the automated seams.
 
@@ -124,6 +124,7 @@ apps/api/tests/integration/weighing_areas.spec.ts
 
 apps/web/src/components/layout/app-sidebar.tsx
 apps/web/src/components/ui/map.tsx
+apps/web/package.json
 apps/web/src/routes/_authenticated/checkpoints.tsx
 apps/web/src/features/checkpoints/
   __tests__/
@@ -132,6 +133,7 @@ apps/web/src/features/checkpoints/
   queries/
   ui/
   types.ts
+pnpm-lock.yaml
 
 specs/site-references/operational-checkpoints/
   administer-docks-and-weighing-areas-from-the-web-workbench/
@@ -154,7 +156,7 @@ The API directories contain existing seams. Implementation must start with faili
 - **Tuyau contract churn**: add named endpoints and DTO fields, regenerate route types through normal build/typecheck flows, and keep Dock/Weighing Area response names explicit.
 - **UI abstraction risk**: share only workbench mechanics inside `features/checkpoints`; retain discriminated resource kinds and named client adapters so errors, cache keys, copy, and future rules cannot cross silently.
 - **Map dependency, SSR, and tile availability**: own the MapCN registry output, pin `maplibre-gl` through the lockfile, isolate browser-only canvas initialization from TanStack Start SSR, preserve CARTO attribution, and keep the synchronized list usable when WebGL, styles, or external tiles are unavailable.
-- **Map accessibility and density**: use distinct icons and text labels in addition to color, keep the synchronized accessible list as a keyboard/screen-reader seam, verify common breakpoints and keyboard access, and avoid a second mobile-only source of interaction truth.
+- **Map accessibility and density**: use distinct icons and text labels in addition to color, keep the synchronized accessible list as a keyboard/screen-reader seam, and avoid a second mobile-only source of interaction truth. At `375`, `768`, `1024`, and `1440` px, require `document.documentElement.scrollWidth <= window.innerWidth` and keep the map/list, filters, detail sheet or dialog, and selection toolbar visible and keyboard reachable without horizontal page scrolling.
 - **Rollout**: the migration is additive and existing clients may ignore `version` in responses, but all existing-resource mutation requests become contractually versioned. API and web changes must deploy together.
 - **Rollback**: revert web/API behavior first, then roll back the version-column migration only after no deployed client depends on versioned mutations. No Dock or Weighing Area row is deleted.
 
