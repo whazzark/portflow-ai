@@ -31,7 +31,8 @@ export class WorkflowGitHub {
   }
 
   git(args, options = {}) {
-    return this.command('git', args, options).trim()
+    const output = this.command('git', args, options)
+    return output == null ? '' : String(output).trim()
   }
 
   resolveRepository() {

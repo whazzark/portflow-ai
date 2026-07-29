@@ -809,6 +809,17 @@ test('approved checkpoints use the exact message before commit, push, and PR syn
   }
 })
 
+test('git commands with inherited stdio tolerate null command output', () => {
+  const github = new WorkflowGitHub({
+    exec(_command, _args, options) {
+      assert.equal(options.stdio, 'inherit')
+      return null
+    },
+  })
+
+  assert.doesNotThrow(() => github.push('feat/example'))
+})
+
 test('keeps an approved checkpoint publishable when the first push fails', async () => {
   const terminal = terminalHarness('a\n')
   let pushFails = true
