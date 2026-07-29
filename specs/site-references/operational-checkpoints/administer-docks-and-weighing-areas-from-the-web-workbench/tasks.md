@@ -48,47 +48,48 @@ description: "Portflow task list grouped by independently deliverable user story
 - [ ] T022 [P] [US1] [RED] Add failing tests for case-insensitive name filtering, distinct query keys/builders, discriminated resource view models, and cache invalidation boundaries in `apps/web/src/features/checkpoints/__tests__/checkpoints-adapters.test.ts`
 - [ ] T023 [GREEN] [US1] [REFACTOR] Add named Dock and Weighing Area query adapters, URL Zod search schema, preloading route, and feature types in `apps/web/src/features/checkpoints/queries/`, `apps/web/src/features/checkpoints/helpers/`, `apps/web/src/features/checkpoints/types.ts`, and `apps/web/src/routes/_authenticated/checkpoints.tsx`
 - [ ] T024 [GREEN] [US1] [REFACTOR] Build the synchronized accessible resource list, independent filters, loading/error/empty states, and marker-ready view model in `apps/web/src/features/checkpoints/ui/`
-- [ ] T025 [GREEN] [US1] [REFACTOR] Install/own the MapCN component with theme-aware CARTO styles, attribution, distinct Dock/Weighing Area markers, client-only mounting, and recoverable map-unavailable fallback in `apps/web/src/components/ui/map.tsx`, `apps/web/package.json`, `pnpm-lock.yaml`, and `apps/web/src/features/checkpoints/ui/`
-- [ ] T026 [GREEN] [US1] [REFACTOR] Link the existing Checkpoints sidebar item to `/checkpoints` while preserving the established layout tokens and active navigation behavior in `apps/web/src/components/layout/app-sidebar.tsx`
+- [ ] T025 [P] [US1] [RED] Add focused failing tests for client-only map-canvas mounting, SSR-safe synchronized list rendering, distinct Dock/Weighing Area icon-and-text cues, recoverable map-unavailable fallback, and the accessible map/list representation without requiring WebGL in `apps/web/src/features/checkpoints/__tests__/checkpoints-map.test.tsx`
+- [ ] T026 [GREEN] [US1] [REFACTOR] Install/own the MapCN component with theme-aware CARTO styles, attribution, distinct Dock/Weighing Area markers, client-only mounting, and recoverable map-unavailable fallback in `apps/web/src/components/ui/map.tsx`, `apps/web/package.json`, `pnpm-lock.yaml`, and `apps/web/src/features/checkpoints/ui/`
+- [ ] T027 [GREEN] [US1] [REFACTOR] Link the existing Checkpoints sidebar item to `/checkpoints` while preserving the established layout tokens and active navigation behavior in `apps/web/src/components/layout/app-sidebar.tsx`
 
 ### Individual administration flows
 
-- [ ] T027 [P] [US1] [RED] Add failing web tests for observer read-only affordances and admin-only create/edit controls in `apps/web/src/features/checkpoints/__tests__/checkpoints-permissions.test.tsx`
-- [ ] T028 [P] [US1] [RED] Add failing web tests for shared resource-aware create/edit GPS forms, boundary values, server validation, version capture, and recoverable network errors in `apps/web/src/features/checkpoints/__tests__/checkpoints-forms.test.tsx`
-- [ ] T029 [P] [US1] [RED] Add failing web tests for list-backed detail sheets, individual archive/reactivate confirmation, comments, success refresh, and affected-resource-only cache invalidation in `apps/web/src/features/checkpoints/__tests__/checkpoints-individual-mutations.test.tsx`
-- [ ] T030 [GREEN] [US1] [REFACTOR] Implement shared Dock/Weighing Area create/edit forms using `useAppForm`, registered fields, validation mapping, explicit coordinate strings, and resource-specific mutation adapters in `apps/web/src/features/checkpoints/ui/`, `apps/web/src/features/checkpoints/mutations/`, and `apps/web/src/features/checkpoints/helpers/`
-- [ ] T031 [GREEN] [US1] [REFACTOR] Implement list-backed detail sheets and individual lifecycle dialogs with permission-aware actions, trimmed comments, pending protection, and query invalidation in `apps/web/src/features/checkpoints/ui/` and `apps/web/src/features/checkpoints/mutations/`
+- [ ] T028 [P] [US1] [RED] Add failing web tests for observer read-only affordances and admin-only create/edit controls in `apps/web/src/features/checkpoints/__tests__/checkpoints-permissions.test.tsx`
+- [ ] T029 [P] [US1] [RED] Add failing web tests for shared resource-aware create/edit GPS forms, boundary values, server validation, version capture, and recoverable network errors in `apps/web/src/features/checkpoints/__tests__/checkpoints-forms.test.tsx`
+- [ ] T030 [P] [US1] [RED] Add failing web tests for list-backed detail sheets, individual archive/reactivate confirmation, comments, success refresh, and affected-resource-only cache invalidation in `apps/web/src/features/checkpoints/__tests__/checkpoints-individual-mutations.test.tsx`
+- [ ] T031 [GREEN] [US1] [REFACTOR] Implement shared Dock/Weighing Area create/edit forms using `useAppForm`, registered fields, validation mapping, explicit coordinate strings, and resource-specific mutation adapters in `apps/web/src/features/checkpoints/ui/`, `apps/web/src/features/checkpoints/mutations/`, and `apps/web/src/features/checkpoints/helpers/`
+- [ ] T032 [GREEN] [US1] [REFACTOR] Implement list-backed detail sheets and individual lifecycle dialogs with permission-aware actions, trimmed comments, pending protection, and query invalidation in `apps/web/src/features/checkpoints/ui/` and `apps/web/src/features/checkpoints/mutations/`
 
 ### Grouped lifecycle, stale state, and accessibility
 
-- [ ] T032 [P] [US1] [RED] Add failing tests for visible-scope selection clearing, keyboard-reachable grouped toolbar, confirmation, mixed changed/blocked result announcements, stable blocker wording, and changed/blocked selection retention in `apps/web/src/features/checkpoints/__tests__/checkpoints-bulk-mutations.test.tsx`
-- [ ] T033 [P] [US1] [RED] Add failing tests for individual stale `409` reload prompts, explicit refetch-only retry, unsafe-state closure, and no automatic version substitution in `apps/web/src/features/checkpoints/__tests__/checkpoints-stale-state.test.tsx`
-- [ ] T034 [P] [US1] [RED] Add failing responsive/accessibility tests for labelled controls, non-color-only status/type cues, focus flow, map/list fallback, and no document-level horizontal overflow at 375/768/1024/1440 px in `apps/web/src/features/checkpoints/__tests__/checkpoints-accessibility.test.tsx`
-- [ ] T035 [GREEN] [US1] [REFACTOR] Implement grouped archive/reactivate mutations, visible-scope selection model, confirmation dialogs, partial-result adapter, inline live outcome, and resource-specific cache invalidation in `apps/web/src/features/checkpoints/mutations/`, `apps/web/src/features/checkpoints/helpers/`, and `apps/web/src/features/checkpoints/ui/`
-- [ ] T036 [GREEN] [US1] [REFACTOR] Implement stale-error handling that invalidates the affected named queries, closes unsafe mutation state, preserves recoverable input where safe, and exposes an explicit reload-latest-data action in `apps/web/src/features/checkpoints/mutations/` and `apps/web/src/features/checkpoints/ui/`
-- [ ] T037 [GREEN] [US1] [REFACTOR] Complete responsive layout, keyboard navigation, screen-reader announcements, visible focus, dialog lifecycle, map failure fallback, and text-plus-icon lifecycle/type indicators in `apps/web/src/features/checkpoints/ui/`
+- [ ] T033 [P] [US1] [RED] Add failing tests for independent Dock and Weighing Area selections in the combined view, simultaneous resource-labelled keyboard-reachable toolbars, resource-specific grouped requests, per-kind scope clearing, confirmation, mixed changed/blocked result announcements, stable blocker wording, and changed/blocked selection retention in `apps/web/src/features/checkpoints/__tests__/checkpoints-bulk-mutations.test.tsx`
+- [ ] T034 [P] [US1] [RED] Add failing tests for individual stale `409` reload prompts, explicit refetch-only retry, unsafe-state closure, and no automatic version substitution in `apps/web/src/features/checkpoints/__tests__/checkpoints-stale-state.test.tsx`
+- [ ] T035 [P] [US1] [RED] Add failing responsive/accessibility regression tests for labelled controls, non-color-only status/type cues, focus flow, simultaneous per-kind selection toolbars, and no document-level horizontal overflow at 375/768/1024/1440 px in `apps/web/src/features/checkpoints/__tests__/checkpoints-accessibility.test.tsx`
+- [ ] T036 [GREEN] [US1] [REFACTOR] Implement grouped archive/reactivate mutations, independent per-kind visible-scope selection models and labelled toolbars, confirmation dialogs, partial-result adapter, inline live outcome, and resource-specific requests/cache invalidation in `apps/web/src/features/checkpoints/mutations/`, `apps/web/src/features/checkpoints/helpers/`, and `apps/web/src/features/checkpoints/ui/`
+- [ ] T037 [GREEN] [US1] [REFACTOR] Implement stale-error handling that invalidates the affected named queries, closes unsafe mutation state, preserves recoverable input where safe, and exposes an explicit reload-latest-data action in `apps/web/src/features/checkpoints/mutations/` and `apps/web/src/features/checkpoints/ui/`
+- [ ] T038 [GREEN] [US1] [REFACTOR] Complete responsive layout, keyboard navigation, screen-reader announcements, visible focus, dialog lifecycle, and text-plus-icon lifecycle/type indicators in `apps/web/src/features/checkpoints/ui/`
 
 ## Final verification
 
-- [ ] T038 [P] [US1] [VERIFY] Run the focused API migration, unit, and HTTP suites from `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
-- [ ] T039 [P] [US1] [VERIFY] Run the focused web Vitest feature suite and inspect the authenticated `/checkpoints` journey at configured browser seam, recording when no Playwright journey is available in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
-- [ ] T040 [VERIFY] Run `pnpm check` from the repository root
-- [ ] T041 [VERIFY] Run `pnpm typecheck` from the repository root
-- [ ] T042 [VERIFY] Run `pnpm test` from the repository root
-- [ ] T043 [VERIFY] Run `$speckit-analyze` against `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/`
-- [ ] T044 [VERIFY] Run `$speckit-converge` against `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/`
+- [ ] T039 [P] [US1] [VERIFY] Run the focused API migration, unit, and HTTP suites from `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
+- [ ] T040 [P] [US1] [VERIFY] Run the focused web Vitest feature suite and inspect the authenticated `/checkpoints` journey at configured browser seam, recording when no Playwright journey is available in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
+- [ ] T041 [VERIFY] Run `pnpm check` from the repository root
+- [ ] T042 [VERIFY] Run `pnpm typecheck` from the repository root
+- [ ] T043 [VERIFY] Run `pnpm test` from the repository root
+- [ ] T044 [VERIFY] Run `$speckit-analyze` against `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/`
+- [ ] T045 [VERIFY] Run `$speckit-converge` against `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/`
 
 ## Dependencies and execution order
 
 - T001-T003 establish repository context and are independent.
 - T004-T008 form the blocking persistence/concurrency foundation; T009-T015 depend on T007-T008.
 - T016-T020 depend on the corresponding Dock/Weighing Area use cases and validators; Dock and Weighing Area API work can proceed in parallel after the foundation.
-- T021-T026 form the consultation shell and can proceed in parallel with API implementation after the API contract is stable; T023-T025 depend on generated/named query contracts.
-- T027-T031 depend on the consultation shell and named API mutations.
-- T032-T037 depend on the individual mutation adapters and list/detail state.
-- T038-T044 depend on all implementation tasks; T043 and T044 are the final Spec Kit gates.
+- T021-T027 form the consultation shell and can proceed in parallel with API implementation after the API contract is stable; T023-T026 depend on generated/named query contracts, and map implementation T026 must follow its focused RED coverage in T025.
+- T028-T032 depend on the consultation shell and named API mutations.
+- T033-T038 depend on the individual mutation adapters and list/detail state.
+- T039-T045 depend on all implementation tasks; T044 and T045 are the final Spec Kit gates.
 
-Safe parallel groups: T004-T005; T009-T010; T011; T016-T017; T021-T022; T027-T029; T032-T034; T038-T039.
+Safe parallel groups: T004-T005; T009-T010; T011; T016-T017; T021-T022; T025; T028-T030; T033-T035; T039-T040.
 
 ## Implementation strategy
 

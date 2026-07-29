@@ -47,7 +47,7 @@ Verify that `/checkpoints`:
 - performs case-insensitive name substring search without losing the selected status;
 - presents observer read-only behavior and administrator create/edit/lifecycle controls;
 - validates GPS forms and preserves accessible error feedback;
-- scopes grouped selection to the visible filtered list and reports every changed and unchanged resource in a mixed outcome;
+- maintains independent Dock and Weighing Area selections with labelled toolbars in the combined view, clears only the affected selection when a kind's scope changes, dispatches resource-specific grouped requests, and reports every changed and unchanged resource in a mixed outcome;
 - refreshes only the affected resource queries after mutation;
 - rejects stale individual actions, prompts an explicit reload, and never retries with a substituted version;
 - remains keyboard-operable and contained without page-level horizontal overflow at 375, 768, 1024, and 1440 px.

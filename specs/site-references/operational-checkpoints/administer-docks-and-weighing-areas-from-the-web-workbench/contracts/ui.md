@@ -22,8 +22,8 @@
 - Create and edit use one resource-aware form with labelled name, latitude, and longitude fields, the shared `useAppForm` API, client validation matching the API ranges, field-level server validation, and a form-level error.
 - Create is individual and begins at version `1`. Edit is available-only and submits the version shown when the form opened.
 - Individual archive and reactivation require confirmation and accept an optional comment of at most 1,000 characters. The submitted command includes the displayed version.
-- Row selection is scoped to the currently visible resource type, status, and search result. Changing any of those clears selection and prior grouped feedback.
-- Grouped archive/reactivation uses a keyboard-reachable selection toolbar, disables repeated submission while pending, confirms the action, and submits each selected ID with its displayed version.
+- Docks and Weighing Areas maintain separate row selections, each scoped to that kind's current status and search result. In the combined view, both selections may be non-empty at the same time and each has a resource-labelled toolbar. Changing one kind's status or search clears only that kind's selection and prior grouped feedback; hiding a kind clears its selection.
+- Each resource-labelled grouped archive/reactivation toolbar is keyboard reachable, disables repeated submission while pending, confirms the action, and submits each selected ID with its displayed version to that kind's resource-specific endpoint. A grouped request never mixes Docks and Weighing Areas.
 
 ## Mutation feedback and refresh
 
@@ -38,6 +38,6 @@
 - The workbench reuses the Channel Marker tokens, IBM Plex typography, shadcn primitives, Lucide icons, and dark-mode provider.
 - The route shell, filters, and synchronized list remain usable during SSR and when WebGL, the CARTO styles, or remote tiles are unavailable.
 - A visible page title and labelled map filter controls identify the workbench, resource type, and resource status. The map has an accessible text/list representation of visible markers so location and type are not conveyed by visual position or color alone.
-- At 375, 768, 1024, and 1440 px widths, the map, filters, sheet, confirmation dialog, and selection toolbar remain visible and operable without horizontal page overflow.
+- At 375, 768, 1024, and 1440 px widths, the map, filters, sheet, confirmation dialog, and any simultaneous per-kind selection toolbars remain visible and operable without horizontal page overflow.
 - Icon-only controls have accessible names; selection state is announced through checkboxes and row state; focus is visible; tab order follows the visual flow; dialogs do not trap focus after closure.
 - Status, success, partial success, and blocker reasons use text in addition to color. Pending controls are disabled to prevent duplicate submissions.
