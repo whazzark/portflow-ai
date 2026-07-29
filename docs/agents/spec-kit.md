@@ -36,27 +36,27 @@ Standalone work uses `specs/standalone/<feature>/`. GitHub issue numbers belong 
 
 ## Start or update a feature
 
-1. Select or create the GitHub intake issue and assign its priority, milestone, parent, and Project item.
-2. Create a branch named `<type>/<issue-number>-<slug>`.
-3. Choose the stable feature directory from its domain and parent roadmap.
-4. Start the Portflow workflow:
+Select or create the GitHub intake issue and qualify its priority, milestone, parent, and Project item. Then start the terminal workflow from a clean `master` worktree:
 
 ```bash
-pnpm spec:workflow -- run \
-  --feature-dir specs/<domain>/<epic>/<feature> \
-  --description "GitHub issue #123: concise product intent"
+pnpm spec:workflow
 ```
 
-The wrapper validates the directory and supplies `SPECIFY_FEATURE_DIRECTORY`, preventing Spec Kit from creating sequentially numbered directories. A new directory uses `portflow-feature`; an existing `spec.md` automatically uses `portflow-existing-feature`, which starts at clarification and never replaces the migrated spec with a blank template.
-
-Use a dry run to inspect the resolved command without starting Codex:
+The command asks for the issue number. The equivalent shortcut is:
 
 ```bash
-pnpm spec:workflow -- run \
-  --feature-dir specs/<domain>/<epic>/<feature> \
-  --description "GitHub issue #123: concise product intent" \
-  --dry-run
+pnpm spec:workflow -- 123
 ```
+
+The orchestrator reads the issue, reuses the canonical artifact path linked in its body, derives the required `<type>/<issue-number>-<slug>` branch, and starts at `specify` or `clarify` depending on whether `spec.md` already exists. When an issue does not yet link an artifact, it recommends a stable path and asks for confirmation. `--feature-dir` remains available as an explicit override.
+
+Use a dry run to inspect the resolution without creating a branch or changing GitHub:
+
+```bash
+pnpm spec:workflow -- 123 --dry-run
+```
+
+The orchestrator supplies `SPECIFY_FEATURE_DIRECTORY` to every Codex phase, preventing sequentially numbered directories. Existing specs start at clarification and are never replaced with a blank template.
 
 Do not use the full implementation workflow for an artifact marked `Done (historical)`. Historical specs record delivered intent; they are not implementation queues.
 
@@ -66,20 +66,29 @@ The workflow is:
 
 ```text
 specify → clarify → Spec Review → plan → checklist → Plan Review
-→ tasks → analyze → implement → checks → converge → final review
+→ tasks → analyze → implement checkpoints → checks → converge loop
+→ fresh Codex review → Delivery Review
 ```
 
-The run pauses at human gates. Inspect and resume it with:
+The same terminal process displays Codex recommendations and asks targeted questions. Answer in place; `/pause` preserves the phase and its Codex session. Inspect and resume local state with:
 
 ```bash
 pnpm spec:workflow -- status
-pnpm spec:workflow -- status <run-id>
+pnpm spec:workflow -- status --issue 123
 
-pnpm spec:workflow -- resume <run-id> \
-  --feature-dir specs/<domain>/<epic>/<feature>
+pnpm spec:workflow -- resume --issue 123
 ```
 
 `.specify/feature.json` records the active feature for local Codex sessions and is intentionally not committed. Workflow run state under `.specify/workflows/runs/` is also local.
+
+Every artifact or implementation checkpoint shows its diff and exact proposed Conventional Commit message. The operator can:
+
+- approve the message, which commits, pushes, and synchronizes the Draft PR;
+- edit the message before approval;
+- reject it and enter feedback, which resumes the same Codex phase;
+- pause without losing phase or conversation state.
+
+The fixed orchestrator performs the commit only after approval. Codex may propose a message, but the orchestrator validates `<type>(<domain>): <Description>`, rejects generic messages such as `sync`, and falls back to a phase-specific message. Implementation advances one coherent TDD checkpoint at a time, allowing distinct `test`, `feat`, `fix`, or `refactor` commits instead of one broad implementation commit. Analysis, verification, convergence, and review create no commit when they change no file.
 
 Use the Project `Spec Status` field as follows:
 
@@ -97,10 +106,12 @@ Use the Project `Spec Status` field as follows:
 
 ## Pull request contract
 
-Open one Draft PR when `spec.md` is reviewable. Keep the same PR through plan, tasks, implementation, and verification.
+The workflow opens one Draft PR immediately after the first approved `spec.md` checkpoint. It keeps the same PR through clarification, plan, tasks, implementation, verification, convergence, and review.
 
 - Put the exact `specs/.../spec.md` path in the PR template.
 - Keep `Current review gate` synchronized with the workflow: use `Spec Review` or `Plan Review` at the matching Project status, then `Delivery Review` when the Project item moves to `Review`.
+- Update only workflow-managed PR sections. Reviewer-authored text and comments outside the managed markers are preserved.
+- Push only approved checkpoints; intermediate answers and rejected changes are not pushed.
 - Draft PRs may stop at the spec gate.
 - Ready PRs require `plan.md`, `tasks.md`, no clarification markers, and no unchecked tasks.
 - Run `pnpm check`, `pnpm typecheck`, `pnpm test`, `pnpm test:spec-kit`, relevant browser journeys, `$speckit-analyze`, and `$speckit-converge`.
@@ -133,11 +144,14 @@ The current frozen migration covers 165 open and closed non-PR issues: 30 roadma
 
 ## First workflow pilot
 
-After the migration PR is merged, select one small real feature in `Spec Draft` with a clear parent roadmap and no external blocker. Start it through `pnpm spec:workflow -- run`, then verify each gate before using the workflow more broadly:
+After the migration PR is merged, select one small real feature in `Spec Draft` with a clear parent roadmap and no external blocker. Start it through `pnpm spec:workflow`, then verify each gate before using the workflow more broadly:
 
 - no sequentially numbered directory is created;
 - `.specify/feature.json` records the selected stable feature directory;
-- the run pauses and resumes at Spec Review and Plan Review;
+- recommendations and clarification answers stay in the terminal;
+- rejecting a phase records feedback and retries instead of aborting;
+- the exact Conventional Commit message is approved before every commit;
+- the run pauses and resumes by issue number at Spec Review and Plan Review;
 - one Draft PR receives the spec, plan, tasks, implementation, and verification;
 - the Project `Spec Status` follows the workflow without adding an execution-state label;
 - final analysis, convergence, fresh review, and human merge remain mandatory.
@@ -169,8 +183,9 @@ node scripts/spec-kit/validate-backlog.mjs
 ## Troubleshooting
 
 - **A sequential spec directory appeared**: stop the run and restart through `pnpm spec:workflow` with the intended domain path.
-- **Feature directory not found**: pass the same `--feature-dir` used when the run started; do not hand-edit issue-number directories.
-- **Workflow paused**: use `status <run-id>`, resolve the gate feedback in the artifacts, then use `resume`.
+- **Feature directory not found**: confirm the recommended stable path or pass `--feature-dir`; do not create issue-number directories.
+- **Workflow paused**: use `status --issue <number>`, then `resume --issue <number>`. The Codex phase resumes its saved session.
+- **Commit message rejected**: use a supported Conventional Commit type, kebab-case domain scope, uppercase description, and no trailing period.
 - **Integration status warns about modified files**: expected for Portflow customizations; review rather than forcing an upgrade.
 - **PR validation fails**: read the emitted GitHub Actions errors and check the selected change type, spec path, plan/tasks presence, clarification markers, and incomplete tasks.
 - **Historical spec needs new behavior**: create a new intake issue and delivery spec, then link the historical artifact as context.
