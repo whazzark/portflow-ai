@@ -2,7 +2,8 @@
 
 ## Source of truth
 
-- Product intake, priority, milestones, parent/child relationships, and discussion live in GitHub Issues and the Portflow Roadmap project.
+- Product intake, priority, milestones, parent/child relationships, discussion, and durable planning notes live in GitHub Issues and the Portflow Roadmap project.
+- The Project `Status` field is the operational Kanban (`Backlog`, `Ready`, `In Progress`, `Review`, `Blocked`, `Done`). `Spec Status` tracks Spec Kit maturity independently. Do not create sprint fields or sprint commitments.
 - Detailed feature requirements live in `specs/`. A feature spec is the canonical contract for behavior; an issue links to it and does not duplicate it.
 - Durable domain vocabulary lives in `CONTEXT.md`. Durable architectural decisions live in `docs/adr/` or the relevant application ADR directory.
 - Use one feature spec per coherent delivery unit. Large epics use a `roadmap.md` that links to independently testable sub-specs.

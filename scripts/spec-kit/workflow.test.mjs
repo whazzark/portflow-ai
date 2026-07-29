@@ -8,10 +8,12 @@ import {
   branchName,
   defaultCommitMessage,
   featureDirectoryFromIssue,
+  KANBAN_STATUSES,
   normalizeAgentResponse,
   PHASES,
   parseArguments,
   renderPullRequestBody,
+  SPEC_STATUSES,
   updateManagedPullRequestBody,
   validateCommitMessage,
   validateFeatureDirectory,
@@ -169,6 +171,102 @@ test('stages only files shown in the approved checkpoint', () => {
   )
 })
 
+test('maps every Spec Kit phase to both Kanban and specification state', () => {
+  assert.deepEqual(
+    PHASES.map(({ id }) => [id, KANBAN_STATUSES[id], SPEC_STATUSES[id]]),
+    [
+      ['specify', 'In Progress', 'Spec Draft'],
+      ['clarify', 'In Progress', 'Spec Draft'],
+      ['review-spec', 'Review', 'Spec Review'],
+      ['plan', 'In Progress', 'Plan Review'],
+      ['checklist', 'In Progress', 'Plan Review'],
+      ['review-plan', 'Review', 'Plan Review'],
+      ['tasks', 'In Progress', 'Ready'],
+      ['analyze', 'In Progress', 'Ready'],
+      ['implement', 'In Progress', 'In Progress'],
+      ['checks', 'In Progress', 'In Progress'],
+      ['converge', 'Review', 'Review'],
+      ['review', 'Review', 'Review'],
+      ['delivery', 'Review', 'Review'],
+    ],
+  )
+})
+
+test('updates Kanban Status and Spec Status without listing the entire Project', () => {
+  const calls = []
+  const exec = (command, args) => {
+    calls.push([command, args])
+    if (args[0] === 'repo') {
+      return JSON.stringify({ nameWithOwner: 'whazzark/portflow-ai' })
+    }
+    if (args[0] === 'project' && args[1] === 'list') {
+      return JSON.stringify({ projects: [{ id: 'PROJECT', number: 5 }] })
+    }
+    if (args[0] === 'project' && args[1] === 'field-list') {
+      return JSON.stringify({
+        fields: [
+          {
+            id: 'STATUS_FIELD',
+            name: 'Status',
+            options: [
+              { id: 'BACKLOG', name: 'Backlog' },
+              { id: 'PROGRESS', name: 'In Progress' },
+            ],
+          },
+          {
+            id: 'SPEC_FIELD',
+            name: 'Spec Status',
+            options: [
+              { id: 'INTAKE', name: 'Intake' },
+              { id: 'SPEC_DRAFT', name: 'Spec Draft' },
+            ],
+          },
+        ],
+      })
+    }
+    if (args[0] === 'api' && args[1] === 'graphql') {
+      return JSON.stringify({
+        data: {
+          repository: {
+            issue: {
+              projectItems: {
+                nodes: [
+                  {
+                    id: 'ITEM',
+                    project: { id: 'PROJECT' },
+                    fieldValues: {
+                      nodes: [
+                        { name: 'Backlog', field: { name: 'Status' } },
+                        { name: 'Intake', field: { name: 'Spec Status' } },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      })
+    }
+    return ''
+  }
+  const github = new WorkflowGitHub({ root: '/repo', exec })
+
+  github.updateProjectStatus(
+    { number: 41, url: 'https://github.com/whazzark/portflow-ai/issues/41' },
+    { status: 'In Progress', specStatus: 'Spec Draft' },
+  )
+
+  const edits = calls.filter(([, args]) => args[0] === 'project' && args[1] === 'item-edit')
+  assert.equal(edits.length, 2)
+  assert.equal(
+    calls.some(([, args]) => args[0] === 'project' && args[1] === 'item-list'),
+    false,
+  )
+  assert.match(edits[0][1].join(' '), /STATUS_FIELD .* PROGRESS/)
+  assert.match(edits[1][1].join(' '), /SPEC_FIELD .* SPEC_DRAFT/)
+})
+
 test('refuses a commit when the worktree changed after human review', () => {
   const calls = []
   const github = new WorkflowGitHub({
@@ -190,6 +288,47 @@ test('refuses a commit when the worktree changed after human review', () => {
     calls.some(([, args]) => args[0] === 'add'),
     false,
   )
+})
+
+test('moves a blocked Codex phase into both blocked Project states', async () => {
+  const terminal = terminalHarness()
+  const calls = []
+  const github = {
+    updateProjectStatus(_issue, values) {
+      calls.push(values)
+    },
+  }
+  const codex = {
+    runPhase() {
+      return Promise.resolve({
+        sessionId: 'blocked-session',
+        response: { status: 'blocked', message: 'Waiting for an external decision.' },
+      })
+    },
+  }
+  const workflow = new TerminalWorkflow({
+    input: terminal.input,
+    output: terminal.output,
+    github,
+    codex,
+  })
+  workflow.prompt = async () => '/pause'
+  workflow.saveState = () => {}
+
+  try {
+    const result = await workflow.runCodexPhase({
+      phase: { id: 'implement', skill: 'speckit-implement' },
+      issue: { number: 41 },
+      state: {
+        featureDirectory: 'specs/site-references/checkpoints',
+        sessions: {},
+      },
+    })
+    assert.equal(result, 'pause')
+    assert.deepEqual(calls, [{ status: 'Blocked', specStatus: 'Blocked' }])
+  } finally {
+    workflow.close()
+  }
 })
 
 test('updates only managed PR sections and preserves reviewer text', () => {

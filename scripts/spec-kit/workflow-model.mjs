@@ -17,6 +17,22 @@ export const SPEC_STATUSES = {
   delivery: 'Review',
 }
 
+export const KANBAN_STATUSES = {
+  clarify: 'In Progress',
+  specify: 'In Progress',
+  'review-spec': 'Review',
+  plan: 'In Progress',
+  checklist: 'In Progress',
+  'review-plan': 'Review',
+  tasks: 'In Progress',
+  analyze: 'In Progress',
+  implement: 'In Progress',
+  checks: 'In Progress',
+  converge: 'Review',
+  review: 'Review',
+  delivery: 'Review',
+}
+
 export const PHASES = [
   { id: 'specify', skill: 'speckit-specify', checkpoint: true },
   { id: 'clarify', skill: 'speckit-clarify', checkpoint: true },

@@ -13,6 +13,7 @@
     "test:spec-kit": "node --test scripts/spec-kit/*.test.mjs",
     "typecheck": "turbo run typecheck",
     "spec:workflow": "node scripts/spec-kit/workflow.mjs",
+    "project:kanban": "node scripts/spec-kit/configure-project-kanban.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
