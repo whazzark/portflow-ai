@@ -49,8 +49,49 @@ export const PHASES = [
   { id: 'delivery', gate: 'Delivery Review' },
 ]
 
+export const DEFAULT_MODEL_POLICY = 'economy'
+export const MODEL_POLICIES = {
+  economy: {
+    specify: { model: 'gpt-5.6-terra', reasoningEffort: 'medium' },
+    clarify: { model: 'gpt-5.6-terra', reasoningEffort: 'low' },
+    plan: { model: 'gpt-5.6-sol', reasoningEffort: 'medium' },
+    checklist: { model: 'gpt-5.6-luna', reasoningEffort: 'low' },
+    tasks: { model: 'gpt-5.6-luna', reasoningEffort: 'low' },
+    analyze: { model: 'gpt-5.6-terra', reasoningEffort: 'medium' },
+    implement: { model: 'gpt-5.6-terra', reasoningEffort: 'medium' },
+    converge: { model: 'gpt-5.6-terra', reasoningEffort: 'medium' },
+    review: { model: 'gpt-5.6-sol', reasoningEffort: 'high' },
+  },
+  quality: {
+    specify: { model: 'gpt-5.6-sol', reasoningEffort: 'high' },
+    clarify: { model: 'gpt-5.6-sol', reasoningEffort: 'high' },
+    plan: { model: 'gpt-5.6-sol', reasoningEffort: 'high' },
+    checklist: { model: 'gpt-5.6-luna', reasoningEffort: 'medium' },
+    tasks: { model: 'gpt-5.6-terra', reasoningEffort: 'medium' },
+    analyze: { model: 'gpt-5.6-sol', reasoningEffort: 'high' },
+    implement: { model: 'gpt-5.6-terra', reasoningEffort: 'high' },
+    converge: { model: 'gpt-5.6-sol', reasoningEffort: 'high' },
+    review: { model: 'gpt-5.6-sol', reasoningEffort: 'xhigh' },
+  },
+}
+
+const codexPhaseIds = new Set(
+  PHASES.filter((phase) => phase.skill || phase.review).map(({ id }) => id),
+)
 const commitPattern =
   /^(feat|fix|docs|test|refactor|perf|build|ci|chore|revert)\([a-z0-9]+(?:-[a-z0-9]+)*\): [A-Z][^\n.]*[^.\s]$/
+const conventionalBranchTypes = [
+  ['fix', new Set(['bug', 'defect', 'regression'])],
+  ['docs', new Set(['docs', 'documentation'])],
+  ['refactor', new Set(['refactor', 'refactoring'])],
+  ['perf', new Set(['perf', 'performance'])],
+  ['test', new Set(['test', 'testing'])],
+  ['build', new Set(['build'])],
+  ['ci', new Set(['ci'])],
+  ['chore', new Set(['chore', 'maintenance'])],
+  ['revert', new Set(['revert'])],
+  ['feat', new Set(['enhancement', 'feature'])],
+]
 
 export function parseArguments(argv) {
   const args = argv[0] === '--' ? argv.slice(1) : [...argv]
@@ -59,6 +100,8 @@ export function parseArguments(argv) {
     issue: null,
     featureDirectory: null,
     dryRun: false,
+    modelPolicy: null,
+    escalatedPhases: [],
   }
 
   if (['run', 'resume', 'status'].includes(args[0])) {
@@ -79,6 +122,14 @@ export function parseArguments(argv) {
       result.featureDirectory = args.shift() ?? null
       continue
     }
+    if (argument === '--model-policy') {
+      result.modelPolicy = validateModelPolicy(args.shift())
+      continue
+    }
+    if (argument === '--escalate-phase') {
+      result.escalatedPhases.push(validateCodexPhase(args.shift()))
+      continue
+    }
     if (!result.issue && /^\d+$/.test(argument)) {
       result.issue = parseIssueNumber(argument)
       continue
@@ -87,6 +138,63 @@ export function parseArguments(argv) {
   }
 
   return result
+}
+
+export function validateModelPolicy(value) {
+  if (!Object.hasOwn(MODEL_POLICIES, value)) {
+    throw new Error(`The model policy must be one of: ${Object.keys(MODEL_POLICIES).join(', ')}.`)
+  }
+  return value
+}
+
+export function validateCodexPhase(value) {
+  if (!codexPhaseIds.has(value)) {
+    throw new Error(`The escalated phase must be a Codex phase: ${[...codexPhaseIds].join(', ')}.`)
+  }
+  return value
+}
+
+export function modelConfigForPhase(phase, policy = DEFAULT_MODEL_POLICY) {
+  const selectedPolicy = MODEL_POLICIES[validateModelPolicy(policy)]
+  const config = selectedPolicy[validateCodexPhase(phase)]
+  return { ...config }
+}
+
+export function resolvePhaseModel(state, phase) {
+  state.modelPolicy ??= DEFAULT_MODEL_POLICY
+  state.escalatedPhases ??= []
+  state.phaseModels ??= {}
+  if (!state.phaseModels[phase]) {
+    const policy = state.escalatedPhases.includes(phase) ? 'quality' : state.modelPolicy
+    state.phaseModels[phase] = modelConfigForPhase(phase, policy)
+  }
+  return { ...state.phaseModels[phase] }
+}
+
+export function applyPhaseEscalations(state, phases = []) {
+  state.escalatedPhases ??= []
+  state.phaseModels ??= {}
+  for (const phase of phases) {
+    validateCodexPhase(phase)
+    if (!state.escalatedPhases.includes(phase)) {
+      state.escalatedPhases.push(phase)
+    }
+    state.phaseModels[phase] = modelConfigForPhase(phase, 'quality')
+  }
+}
+
+export function configureModelPolicy(state, { modelPolicy = null, escalatedPhases = [] } = {}) {
+  if (state.modelPolicy && modelPolicy && state.modelPolicy !== modelPolicy) {
+    throw new Error(
+      `This workflow already uses the ${state.modelPolicy} model policy; use --escalate-phase for a targeted change.`,
+    )
+  }
+  state.modelPolicy ??= modelPolicy ?? DEFAULT_MODEL_POLICY
+  validateModelPolicy(state.modelPolicy)
+  state.escalatedPhases ??= []
+  state.phaseModels ??= {}
+  applyPhaseEscalations(state, escalatedPhases)
+  return state
 }
 
 export function parseIssueNumber(value) {
@@ -155,12 +263,60 @@ export function domainScope(featureDirectory) {
   return slugify(segments.at(-1)) || slugify(segments[1]) || 'delivery'
 }
 
+export function branchType(issue) {
+  const labels = (issue.labels ?? [])
+    .map((label) => (typeof label === 'string' ? label : label.name))
+    .filter(Boolean)
+    .map((label) => label.toLowerCase())
+  const explicitTypes = [
+    ...new Set(
+      labels
+        .filter((label) => label.startsWith('type:'))
+        .map((label) => label.slice('type:'.length))
+        .filter((type) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(type)),
+    ),
+  ]
+
+  if (explicitTypes.length > 1) {
+    throw new Error(`Issue has conflicting branch type labels: ${explicitTypes.join(', ')}.`)
+  }
+  if (explicitTypes.length === 1) {
+    return explicitTypes[0]
+  }
+
+  for (const [type, aliases] of conventionalBranchTypes) {
+    if (labels.some((label) => aliases.has(label))) {
+      return type
+    }
+  }
+  return 'feat'
+}
+
 export function branchName(issue, featureDirectory) {
-  const labelNames = (issue.labels ?? []).map((label) =>
-    typeof label === 'string' ? label : label.name,
-  )
-  const type = labelNames.some((label) => /bug|defect|regression/i.test(label)) ? 'fix' : 'feat'
-  return `${type}/${issue.number}-${slugify(issue.title || featureDirectory.split('/').at(-1))}`
+  const slug = slugify(issue.title || featureDirectory.split('/').at(-1))
+  return `${branchType(issue)}/${issue.number}-${slug}`
+}
+
+export function branchNameForFeature(
+  featureDirectory,
+  spec = '',
+  workflowDescription = '',
+  issue = {},
+) {
+  const source = `${spec}\n${workflowDescription}`
+  const issueNumber =
+    source.match(/\bGH-(\d+)\b/i)?.[1] ??
+    source.match(/\bGitHub\s+issue\s*#(\d+)\b/i)?.[1] ??
+    source.match(/github\.com\/[^/\s]+\/[^/\s]+\/issues\/(\d+)\b/i)?.[1]
+
+  if (!issueNumber) {
+    throw new Error(
+      `Cannot determine the GitHub issue number for feature directory ${featureDirectory}.`,
+    )
+  }
+
+  const slug = slugify(validateFeatureDirectory(featureDirectory).split('/').at(-1))
+  return `${branchType(issue)}/${issueNumber}-${slug}`
 }
 
 export function defaultCommitMessage(phase, issue, featureDirectory) {
@@ -202,7 +358,7 @@ export function normalizeAgentResponse(value) {
     try {
       return normalizeAgentResponse(JSON.parse(value))
     } catch {
-      return { status: 'completed', message: value, commit_message: null }
+      return { status: 'completed', message: value, commit_message: null, question: null }
     }
   }
   const status = ['question', 'checkpoint', 'completed', 'blocked', 'findings'].includes(
@@ -210,10 +366,26 @@ export function normalizeAgentResponse(value) {
   )
     ? value.status
     : 'completed'
+  const question =
+    value?.question && typeof value.question === 'object'
+      ? {
+          prompt: String(value.question.prompt ?? ''),
+          recommended_option: String(value.question.recommended_option ?? ''),
+          recommendation_reason: String(value.question.recommendation_reason ?? ''),
+          options: Array.isArray(value.question.options)
+            ? value.question.options.map((option) => ({
+                id: String(option?.id ?? ''),
+                description: String(option?.description ?? ''),
+              }))
+            : [],
+          allow_custom_answer: value.question.allow_custom_answer === true,
+        }
+      : null
   return {
     status,
     message: String(value?.message ?? ''),
     commit_message: value?.commit_message ? String(value.commit_message) : null,
+    question,
   }
 }
 

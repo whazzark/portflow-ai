@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import { test } from 'node:test'
-
 import { TerminalWorkflow } from './workflow.mjs'
+import { codexExecArgs } from './workflow-codex.mjs'
 import { formatUntrackedStat, parseStatusFiles, WorkflowGitHub } from './workflow-github.mjs'
 import {
+  applyPhaseEscalations,
   branchName,
+  branchNameForFeature,
+  configureModelPolicy,
   defaultCommitMessage,
   featureDirectoryFromIssue,
   KANBAN_STATUSES,
@@ -39,19 +45,165 @@ test('accepts issue-first commands and keeps the zero-argument interactive form'
     issue: null,
     featureDirectory: null,
     dryRun: false,
+    modelPolicy: null,
+    escalatedPhases: [],
   })
   assert.deepEqual(parseArguments(['--', '185']), {
     action: 'run',
     issue: 185,
     featureDirectory: null,
     dryRun: false,
+    modelPolicy: null,
+    escalatedPhases: [],
   })
   assert.deepEqual(parseArguments(['resume', '--issue', '185']), {
     action: 'resume',
     issue: 185,
     featureDirectory: null,
     dryRun: false,
+    modelPolicy: null,
+    escalatedPhases: [],
   })
+})
+
+test('accepts an explicit model policy and targeted phase escalations', () => {
+  assert.deepEqual(
+    parseArguments([
+      'resume',
+      '--issue',
+      '185',
+      '--model-policy',
+      'quality',
+      '--escalate-phase',
+      'implement',
+      '--escalate-phase',
+      'review',
+    ]),
+    {
+      action: 'resume',
+      issue: 185,
+      featureDirectory: null,
+      dryRun: false,
+      modelPolicy: 'quality',
+      escalatedPhases: ['implement', 'review'],
+    },
+  )
+  assert.throws(() => parseArguments(['--model-policy', 'expensive']), /model policy/)
+  assert.throws(() => parseArguments(['--escalate-phase', 'checks']), /Codex phase/)
+})
+
+test('routes economy phases conservatively and keeps quality explicit', () => {
+  assert.deepEqual(modelConfigForPhase('checklist', 'economy'), {
+    model: 'gpt-5.6-luna',
+    reasoningEffort: 'low',
+  })
+  assert.deepEqual(modelConfigForPhase('implement', 'economy'), {
+    model: 'gpt-5.6-terra',
+    reasoningEffort: 'medium',
+  })
+  assert.deepEqual(modelConfigForPhase('review', 'economy'), {
+    model: 'gpt-5.6-sol',
+    reasoningEffort: 'high',
+  })
+  assert.deepEqual(modelConfigForPhase('review', 'quality'), {
+    model: 'gpt-5.6-sol',
+    reasoningEffort: 'xhigh',
+  })
+})
+
+test('snapshots phase models and changes them only through explicit escalation', () => {
+  const state = {
+    modelPolicy: 'economy',
+    escalatedPhases: [],
+    phaseModels: {},
+  }
+
+  assert.deepEqual(resolvePhaseModel(state, 'implement'), {
+    model: 'gpt-5.6-terra',
+    reasoningEffort: 'medium',
+  })
+  state.modelPolicy = 'quality'
+  assert.deepEqual(resolvePhaseModel(state, 'implement'), {
+    model: 'gpt-5.6-terra',
+    reasoningEffort: 'medium',
+  })
+
+  applyPhaseEscalations(state, ['implement'])
+  assert.deepEqual(resolvePhaseModel(state, 'implement'), {
+    model: 'gpt-5.6-terra',
+    reasoningEffort: 'high',
+  })
+  assert.deepEqual(state.escalatedPhases, ['implement'])
+})
+
+test('keeps a workflow model policy stable while allowing targeted escalation', () => {
+  const state = configureModelPolicy({}, { modelPolicy: 'economy' })
+  assert.equal(state.modelPolicy, 'economy')
+  assert.throws(
+    () => configureModelPolicy(state, { modelPolicy: 'quality' }),
+    /already uses the economy model policy/,
+  )
+
+  configureModelPolicy(state, { escalatedPhases: ['review'] })
+  assert.deepEqual(state.phaseModels.review, {
+    model: 'gpt-5.6-sol',
+    reasoningEffort: 'xhigh',
+  })
+})
+
+test('passes the selected model and reasoning effort to new and resumed Codex phases', () => {
+  const common = {
+    root: '/repo',
+    schema: '/repo/phase-response.schema.json',
+    prompt: 'Run the phase',
+    modelConfig: {
+      model: 'gpt-5.6-terra',
+      reasoningEffort: 'medium',
+    },
+  }
+
+  assert.deepEqual(
+    codexExecArgs({
+      ...common,
+      sessionId: null,
+      readOnly: false,
+    }),
+    [
+      'exec',
+      '--model',
+      'gpt-5.6-terra',
+      '--config',
+      'model_reasoning_effort="medium"',
+      '--sandbox',
+      'workspace-write',
+      '--cd',
+      '/repo',
+      '--output-schema',
+      '/repo/phase-response.schema.json',
+      '--json',
+      'Run the phase',
+    ],
+  )
+  assert.deepEqual(
+    codexExecArgs({
+      ...common,
+      sessionId: 'thread-123',
+      readOnly: false,
+    }),
+    [
+      'exec',
+      'resume',
+      '--model',
+      'gpt-5.6-terra',
+      '--config',
+      'model_reasoning_effort="medium"',
+      '--output-schema',
+      '/repo/phase-response.schema.json',
+      '--json',
+      'thread-123',
+      'Run the phase',
+    ],
+  )
 })
 
 test('accepts domain-oriented feature directories', () => {
@@ -70,8 +222,10 @@ test('derives a conventional issue-linked feature branch from an existing spec',
     branchNameForFeature(
       'specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench',
       '**Feature ID**: `GH-41`',
+      '',
+      { labels: [{ name: 'bug' }] },
     ),
-    'feat/41-administer-docks-and-weighing-areas-from-the-web-workbench',
+    'fix/41-administer-docks-and-weighing-areas-from-the-web-workbench',
   )
 })
 
@@ -81,8 +235,9 @@ test('derives the issue-linked feature branch from the workflow description for 
       'specs/standalone/customer-access',
       '',
       'GitHub issue #123: customer access',
+      { labels: [{ name: 'documentation' }] },
     ),
-    'feat/123-customer-access',
+    'docs/123-customer-access',
   )
 })
 
@@ -91,6 +246,32 @@ test('requires an issue number before creating a workflow branch', () => {
     () => branchNameForFeature('specs/standalone/customer-access', '', 'customer access'),
     /Cannot determine the GitHub issue number/,
   )
+})
+
+test('derives the branch type from explicit and conventional issue labels', () => {
+  const featureDirectory = 'specs/standalone/customer-access'
+  const cases = [
+    [['type:chore'], 'chore/123-customer-access'],
+    [['refactor'], 'refactor/123-customer-access'],
+    [['performance'], 'perf/123-customer-access'],
+    [['bug'], 'fix/123-customer-access'],
+    [['documentation'], 'docs/123-customer-access'],
+    [['priority:P1'], 'feat/123-customer-access'],
+  ]
+
+  for (const [labels, expected] of cases) {
+    assert.equal(
+      branchName(
+        {
+          number: 123,
+          title: 'Customer access',
+          labels: labels.map((name) => ({ name })),
+        },
+        featureDirectory,
+      ),
+      expected,
+    )
+  }
 })
 
 test('rejects paths outside the canonical feature hierarchy', () => {
@@ -154,8 +335,123 @@ test('keeps implementation checkpoint responses distinct from phase completion',
       status: 'checkpoint',
       message: 'The failing authorization test is ready.',
       commit_message: 'test(checkpoints): Cover unauthorized checkpoint creation',
+      question: null,
     },
   )
+})
+
+test('preserves structured question options from Codex responses', () => {
+  assert.deepEqual(
+    normalizeAgentResponse({
+      status: 'question',
+      message: 'Choose the search behavior.',
+      commit_message: null,
+      question: {
+        prompt: 'How should workbench search behave?',
+        recommended_option: 'A',
+        recommendation_reason: 'It keeps both resource lists independent.',
+        options: [
+          { id: 'A', description: 'Search each list independently.' },
+          { id: 'B', description: 'Search one combined list.' },
+        ],
+        allow_custom_answer: false,
+      },
+    }),
+    {
+      status: 'question',
+      message: 'Choose the search behavior.',
+      commit_message: null,
+      question: {
+        prompt: 'How should workbench search behave?',
+        recommended_option: 'A',
+        recommendation_reason: 'It keeps both resource lists independent.',
+        options: [
+          { id: 'A', description: 'Search each list independently.' },
+          { id: 'B', description: 'Search one combined list.' },
+        ],
+        allow_custom_answer: false,
+      },
+    },
+  )
+})
+
+test('renders every option for a structured Codex question', async () => {
+  const terminal = terminalHarness()
+  const calls = []
+  const responses = [
+    {
+      sessionId: 'clarify-session',
+      response: {
+        status: 'question',
+        message: 'Choose the search behavior.',
+        commit_message: null,
+        question: {
+          prompt: 'How should workbench search behave?',
+          recommended_option: 'A',
+          recommendation_reason: 'It keeps both resource lists independent.',
+          options: [
+            { id: 'A', description: 'Search each list by case-insensitive substring.' },
+            { id: 'B', description: 'Search both resource types in one global list.' },
+            { id: 'C', description: 'Search each list by exact name only.' },
+          ],
+          allow_custom_answer: true,
+        },
+      },
+    },
+    {
+      sessionId: 'clarify-session',
+      response: {
+        status: 'completed',
+        message: 'Clarification recorded.',
+        commit_message: null,
+        question: null,
+      },
+    },
+  ]
+  const workflow = new TerminalWorkflow({
+    input: terminal.input,
+    output: terminal.output,
+    github: {},
+    codex: {
+      runPhase(payload) {
+        calls.push(payload)
+        return responses.shift()
+      },
+    },
+  })
+  workflow.saveState = () => {}
+  workflow.prompt = (message) => {
+    calls.push(message)
+    return 'B'
+  }
+
+  try {
+    const result = await workflow.runCodexPhase({
+      phase: { id: 'clarify', skill: 'speckit-clarify' },
+      issue: { number: 41, title: 'Administer checkpoints' },
+      state: {
+        featureDirectory: 'specs/site-references/checkpoints',
+        sessions: {},
+      },
+    })
+
+    assert.equal(result, 'advance')
+    assert.match(terminal.text(), /Recommandée : A/)
+    assert.match(terminal.text(), /A — Search each list by case-insensitive substring\./)
+    assert.match(terminal.text(), /B — Search both resource types in one global list\./)
+    assert.match(terminal.text(), /C — Search each list by exact name only\./)
+    assert.match(terminal.text(), /Autre — Réponse libre/)
+    assert.match(terminal.text(), /How should workbench search behave\?/)
+    assert.match(terminal.text(), /Modèle : gpt-5\.6-terra · effort low/)
+    assert.deepEqual(calls[0].modelConfig, {
+      model: 'gpt-5.6-terra',
+      reasoningEffort: 'low',
+    })
+    assert.equal(calls[1], 'Votre réponse (ou /pause) : ')
+    assert.equal(calls[2].feedback, 'B')
+  } finally {
+    workflow.close()
+  }
 })
 
 test('parses renamed checkpoint files without accidentally truncating the source path', () => {
@@ -414,6 +710,7 @@ test('renders first-checkpoint evidence when creating the Draft PR', () => {
 
 test('dry-run resolves an issue without mutating the branch or Project', async () => {
   const terminal = terminalHarness()
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'portflow-spec-kit-dry-run-'))
   const calls = []
   const github = {
     fetchIssue(number) {
@@ -428,6 +725,7 @@ test('dry-run resolves an issue without mutating the branch or Project', async (
     },
   }
   const workflow = new TerminalWorkflow({
+    root,
     input: terminal.input,
     output: terminal.output,
     github,
@@ -445,8 +743,11 @@ test('dry-run resolves an issue without mutating the branch or Project', async (
     assert.deepEqual(calls, [['fetchIssue', 41]])
     assert.match(terminal.text(), /"featureDirectory": "specs\/site-references\/checkpoints"/)
     assert.match(terminal.text(), /"startsAt": "specify"/)
+    assert.match(terminal.text(), /"modelPolicy": "economy"/)
+    assert.match(terminal.text(), /"checklist": \{\s+"model": "gpt-5\.6-luna"/)
   } finally {
     workflow.close()
+    fs.rmSync(root, { recursive: true, force: true })
   }
 })
 

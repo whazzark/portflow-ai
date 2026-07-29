@@ -49,6 +49,7 @@ As an active application user, I want to consult dock and weighing-area referenc
 ### Functional Requirements
 
 - **FR-001**: The workbench MUST support consultation, search, creation, editing, archiving, and reactivation for both dock and weighing-area site references.
+- **FR-001a**: The workbench MUST present dock and weighing-area locations on a map using a distinct icon for each resource type, and MUST provide filters for resource type and available or archived status. Color MAY reinforce the distinction but MUST NOT be the sole indicator.
 - **FR-002**: The authoritative service boundary MUST allow any active application user to consult dock and weighing-area references and MUST authorize their creation, modification, archive, and reactivation only for Organization Admins and Operations Admins.
 - **FR-003**: Each dock and weighing area MUST have a required name and required GPS latitude and longitude; creation and modification MUST reject missing, blank, malformed, or out-of-range values without changing the record.
 - **FR-003a**: Dock names MUST be unique case-insensitively among docks, and weighing-area names MUST be unique case-insensitively among weighing areas; the same name MAY exist once in each resource type.

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["status", "message", "commit_message"],
+  "required": ["status", "message", "commit_message", "question"],
   "properties": {
     "status": {
       "type": "string",
@@ -13,6 +13,59 @@
     },
     "commit_message": {
       "type": ["string", "null"]
+    },
+    "question": {
+      "description": "Structured human choice when status is question; null for every other status.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "prompt",
+            "recommended_option",
+            "recommendation_reason",
+            "options",
+            "allow_custom_answer"
+          ],
+          "properties": {
+            "prompt": {
+              "type": "string"
+            },
+            "recommended_option": {
+              "type": "string",
+              "enum": ["A", "B", "C", "D", "E"]
+            },
+            "recommendation_reason": {
+              "type": "string"
+            },
+            "options": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "description"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "enum": ["A", "B", "C", "D", "E"]
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "allow_custom_answer": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
     }
   }
 }

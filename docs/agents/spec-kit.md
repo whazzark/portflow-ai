@@ -48,7 +48,7 @@ The command asks for the issue number. The equivalent shortcut is:
 pnpm spec:workflow -- 123
 ```
 
-The orchestrator reads the issue, reuses the canonical artifact path linked in its body, derives the required `<type>/<issue-number>-<slug>` branch, and starts at `specify` or `clarify` depending on whether `spec.md` already exists. When an issue does not yet link an artifact, it recommends a stable path and asks for confirmation. `--feature-dir` remains available as an explicit override.
+The orchestrator reads the issue, reuses the canonical artifact path linked in its body, derives the required `<type>/<issue-number>-<slug>` branch, and starts at `specify` or `clarify` depending on whether `spec.md` already exists. An explicit `type:<slug>` issue label selects the branch type; otherwise conventional labels such as `bug` and `documentation` map to `fix` and `docs`, with `feat` used only as the fallback. When an issue does not yet link an artifact, it recommends a stable path and asks for confirmation. `--feature-dir` remains available as an explicit override.
 
 Use a dry run to inspect the resolution without creating a branch or changing GitHub:
 
@@ -70,7 +70,7 @@ specify → clarify → Spec Review → plan → checklist → Plan Review
 → fresh Codex review → Delivery Review
 ```
 
-The same terminal process displays Codex recommendations and asks targeted questions. Answer in place; `/pause` preserves the phase and its Codex session. Inspect and resume local state with:
+The same terminal process displays each targeted question with the recommended choice, its rationale, and the complete list of two to five alternatives. Answer with an option letter or a custom response when offered; `/pause` preserves the phase and its Codex session. Inspect and resume local state with:
 
 ```bash
 pnpm spec:workflow -- status
@@ -80,6 +80,36 @@ pnpm spec:workflow -- resume --issue 123
 ```
 
 `.specify/feature.json` records the active feature for local Codex sessions and is intentionally not committed. Workflow run state under `.specify/workflows/runs/` is also local.
+
+### Model policy
+
+The workflow uses the repository-owned `economy` model policy by default. It reserves Sol for planning and final review, uses Terra for judgment-heavy daily work, and uses Luna for repeatable checklist and task generation.
+
+| Codex phase | Economy | Quality |
+| --- | --- | --- |
+| `specify` | Terra / medium | Sol / high |
+| `clarify` | Terra / low | Sol / high |
+| `plan` | Sol / medium | Sol / high |
+| `checklist` | Luna / low | Luna / medium |
+| `tasks` | Luna / low | Terra / medium |
+| `analyze` | Terra / medium | Sol / high |
+| `implement` | Terra / medium | Terra / high |
+| `converge` | Terra / medium | Sol / high |
+| `review` | Sol / high | Sol / xhigh |
+
+Select the higher-cost policy explicitly when starting a workflow:
+
+```bash
+pnpm spec:workflow -- 123 --model-policy quality
+```
+
+The selected policy and each resolved phase model are persisted in the local run state. Normal resumes keep those selections stable. Escalate only one phase when its additional depth is justified:
+
+```bash
+pnpm spec:workflow -- resume --issue 123 --escalate-phase implement
+```
+
+An escalation applies that phase's `quality` configuration and remains in effect for subsequent resumes. The terminal and `status` output display the active policy, while `--dry-run` prints the complete resolved routing without starting Codex.
 
 Every artifact or implementation checkpoint shows its diff and exact proposed Conventional Commit message. The operator can:
 

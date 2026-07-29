@@ -10,12 +10,15 @@ import { WorkflowCodex } from './workflow-codex.mjs'
 import { WorkflowGitHub } from './workflow-github.mjs'
 import {
   branchName,
+  configureModelPolicy,
+  DEFAULT_MODEL_POLICY,
   defaultCommitMessage,
   featureDirectoryFromIssue,
   KANBAN_STATUSES,
   nextPhaseIndex,
   PHASES,
   parseArguments,
+  resolvePhaseModel,
   SPEC_STATUSES,
   slugify,
   validateCommitMessage,
@@ -25,8 +28,8 @@ import {
 const usage = `Usage:
   pnpm spec:workflow
   pnpm spec:workflow -- <issue-number>
-  pnpm spec:workflow -- run [--issue <number>] [--feature-dir <specs/path>] [--dry-run]
-  pnpm spec:workflow -- resume [--issue <number>]
+  pnpm spec:workflow -- run [--issue <number>] [--feature-dir <specs/path>] [--model-policy <economy|quality>] [--escalate-phase <phase>] [--dry-run]
+  pnpm spec:workflow -- resume [--issue <number>] [--escalate-phase <phase>]
   pnpm spec:workflow -- status [--issue <number>]
 `
 
@@ -55,6 +58,22 @@ export class TerminalWorkflow {
 
   write(message = '') {
     this.output.write(`${message}\n`)
+  }
+
+  writeQuestion(question) {
+    if (!question) {
+      return
+    }
+
+    this.write(`Recommandée : ${question.recommended_option} — ${question.recommendation_reason}`)
+    this.write('\nOptions :')
+    for (const option of question.options) {
+      this.write(`  ${option.id} — ${option.description}`)
+    }
+    if (question.allow_custom_answer) {
+      this.write('  Autre — Réponse libre')
+    }
+    this.write(`\nQuestion : ${question.prompt}`)
   }
 
   stateDirectory() {
@@ -134,7 +153,7 @@ export class TerminalWorkflow {
     for (const state of states) {
       const phase = PHASES[state.phaseIndex]?.id ?? 'terminé'
       this.write(
-        `#${state.issueNumber} · ${state.completed ? 'terminé' : phase} · ${state.featureDirectory} · ${state.branch}`,
+        `#${state.issueNumber} · ${state.completed ? 'terminé' : phase} · modèles ${state.modelPolicy ?? DEFAULT_MODEL_POLICY} · ${state.featureDirectory} · ${state.branch}`,
       )
     }
   }
@@ -156,6 +175,14 @@ export class TerminalWorkflow {
     assertNotHistorical(this.root, featureDirectory)
 
     if (options.dryRun) {
+      const modelState = configureModelPolicy(
+        {
+          modelPolicy: state?.modelPolicy,
+          escalatedPhases: state?.escalatedPhases,
+          phaseModels: state?.phaseModels,
+        },
+        options,
+      )
       this.write(
         JSON.stringify(
           {
@@ -164,6 +191,20 @@ export class TerminalWorkflow {
             branch: expectedBranch,
             startsAt: existingSpec ? 'clarify' : 'specify',
             phases: PHASES.map((phase) => phase.id),
+            modelPolicy: modelState.modelPolicy,
+            escalatedPhases: modelState.escalatedPhases,
+            phaseModels: Object.fromEntries(
+              PHASES.filter((phase) => phase.skill || phase.review).map((phase) => [
+                phase.id,
+                modelState.phaseModels[phase.id] ??
+                  modelConfigForPhase(
+                    phase.id,
+                    modelState.escalatedPhases.includes(phase.id)
+                      ? 'quality'
+                      : modelState.modelPolicy,
+                  ),
+              ]),
+            ),
           },
           null,
           2,
@@ -179,7 +220,7 @@ export class TerminalWorkflow {
       this.github.assertCleanWorktree()
       this.github.prepareBranch(expectedBranch)
       state = {
-        version: 2,
+        version: 3,
         issueNumber: issue.number,
         featureDirectory,
         branch: expectedBranch,
@@ -189,6 +230,7 @@ export class TerminalWorkflow {
         completed: false,
         checks: null,
       }
+      configureModelPolicy(state, options)
       this.saveState(state)
     } else {
       if (state.featureDirectory !== featureDirectory || state.branch !== expectedBranch) {
@@ -203,6 +245,8 @@ export class TerminalWorkflow {
         this.write(`Le workflow de l’issue #${issue.number} est déjà terminé.`)
         return 0
       }
+      configureModelPolicy(state, options)
+      this.saveState(state)
     }
 
     fs.mkdirSync(path.join(this.root, '.specify'), { recursive: true })
@@ -213,7 +257,8 @@ export class TerminalWorkflow {
 
     this.write(`\nIssue #${issue.number} — ${issue.title}`)
     this.write(`Branche : ${state.branch}`)
-    this.write(`Spec : ${featureDirectory}/spec.md\n`)
+    this.write(`Spec : ${featureDirectory}/spec.md`)
+    this.write(`Politique de modèles : ${state.modelPolicy}\n`)
 
     if (state.pendingPublish) {
       this.write('Reprise de la publication du dernier checkpoint approuvé…')
@@ -276,12 +321,16 @@ export class TerminalWorkflow {
     delete state.pendingFeedback
 
     while (true) {
+      const modelConfig = resolvePhaseModel(state, phase.id)
+      this.saveState(state)
       this.write(`Codex exécute ${phase.review ? 'la revue fraîche' : `$${phase.skill}`}…`)
+      this.write(`Modèle : ${modelConfig.model} · effort ${modelConfig.reasoningEffort}`)
       const result = await this.codex.runPhase({
         phase: phase.id,
         skill: phase.skill,
         issue,
         featureDirectory: state.featureDirectory,
+        modelConfig,
         sessionId: state.sessions[phase.id] ?? null,
         feedback,
       })
@@ -291,6 +340,7 @@ export class TerminalWorkflow {
 
       this.write(`\n${result.response.message}\n`)
       if (result.response.status === 'question') {
+        this.writeQuestion(result.response.question)
         const answer = await this.prompt('Votre réponse (ou /pause) : ')
         if (answer === '/pause') {
           return 'pause'
