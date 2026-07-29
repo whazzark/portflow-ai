@@ -58,7 +58,7 @@ As an active application user, I want to consult dock and weighing-area referenc
 - **FR-005**: The workbench MUST support individual and selection-scoped grouped archive and reactivation actions; creation and editing MUST remain individual operations.
 - **FR-005a**: A grouped archive or reactivation action containing both eligible and blocked resources MUST transition every eligible resource, leave every blocked resource unchanged, and report the outcome for each selected resource.
 - **FR-006**: Every successful archive or reactivation MUST record the acting user and action timestamp and MAY record a non-blank comment supplied for the action.
-- **FR-007**: Every mutation MUST detect an outdated resource version, reject the stale mutation without changing the resource, and allow the workbench to prompt the administrator to reload the latest state.
+- **FR-007**: Every mutation of an existing dock or weighing area MUST detect an outdated resource version, reject the stale mutation without changing the resource, and allow the workbench to prompt the administrator to reload the latest state. Creation MUST establish the new resource at version `1` and MUST NOT require an expected version because no existing resource version is available.
 
 ## Success Criteria
 
