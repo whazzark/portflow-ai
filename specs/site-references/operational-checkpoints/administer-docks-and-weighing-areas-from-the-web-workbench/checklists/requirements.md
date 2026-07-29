@@ -79,3 +79,23 @@
 - [ ] CHK037 - Is the precedence among missing, stale, wrong-state, and in-use grouped outcomes consistently defined and understandable to reviewers? [Ambiguity, Plan §Domain and data model, Plan §Risks and Rollout]
 - [ ] CHK038 - Is the phrase “each action still records its actor and timestamp” unambiguous for grouped actions and for each successfully transitioned resource? [Ambiguity, Spec §FR-006, Spec §FR-005a]
 - [ ] CHK039 - Is the distinction between “available-list” consultation and the workbench’s available/archived status filtering explicit enough to avoid inconsistent visibility requirements? [Ambiguity, Spec §FR-001a, Plan §Existing Baseline and Planned Delta]
+
+## API Contract Quality
+
+- [ ] CHK040 - Are the request and response shapes for individual Dock and Weighing Area mutations explicit about `expectedVersion`, normalized values, audit metadata, and stale outcomes? [Completeness, Contracts §API, Spec §FR-003, Spec §FR-006, Spec §FR-007]
+- [ ] CHK041 - Are grouped archive/reactivate request constraints, result discriminators, blocker reasons, and request-order guarantees specified consistently for both resource types? [Clarity, Contracts §API, Spec §FR-005, Spec §FR-005a]
+- [ ] CHK042 - Are HTTP status and error-envelope requirements defined distinctly for authentication failure, authorization failure, malformed input, name conflict, stale version, wrong lifecycle state, and in-use resources? [Completeness, Contracts §API, Spec §User Stories & Testing, Plan §API and application boundaries]
+- [ ] CHK043 - Can the written API requirements distinguish a request rejected before any grouped write from a valid grouped request that partially succeeds? [Measurability, Spec §Assumptions and Clarifications, Plan §Bulk invariant]
+
+## Workbench Interaction Requirements
+
+- [ ] CHK044 - Are URL-backed filter, search, sort, visible-type, selection, and detail-state requirements defined sufficiently to preserve or reset state in each specified transition? [Clarity, Contracts §UI, Plan §Frontend boundaries]
+- [ ] CHK045 - Are create/edit requirements explicit about whether each form field’s normalized value, validation message, and server-side conflict are presented in a consistent resource-aware way? [Completeness, Contracts §UI, Spec §FR-003, Spec §FR-003a]
+- [ ] CHK046 - Are permission-derived affordances described as a presentation concern while the authoritative mutation authorization remains an API requirement? [Consistency, Contracts §UI, Spec §FR-002, Constitution §V]
+- [ ] CHK047 - Are grouped-action confirmation, partial-result feedback, blocked-row retention, and explicit stale reload requirements defined without prescribing an implementation-specific component or framework? [Clarity, Spec §FR-005a, Spec §FR-007, Plan §Frontend boundaries]
+
+## Recovery and Release Readiness
+
+- [ ] CHK048 - Are recovery requirements defined for a failed map dependency, failed query, failed mutation, and stale detail state while retaining an accessible non-map representation? [Recovery, Plan §Map integration, Plan §Risks and Rollout]
+- [ ] CHK049 - Are compatibility and rollback requirements explicit for existing rows receiving version `1`, old clients encountering versioned mutations, and reversal of the additive migration? [Recovery, Dependency, Plan §Persistence, Plan §Rollback]
+- [ ] CHK050 - Does the traceability model connect each stated success criterion to one or more observable acceptance scenarios and named verification seams? [Traceability, Spec §SC-001, Spec §SC-002, Plan §Test strategy]
