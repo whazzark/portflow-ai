@@ -15,11 +15,11 @@ description: "Portflow task list grouped by independently deliverable user story
 
 ## Phase 2: Foundational
 
-- [ ] T004 [P] [US1] [RED] Add migration/repository failing tests for version `1` backfill, positive versions, conditional zero-row stale writes, one-step increments, and reversible rollback in `apps/api/tests/unit/docks/dock_concurrency.spec.ts` and `apps/api/tests/unit/weighing_areas/weighing_area_concurrency.spec.ts`
-- [ ] T005 [P] [US1] [RED] Add shared failing tests for distinct ordered `{ id, expectedVersion }` validation and stable lifecycle blocker reasons in `apps/api/tests/unit/site_references/versioned_lifecycle_validation.spec.ts`
-- [ ] T006 [GREEN] [DOC] Establish the shared versioned lifecycle command/result vocabulary and repository boundary in `apps/api/app/site_references/shared/versioned_lifecycle.ts`
-- [ ] T007 [GREEN] [REFACTOR] Add the reversible version migration, schema fields, model fields/relations, and factory defaults in `apps/api/database/migrations/*_add_operational_checkpoint_versions.ts`, `apps/api/database/schema.ts`, `apps/api/app/models/dock.ts`, `apps/api/app/models/weighing_area.ts`, `apps/api/database/factories/dock_factory.ts`, and `apps/api/database/factories/weighing_area_factory.ts`
-- [ ] T008 [P] [GREEN] [REFACTOR] Add version-aware shared validators and lifecycle result types without changing the separate Dock and Weighing Area domain names in `apps/api/app/site_references/shared/`
+- [ ] T004 [P] [FOUNDATION] [RED] Add migration/repository failing tests for version `1` backfill, positive versions, conditional zero-row stale writes, one-step increments, and reversible rollback in `apps/api/tests/unit/docks/dock_concurrency.spec.ts` and `apps/api/tests/unit/weighing_areas/weighing_area_concurrency.spec.ts`
+- [ ] T005 [P] [FOUNDATION] [RED] Add shared failing tests for distinct ordered `{ id, expectedVersion }` validation and stable lifecycle blocker reasons in `apps/api/tests/unit/site_references/versioned_lifecycle_validation.spec.ts`
+- [ ] T006 [FOUNDATION] [GREEN] Establish the shared versioned lifecycle command/result vocabulary and repository boundary in `apps/api/app/site_references/shared/versioned_lifecycle.ts`
+- [ ] T007 [FOUNDATION] [GREEN] Add the reversible version migration, schema fields, model fields/relations, and factory defaults in `apps/api/database/migrations/*_add_operational_checkpoint_versions.ts`, `apps/api/database/schema.ts`, `apps/api/app/models/dock.ts`, `apps/api/app/models/weighing_area.ts`, `apps/api/database/factories/dock_factory.ts`, and `apps/api/database/factories/weighing_area_factory.ts`
+- [ ] T008 [P] [FOUNDATION] [REFACTOR] Add version-aware shared validators and lifecycle result types without changing the separate Dock and Weighing Area domain names in `apps/api/app/site_references/shared/`
 
 ## Phase 3: User Story 1 - Administer Docks and Weighing Areas From the Web Workbench (Priority: P1)
 
@@ -71,8 +71,8 @@ description: "Portflow task list grouped by independently deliverable user story
 
 ## Final verification
 
-- [ ] T039 [P] [US1] [VERIFY] Run the focused API migration, unit, and HTTP suites from `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
-- [ ] T040 [P] [US1] [VERIFY] Run the focused web Vitest feature suite and inspect the authenticated `/checkpoints` journey at configured browser seam, recording when no Playwright journey is available in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
+- [ ] T039 [P] [VERIFY] Run the focused API migration, unit, and HTTP suites from `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
+- [ ] T040 [P] [VERIFY] Run the focused web Vitest feature suite and inspect the authenticated `/checkpoints` journey at configured browser seam, recording when no Playwright journey is available in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
 - [ ] T041 [VERIFY] Run `pnpm check` from the repository root
 - [ ] T042 [VERIFY] Run `pnpm typecheck` from the repository root
 - [ ] T043 [VERIFY] Run `pnpm test` from the repository root
