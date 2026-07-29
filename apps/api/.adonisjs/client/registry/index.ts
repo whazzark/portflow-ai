@@ -48,11 +48,17 @@ const routes = {
     tokens: [{"old":"/api/v1/customers/available","type":0,"val":"api","end":""},{"old":"/api/v1/customers/available","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/available","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/available","type":0,"val":"available","end":""}],
     types: placeholder as Registry['customers.available']['types'],
   },
-  'customers.show': {
-    methods: ["GET","HEAD"],
-    pattern: '/api/v1/customers/:id',
-    tokens: [{"old":"/api/v1/customers/:id","type":0,"val":"api","end":""},{"old":"/api/v1/customers/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/:id","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/:id","type":1,"val":"id","end":""}],
-    types: placeholder as Registry['customers.show']['types'],
+  'customers.archive_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/customers/archive',
+    tokens: [{"old":"/api/v1/customers/archive","type":0,"val":"api","end":""},{"old":"/api/v1/customers/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/archive","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['customers.archive_many']['types'],
+  },
+  'customers.reactivate_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/customers/reactivate',
+    tokens: [{"old":"/api/v1/customers/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/customers/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/reactivate","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['customers.reactivate_many']['types'],
   },
   'customers.update': {
     methods: ["PATCH"],

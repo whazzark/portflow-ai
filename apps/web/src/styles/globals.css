@@ -1,9 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/ibm-plex-sans";
-@import "@fontsource/ibm-plex-mono/400.css";
-@import "@fontsource/ibm-plex-mono/500.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -133,13 +130,14 @@
 }
 
 @layer base {
-  * {
+  /* Keep this above Tailwind's streamed `*` reset during SSR hydration. */
+  html * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
   }
-  html {
+  html:root {
     @apply font-sans;
   }
 }

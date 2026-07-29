@@ -3,9 +3,9 @@ export type SiteReferenceType = (typeof SITE_REFERENCE_TYPES)[number]
 
 export type SiteReferenceUsageInput = {
   referenceType: SiteReferenceType
-  referenceId: string
+  referenceIds: readonly string[]
 }
 
 export default abstract class SiteReferenceUsageChecker {
-  abstract isUsedByPlannedOrActiveDischarge(input: SiteReferenceUsageInput): Promise<boolean>
+  abstract findUsedByPlannedOrActiveDischarge(input: SiteReferenceUsageInput): Promise<Set<string>>
 }

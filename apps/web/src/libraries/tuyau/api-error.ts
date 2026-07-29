@@ -4,6 +4,7 @@ export type ApiError = {
   code: string
   message: string
   details?: Array<{ field: string; message: string }>
+  meta?: unknown
 }
 
 const NETWORK_ERROR: ApiError = {
@@ -36,6 +37,7 @@ export function parseApiError(error: unknown): ApiError {
       code: response.error.code,
       message: response.error.message,
       details: response.error.details,
+      meta: response.error.meta,
     }
   }
 

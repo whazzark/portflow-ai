@@ -40,12 +40,12 @@ test('renders the protected frame with navigation for an authenticated user', as
   expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/')
   expect(within(nav).getByRole('button', { name: /Discharges/ })).toBeDisabled()
   expect(within(nav).getByRole('button', { name: /Rotation validation/ })).toBeDisabled()
-  expect(within(nav).getByRole('button', { name: /Customers/ })).toBeDisabled()
+  expect(within(nav).getByRole('link', { name: /Customers/ })).toHaveAttribute('href', '/customers')
   expect(within(nav).getByRole('button', { name: /Trucks/ })).toBeDisabled()
   expect(within(nav).getByRole('button', { name: /Checkpoints/ })).toBeDisabled()
   expect(within(nav).getByRole('button', { name: /Warehouses/ })).toBeDisabled()
   expect(within(nav).getByRole('button', { name: /Users/ })).toBeDisabled()
-  expect(within(nav).getAllByText('Coming soon')).toHaveLength(7)
+  expect(within(nav).getAllByText('Coming soon')).toHaveLength(6)
   const themeToggle = screen.getByRole('switch', { name: 'Switch to light theme' })
   const profileTrigger = screen.getByRole('button', {
     name: 'Open user menu for Claire Martin',
@@ -71,7 +71,7 @@ test('renders the protected frame with navigation for an authenticated user', as
   )
   expect(within(header).getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument()
 
-  const comingSoonItem = within(nav).getByRole('button', { name: /Customers/ })
+  const comingSoonItem = within(nav).getByRole('button', { name: /Discharges/ })
   fireEvent.pointerEnter(comingSoonItem.parentElement as HTMLElement)
   expect(comingSoonItem.parentElement).toHaveAttribute('data-base-ui-tooltip-trigger', '')
 

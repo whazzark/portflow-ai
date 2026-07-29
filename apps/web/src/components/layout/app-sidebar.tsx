@@ -2,7 +2,6 @@ import {
   ContactIcon,
   LayoutDashboardIcon,
   ListChecksIcon,
-  type LucideIcon,
   MapPinIcon,
   ShipIcon,
   TruckIcon,
@@ -10,36 +9,21 @@ import {
   WarehouseIcon,
 } from 'lucide-react'
 import { Brand } from '@/components/brand/brand'
+import { NavigationGroup } from '@/components/layout/navigation-group'
+import type { NavigationGroup as NavigationGroupType } from '@/components/layout/navigation-types'
 import { UserMenu } from '@/components/layout/user-menu'
-import { Badge } from '@/components/ui/badge'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarSeparator,
 } from '@/components/ui/sidebar'
 import type { SessionUser } from '@/features/auth/context/session-context'
+import { isAdministrator } from '@/features/auth/policies/permissions'
 import { ThemeToggle } from '@/libraries/theme/theme-toggle'
 
-type NavigationItem = {
-  label: string
-  icon: LucideIcon
-  href?: string
-}
-
-type NavigationGroup = {
-  label: string
-  items: NavigationItem[]
-}
-
-const NAVIGATION_GROUPS: NavigationGroup[] = [
+const NAVIGATION_GROUPS: NavigationGroupType[] = [
   {
     label: 'Monitoring',
     items: [{ label: 'Overview', icon: LayoutDashboardIcon, href: '/' }],
@@ -54,7 +38,7 @@ const NAVIGATION_GROUPS: NavigationGroup[] = [
   {
     label: 'Site references',
     items: [
-      { label: 'Customers', icon: ContactIcon },
+      { label: 'Customers', icon: ContactIcon, href: '/customers' },
       { label: 'Trucks', icon: TruckIcon },
       { label: 'Checkpoints', icon: MapPinIcon },
       { label: 'Warehouses', icon: WarehouseIcon },
@@ -62,50 +46,8 @@ const NAVIGATION_GROUPS: NavigationGroup[] = [
   },
 ]
 
-function NavigationMenuItem({ item }: { item: NavigationItem }) {
-  const Icon = item.icon
-
-  if (item.href) {
-    return (
-      <SidebarMenuItem>
-        <SidebarMenuButton isActive render={<a href={item.href} />} tooltip={item.label}>
-          <Icon />
-          <span className="min-w-0 flex-1 truncate">{item.label}</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    )
-  }
-
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton disabled tooltip={`${item.label} — Coming soon`}>
-        <Icon />
-        <span className="min-w-0 flex-1 truncate">{item.label}</span>
-        <Badge variant="secondary" className="ml-auto group-data-[collapsible=icon]:hidden">
-          Coming soon
-        </Badge>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  )
-}
-
-function NavigationGroup({ group }: { group: NavigationGroup }) {
-  return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {group.items.map((item) => (
-            <NavigationMenuItem key={item.label} item={item} />
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  )
-}
-
 export function AppSidebar({ user }: { user: SessionUser }) {
-  const canBrowseUsers = user.role === 'OPERATIONS_ADMIN' || user.role === 'ORGANIZATION_ADMIN'
+  const canBrowseUsers = isAdministrator(user)
 
   return (
     <Sidebar collapsible="icon" aria-label="Application sidebar">

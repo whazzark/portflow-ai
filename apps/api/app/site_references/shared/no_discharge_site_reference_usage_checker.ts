@@ -10,7 +10,7 @@ import SiteReferenceUsageChecker, {
  * that checker before Weighing Area assignments can be persisted.
  */
 export default class NoDischargeSiteReferenceUsageChecker extends SiteReferenceUsageChecker {
-  isUsedByPlannedOrActiveDischarge(_input: SiteReferenceUsageInput): Promise<boolean> {
-    return Promise.resolve(false)
+  findUsedByPlannedOrActiveDischarge(_input: SiteReferenceUsageInput): Promise<Set<string>> {
+    return Promise.resolve(new Set())
   }
 }

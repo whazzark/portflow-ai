@@ -2,7 +2,6 @@ import { ChevronUpIcon, LogOutIcon, UserRoundIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -23,7 +22,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { SessionUser } from '@/features/auth/context/session-context'
 import { useLogout } from '@/features/auth/mutations/use-logout'
 import { LogOutConfirmation } from '@/features/auth/ui/log-out-confirmation'
-import { formatFullName, getInitials } from '@/features/users/helpers/name'
+import { formatFullName } from '@/features/users/helpers/name'
+import { UserAvatar } from '@/features/users/ui/user-avatar'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
 export function UserMenu({ user }: { user: SessionUser }) {
@@ -32,7 +32,6 @@ export function UserMenu({ user }: { user: SessionUser }) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
   const fullName = formatFullName(user)
-  const initials = getInitials(user)
 
   function openLogoutConfirmation() {
     logout.reset()
@@ -73,9 +72,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
                   aria-label={`Open user menu for ${fullName}`}
                   render={<SidebarMenuButton size="lg" />}
                 >
-                  <Avatar>
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
+                  <UserAvatar user={user} />
                   <span className="min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                     <span className="block truncate font-medium">{fullName}</span>
                     <span className="block truncate text-sidebar-foreground/70 text-xs">
@@ -99,9 +96,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
               >
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="flex items-center gap-2 p-2">
-                    <Avatar size="lg" aria-hidden="true">
-                      <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar aria-hidden={true} size="lg" user={user} />
                     <span className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-foreground text-sm">{fullName}</span>
                       <span className="truncate font-normal">{user.email}</span>
