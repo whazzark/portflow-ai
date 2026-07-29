@@ -20,10 +20,23 @@ inputs:
 
 steps:
   - id: clarify
-    command: speckit.clarify
-    integration: codex
-    input:
-      args: "{{ inputs.spec }}"
+    type: shell
+    timeout: 3600
+    run: "node scripts/spec-kit/interactive-clarify.mjs"
+
+  - id: preview-clarified-spec-commit
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate spec --preview"
+
+  - id: review-clarified-spec-commit
+    type: gate
+    message: "Review the proposed commit message printed above before creating the workflow commit."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: sync-clarified-spec-pr
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate spec"
 
   - id: review-spec
     type: gate
@@ -35,13 +48,41 @@ steps:
     command: speckit.plan
     integration: codex
     input:
-      args: "{{ inputs.spec }}"
+      args: "{{ inputs.spec }}\n\nHuman feedback (if provided): {{ inputs.feedback }}"
+
+  - id: preview-plan-commit
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate plan --preview"
+
+  - id: review-plan-commit
+    type: gate
+    message: "Review the proposed commit message printed above before creating the workflow commit."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: sync-plan-pr
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate plan"
 
   - id: checklist
     command: speckit.checklist
     integration: codex
     input:
-      args: "{{ inputs.spec }}"
+      args: "{{ inputs.spec }}\n\nHuman feedback (if provided): {{ inputs.feedback }}"
+
+  - id: preview-checklist-commit
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate plan --preview"
+
+  - id: review-checklist-commit
+    type: gate
+    message: "Review the proposed commit message printed above before creating the workflow commit."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: sync-checklist-pr
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate plan"
 
   - id: review-plan
     type: gate
@@ -53,29 +94,99 @@ steps:
     command: speckit.tasks
     integration: codex
     input:
-      args: "{{ inputs.spec }}"
+      args: "{{ inputs.spec }}\n\nHuman feedback (if provided): {{ inputs.feedback }}"
+
+  - id: preview-tasks-commit
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate plan --preview"
+
+  - id: review-tasks-commit
+    type: gate
+    message: "Review the proposed commit message printed above before creating the workflow commit."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: sync-tasks-pr
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate plan"
 
   - id: analyze
     command: speckit.analyze
     integration: codex
     input:
-      args: "{{ inputs.spec }}"
+      args: "{{ inputs.spec }}\n\nHuman feedback (if provided): {{ inputs.feedback }}"
+
+  - id: preview-analysis-commit
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate plan --preview"
+
+  - id: review-analysis-commit
+    type: gate
+    message: "Review the proposed commit message printed above before creating the workflow commit."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: sync-analysis-pr
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate plan"
 
   - id: implement
     command: speckit.implement
     integration: codex
     input:
-      args: "{{ inputs.spec }}"
+      args: "{{ inputs.spec }}\n\nHuman feedback (if provided): {{ inputs.feedback }}"
+
+  - id: preview-implementation-commit
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate delivery --preview"
+
+  - id: review-implementation-commit
+    type: gate
+    message: "Review the proposed commit message printed above before creating the workflow commit."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: sync-implementation-pr
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate delivery"
 
   - id: fast-checks
     type: shell
     run: "pnpm check && pnpm typecheck && pnpm test && pnpm test:spec-kit"
 
+  - id: preview-checks-commit
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate delivery --preview"
+
+  - id: review-checks-commit
+    type: gate
+    message: "Review the proposed commit message printed above before creating the workflow commit."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: sync-checks-pr
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate delivery"
+
   - id: converge
     command: speckit.converge
     integration: codex
     input:
-      args: "{{ inputs.spec }}"
+      args: "{{ inputs.spec }}\n\nHuman feedback (if provided): {{ inputs.feedback }}"
+
+  - id: preview-convergence-commit
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate delivery --preview"
+
+  - id: review-convergence-commit
+    type: gate
+    message: "Review the proposed commit message printed above before creating the workflow commit."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: sync-convergence-pr
+    type: shell
+    run: "node scripts/spec-kit/pr-sync.mjs --feature-dir \"$SPECIFY_FEATURE_DIRECTORY\" --gate delivery"
 
   - id: final-review
     type: gate

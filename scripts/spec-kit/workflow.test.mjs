@@ -65,6 +65,34 @@ test('accepts domain-oriented feature directories', () => {
   )
 })
 
+test('derives a conventional issue-linked feature branch from an existing spec', () => {
+  assert.equal(
+    branchNameForFeature(
+      'specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench',
+      '**Feature ID**: `GH-41`',
+    ),
+    'feat/41-administer-docks-and-weighing-areas-from-the-web-workbench',
+  )
+})
+
+test('derives the issue-linked feature branch from the workflow description for new specs', () => {
+  assert.equal(
+    branchNameForFeature(
+      'specs/standalone/customer-access',
+      '',
+      'GitHub issue #123: customer access',
+    ),
+    'feat/123-customer-access',
+  )
+})
+
+test('requires an issue number before creating a workflow branch', () => {
+  assert.throws(
+    () => branchNameForFeature('specs/standalone/customer-access', '', 'customer access'),
+    /Cannot determine the GitHub issue number/,
+  )
+})
+
 test('rejects paths outside the canonical feature hierarchy', () => {
   for (const value of [
     '/tmp/specs/example',
