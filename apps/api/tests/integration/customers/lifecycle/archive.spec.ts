@@ -40,6 +40,19 @@ test.group('POST /api/v1/customers/:id/archive', (group) => {
     assert.equal(response.body().data.archivedByUserId, admin.id)
   })
 
+  test('rejects an overlong comment before changing state', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const customer = await CustomerFactory.create()
+    const response = await client
+      .post(`/api/v1/customers/${customer.id}/archive`)
+      .loginAs(admin)
+      .json({ comment: 'a'.repeat(1001) })
+
+    response.assertStatus(422)
+    await customer.refresh()
+    assert.equal(customer.status, 'AVAILABLE')
+  })
+
   test('rejects archival when the customer is in use', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const customer = await CustomerFactory.create()

@@ -188,29 +188,11 @@ export default class LucidCustomerRepository extends CustomerRepository {
     return Customer.transaction(async (trx) => {
       const customers = await Customer.query({ client: trx }).whereIn('id', command.ids).forUpdate()
       const customersById = indexCustomersById(customers)
-      const blockers = findBulkBlockers(command.ids, customersById, 'AVAILABLE')
       const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
         referenceType: 'CUSTOMER',
         referenceIds: command.ids,
       })
-
-      blockers.push(
-        ...command.ids.flatMap((id) => {
-          const customer = customersById.get(id)
-          if (customer?.status !== 'AVAILABLE' || !usedIds.has(id)) {
-            return []
-          }
-
-          return [
-            {
-              id,
-              code: customer.code,
-              companyName: customer.companyName,
-              reason: 'IN_USE' as const,
-            },
-          ]
-        }),
-      )
+      const blockers = findBulkBlockers(command.ids, customersById, 'AVAILABLE', usedIds)
 
       const blockedIds = new Set(blockers.map((blocker) => blocker.id))
       const eligibleIds = command.ids.filter((id) => !blockedIds.has(id))

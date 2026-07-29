@@ -22,6 +22,7 @@ export function findBulkBlockers(
   ids: string[],
   customersById: Map<string, CustomerLifecycleRecord>,
   expectedStatus: 'AVAILABLE' | 'ARCHIVED',
+  usedIds: Set<string> = new Set(),
 ): BulkCustomerLifecycleBlocker[] {
   return ids.flatMap((id): BulkCustomerLifecycleBlocker[] => {
     const customer = customersById.get(id)
@@ -37,6 +38,17 @@ export function findBulkBlockers(
           code: customer.code,
           companyName: customer.companyName,
           reason: expectedStatus === 'AVAILABLE' ? 'ALREADY_ARCHIVED' : 'ALREADY_AVAILABLE',
+        },
+      ]
+    }
+
+    if (expectedStatus === 'AVAILABLE' && usedIds.has(id)) {
+      return [
+        {
+          id,
+          code: customer.code,
+          companyName: customer.companyName,
+          reason: 'IN_USE',
         },
       ]
     }

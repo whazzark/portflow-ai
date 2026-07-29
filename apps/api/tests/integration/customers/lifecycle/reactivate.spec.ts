@@ -44,4 +44,17 @@ test.group('POST /api/v1/customers/:id/reactivate', (group) => {
     assert.equal(response.body().data.reactivationComment, 'Returning to operations')
     assert.equal(response.body().data.reactivatedByUserId, admin.id)
   })
+
+  test('rejects an overlong comment before changing state', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const customer = await CustomerFactory.apply('archived').create()
+    const response = await client
+      .post(`/api/v1/customers/${customer.id}/reactivate`)
+      .loginAs(admin)
+      .json({ comment: 'a'.repeat(1001) })
+
+    response.assertStatus(422)
+    await customer.refresh()
+    assert.equal(customer.status, 'ARCHIVED')
+  })
 })

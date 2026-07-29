@@ -28,6 +28,36 @@ test.group('POST /api/v1/customers/reactivate', (group) => {
     assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
   })
 
+  test('rejects duplicate IDs with different casing before changing state', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const customer = await CustomerFactory.apply('archived').create()
+    const response = await client
+      .post('/api/v1/customers/reactivate')
+      .loginAs(admin)
+      .json({ ids: [customer.id, customer.id.toUpperCase()] })
+
+    response.assertStatus(422)
+    assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+    await customer.refresh()
+    assert.equal(customer.status, 'ARCHIVED')
+  })
+
+  test('rejects an overlong comment before changing state', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const customer = await CustomerFactory.apply('archived').create()
+    const response = await client
+      .post('/api/v1/customers/reactivate')
+      .loginAs(admin)
+      .json({ ids: [customer.id], comment: 'a'.repeat(1001) })
+
+    response.assertStatus(422)
+    await customer.refresh()
+    assert.equal(customer.status, 'ARCHIVED')
+  })
+
   test('reactivates multiple customers with a shared comment', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
     const first = await CustomerFactory.apply('archived').create()
