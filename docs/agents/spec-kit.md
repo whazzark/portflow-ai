@@ -22,7 +22,7 @@ specify workflow info portflow-feature
 
 ## Source of truth and artifact layout
 
-GitHub Issues hold intake, priority, discussion, and stable traceability. The GitHub Project holds delivery state. Versioned files under `specs/` are the canonical behavioral contract.
+GitHub Issues hold intake, priority, discussion, durable planning notes, and stable traceability. The GitHub Project holds continuous delivery state and implementation order. Versioned files under `specs/` are the canonical behavioral contract.
 
 ```text
 specs/<domain>/<epic>/roadmap.md
@@ -90,7 +90,18 @@ Every artifact or implementation checkpoint shows its diff and exact proposed Co
 
 The fixed orchestrator performs the commit only after approval. Codex may propose a message, but the orchestrator validates `<type>(<domain>): <Description>`, rejects generic messages such as `sync`, and falls back to a phase-specific message. Implementation advances one coherent TDD checkpoint at a time, allowing distinct `test`, `feat`, `fix`, or `refactor` commits instead of one broad implementation commit. Analysis, verification, convergence, and review create no commit when they change no file.
 
-Use the Project `Spec Status` field as follows:
+The workflow updates two independent Project fields. `Status` is the operational Kanban:
+
+| Workflow point | Status |
+| --- | --- |
+| Qualified but not startable | `Backlog` |
+| Approved with no blocking dependency | `Ready` |
+| Specification, planning, implementation, or checks active | `In Progress` |
+| Human gate, convergence, review, CI, or delivery approval | `Review` |
+| External decision or dependency required | `Blocked` |
+| Issue closed | `Done` |
+
+`Spec Status` records artifact maturity:
 
 | Workflow point | Spec Status |
 | --- | --- |
@@ -103,6 +114,8 @@ Use the Project `Spec Status` field as follows:
 | Convergence and review underway | `Review` |
 | External decision or dependency required | `Blocked` |
 | Delivery merged or historical work recorded | `Done` |
+
+The daily `Kanban` and `Active flow` boards exclude `epic` issues. Use `Roadmap` for epics, `Backlog` for priority ordering, and `Spec pipeline` for unfinished artifact maturity. Portflow uses continuous flow; do not add a `Sprint` field.
 
 ## Pull request contract
 
@@ -130,6 +143,7 @@ node scripts/spec-kit/validate-backlog.mjs
 node scripts/spec-kit/validate-backlog.mjs --github
 node scripts/spec-kit/cutover-github.mjs --dry-run
 node scripts/spec-kit/cutover-github.mjs --dry-run --json
+pnpm project:kanban
 ```
 
 The local validator checks artifact structure and traceability. `--github` additionally compares every manifest parent with the live GitHub parent relationship.
@@ -139,6 +153,8 @@ Once `.migration-manifest.json` exists, `migrate-backlog.mjs` is audit-only by d
 `cutover-github.mjs --apply` updates changed issue stubs, adds missing Project items, sets the target `Spec Status`, and removes legacy execution-state labels. The dry-run report inventories each obsolete label definition and every issue or PR that still uses it, including uses outside the frozen migration scope. Add `--delete-label-definitions` only after that inventory has been reviewed. Deletion is refused if any use remains after issue updates.
 
 Every apply run first writes the current issue bodies, labels, Project item IDs, statuses, and label definitions to `.specify/migration-backup/`; rerunning the command resumes idempotently.
+
+`pnpm project:kanban` audits the current Project without mutation. `pnpm project:kanban -- --apply` creates a fresh backup, restores the canonical Kanban fields and views, adds missing issues, removes the legacy `Sprint` field, and reapplies the dependency-ordered backlog. In Project **Workflows**, enable the native `Auto-archive items` workflow with `is:closed updated:<@today-15d`; GitHub does not expose creation or configuration of that workflow through the public Projects API. Archived items remain restorable.
 
 The current frozen migration covers 165 open and closed non-PR issues: 30 roadmaps and 135 feature specs. Closed deliveries produce artifacts marked `Done (historical)`. New issues created after the migration snapshot are not added to the manifest automatically.
 
@@ -153,7 +169,7 @@ After the migration PR is merged, select one small real feature in `Spec Draft` 
 - the exact Conventional Commit message is approved before every commit;
 - the run pauses and resumes by issue number at Spec Review and Plan Review;
 - one Draft PR receives the spec, plan, tasks, implementation, and verification;
-- the Project `Spec Status` follows the workflow without adding an execution-state label;
+- the Project `Status` and `Spec Status` follow the workflow without adding an execution-state label;
 - final analysis, convergence, fresh review, and human merge remain mandatory.
 
 Record the pilot issue and PR in migration issue `#182`. Do not use a `Done (historical)` artifact for the pilot.
@@ -189,3 +205,4 @@ node scripts/spec-kit/validate-backlog.mjs
 - **Integration status warns about modified files**: expected for Portflow customizations; review rather than forcing an upgrade.
 - **PR validation fails**: read the emitted GitHub Actions errors and check the selected change type, spec path, plan/tasks presence, clarification markers, and incomplete tasks.
 - **Historical spec needs new behavior**: create a new intake issue and delivery spec, then link the historical artifact as context.
+- **Project configuration drifted**: run `pnpm project:kanban`, review the report, then use `pnpm project:kanban -- --apply`.

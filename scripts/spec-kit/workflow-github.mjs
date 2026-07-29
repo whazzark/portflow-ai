@@ -14,6 +14,7 @@ export class WorkflowGitHub {
     this.exec = exec
     this.projectNumber = projectNumber
     this.repository = null
+    this.projectContext = null
   }
 
   command(command, args, options = {}) {
@@ -198,7 +199,40 @@ export class WorkflowGitHub {
     return { ...existing, body }
   }
 
-  updateSpecStatus(issue, targetStatus) {
+  updateProjectStatus(issue, { status, specStatus }) {
+    if (!status || !specStatus) {
+      throw new Error('Both Project Status and Spec Status are required.')
+    }
+    const context = this.resolveProjectContext()
+    let item = this.fetchIssueProjectItem(issue.number, context.project.id)
+    if (!item) {
+      this.ghJson([
+        'project',
+        'item-add',
+        String(this.projectNumber),
+        '--owner',
+        context.owner,
+        '--url',
+        issue.url,
+        '--format',
+        'json',
+      ])
+      item = this.fetchIssueProjectItem(issue.number, context.project.id)
+    }
+    if (!item) {
+      throw new Error(
+        `Issue #${issue.number} could not be added to Project #${this.projectNumber}.`,
+      )
+    }
+
+    this.updateSingleSelectField(context, item, 'Status', status)
+    this.updateSingleSelectField(context, item, 'Spec Status', specStatus)
+  }
+
+  resolveProjectContext() {
+    if (this.projectContext) {
+      return this.projectContext
+    }
     const owner = this.resolveRepository().split('/')[0]
     const projects = this.ghJson(['project', 'list', '--owner', owner, '--format', 'json'])
     const project = projects.projects.find((candidate) => candidate.number === this.projectNumber)
@@ -215,43 +249,84 @@ export class WorkflowGitHub {
       '--format',
       'json',
     ])
-    const specStatus = fields.fields.find((field) => field.name === 'Spec Status')
-    const option = specStatus?.options?.find((candidate) => candidate.name === targetStatus)
-    if (!specStatus || !option) {
-      throw new Error(`Project Spec Status option is missing: ${targetStatus}`)
+    const projectFields = new Map(
+      fields.fields
+        .filter((field) => field.options)
+        .map((field) => [
+          field.name,
+          {
+            ...field,
+            optionsByName: new Map(field.options.map((option) => [option.name, option])),
+          },
+        ]),
+    )
+    for (const name of ['Status', 'Spec Status']) {
+      if (!projectFields.has(name)) {
+        throw new Error(`Project single-select field is missing: ${name}`)
+      }
     }
+    this.projectContext = { owner, project, fields: projectFields }
+    return this.projectContext
+  }
 
-    const items = this.ghJson([
-      'project',
-      'item-list',
-      String(this.projectNumber),
-      '--owner',
-      owner,
-      '--limit',
-      '500',
-      '--format',
-      'json',
-    ]).items
-    let item = items.find(
-      (candidate) =>
-        candidate.content?.type === 'Issue' &&
-        candidate.content?.number === issue.number &&
-        candidate.content?.repository === this.resolveRepository(),
+  fetchIssueProjectItem(issueNumber, projectId) {
+    const [repositoryOwner, repositoryName] = this.resolveRepository().split('/')
+    const result = this.ghJson([
+      'api',
+      'graphql',
+      '-F',
+      `owner=${repositoryOwner}`,
+      '-F',
+      `name=${repositoryName}`,
+      '-F',
+      `number=${issueNumber}`,
+      '-f',
+      `query=query($owner:String!,$name:String!,$number:Int!) {
+        repository(owner:$owner,name:$name) {
+          issue(number:$number) {
+            projectItems(first:20) {
+              nodes {
+                id
+                project { id }
+                fieldValues(first:20) {
+                  nodes {
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                      name
+                      field { ... on ProjectV2SingleSelectField { name } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }`,
+    ])
+    const item = result.data.repository.issue.projectItems.nodes.find(
+      (candidate) => candidate.project.id === projectId,
     )
     if (!item) {
-      item = this.ghJson([
-        'project',
-        'item-add',
-        String(this.projectNumber),
-        '--owner',
-        owner,
-        '--url',
-        issue.url,
-        '--format',
-        'json',
-      ])
+      return null
     }
+    return {
+      id: item.id,
+      values: new Map(
+        item.fieldValues.nodes
+          .filter((value) => value.field?.name)
+          .map((value) => [value.field.name, value.name]),
+      ),
+    }
+  }
 
+  updateSingleSelectField(context, item, fieldName, targetValue) {
+    if (item.values.get(fieldName) === targetValue) {
+      return
+    }
+    const field = context.fields.get(fieldName)
+    const option = field.optionsByName.get(targetValue)
+    if (!option) {
+      throw new Error(`Project ${fieldName} option is missing: ${targetValue}`)
+    }
     this.command(
       'gh',
       [
@@ -260,14 +335,15 @@ export class WorkflowGitHub {
         '--id',
         item.id,
         '--project-id',
-        project.id,
+        context.project.id,
         '--field-id',
-        specStatus.id,
+        field.id,
         '--single-select-option-id',
         option.id,
       ],
       { stdio: 'inherit' },
     )
+    item.values.set(fieldName, targetValue)
   }
 }
 

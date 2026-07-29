@@ -12,6 +12,7 @@ import {
   branchName,
   defaultCommitMessage,
   featureDirectoryFromIssue,
+  KANBAN_STATUSES,
   nextPhaseIndex,
   PHASES,
   parseArguments,
@@ -222,7 +223,10 @@ export class TerminalWorkflow {
     while (state.phaseIndex < PHASES.length) {
       const phase = PHASES[state.phaseIndex]
       this.write(`\n━━ ${phase.id} ━━`)
-      this.github.updateSpecStatus(issue, SPEC_STATUSES[phase.id])
+      this.github.updateProjectStatus(issue, {
+        status: KANBAN_STATUSES[phase.id],
+        specStatus: SPEC_STATUSES[phase.id],
+      })
 
       let outcome = 'advance'
       if (phase.skill || phase.review) {
@@ -295,10 +299,18 @@ export class TerminalWorkflow {
         continue
       }
       if (result.response.status === 'blocked') {
+        this.github.updateProjectStatus(issue, {
+          status: 'Blocked',
+          specStatus: 'Blocked',
+        })
         const answer = await this.prompt('Blocage : donnez un retour, ou /pause : ')
         if (!answer || answer === '/pause') {
           return 'pause'
         }
+        this.github.updateProjectStatus(issue, {
+          status: KANBAN_STATUSES[phase.id],
+          specStatus: SPEC_STATUSES[phase.id],
+        })
         feedback = answer
         continue
       }

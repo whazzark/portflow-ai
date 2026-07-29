@@ -34,7 +34,7 @@ Le domaine et le périmètre du MVP sont décrits dans :
 - [CONTEXT.md](./CONTEXT.md) pour le vocabulaire métier ;
 - les roadmaps et specs versionnées sous [`specs/`](./specs) pour le périmètre fonctionnel détaillé ;
 - les [GitHub Issues](https://github.com/whazzark/portflow-ai/issues) pour l'intake, les discussions et la traçabilité ;
-- le [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) pour l'ordre de livraison (README du project et descriptions des milestones) ;
+- le [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) pour le Kanban continu, l'ordre de livraison et la maturité Spec Kit ;
 - [docs/adr](./docs/adr) et [apps/api/docs/adr](./apps/api/docs/adr) pour les décisions d'architecture.
 
 À ce stade, l'API couvre déjà des briques importantes :
@@ -51,7 +51,7 @@ Le domaine et le périmètre du MVP sont décrits dans :
 - création et consultation initiale des Discharges ;
 - planification initiale des ressources de déchargement.
 
-Le détail exact du statut de livraison est piloté par le [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5), tandis que les specs canoniques sont versionnées sous [`specs/`](./specs).
+Le détail exact du statut de livraison est piloté par le [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) avec les colonnes `Backlog`, `Ready`, `In Progress`, `Review`, `Blocked` et `Done`. Les specs canoniques restent versionnées sous [`specs/`](./specs).
 
 ## Stack technique
 
