@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { OnChangeFn, SortingState } from '@tanstack/react-table'
 import { SearchIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -10,7 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { customerQueries } from '@/features/customers/queries/customer-queries'
-import type { BulkCustomerLifecycleResult } from '@/features/customers/types'
+import type {
+  BulkCustomerLifecycleBlocker,
+  BulkCustomerLifecycleResult,
+} from '@/features/customers/types'
 import { BulkLifecycleActions } from '@/features/customers/ui/bulk-lifecycle-actions'
 import { CustomerSection } from '@/features/customers/ui/customer-section'
 import { CustomerSheet } from '@/features/customers/ui/customer-sheet'
@@ -34,6 +37,25 @@ export function CustomersPage() {
   const customersQuery = useQuery(customerQueries.list())
 
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set())
+  const [blockedCustomers, setBlockedCustomers] = useState<BulkCustomerLifecycleBlocker[]>([])
+  const selectedCustomerIdList = useMemo(() => [...selectedCustomerIds], [selectedCustomerIds])
+  const lifecycleActionIds = useMemo(
+    () =>
+      blockedCustomers.length > 0
+        ? blockedCustomers.map((customer) => customer.id)
+        : selectedCustomerIdList,
+    [blockedCustomers, selectedCustomerIdList],
+  )
+  const visibleSelectedCustomerIds = useMemo(() => {
+    const selectedStatus = status === 'available' ? 'AVAILABLE' : 'ARCHIVED'
+    const visibleIds = new Set(
+      (customersQuery.data?.data ?? [])
+        .filter((customer) => customer.status === selectedStatus)
+        .map((customer) => customer.id),
+    )
+
+    return new Set([...selectedCustomerIds].filter((id) => visibleIds.has(id)))
+  }, [customersQuery.data, selectedCustomerIds, status])
 
   if (!customersQuery.data) {
     return null
@@ -53,6 +75,7 @@ export function CustomersPage() {
 
   const updateSearch = (value: string) => {
     setSelectedCustomerIds(new Set())
+    setBlockedCustomers([])
     void navigate({ search: (previous) => ({ ...previous, search: value }) })
   }
 
@@ -62,6 +85,7 @@ export function CustomersPage() {
     }
 
     setSelectedCustomerIds(new Set())
+    setBlockedCustomers([])
     void navigate({ search: (previous) => ({ ...previous, status: nextStatus }) })
   }
 
@@ -152,8 +176,11 @@ export function CustomersPage() {
               sorting={[{ id: activeSort, desc: activeOrder === 'desc' }]}
               onSortingChange={updateSorting(status)}
               canAdminister={canAdminister}
-              selectedIds={selectedCustomerIds}
-              onSelectionChange={(customerIds) => setSelectedCustomerIds(new Set(customerIds))}
+              selectedIds={visibleSelectedCustomerIds}
+              onSelectionChange={(customerIds) => {
+                setSelectedCustomerIds(new Set(customerIds))
+                setBlockedCustomers([])
+              }}
             />
           )}
         </TabsContent>
@@ -169,20 +196,34 @@ export function CustomersPage() {
               sorting={[{ id: activeSort, desc: activeOrder === 'desc' }]}
               onSortingChange={updateSorting(status)}
               canAdminister={canAdminister}
-              selectedIds={selectedCustomerIds}
-              onSelectionChange={(customerIds) => setSelectedCustomerIds(new Set(customerIds))}
+              selectedIds={visibleSelectedCustomerIds}
+              onSelectionChange={(customerIds) => {
+                setSelectedCustomerIds(new Set(customerIds))
+                setBlockedCustomers([])
+              }}
             />
           )}
         </TabsContent>
       </Tabs>
       {canAdminister && (
         <BulkLifecycleActions
-          customers={activeCustomers.filter((customer) => selectedCustomerIds.has(customer.id))}
+          blockedCustomers={blockedCustomers}
+          selectedIds={lifecycleActionIds}
           isArchived={isArchived}
-          onClear={() => setSelectedCustomerIds(new Set())}
-          onSuccess={(result: BulkCustomerLifecycleResult) =>
-            setSelectedCustomerIds(new Set(result.blockedCustomers.map((customer) => customer.id)))
-          }
+          onClear={() => {
+            setSelectedCustomerIds(new Set())
+            setBlockedCustomers([])
+          }}
+          onSuccess={(result: BulkCustomerLifecycleResult) => {
+            setBlockedCustomers(result.blockedCustomers)
+            setSelectedCustomerIds(
+              new Set(
+                result.blockedCustomers
+                  .filter((customer) => customer.reason === 'IN_USE')
+                  .map((customer) => customer.id),
+              ),
+            )
+          }}
         />
       )}
       <CustomerSheet

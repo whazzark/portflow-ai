@@ -13,22 +13,27 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { Field, FieldLabel } from '@/components/ui/field'
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 import { useCustomerMutations } from '@/features/customers/mutations/use-customer-mutations'
-import type { BulkCustomerLifecycleResult, CustomerDto } from '@/features/customers/types'
+import type {
+  BulkCustomerLifecycleBlocker,
+  BulkCustomerLifecycleResult,
+} from '@/features/customers/types'
 import { classnames } from '@/libraries/shadcn/helpers'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
 type BulkLifecycleActionsProps = {
-  customers: CustomerDto[]
+  blockedCustomers: BulkCustomerLifecycleBlocker[]
+  selectedIds: string[]
   isArchived: boolean
   onClear: () => void
   onSuccess: (result: BulkCustomerLifecycleResult) => void
 }
 
 export function BulkLifecycleActions({
-  customers,
+  blockedCustomers,
+  selectedIds,
   isArchived,
   onClear,
   onSuccess,
@@ -38,32 +43,33 @@ export function BulkLifecycleActions({
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
   const [error, setError] = useState<ReturnType<typeof parseApiError> | null>(null)
-  const [blockedCustomers, setBlockedCustomers] = useState<
-    BulkCustomerLifecycleResult['blockedCustomers']
-  >([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const submit = async () => {
     setError(null)
+    setIsSubmitting(true)
     try {
-      const body = { ids: customers.map((customer) => customer.id), comment: comment || null }
+      const body = { ids: selectedIds, comment: comment || null }
       const result = isArchived
         ? await mutations.reactivateMany.mutateAsync({ body })
         : await mutations.archiveMany.mutateAsync({ body })
-      setBlockedCustomers(result.data.blockedCustomers)
       setOpen(false)
       setComment('')
       onSuccess(result.data)
+      void mutations.refreshCustomers()
       toast.success(
         result.data.blockedCustomers.length > 0
           ? `${result.data.updatedCustomers.length} customer${result.data.updatedCustomers.length === 1 ? '' : 's'} ${isArchived ? 'reactivated' : 'archived'}; ${result.data.blockedCustomers.length} unchanged`
-          : `${customers.length} customer${customers.length === 1 ? '' : 's'} ${isArchived ? 'reactivated' : 'archived'}`,
+          : `${selectedIds.length} customer${selectedIds.length === 1 ? '' : 's'} ${isArchived ? 'reactivated' : 'archived'}`,
       )
     } catch (cause) {
       setError(parseApiError(cause))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const visible = customers.length > 0
+  const visible = selectedIds.length > 0
 
   return (
     <>
@@ -79,12 +85,11 @@ export function BulkLifecycleActions({
       >
         <div className="pointer-events-auto flex max-w-full items-center gap-2 rounded-xl bg-popover px-2 py-2 text-popover-foreground shadow-lg ring-1 ring-foreground/10">
           <span className="whitespace-nowrap px-2 font-medium text-sm tabular-nums">
-            {customers.length} selected
+            {selectedIds.length} selected
           </span>
           <Button
             onClick={() => {
               setError(null)
-              setBlockedCustomers([])
               setOpen(true)
             }}
             size="sm"
@@ -103,6 +108,17 @@ export function BulkLifecycleActions({
                     </li>
                   ))}
                 </ul>
+                <Button
+                  className="mt-2"
+                  onClick={() => {
+                    setError(null)
+                    setOpen(true)
+                  }}
+                  size="sm"
+                  variant="outline"
+                >
+                  Retry blocked customers
+                </Button>
               </AlertDescription>
             </Alert>
           )}
@@ -133,14 +149,16 @@ export function BulkLifecycleActions({
             <FieldLabel htmlFor="bulk-lifecycle-comment">Comment (optional)</FieldLabel>
             <Textarea
               id="bulk-lifecycle-comment"
+              maxLength={1000}
               onChange={(event) => setComment(event.target.value)}
               value={comment}
             />
+            <FieldDescription>Maximum 1,000 characters.</FieldDescription>
           </Field>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={mutations.archiveMany.isPending || mutations.reactivateMany.isPending}
+              disabled={isSubmitting}
               onClick={(event) => {
                 event.preventDefault()
                 void submit()

@@ -32,7 +32,9 @@ test('archives the visible selected customers with one shared request', async ()
 
   fireEvent.click(screen.getByRole('button', { name: 'Archive selected' }))
   const dialog = await screen.findByRole('alertdialog')
-  fireEvent.change(within(dialog).getByRole('textbox', { name: 'Comment (optional)' }), {
+  const comment = within(dialog).getByRole('textbox', { name: 'Comment (optional)' })
+  expect(comment).toHaveAttribute('maxlength', '1000')
+  fireEvent.change(comment, {
     target: { value: 'Portfolio cleanup' },
   })
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))

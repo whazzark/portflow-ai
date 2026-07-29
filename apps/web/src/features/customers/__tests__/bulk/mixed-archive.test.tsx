@@ -40,4 +40,9 @@ test('keeps blocked selections after a mixed archive result', async () => {
   expect(screen.getByText(/active or planned/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Archive selected' })).toBeInTheDocument()
   expect(screen.getByRole('tab', { name: 'Available (1)' })).toBeInTheDocument()
+  expect(
+    within(screen.getByRole('table', { name: 'Available customers' })).getByRole('checkbox', {
+      name: 'Select customer BETA-02',
+    }),
+  ).toBeChecked()
 })
