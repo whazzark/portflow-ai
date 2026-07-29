@@ -10,7 +10,7 @@ description: "Actionable task list for the operational checkpoints workbench"
 ## Phase 1: Setup
 
 - [ ] T001 [P] [SETUP] [DOC] Confirm the active feature directory and existing Dock/Weighing Area vertical-slice seams in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/` and `apps/api/app/{docks,weighing_areas}/`
-- [ ] T002 [P] [SETUP] [GREEN] Install and register the owned MapCN component and `maplibre-gl` dependency in `apps/web/src/components/ui/map.tsx` and the web package lockfile
+- [ ] T002 [P] [SETUP] [GREEN] Install and register the owned MapCN component and `maplibre-gl` dependency in `apps/web/src/components/ui/map.tsx` and the repository-root `pnpm-lock.yaml`
 - [ ] T003 [P] [SETUP] [DOC] Record the feature's API/UI contract vocabulary and blocker precedence in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/contracts/`
 
 ## Phase 2: Foundational
@@ -57,7 +57,7 @@ description: "Actionable task list for the operational checkpoints workbench"
 - [ ] T028 [P] [US1] [DOC] Update the feature quickstart with the actual focused commands, migration rollback evidence, browser/map caveats, and deferred GH-53 usage-binding constraint in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
 - [ ] T029 [VERIFY] [GREEN] Run the focused API unit/integration and web feature suites listed in `quickstart.md`, including migration validation against the configured disposable database
 - [ ] T030 [VERIFY] [GREEN] Run `pnpm check`, `pnpm typecheck`, and `pnpm test` from the repository root and resolve only feature-scoped failures in the affected paths
-- [ ] T031 [VERIFY] [GREEN] Run the configured authenticated Playwright checkpoints journey at 375, 768, 1024, and 1440 px, including MapCN attribution, marker distinction, WebGL/tile fallback, keyboard access, and no horizontal overflow
+- [ ] T031 [VERIFY] [GREEN] If an authenticated Playwright checkpoints journey is configured, run it at 375, 768, 1024, and 1440 px, including MapCN attribution, marker distinction, WebGL/tile fallback, keyboard access, and no horizontal overflow; otherwise record that the checkpoints-specific journey is absent and use the API integration and router-level web feature suites as the automated acceptance seams
 - [ ] T032 [VERIFY] [DOC] Run `$speckit-analyze` and `$speckit-converge` for the active feature directory and record any resulting follow-up tasks before delivery
 
 ## Dependencies and execution order
@@ -78,4 +78,3 @@ description: "Actionable task list for the operational checkpoints workbench"
 ## Implementation strategy
 
 Deliver the MVP as the authenticated consultation workbench plus safe individual administration (T010–T013, T019, T022–T024). Add grouped lifecycle partial success (T014–T018 and T020, T025), then complete MapCN/accessibility polish and full verification. Every business behavior follows RED → GREEN → REFACTOR, with the API remaining authoritative for authorization and state.
-
