@@ -43,7 +43,7 @@ pnpm --filter @portflow/web exec vitest run \
 
 Verify that `/checkpoints`:
 
-- restores independent search, status, and sorting state for docks and weighing areas;
+- restores independent search and status state for docks and weighing areas;
 - performs case-insensitive name substring search without losing the selected status;
 - presents observer read-only behavior and administrator create/edit/lifecycle controls;
 - validates GPS forms and preserves accessible error feedback;

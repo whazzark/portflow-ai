@@ -89,7 +89,7 @@
 
 ## Workbench Interaction Requirements
 
-- [ ] CHK044 - Are URL-backed filter, search, sort, visible-type, selection, and detail-state requirements defined sufficiently to preserve or reset state in each specified transition? [Clarity, Contracts §UI, Plan §Frontend boundaries]
+- [ ] CHK044 - Are URL-backed filter, search, visible-type, selection, and detail-state requirements defined sufficiently to preserve or reset state in each specified transition? [Clarity, Contracts §UI, Plan §Frontend boundaries]
 - [ ] CHK045 - Are create/edit requirements explicit about whether each form field’s normalized value, validation message, and server-side conflict are presented in a consistent resource-aware way? [Completeness, Contracts §UI, Spec §FR-003, Spec §FR-003a]
 - [ ] CHK046 - Are permission-derived affordances described as a presentation concern while the authoritative mutation authorization remains an API requirement? [Consistency, Contracts §UI, Spec §FR-002, Constitution §V]
 - [ ] CHK047 - Are grouped-action confirmation, partial-result feedback, blocked-row retention, and explicit stale reload requirements defined without prescribing an implementation-specific component or framework? [Clarity, Spec §FR-005a, Spec §FR-007, Plan §Frontend boundaries]

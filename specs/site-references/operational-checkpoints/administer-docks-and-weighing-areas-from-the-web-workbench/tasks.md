@@ -17,8 +17,9 @@ description: "Portflow task list grouped by independently deliverable user story
 - [ ] T002 [P] [SETUP] [GREEN] Install the MapCN registry component and lock `maplibre-gl` in `apps/web/src/components/ui/map.tsx` and `apps/web/package.json`
 - [ ] T003 [P] [SETUP] [DOC] Record the feature verification commands and deferred GH-53 usage-binding constraint in `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/quickstart.md`
 
-## Phase 2: Foundational
+## Phase 2: Foundational RED and GREEN
 
+- [ ] T009 [US1] [RED] Add migration and model tests proving existing rows start at version 1 and successful mutations increment once in `apps/api/tests/unit/docks/dock_concurrency.spec.ts` and `apps/api/tests/unit/weighing_areas/weighing_area_concurrency.spec.ts`
 - [ ] T004 [FOUNDATION] [GREEN] Add the reversible positive `version` columns, defaults, and rollback to `apps/api/database/migrations/*_add_operational_checkpoint_versions.ts`
 - [ ] T005 [P] [FOUNDATION] [GREEN] Update generated database types and schema metadata for versioned docks and weighing areas in `apps/api/database/schema.ts`
 - [ ] T006 [P] [FOUNDATION] [GREEN] Extend Dock and Weighing Area models, factories, and actor relations with version and lifecycle fields in `apps/api/app/models/dock.ts`, `apps/api/app/models/weighing_area.ts`, `apps/api/database/factories/dock_factory.ts`, and `apps/api/database/factories/weighing_area_factory.ts`
@@ -31,9 +32,8 @@ description: "Portflow task list grouped by independently deliverable user story
 
 **Independent test**: Run the focused API unit/integration suites from `quickstart.md` and `pnpm --filter @portflow/web exec vitest run src/features/checkpoints/__tests__ --pool=threads --maxWorkers=1`; verify the authenticated `/checkpoints` journey and the migration rollback/re-run.
 
-### API RED: persistence, use cases, and authorization
+### API RED: use cases and authorization
 
-- [ ] T009 [P] [US1] [RED] Add migration and model tests proving existing rows start at version 1 and successful mutations increment once in `apps/api/tests/unit/docks/dock_concurrency.spec.ts` and `apps/api/tests/unit/weighing_areas/weighing_area_concurrency.spec.ts`
 - [ ] T010 [P] [US1] [RED] Add Dock conditional update/archive/reactivate tests covering stale, wrong-state, not-found, comment normalization, actor, timestamp, and no-change outcomes in `apps/api/tests/unit/docks/dock_concurrency.spec.ts`
 - [ ] T011 [P] [US1] [RED] Add Weighing Area conditional update/archive/reactivate tests covering stale, wrong-state, not-found, comment normalization, actor, timestamp, and no-change outcomes in `apps/api/tests/unit/weighing_areas/weighing_area_concurrency.spec.ts`
 - [ ] T012 [P] [US1] [RED] Add mixed grouped Dock lifecycle tests for eligible, `NOT_FOUND`, `STALE_VERSION`, `IN_USE`, and `ALREADY_*` items with request-order preservation in `apps/api/tests/unit/docks/dock_bulk_lifecycle.spec.ts`
@@ -52,7 +52,7 @@ description: "Portflow task list grouped by independently deliverable user story
 
 ### Web RED: route state, workbench, and mutation behavior
 
-- [ ] T022 [P] [US1] [RED] Add router-level tests for independent type/status/search/sort URL state, list-backed details, and safe invalid detail normalization in `apps/web/src/features/checkpoints/__tests__/route-state.test.tsx`
+- [ ] T022 [P] [US1] [RED] Add router-level tests for independent type/status/search URL state, list-backed details, and safe invalid detail normalization in `apps/web/src/features/checkpoints/__tests__/route-state.test.tsx`
 - [ ] T023 [P] [US1] [RED] Add feature tests for observer/admin affordances, named queries, forms, GPS validation, and mutation cache invalidation in `apps/web/src/features/checkpoints/__tests__/workbench.test.tsx`
 - [ ] T024 [P] [US1] [RED] Add feature tests for selection-scoped grouped actions, mixed changed/blocked feedback, stale reload prompts, and no automatic retry in `apps/web/src/features/checkpoints/__tests__/lifecycle-actions.test.tsx`
 - [ ] T025 [P] [US1] [RED] Add accessibility/responsive tests for synchronized marker lists, labelled controls, focusable dialogs, overflow containment, and map-unavailable fallback in `apps/web/src/features/checkpoints/__tests__/accessibility.test.tsx`
@@ -62,10 +62,10 @@ description: "Portflow task list grouped by independently deliverable user story
 
 - [ ] T027 [US1] [GREEN] Link the enabled Checkpoints navigation item to `/checkpoints` in `apps/web/src/components/layout/app-sidebar.tsx`
 - [ ] T028 [US1] [GREEN] Implement URL-backed authenticated route parsing, list preloading, and safe detail state in `apps/web/src/routes/_authenticated/checkpoints.tsx`
-- [ ] T029 [US1] [GREEN] Implement distinct Dock and Weighing Area query keys, Tuyau builders, DTO adapters, permissions, filtering, sorting, and selection state in `apps/web/src/features/checkpoints/queries/`, `apps/web/src/features/checkpoints/types.ts`, and `apps/web/src/features/checkpoints/helpers/`
+- [ ] T029 [US1] [GREEN] Implement distinct Dock and Weighing Area query keys, Tuyau builders, DTO adapters, permissions, filtering, and selection state in `apps/web/src/features/checkpoints/queries/`, `apps/web/src/features/checkpoints/types.ts`, and `apps/web/src/features/checkpoints/helpers/`
 - [ ] T030 [US1] [GREEN] Implement the shared resource-aware create/edit form with explicit coordinate strings and server validation feedback in `apps/web/src/features/checkpoints/ui/` and `apps/web/src/features/checkpoints/mutations/`
 - [ ] T031 [US1] [GREEN] Implement individual lifecycle dialogs, versioned mutations, stale reload behavior, and affected-resource query invalidation in `apps/web/src/features/checkpoints/mutations/` and `apps/web/src/features/checkpoints/ui/`
-- [ ] T032 [US1] [GREEN] Implement visible-type/status/search/sort filters, synchronized accessible list, marker selection, detail sheet, selection toolbar, and grouped partial-result feedback in `apps/web/src/features/checkpoints/ui/`
+- [ ] T032 [US1] [GREEN] Implement visible-type/status/search filters, synchronized accessible list, marker selection, detail sheet, selection toolbar, and grouped partial-result feedback in `apps/web/src/features/checkpoints/ui/`
 - [ ] T033 [US1] [GREEN] Implement the client-only MapCN canvas with distinct icons, theme-aware CARTO styles, attribution, loading/error states, and list fallback in `apps/web/src/components/ui/map.tsx` and `apps/web/src/features/checkpoints/ui/`
 - [ ] T034 [US1] [REFACTOR] Align checkpoints components with Channel Marker tokens, shadcn primitives, Lucide semantics, keyboard focus order, and narrow viewport layout in `apps/web/src/features/checkpoints/ui/`
 
@@ -85,15 +85,16 @@ description: "Portflow task list grouped by independently deliverable user story
 
 ## Dependencies and execution order
 
-- Phase 1 precedes Phase 2. T004 must precede API implementation; T002 must precede MapCN work.
-- Phase 2 precedes User Story 1. API RED tasks T009–T014 can run in parallel; API GREEN tasks T015–T021 follow the relevant failing tests and share the foundational migration/types.
+- Phase 1 precedes Phase 2. T009 establishes the migration/concurrency RED seam and must precede T004; T004 then precedes T005, T006, and later API implementation. T002 must precede MapCN work.
+- Phase 2 precedes the remaining User Story 1 work. API RED tasks T010–T014 can run in parallel; API GREEN tasks T015–T021 follow the relevant failing tests and share the foundational migration/types.
 - Web RED tasks T022–T026 can run in parallel after the API contracts are fixed; T027–T034 follow those tests and may proceed in parallel by route, data/mutations, and UI files, with T033 dependent on T002.
 - T036–T042 run only after T009–T035 are green. Run T038–T040 together where CI capacity permits; T042 is last.
 
 ### Parallel execution examples
 
 ```text
-Group A (API RED): T009, T010, T011, T012, T013, T014
+First TDD checkpoint: T009 (RED), then T004 (GREEN)
+Group A (remaining API RED): T010, T011, T012, T013, T014
 Group B (API slices): T015, T017, T019, T020 (after their tests; avoid same-file edits)
 Group C (web RED): T022, T023, T024, T025, T026
 Group D (web slices): T027, T028, T029, T030, T031, T032, T033 (split by exact files)

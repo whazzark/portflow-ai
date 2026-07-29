@@ -5,7 +5,7 @@
 **Parent Roadmap**: `specs/site-references/operational-checkpoints/roadmap.md`
 **Roadmap Entry**: `GH-41`
 **Created**: 2026-07-09
-**Status**: `Spec Draft`
+**Status**: `Approved`
 **Priority**: priority:P1
 **Milestone**: 1. Construire le socle des référentiels
 **Domain**: site-references

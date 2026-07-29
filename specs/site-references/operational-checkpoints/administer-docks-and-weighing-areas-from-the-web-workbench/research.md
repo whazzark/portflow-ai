@@ -44,7 +44,7 @@
 
 ## Decision: Use URL-backed independent state inside one `/checkpoints` workbench
 
-**Rationale**: The authenticated route owns visible resource types plus independent URL-backed name search, availability status, and sorting for Docks and Weighing Areas. Changing one type's search preserves its selected status and the other type's state. The map composes the two filtered result sets and renders existing latitude/longitude points with distinct icons; color reinforces type/status but is not the sole signal. Feature-local state owns marker selection, dialogs, and partial-result feedback. An accessible synchronized list supports keyboard and screen-reader inspection. A resource sheet supports create, view, and edit; grouped lifecycle uses a selection toolbar and confirmation dialog.
+**Rationale**: The authenticated route owns visible resource types plus independent URL-backed name search and availability status for Docks and Weighing Areas. Changing one type's search preserves its selected status and the other type's state. The map composes the two filtered result sets and renders existing latitude/longitude points with distinct icons; color reinforces type/status but is not the sole signal. Feature-local state owns marker selection, dialogs, and partial-result feedback. An accessible synchronized list supports keyboard and screen-reader inspection. A resource sheet supports create, view, and edit; grouped lifecycle uses a selection toolbar and confirmation dialog.
 
 **Alternatives considered**: Separate `/docks` and `/weighing-areas` pages would not provide the requested single workbench. A table-only workbench would hide the spatial relationship between references. A global client store would duplicate URL and TanStack Query state.
 
@@ -62,9 +62,9 @@
 
 **Alternatives considered**: Adopting a new palette, font pairing, or block-heavy visual style from generic dashboard guidance would conflict with the established product system. Relying on color-only map markers would fail accessibility; omitting the synchronized list would make keyboard and screen-reader inspection dependent on map interaction; duplicating a separate mobile interaction model would increase implementation and testing cost without a stated product need.
 
-## Decision: Search and sort the already-fetched named lists in the web adapter
+## Decision: Search the already-fetched named lists in the web adapter
 
-**Rationale**: The existing list endpoints return the complete small reference collections and the customer precedent performs URL-backed filtering and sorting in TanStack Table. Case-insensitive substring search is a presentation requirement, so normalized client-side matching keeps API contracts simple and preserves separate state per resource and availability status.
+**Rationale**: The existing list endpoints return the complete small reference collections. Case-insensitive substring search is a presentation requirement, so normalized client-side matching keeps API contracts simple and preserves separate state per resource and availability status.
 
 **Alternatives considered**: Adding server query parameters, pagination, or full-text indexes is not justified by the spec or current reference scale. A single API endpoint returning both resource types would weaken named contracts and cache invalidation.
 

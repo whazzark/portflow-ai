@@ -3,8 +3,8 @@
 ## Route and state
 
 - Authenticated route: `/checkpoints`; the existing Checkpoints sidebar item links to it.
-- URL search state records visible resource types and independent Dock and Weighing Area name-search, sorting, and available/archived status values.
-- Changing one resource's name search preserves its selected status and does not alter the other resource's search, status, or sorting state.
+- URL search state records visible resource types and independent Dock and Weighing Area name-search and available/archived status values.
+- Changing one resource's name search preserves its selected status and does not alter the other resource's search or status state.
 - Detail state records the named resource type, resource ID, and mode (`create`, `view`, or `edit`). Invalid or unauthorized combinations are normalized to a safe closed or read-only state.
 - Search is a trimmed, case-insensitive substring match on `name` only. Changing search preserves that resource type's selected availability status.
 
@@ -12,7 +12,7 @@
 
 - The primary workbench is a MapCN map of dock and weighing-area coordinates, backed by the owned shadcn-style component and `maplibre-gl`. It uses MapCN's default theme-aware CARTO styles with visible attribution and mounts its canvas only on the client.
 - Each resource type uses a distinct marker icon; color reinforces the type and lifecycle state but is never the only differentiator. No generic Checkpoint record is displayed.
-- The visible-type filter selects Docks, Weighing Areas, or both. Independent per-type lifecycle, search, and sorting controls determine which resources of each visible type appear; counts and labels make every active filter explicit.
+- The visible-type filter selects Docks, Weighing Areas, or both. Independent per-type lifecycle and search controls determine which resources of each visible type appear; counts and labels make every active filter explicit.
 - Selecting a marker opens a details sheet backed by the selected list item. The sheet exposes name, GPS coordinates, lifecycle metadata, and permitted actions without a single-resource GET request.
 - Each type's search remains a name-only, case-insensitive filter applied to that type's map markers and synchronized list. Empty, loading, retryable error, map-unavailable, and stale-detail states have visible, announced feedback.
 - Active non-admin users may search, filter, and inspect details. They never receive create, edit, selection, archive, or reactivate controls.

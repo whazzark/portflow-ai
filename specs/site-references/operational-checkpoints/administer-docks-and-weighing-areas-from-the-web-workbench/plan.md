@@ -1,6 +1,7 @@
 # Implementation Plan: Administer Docks and Weighing Areas From the Web Workbench
 
 **Feature ID**: `GH-41` | **Date**: `2026-07-29` | **Spec**: `specs/site-references/operational-checkpoints/administer-docks-and-weighing-areas-from-the-web-workbench/spec.md`
+**Status**: `Approved`
 
 ## Summary
 
@@ -77,11 +78,11 @@ Dock and Weighing Area models gain `archivedBy` and `reactivatedBy` relations fo
 ### Frontend boundaries
 
 - Add thin `apps/web/src/routes/_authenticated/checkpoints.tsx` route composition with a Zod search schema and list preloading. The feature owns screen behavior under `apps/web/src/features/checkpoints/`.
-- Store visible resource types plus independent Dock and Weighing Area name-search, lifecycle-status, and sorting state in the URL. Store named detail type, resource ID, and create/view/edit mode in the URL. Changing one resource's search preserves that resource's lifecycle status and does not alter the other resource's state. Ephemeral selection, dialogs, comments, and result summaries remain feature-local. The route loader preloads both named lists into the same TanStack Query cache used by the page.
+- Store visible resource types plus independent Dock and Weighing Area name-search and lifecycle-status state in the URL. Store named detail type, resource ID, and create/view/edit mode in the URL. Changing one resource's search preserves that resource's lifecycle status and does not alter the other resource's state. Ephemeral selection, dialogs, comments, and result summaries remain feature-local. The route loader preloads both named lists into the same TanStack Query cache used by the page.
 - Use distinct Tuyau query/mutation options and query keys for Docks and Weighing Areas. A small feature-local adapter may normalize both DTOs into a discriminated workbench view model, but it must retain `kind`, named request builders, and resource-specific error handling.
 - Reuse `useAppForm`, registered fields, `applyValidationError`, `FormError`, `SubmitButton`, shadcn primitives, and existing theme tokens. Keep latitude/longitude as explicit form strings until validated and adapted to numbers so a blank value never coerces to zero; use decimal input hints and accept legal zero/boundary values. A resource-aware edit submits the version captured when it opens.
 - Add MapCN's `@mapcn/map` registry component to the owned shadcn UI layer, which installs `maplibre-gl`; do not introduce a second React map wrapper. Render it in a hydration-safe client boundary using MapCN's default theme-aware CARTO styles, preserve visible attribution, and show a recoverable map-unavailable state when styles or tiles cannot load.
-- Render MapCN markers from the latitude/longitude fields with distinct Lucide marker contents for Docks and Weighing Areas. The visible-type filter composes the two independently filtered result sets; each type's URL-backed status, search, and sort state affects only that type. Color only reinforces icon, label, and textual lifecycle state.
+- Render MapCN markers from the latitude/longitude fields with distinct Lucide marker contents for Docks and Weighing Areas. The visible-type filter composes the two independently filtered result sets; each type's URL-backed status and search state affects only that type. Color only reinforces icon, label, and textual lifecycle state.
 - Provide an accessible list representation synchronized with visible map markers so keyboard and screen-reader users can inspect and select resources without relying on map interaction.
 - Only admins see create, edit, row selection, lifecycle, and grouped action controls. This is ergonomic UI policy; API authorization remains authoritative and API failures remain visible.
 - Scope selection to the visible resource type/status/filter and clear it on any scope change. Grouped requests submit each selected row's current version as `expectedVersion` and show an inline announced outcome that lists every changed and unchanged resource rather than relying on a summary toast. Clear changed IDs; retain only still-visible blocked IDs, and disable stale retry until an explicit refetch supplies current versions.
