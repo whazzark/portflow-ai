@@ -47,6 +47,14 @@ function isStaleDockLifecycleError(code: string) {
   )
 }
 
+function isStaleWeighingAreaLifecycleError(code: string) {
+  return (
+    code === 'E_WEIGHING_AREA_NOT_FOUND' ||
+    code === 'E_WEIGHING_AREA_ALREADY_ARCHIVED' ||
+    code === 'E_WEIGHING_AREA_ALREADY_AVAILABLE'
+  )
+}
+
 function DockLifecycleActions({
   dock,
   onStale,
@@ -332,6 +340,7 @@ function WeighingAreaDetails({
   onUpdate,
   mode = 'view',
   onSuccess,
+  onLifecycleStale,
 }: {
   area?: WeighingAreaDto
   onClose: () => void
@@ -348,6 +357,7 @@ function WeighingAreaDetails({
   }) => Promise<WeighingAreaDto>
   mode?: 'view' | 'edit' | 'create'
   onSuccess?: (area: WeighingAreaDto) => void
+  onLifecycleStale?: (message: string) => void
 }) {
   if ((mode === 'create' && onCreate) || (mode === 'edit' && area && onUpdate)) {
     const isCreate = mode === 'create'
@@ -407,6 +417,10 @@ function WeighingAreaDetails({
                 Edit
               </Button>
             )}
+            <WeighingAreaLifecycleActions
+              area={area}
+              onStale={onLifecycleStale ?? (() => undefined)}
+            />
             <Button
               aria-label="Close weighing area details"
               onClick={onClose}
@@ -433,6 +447,92 @@ function WeighingAreaDetails({
         </dl>
       </aside>
     </div>
+  )
+}
+
+function WeighingAreaLifecycleActions({
+  area,
+  onStale,
+}: {
+  area: WeighingAreaDto
+  onStale: (message: string) => void
+}) {
+  const mutations = useWeighingAreaMutations()
+  const [open, setOpen] = useState(false)
+  const [comment, setComment] = useState('')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const archived = area.status === 'ARCHIVED'
+
+  const submit = async () => {
+    try {
+      setErrorMessage(null)
+      const result = archived
+        ? await mutations.reactivate.mutateAsync({
+            params: { id: area.id },
+            body: { comment: comment.trim() || null },
+          })
+        : await mutations.archive.mutateAsync({
+            params: { id: area.id },
+            body: { comment: comment.trim() || null },
+          })
+      setOpen(false)
+      setComment('')
+      return result.data
+    } catch (error) {
+      const apiError = parseApiError(error)
+      if (isStaleWeighingAreaLifecycleError(apiError.code)) {
+        onStale(apiError.message)
+        return
+      }
+      setErrorMessage(apiError.message)
+    }
+  }
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)} variant={archived ? 'default' : 'destructive'}>
+        {archived ? 'Reactivate weighing area' : 'Archive weighing area'}
+      </Button>
+      <AlertDialog modal={false} open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {archived ? 'Reactivate weighing area?' : 'Archive weighing area?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {archived
+                ? 'This weighing area will become selectable for new Discharges.'
+                : 'This weighing area will remain readable but no longer be selectable for new Discharges.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {errorMessage && <p role="alert">{errorMessage}</p>}
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="weighing-area-lifecycle-comment">Comment (optional)</FieldLabel>
+              <Textarea
+                id="weighing-area-lifecycle-comment"
+                maxLength={1000}
+                onChange={(event) => setComment(event.target.value)}
+                value={comment}
+              />
+              <FieldDescription>Maximum 1,000 characters.</FieldDescription>
+            </Field>
+          </FieldGroup>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={mutations.archive.isPending || mutations.reactivate.isPending}
+              onClick={(event) => {
+                event.preventDefault()
+                void submit()
+              }}
+            >
+              {archived ? 'Reactivate' : 'Archive'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
@@ -535,6 +635,7 @@ function WeighingAreaList({
 function WeighingAreaWorkbench() {
   const navigate = checkpointsRoute.useNavigate()
   const { status, q, sort, detail, mode } = checkpointsRoute.useSearch()
+  const [lifecycleFeedback, setLifecycleFeedback] = useState<string | null>(null)
   const mutations = useWeighingAreaMutations()
   const areasQuery = useQuery(weighingAreaQueries.list())
   const detailQuery = useQuery({
@@ -545,6 +646,7 @@ function WeighingAreaWorkbench() {
 
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-4 md:p-6">
+      {lifecycleFeedback && <p role="alert">{lifecycleFeedback}</p>}
       <div>
         <p className="text-muted-foreground text-sm">Site references</p>
         <div className="flex items-center justify-between gap-4">
@@ -642,6 +744,12 @@ function WeighingAreaWorkbench() {
           onClose={() =>
             navigate({ search: (current) => ({ ...current, detail: undefined, mode: undefined }) })
           }
+          onLifecycleStale={(message) => {
+            setLifecycleFeedback(message)
+            void navigate({
+              search: (current) => ({ ...current, detail: undefined, mode: undefined }),
+            })
+          }}
         />
       )}
       {mode === 'edit' && detail && detailQuery.data?.data && (

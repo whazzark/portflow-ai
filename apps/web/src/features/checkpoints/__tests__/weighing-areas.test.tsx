@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -173,4 +173,86 @@ test('creates and edits an available weighing area with field and conflict feedb
     method: 'PATCH',
     body: { name: 'North Scale Updated', latitude: 48.4, longitude: 2.4 },
   })
+})
+
+test('archives and reactivates a weighing area while recovering from blocked and stale outcomes', async () => {
+  const user = userEvent.setup()
+  let area = { ...WEIGHING_AREAS[0] }
+  const attempts = { archive: 0, reactivate: 0 }
+  const requests: Array<{ path: string; body: unknown }> = []
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ADMIN })),
+    http.get(`${API_BASE_URL}/api/v1/weighing-areas`, () => HttpResponse.json({ data: [area] })),
+    http.get(`${API_BASE_URL}/api/v1/weighing-areas/:id`, () => HttpResponse.json({ data: area })),
+    http.post(`${API_BASE_URL}/api/v1/weighing-areas/:id/archive`, async ({ request }) => {
+      requests.push({ path: 'archive', body: null })
+      attempts.archive += 1
+      if (attempts.archive === 1) {
+        return HttpResponse.json(
+          {
+            error: {
+              code: 'E_WEIGHING_AREA_IN_USE',
+              message: 'Weighing area is used by a planned or active discharge',
+            },
+          },
+          { status: 409 },
+        )
+      }
+      area = { ...area, status: 'ARCHIVED', archiveComment: 'Replaced scale' }
+      return HttpResponse.json({ data: area })
+    }),
+    http.post(`${API_BASE_URL}/api/v1/weighing-areas/:id/reactivate`, () => {
+      requests.push({ path: 'reactivate', body: null })
+      attempts.reactivate += 1
+      if (attempts.reactivate === 1) {
+        return HttpResponse.json(
+          {
+            error: {
+              code: 'E_WEIGHING_AREA_ALREADY_AVAILABLE',
+              message: 'Weighing area is already available',
+            },
+          },
+          { status: 409 },
+        )
+      }
+      area = { ...area, status: 'AVAILABLE', archiveComment: undefined }
+      return HttpResponse.json({ data: area })
+    }),
+  )
+
+  renderApp('/checkpoints?resource=weighing-areas')
+  await screen.findByRole('table', { name: 'Available weighing areas' })
+  await user.click(screen.getByRole('button', { name: 'View weighing area Zulu Scale' }))
+
+  const details = await screen.findByRole('dialog', { name: 'Zulu Scale' })
+  fireEvent.click(within(details).getByRole('button', { name: 'Archive weighing area' }))
+  const archiveDialog = screen.getByRole('alertdialog')
+  fireEvent.change(within(archiveDialog).getByRole('textbox', { name: 'Comment (optional)' }), {
+    target: { value: 'Replaced scale' },
+  })
+  fireEvent.click(within(archiveDialog).getByRole('button', { name: 'Archive' }))
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  expect(screen.getByText('Weighing area is used by a planned or active discharge')).toBeInTheDocument()
+  expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+  expect(within(details).getByText('Available')).toBeInTheDocument()
+
+  fireEvent.click(within(archiveDialog).getByRole('button', { name: 'Archive' }))
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  expect(within(details).getByText('Archived')).toBeInTheDocument()
+  expect(within(details).getByText('Replaced scale')).toBeInTheDocument()
+  expect(requests[0]).toEqual({ path: 'archive', body: null })
+
+  fireEvent.click(within(details).getByRole('button', { name: 'Reactivate weighing area' }))
+  const reactivateDialog = screen.getByRole('alertdialog')
+  fireEvent.click(within(reactivateDialog).getByRole('button', { name: 'Reactivate' }))
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  expect(screen.getByText('Weighing area is already available')).toBeInTheDocument()
+  expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+  expect(within(details).getByText('Archived')).toBeInTheDocument()
+
+  fireEvent.click(within(reactivateDialog).getByRole('button', { name: 'Reactivate' }))
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  expect(within(details).getByText('Available')).toBeInTheDocument()
+  expect(requests[2]).toEqual({ path: 'reactivate', body: null })
 })
