@@ -287,3 +287,37 @@ test('archives and reactivates a weighing area while recovering from blocked and
   expect(within(details).getByText('Scale returned to service')).toBeInTheDocument()
   expect(requests[2]).toEqual({ path: 'reactivate', body: { comment: null } })
 })
+
+test('closes stale weighing area lifecycle details and reports the authoritative conflict', async () => {
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ADMIN })),
+    http.get(`${API_BASE_URL}/api/v1/weighing-areas`, () =>
+      HttpResponse.json({ data: [WEIGHING_AREAS[0]] }),
+    ),
+    http.get(`${API_BASE_URL}/api/v1/weighing-areas/:id`, () =>
+      HttpResponse.json({ data: WEIGHING_AREAS[0] }),
+    ),
+    http.post(`${API_BASE_URL}/api/v1/weighing-areas/:id/archive`, () =>
+      HttpResponse.json(
+        {
+          error: {
+            code: 'E_WEIGHING_AREA_ALREADY_ARCHIVED',
+            message: 'Weighing area is already archived',
+          },
+        },
+        { status: 409 },
+      ),
+    ),
+  )
+
+  const { router } = renderApp('/checkpoints?resource=weighing-areas')
+  await screen.findByRole('table', { name: 'Available weighing areas' })
+  fireEvent.click(screen.getByRole('button', { name: 'View weighing area Zulu Scale' }))
+  const details = await screen.findByRole('dialog', { name: 'Zulu Scale' })
+  fireEvent.click(within(details).getByRole('button', { name: 'Archive weighing area' }))
+  fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Archive' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Weighing area is already archived')
+  expect(screen.queryByRole('dialog', { name: 'Zulu Scale' })).not.toBeInTheDocument()
+  expect(router.state.location.search).not.toHaveProperty('detail')
+})
