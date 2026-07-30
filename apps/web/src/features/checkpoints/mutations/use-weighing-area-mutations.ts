@@ -36,6 +36,9 @@ export function useWeighingAreaMutations() {
           { method: 'POST', body: JSON.stringify(variables.body) },
         ),
       onSuccess: (result) => refreshWeighingArea(result.data.id),
+      onError: (_error, variables) => {
+        void refreshWeighingArea(String(variables.params.id))
+      },
     }),
     create: useMutation({
       mutationFn: (variables: { body: Payload }) =>
@@ -44,8 +47,8 @@ export function useWeighingAreaMutations() {
           body: JSON.stringify(variables.body),
       }),
       onSuccess: (result) => refreshWeighingArea(result.data.id),
-      onError: (_error, variables) => {
-        void refreshWeighingArea(String(variables.params.id))
+      onError: () => {
+        void refreshWeighingArea()
       },
     }),
     update: useMutation({
@@ -66,6 +69,9 @@ export function useWeighingAreaMutations() {
           { method: 'POST', body: JSON.stringify(variables.body) },
         ),
       onSuccess: (result) => refreshWeighingArea(result.data.id),
+      onError: (_error, variables) => {
+        void refreshWeighingArea(String(variables.params.id))
+      },
     }),
   }
 }
