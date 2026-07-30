@@ -275,3 +275,28 @@ test('archives and reactivates a dock while recovering from blocked and stale ou
   expect(within(details).getByText('Available')).toBeInTheDocument()
   expect(requests[2]).toEqual({ path: 'reactivate', body: { comment: null } })
 })
+
+test('closes stale dock lifecycle details and reports the authoritative conflict', async () => {
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ADMIN })),
+    http.get(`${API_BASE_URL}/api/v1/docks`, () => HttpResponse.json({ data: [DOCKS[0]] })),
+    http.get(`${API_BASE_URL}/api/v1/docks/:id`, () => HttpResponse.json({ data: DOCKS[0] })),
+    http.post(`${API_BASE_URL}/api/v1/docks/:id/archive`, () =>
+      HttpResponse.json(
+        { error: { code: 'E_DOCK_ALREADY_ARCHIVED', message: 'Dock is already archived' } },
+        { status: 409 },
+      ),
+    ),
+  )
+
+  const { router } = renderApp('/checkpoints')
+  await screen.findByRole('table', { name: 'Available docks' })
+  fireEvent.click(screen.getByRole('button', { name: 'View dock Zulu Dock' }))
+  const details = await screen.findByRole('dialog', { name: 'Zulu Dock' })
+  fireEvent.click(within(details).getByRole('button', { name: 'Archive dock' }))
+  fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Archive' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Dock is already archived')
+  expect(screen.queryByRole('dialog', { name: 'Zulu Dock' })).not.toBeInTheDocument()
+  expect(router.state.location.search).not.toHaveProperty('detail')
+})

@@ -39,7 +39,21 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 
 const checkpointsRoute = getRouteApi('/_authenticated/checkpoints')
 
-function DockLifecycleActions({ dock }: { dock: DockDto }) {
+function isStaleDockLifecycleError(code: string) {
+  return (
+    code === 'E_DOCK_NOT_FOUND' ||
+    code === 'E_DOCK_ALREADY_ARCHIVED' ||
+    code === 'E_DOCK_ALREADY_AVAILABLE'
+  )
+}
+
+function DockLifecycleActions({
+  dock,
+  onStale,
+}: {
+  dock: DockDto
+  onStale: (message: string) => void
+}) {
   const mutations = useDockMutations()
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
@@ -63,7 +77,12 @@ function DockLifecycleActions({ dock }: { dock: DockDto }) {
       setComment('')
       return result.data
     } catch (error) {
-      setErrorMessage(parseApiError(error).message)
+      const apiError = parseApiError(error)
+      if (isStaleDockLifecycleError(apiError.code)) {
+        onStale(apiError.message)
+        return
+      }
+      setErrorMessage(apiError.message)
     }
   }
 
@@ -121,6 +140,7 @@ function DockDetails({
   onUpdate,
   mode = 'view',
   onSuccess,
+  onLifecycleStale,
 }: {
   dock?: DockDto
   onClose: () => void
@@ -129,6 +149,7 @@ function DockDetails({
   onUpdate?: (value: { name: string; latitude: number; longitude: number }) => Promise<DockDto>
   mode?: 'view' | 'edit' | 'create'
   onSuccess?: (dock: DockDto) => void
+  onLifecycleStale?: (message: string) => void
 }) {
   if ((mode === 'create' && onCreate) || (mode === 'edit' && dock && onUpdate)) {
     const isCreate = mode === 'create'
@@ -182,7 +203,7 @@ function DockDetails({
                 Edit
               </Button>
             )}
-            <DockLifecycleActions dock={dock} />
+            <DockLifecycleActions dock={dock} onStale={onLifecycleStale ?? (() => undefined)} />
             <Button aria-label="Close dock details" onClick={onClose} size="icon" variant="ghost">
               <XIcon aria-hidden="true" />
             </Button>
@@ -654,6 +675,7 @@ export function CheckpointsPage() {
   const user = useAuthenticatedUser()
   const navigate = checkpointsRoute.useNavigate()
   const { resource, status, q, sort, detail, mode } = checkpointsRoute.useSearch()
+  const [lifecycleFeedback, setLifecycleFeedback] = useState<string | null>(null)
   const mutations = useDockMutations()
   const docksQuery = useQuery({ ...dockQueries.list(), enabled: resource === 'docks' })
   const detailQuery = useQuery({
@@ -680,6 +702,7 @@ export function CheckpointsPage() {
 
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-4 md:p-6">
+      {lifecycleFeedback && <p role="alert">{lifecycleFeedback}</p>}
       <div>
         <p className="text-muted-foreground text-sm">Site references</p>
         <div className="flex items-center justify-between gap-4">
@@ -790,6 +813,12 @@ export function CheckpointsPage() {
           onUpdate={async (value) =>
             (await mutations.update.mutateAsync({ params: { id: detail }, body: value })).data
           }
+          onLifecycleStale={(message) => {
+            setLifecycleFeedback(message)
+            void navigate({
+              search: (current) => ({ ...current, detail: undefined, mode: undefined }),
+            })
+          }}
         />
       )}
       {mode === 'edit' && detail && detailQuery.data?.data && (
