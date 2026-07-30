@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import { test } from 'node:test'
 
@@ -386,6 +389,7 @@ test('renders first-checkpoint evidence when creating the Draft PR', () => {
 
 test('dry-run resolves an issue without mutating the branch or Project', async () => {
   const terminal = terminalHarness()
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'portflow-workflow-dry-run-'))
   const calls = []
   const github = {
     fetchIssue(number) {
@@ -400,6 +404,7 @@ test('dry-run resolves an issue without mutating the branch or Project', async (
     },
   }
   const workflow = new TerminalWorkflow({
+    root,
     input: terminal.input,
     output: terminal.output,
     github,
@@ -419,6 +424,7 @@ test('dry-run resolves an issue without mutating the branch or Project', async (
     assert.match(terminal.text(), /"startsAt": "specify"/)
   } finally {
     workflow.close()
+    fs.rmSync(root, { recursive: true, force: true })
   }
 })
 

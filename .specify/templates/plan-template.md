@@ -1,55 +1,36 @@
-# Implementation Plan: [FEATURE]
+# Delivery plan: [FEATURE]
 
-**Feature ID**: `[DOMAIN-SLUG]` | **Date**: `[DATE]` | **Spec**: `specs/[FEATURE]/spec.md`
-**Input**: Feature specification from `specs/[FEATURE]/spec.md`
+**Spec**: `specs/[FEATURE]/spec.md`
+**Profile**: `standard`
 
-## Summary
+## Approach
 
-[Primary requirement and the smallest coherent technical approach]
+[Smallest coherent technical approach and existing behavior to reuse.]
 
-## Technical Context
+## Affected boundaries
 
-- **Apps**: `apps/api`, `apps/web`, or both
-- **Language/runtime**: TypeScript, Node.js, AdonisJS, TanStack Start
-- **Storage**: PostgreSQL and/or existing persistence
-- **Testing**: unit, integration, feature, and e2e level(s) required
-- **Constraints**: authorization, concurrency, migrations, performance, accessibility
+- **Domain/application**: [use cases, policies, repositories, invariants]
+- **API**: [routes, validation, authorization, DTOs, errors]
+- **Data/migrations**: [schema, compatibility, rollback, or none]
+- **Web**: [feature slice, adapters, route, states, accessibility]
 
-## Constitution Check
+## Risks and rollback
 
-Record how the plan satisfies each applicable constitution principle. Any violation needs a reason and a simpler alternative that was rejected.
+- [Security, concurrency, migration, compatibility, external dependency, or rollout risk]
+- [Rollback or safe recovery path]
 
-## Design
+## Acceptance-to-test mapping
 
-### Domain and data model
-
-[Entities, invariants, migrations, and durable decisions]
-
-### API and application boundaries
-
-[Use cases, repositories, policies, controllers, DTOs, routes, and error contracts]
-
-### Frontend boundaries
-
-[Feature slices, adapters, route composition, states, and user-visible flows]
-
-### Test strategy
-
-[RED test seams, integration contract, feature behavior, e2e journey, and regression coverage]
-
-## Repository Changes
-
-```text
-[Concrete files/directories and why each changes]
-```
-
-## Risks and Rollout
-
-- [Migration, compatibility, security, performance, or rollout risk]
-- [Rollback or feature flag strategy]
-
-## Acceptance Traceability
-
-| Requirement / scenario | Planned test or verification | Implementation area |
+| Scenario / rule | Observable test | Area |
 |---|---|---|
-| FR-001 / US1 | [test command or case] | [path/layer] |
+| Scenario 1 / BR-001 | [focused command or journey] | [path/layer] |
+
+## Implementation Slices
+
+- [ ] `slice-01` — [First independently testable outcome]
+- [ ] `slice-02` — [Second independently testable outcome]
+- [ ] `slice-03` — [Third independently testable outcome]
+- [ ] `slice-04` — [Fourth independently testable outcome]
+- [ ] `slice-05` — [Final integration or browser outcome]
+
+Keep between 5 and 15 outcome-oriented slices for a standard delivery. Each slice is executed with RED → GREEN → REFACTOR; do not create separate bookkeeping tasks for those internal steps.

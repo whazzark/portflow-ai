@@ -155,11 +155,15 @@ export function domainScope(featureDirectory) {
   return slugify(segments.at(-1)) || slugify(segments[1]) || 'delivery'
 }
 
-export function branchName(issue, featureDirectory) {
+export function branchName(issue, featureDirectory, profile = 'standard') {
   const labelNames = (issue.labels ?? []).map((label) =>
     typeof label === 'string' ? label : label.name,
   )
-  const type = labelNames.some((label) => /bug|defect|regression/i.test(label)) ? 'fix' : 'feat'
+  const type = labelNames.some((label) => /bug|defect|regression/i.test(label))
+    ? 'fix'
+    : profile === 'lite'
+      ? 'chore'
+      : 'feat'
   return `${type}/${issue.number}-${slugify(issue.title || featureDirectory.split('/').at(-1))}`
 }
 

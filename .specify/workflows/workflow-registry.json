@@ -8,22 +8,6 @@
       "source": "bundled",
       "installed_at": "2026-07-27T20:08:58.892269+00:00",
       "updated_at": "2026-07-27T20:08:58.892280+00:00"
-    },
-    "portflow-feature": {
-      "name": "Portflow Full Spec-Driven Delivery",
-      "version": "2.0.0",
-      "description": "Phase contract used by the issue-driven terminal orchestrator for new features",
-      "source": ".specify/workflows/portflow-feature",
-      "installed_at": "2026-07-27T20:11:30.862673+00:00",
-      "updated_at": "2026-07-29T00:00:00+00:00"
-    },
-    "portflow-existing-feature": {
-      "name": "Portflow Existing Spec Delivery",
-      "version": "2.0.0",
-      "description": "Phase contract used by the issue-driven terminal orchestrator for existing specs",
-      "source": ".specify/workflows/portflow-existing-feature",
-      "installed_at": "2026-07-27T21:05:29.658051+00:00",
-      "updated_at": "2026-07-29T00:00:00+00:00"
     }
   }
 }

@@ -1,208 +1,168 @@
-# Spec Kit Operator Guide
+# Lean Spec Kit Delivery Guide
 
-This guide is the operational entry point for running Portflow's Codex-only Spec Kit workflow. The project constitution defines the binding principles; `AGENTS.md` defines repository-wide agent rules; this document explains the commands an operator uses day to day.
+Portflow uses Spec Kit artifacts as concise delivery contracts and one Draft PR as the human workflow interface. GitHub Issues own intake and priority, `spec.md` owns product intent, ADRs own durable architecture, and code plus tests own delivered behavior.
 
-## Prerequisites
+## Delivery profiles
 
-- Node.js 22, PNPM 10, and the repository dependencies installed.
-- GitHub CLI authenticated for issue and Project operations.
-- `specify` 0.14.2 or a reviewed compatible version.
-- Codex as the only installed and default Spec Kit integration.
+Choose the smallest profile that protects the change:
 
-Check the local installation without changing files:
+| Profile | Use | Required artifacts | Build approval |
+|---|---|---|---|
+| `lite` | Local bug fix, refactor, workflow, docs, or tooling without new product intent | None | None |
+| `standard` | Default behavior-changing delivery | `spec.md`, concise `plan.md` | One Ready-to-build approval |
+| `high-assurance` | Security, destructive migration, concurrency, public contract, regulated behavior | `spec.md`, `plan.md`, targeted supporting artifact only when justified | Separate Spec and Plan approvals |
+
+Set one stable issue label: `delivery:lite`, `delivery:standard`, or `delivery:high-assurance`. When no label or explicit option exists, the workflow defaults to `standard`.
+
+## Start and inspect
+
+Start from a clean `master` worktree:
 
 ```bash
-specify --version
-specify check
-specify integration status
-specify workflow info portflow-feature
+pnpm delivery:start -- 123
+pnpm delivery:start -- 123 --profile standard --dry-run
 ```
 
-`specify integration status` reports four locally modified managed templates. This is expected: the spec template adds GitHub and roadmap traceability, the plan template adds Portflow architecture and acceptance mapping, the tasks template enforces TDD and final verification, and the checklist template enforces domain, authorization, and application-boundary review. Do not force an integration upgrade without reviewing those changes.
+The command resolves the canonical feature directory, creates the required issue branch, pushes the first checkpoint, opens one Draft PR, and projects workflow progress into its managed block. Standard and high-assurance deliveries draft lean artifacts; lite deliveries implement one small focused checkpoint without creating Spec Kit artifacts.
 
-## Source of truth and artifact layout
+Inspect without mutation:
 
-GitHub Issues hold intake, priority, discussion, durable planning notes, and stable traceability. The GitHub Project holds continuous delivery state and implementation order. Versioned files under `specs/` are the canonical behavioral contract.
+```bash
+pnpm delivery:status -- 123
+pnpm delivery:validate -- 123
+```
+
+Run delivery commands from the issue branch so local artifacts and the PR head cannot diverge. `.specify/delivery.json` is an ignored convenience pointer. It is never authoritative. A fresh checkout can reconstruct state after fetching and checking out the issue branch from the issue, branch, PR, artifacts, approval comments, independent-review record, and checks.
+
+## Standard workflow
 
 ```text
-specs/<domain>/<epic>/roadmap.md
-specs/<domain>/<epic>/<feature>/spec.md
-specs/<domain>/<epic>/<feature>/plan.md
-specs/<domain>/<epic>/<feature>/tasks.md
-specs/<domain>/<epic>/<feature>/checklists/
+draft spec and plan
+→ Ready to build
+→ implementation slices
+→ independent review
+→ final verification
+→ human delivery review
+→ merge
 ```
 
-Standalone work uses `specs/standalone/<feature>/`. GitHub issue numbers belong in artifact metadata, not in directory names or ordering.
+The plan contains 5–15 outcome-oriented items under `## Implementation Slices`. Each slice follows RED → GREEN → REFACTOR internally. Do not create separate bookkeeping tasks for each TDD step.
 
-## Start or update a feature
-
-Select or create the GitHub intake issue and qualify its priority, milestone, parent, and Project item. Then start the terminal workflow from a clean `master` worktree:
+Approve the current artifact hashes:
 
 ```bash
-pnpm spec:workflow
+pnpm delivery:approve -- 123 --gate ready-to-build
 ```
 
-The command asks for the issue number. The equivalent shortcut is:
+Then advance one calculated action at a time:
 
 ```bash
-pnpm spec:workflow -- 123
+pnpm delivery:continue -- 123
 ```
 
-The orchestrator reads the issue, reuses the canonical artifact path linked in its body, derives the required `<type>/<issue-number>-<slug>` branch, and starts at `specify` or `clarify` depending on whether `spec.md` already exists. When an issue does not yet link an artifact, it recommends a stable path and asks for confirmation. `--feature-dir` remains available as an explicit override.
+The command implements one slice, runs its focused observable test, marks that slice complete, creates a focused Conventional Commit, pushes it, and refreshes the PR. It pauses only for a material product decision, irreversible risk, authorization choice, or external blocker.
 
-Use a dry run to inspect the resolution without creating a branch or changing GitHub:
+## High-assurance workflow
+
+High-assurance work uses:
 
 ```bash
-pnpm spec:workflow -- 123 --dry-run
+pnpm delivery:approve -- 123 --gate spec-review
+pnpm delivery:continue -- 123
+pnpm delivery:approve -- 123 --gate plan-review
 ```
 
-The orchestrator supplies `SPECIFY_FEATURE_DIRECTORY` to every Codex phase, preventing sequentially numbered directories. Existing specs start at clarification and are never replaced with a blank template.
+Checklist, cross-artifact analysis, data-model notes, and explicit contracts are permitted only when targeted by the approved risk profile. They are not unconditional phases.
 
-Do not use the full implementation workflow for an artifact marked `Done (historical)`. Historical specs record delivered intent; they are not implementation queues.
+## Independent review and verification
 
-## Gates, status, and resume
+Run a fresh read-only review explicitly or let `continue` select it:
 
-The workflow is:
+```bash
+pnpm delivery:review -- 123
+```
+
+Confirmed technical findings return only to implementation. After a correction commit, the prior review is stale and a fresh review is required. A finding that changes product intent returns to a human decision.
+
+Final verification runs once after the branch has zero open finding:
 
 ```text
-specify → clarify → Spec Review → plan → checklist → Plan Review
-→ tasks → analyze → implement checkpoints → checks → converge loop
-→ fresh Codex review → Delivery Review
-```
-
-The same terminal process displays Codex recommendations and asks targeted questions. Answer in place; `/pause` preserves the phase and its Codex session. Inspect and resume local state with:
-
-```bash
-pnpm spec:workflow -- status
-pnpm spec:workflow -- status --issue 123
-
-pnpm spec:workflow -- resume --issue 123
-```
-
-`.specify/feature.json` records the active feature for local Codex sessions and is intentionally not committed. Workflow run state under `.specify/workflows/runs/` is also local.
-
-Every artifact or implementation checkpoint shows its diff and exact proposed Conventional Commit message. The operator can:
-
-- approve the message, which commits, pushes, and synchronizes the Draft PR;
-- edit the message before approval;
-- reject it and enter feedback, which resumes the same Codex phase;
-- pause without losing phase or conversation state.
-
-The fixed orchestrator performs the commit only after approval. Codex may propose a message, but the orchestrator validates `<type>(<domain>): <Description>`, rejects generic messages such as `sync`, and falls back to a phase-specific message. Implementation advances one coherent TDD checkpoint at a time, allowing distinct `test`, `feat`, `fix`, or `refactor` commits instead of one broad implementation commit. Analysis, verification, convergence, and review create no commit when they change no file.
-
-The workflow updates two independent Project fields. `Status` is the operational Kanban:
-
-| Workflow point | Status |
-| --- | --- |
-| Qualified but not startable | `Backlog` |
-| Approved with no blocking dependency | `Ready` |
-| Specification, planning, implementation, or checks active | `In Progress` |
-| Human gate, convergence, review, CI, or delivery approval | `Review` |
-| External decision or dependency required | `Blocked` |
-| Issue closed | `Done` |
-
-`Spec Status` records artifact maturity:
-
-| Workflow point | Spec Status |
-| --- | --- |
-| Product qualification required | `Intake` |
-| Spec being written or clarified | `Spec Draft` |
-| Draft PR awaiting spec approval | `Spec Review` |
-| Plan awaiting approval | `Plan Review` |
-| Spec, plan, and tasks approved | `Ready` |
-| Implementation underway | `In Progress` |
-| Convergence and review underway | `Review` |
-| External decision or dependency required | `Blocked` |
-| Delivery merged or historical work recorded | `Done` |
-
-The daily `Kanban` and `Active flow` boards exclude `epic` issues. Use `Roadmap` for epics, `Backlog` for priority ordering, and `Spec pipeline` for unfinished artifact maturity. Portflow uses continuous flow; do not add a `Sprint` field.
-
-## Pull request contract
-
-The workflow opens one Draft PR immediately after the first approved `spec.md` checkpoint. It keeps the same PR through clarification, plan, tasks, implementation, verification, convergence, and review.
-
-- Put the exact `specs/.../spec.md` path in the PR template.
-- Keep `Current review gate` synchronized with the workflow: use `Spec Review` or `Plan Review` at the matching Project status, then `Delivery Review` when the Project item moves to `Review`.
-- Update only workflow-managed PR sections. Reviewer-authored text and comments outside the managed markers are preserved.
-- Push only approved checkpoints; intermediate answers and rejected changes are not pushed.
-- Draft PRs may stop at the spec gate.
-- Ready PRs require `plan.md`, `tasks.md`, no clarification markers, and no unchecked tasks.
-- Run `pnpm check`, `pnpm typecheck`, `pnpm test`, `pnpm test:spec-kit`, relevant browser journeys, `$speckit-analyze`, and `$speckit-converge`.
-- Obtain a fresh Codex review and human approval before merge.
-
-Workflow, documentation, and tooling-only PRs use `Spec: N/A`.
-
-## Backlog migration and GitHub cutover
-
-These are administrative commands, not daily feature commands:
-
-```bash
-node scripts/spec-kit/migrate-backlog.mjs --dry-run
-node scripts/spec-kit/migrate-backlog.mjs
-node scripts/spec-kit/validate-backlog.mjs
-node scripts/spec-kit/validate-backlog.mjs --github
-node scripts/spec-kit/cutover-github.mjs --dry-run
-node scripts/spec-kit/cutover-github.mjs --dry-run --json
-pnpm project:kanban
-```
-
-The local validator checks artifact structure and traceability. `--github` additionally compares every manifest parent with the live GitHub parent relationship.
-
-Once `.migration-manifest.json` exists, `migrate-backlog.mjs` is audit-only by default. `--force-regenerate` is intentionally required to write again because GitHub issue bodies become tracking stubs after cutover and no longer contain the original specification source.
-
-`cutover-github.mjs --apply` updates changed issue stubs, adds missing Project items, sets the target `Spec Status`, and removes legacy execution-state labels. The dry-run report inventories each obsolete label definition and every issue or PR that still uses it, including uses outside the frozen migration scope. Add `--delete-label-definitions` only after that inventory has been reviewed. Deletion is refused if any use remains after issue updates.
-
-Every apply run first writes the current issue bodies, labels, Project item IDs, statuses, and label definitions to `.specify/migration-backup/`; rerunning the command resumes idempotently.
-
-`pnpm project:kanban` audits the current Project without mutation. `pnpm project:kanban -- --apply` creates a fresh backup, restores the canonical Kanban fields and views, adds missing issues, removes the legacy `Sprint` field, and reapplies the dependency-ordered backlog. In Project **Workflows**, enable the native `Auto-archive items` workflow with `is:closed updated:<@today-15d`; GitHub does not expose creation or configuration of that workflow through the public Projects API. Archived items remain restorable.
-
-The current frozen migration covers 165 open and closed non-PR issues: 30 roadmaps and 135 feature specs. Closed deliveries produce artifacts marked `Done (historical)`. New issues created after the migration snapshot are not added to the manifest automatically.
-
-## First workflow pilot
-
-After the migration PR is merged, select one small real feature in `Spec Draft` with a clear parent roadmap and no external blocker. Start it through `pnpm spec:workflow`, then verify each gate before using the workflow more broadly:
-
-- no sequentially numbered directory is created;
-- `.specify/feature.json` records the selected stable feature directory;
-- recommendations and clarification answers stay in the terminal;
-- rejecting a phase records feedback and retries instead of aborting;
-- the exact Conventional Commit message is approved before every commit;
-- the run pauses and resumes by issue number at Spec Review and Plan Review;
-- one Draft PR receives the spec, plan, tasks, implementation, and verification;
-- the Project `Status` and `Spec Status` follow the workflow without adding an execution-state label;
-- final analysis, convergence, fresh review, and human merge remain mandatory.
-
-Record the pilot issue and PR in migration issue `#182`. Do not use a `Done (historical)` artifact for the pilot.
-
-## Upgrade procedure
-
-Upgrade Spec Kit only on a dedicated branch:
-
-```bash
-specify self check
-specify self upgrade --dry-run
-specify integration status
-```
-
-After upgrading the CLI, review the integration diff before accepting managed-file changes. Never run `specify integration upgrade --force` as an unattended step: Portflow intentionally modifies the constitution, templates, Codex skills, and workflow.
-
-After any reviewed upgrade, run:
-
-```bash
 pnpm check
 pnpm typecheck
 pnpm test
 pnpm test:spec-kit
-node scripts/spec-kit/validate-backlog.mjs
+affected browser journey when apps/web changed
 ```
 
-## Troubleshooting
+The workflow records command evidence against the current commit. Green GitHub checks and local evidence are both required when CI checks exist. After verification, complete the PR's assessed database choice and Ready-for-delivery checklist. The next `continue` marks the PR ready only when this human-owned metadata is complete. Merge remains human.
 
-- **A sequential spec directory appeared**: stop the run and restart through `pnpm spec:workflow` with the intended domain path.
-- **Feature directory not found**: confirm the recommended stable path or pass `--feature-dir`; do not create issue-number directories.
-- **Workflow paused**: use `status --issue <number>`, then `resume --issue <number>`. The Codex phase resumes its saved session.
-- **Commit message rejected**: use a supported Conventional Commit type, kebab-case domain scope, uppercase description, and no trailing period.
-- **Integration status warns about modified files**: expected for Portflow customizations; review rather than forcing an upgrade.
-- **PR validation fails**: read the emitted GitHub Actions errors and check the selected change type, spec path, plan/tasks presence, clarification markers, and incomplete tasks.
-- **Historical spec needs new behavior**: create a new intake issue and delivery spec, then link the historical artifact as context.
-- **Project configuration drifted**: run `pnpm project:kanban`, review the report, then use `pnpm project:kanban -- --apply`.
+## Pull request progress
+
+The workflow owns only:
+
+```text
+<!-- portflow:delivery-workflow:start -->
+...
+<!-- portflow:delivery-workflow:end -->
+```
+
+The block shows profile, current step, evidence, and implementation-slice progress. Reviewer-authored text outside those markers is preserved. Editing the rendered table manually never creates an approval or state transition.
+
+Approvals, independent reviews, and verification results are durable structured PR comments tied to the relevant artifact fingerprint or commit. A material change automatically invalidates stale evidence.
+
+## Kanban
+
+The Project has one editable workflow field:
+
+| Status | Meaning |
+|---|---|
+| `Backlog` | Qualified but not startable |
+| `Ready` | Startable with dependencies resolved |
+| `In Progress` | Drafting or implementation active |
+| `Review` | Awaiting build approval, independent review, checks, or delivery review |
+| `Blocked` | Waiting for an external dependency or material decision |
+| `Done` | Issue closed and delivery merged |
+
+Detailed phases live in the PR. Do not recreate `Spec Status`.
+
+## Adoption and compatibility
+
+Adopt an existing open PR without changing its reviewer-authored content:
+
+```bash
+pnpm delivery:adopt -- 123 --dry-run
+pnpm delivery:adopt -- 123
+```
+
+The previous orchestrator remains temporarily available:
+
+```bash
+pnpm spec:workflow:legacy -- status
+```
+
+Do not convert an active legacy run implicitly. Review its branch, artifacts, PR, and local state first.
+
+## Administrative Project cutover
+
+The Project simplification is deliberately separate from daily delivery:
+
+```bash
+pnpm project:simplify -- --dry-run
+pnpm project:simplify -- --apply
+```
+
+The apply command creates a local backup of fields and Project items, verifies that `Status` has the canonical options, removes the `Spec Status` field, and leaves issue status values unchanged. Review the dry run before applying.
+
+## Workflow development
+
+All tests must be hermetic: temporary repositories and fake GitHub/Codex adapters only. A test must never read an active `.specify/workflows/runs/` or `.specify/delivery.json` from the developer checkout.
+
+Before changing the workflow:
+
+```bash
+pnpm check
+pnpm typecheck
+pnpm test:spec-kit
+```
+
+Use `specify integration status` to review managed-template drift. Never force-upgrade intentionally customized templates without a dedicated review.
