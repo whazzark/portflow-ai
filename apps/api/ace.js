@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import { Ignitor } from '@adonisjs/core'
 
 const APP_ROOT = new URL('./', import.meta.url)
