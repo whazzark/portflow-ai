@@ -15,7 +15,7 @@ const checkpointsSearchSchema = z
     mode: z.enum(['create', 'edit', 'view']).optional().catch(undefined),
   })
   .transform((search) => {
-    if (search.mode === 'create' || (search.mode === 'edit' && search.status === 'archived')) {
+    if (search.mode === 'edit' && search.status === 'archived') {
       return { ...search, detail: undefined, mode: undefined }
     }
 

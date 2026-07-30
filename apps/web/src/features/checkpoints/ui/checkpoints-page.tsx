@@ -15,14 +15,64 @@ import {
 } from '@/components/ui/table'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
+import { useDockMutations } from '@/features/checkpoints/mutations/use-dock-mutations'
 import { dockQueries } from '@/features/checkpoints/queries/dock-queries'
 import { weighingAreaQueries } from '@/features/checkpoints/queries/weighing-area-queries'
 import type { DockDto, WeighingAreaDto } from '@/features/checkpoints/types'
+import { DockForm } from '@/features/checkpoints/ui/dock-form'
 import { normalizeSearch } from '@/helpers/search'
 
 const checkpointsRoute = getRouteApi('/_authenticated/checkpoints')
 
-function DockDetails({ dock, onClose }: { dock: DockDto; onClose: () => void }) {
+function DockDetails({
+  dock,
+  onClose,
+  onEdit,
+  onCreate,
+  onUpdate,
+  mode = 'view',
+  onSuccess,
+}: {
+  dock?: DockDto
+  onClose: () => void
+  onEdit?: () => void
+  onCreate?: (value: { name: string; latitude: number; longitude: number }) => Promise<DockDto>
+  onUpdate?: (value: { name: string; latitude: number; longitude: number }) => Promise<DockDto>
+  mode?: 'view' | 'edit' | 'create'
+  onSuccess?: (dock: DockDto) => void
+}) {
+  if ((mode === 'create' && onCreate) || (mode === 'edit' && dock && onUpdate)) {
+    const isCreate = mode === 'create'
+    return (
+      <div className="fixed inset-0 z-20 flex justify-end bg-black/20" role="presentation">
+        <aside
+          aria-label={isCreate ? 'Create dock' : `Edit ${dock?.name}`}
+          className="flex h-full w-full max-w-md flex-col overflow-y-auto bg-background p-6 shadow-xl"
+          role="dialog"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <h2 className="font-semibold text-xl">{isCreate ? 'Create dock' : 'Edit dock'}</h2>
+            <Button aria-label="Close dock form" onClick={onClose} size="icon" variant="ghost">
+              <XIcon aria-hidden="true" />
+            </Button>
+          </div>
+          <div className="mt-8">
+            <DockForm
+              dock={isCreate ? undefined : dock}
+              onCreate={onCreate ?? (async () => dock as DockDto)}
+              onSuccess={onSuccess ?? onClose}
+              onUpdate={onUpdate ?? (async () => dock as DockDto)}
+            />
+          </div>
+        </aside>
+      </div>
+    )
+  }
+
+  if (!dock) {
+    return null
+  }
+
   return (
     <div className="fixed inset-0 z-20 flex justify-end bg-black/20" role="presentation">
       <aside
@@ -37,9 +87,16 @@ function DockDetails({ dock, onClose }: { dock: DockDto; onClose: () => void }) 
               {dock.status === 'ARCHIVED' ? 'Archived' : 'Available'}
             </p>
           </div>
-          <Button aria-label="Close dock details" onClick={onClose} size="icon" variant="ghost">
-            <XIcon aria-hidden="true" />
-          </Button>
+          <div className="flex gap-2">
+            {dock.status === 'AVAILABLE' && onEdit && (
+              <Button aria-label="Edit dock" onClick={onEdit} variant="outline">
+                Edit
+              </Button>
+            )}
+            <Button aria-label="Close dock details" onClick={onClose} size="icon" variant="ghost">
+              <XIcon aria-hidden="true" />
+            </Button>
+          </div>
         </div>
         <dl className="mt-8 grid gap-4 text-sm">
           <div>
@@ -150,13 +207,7 @@ function DockList({
   )
 }
 
-function WeighingAreaDetails({
-  area,
-  onClose,
-}: {
-  area: WeighingAreaDto
-  onClose: () => void
-}) {
+function WeighingAreaDetails({ area, onClose }: { area: WeighingAreaDto; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-20 flex justify-end bg-black/20" role="presentation">
       <aside
@@ -404,6 +455,7 @@ export function CheckpointsPage() {
   const user = useAuthenticatedUser()
   const navigate = checkpointsRoute.useNavigate()
   const { resource, status, q, sort, detail, mode } = checkpointsRoute.useSearch()
+  const mutations = useDockMutations()
   const docksQuery = useQuery({ ...dockQueries.list(), enabled: resource === 'docks' })
   const detailQuery = useQuery({
     ...dockQueries.detail(detail ?? ''),
@@ -431,7 +483,16 @@ export function CheckpointsPage() {
     <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-4 md:p-6">
       <div>
         <p className="text-muted-foreground text-sm">Site references</p>
-        <h1 className="font-semibold text-2xl">Checkpoints</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-semibold text-2xl">Checkpoints</h1>
+          <Button
+            onClick={() =>
+              navigate({ search: (current) => ({ ...current, mode: 'create', detail: undefined }) })
+            }
+          >
+            Create dock
+          </Button>
+        </div>
       </div>
       <div aria-label="Checkpoint resources" className="flex gap-2" role="tablist">
         <button
@@ -525,6 +586,33 @@ export function CheckpointsPage() {
           dock={detailQuery.data.data}
           onClose={() =>
             navigate({ search: (current) => ({ ...current, detail: undefined, mode: undefined }) })
+          }
+          onEdit={() => navigate({ search: (current) => ({ ...current, mode: 'edit' }) })}
+          onUpdate={async (value) =>
+            (await mutations.update.mutateAsync({ params: { id: detail }, body: value })).data
+          }
+        />
+      )}
+      {mode === 'edit' && detail && detailQuery.data?.data && (
+        <DockDetails
+          dock={detailQuery.data.data}
+          mode="edit"
+          onClose={() => navigate({ search: (current) => ({ ...current, mode: 'view' }) })}
+          onUpdate={async (value) =>
+            (await mutations.update.mutateAsync({ params: { id: detail }, body: value })).data
+          }
+          onSuccess={(dock) =>
+            navigate({ search: (current) => ({ ...current, detail: dock.id, mode: 'view' }) })
+          }
+        />
+      )}
+      {mode === 'create' && (
+        <DockDetails
+          mode="create"
+          onClose={() => navigate({ search: (current) => ({ ...current, mode: undefined }) })}
+          onCreate={async (value) => (await mutations.create.mutateAsync({ body: value })).data}
+          onSuccess={(dock) =>
+            navigate({ search: (current) => ({ ...current, detail: dock.id, mode: 'view' }) })
           }
         />
       )}
