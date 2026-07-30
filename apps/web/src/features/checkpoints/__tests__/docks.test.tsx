@@ -198,12 +198,16 @@ test('archives and reactivates a dock while recovering from blocked and stale ou
   const user = userEvent.setup()
   let dock = { ...DOCKS[0] }
   const attempts = { archive: 0, reactivate: 0 }
+  let detailRequests = 0
   const requests: Array<{ path: string; body: unknown }> = []
 
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ADMIN })),
     http.get(`${API_BASE_URL}/api/v1/docks`, () => HttpResponse.json({ data: [dock] })),
-    http.get(`${API_BASE_URL}/api/v1/docks/:id`, () => HttpResponse.json({ data: dock })),
+    http.get(`${API_BASE_URL}/api/v1/docks/:id`, () => {
+      detailRequests += 1
+      return HttpResponse.json({ data: dock })
+    }),
     http.post(`${API_BASE_URL}/api/v1/docks/:id/archive`, async ({ request }) => {
       requests.push({ path: 'archive', body: await request.json() })
       attempts.archive += 1
@@ -250,6 +254,7 @@ test('archives and reactivates a dock while recovering from blocked and stale ou
   expect(screen.getByText('Dock is used by a planned or active discharge')).toBeInTheDocument()
   expect(screen.getByRole('alertdialog')).toBeInTheDocument()
   expect(within(details).getByText('Available')).toBeInTheDocument()
+  expect(detailRequests).toBeGreaterThan(1)
 
   fireEvent.click(within(archiveDialog).getByRole('button', { name: 'Archive' }))
   await new Promise((resolve) => setTimeout(resolve, 50))

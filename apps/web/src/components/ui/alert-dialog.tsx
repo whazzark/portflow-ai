@@ -6,8 +6,13 @@ import type * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { classnames } from '@/libraries/shadcn/helpers'
 
-function AlertDialog({ ...props }: AlertDialogPrimitive.Root.Props) {
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
+function AlertDialog({ modal, ...props }: AlertDialogPrimitive.Root.Props & { modal?: boolean }) {
+  return (
+    <AlertDialogPrimitive.Root
+      data-slot="alert-dialog"
+      {...({ ...props, modal } as AlertDialogPrimitive.Root.Props)}
+    />
+  )
 }
 
 function AlertDialogTrigger({ ...props }: AlertDialogPrimitive.Trigger.Props) {

@@ -99,7 +99,10 @@ function DockLifecycleActions({ dock }: { dock: DockDto }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               disabled={mutations.archive.isPending || mutations.reactivate.isPending}
-              onClick={() => void submit()}
+              onClick={(event) => {
+                event.preventDefault()
+                void submit()
+              }}
             >
               {archived ? 'Reactivate' : 'Archive'}
             </AlertDialogAction>
