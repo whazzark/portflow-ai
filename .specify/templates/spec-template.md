@@ -1,63 +1,47 @@
-# Feature Specification: [FEATURE NAME]
+# Feature: [FEATURE NAME]
 
-**Feature ID**: `[DOMAIN-SLUG]`
 **GitHub Issue**: `#[NUMBER]`
 **Parent Roadmap**: `[PATH OR N/A]`
-**Roadmap Entry**: `[ID OR N/A]`
-**Created**: `[DATE]`
+**Delivery Profile**: `standard`
 **Status**: `Draft`
-**Input**: `[USER DESCRIPTION OR MIGRATION SOURCE]`
 
-## User Scenarios & Testing
+## Problem and outcome
 
-Describe prioritized, independently testable user journeys. Each journey must state its actor, value, independent verification approach, and observable acceptance scenarios.
+[Problem, primary actor, desired outcome, and user or business value.]
 
-### User Story 1 - [Brief title] (Priority: P1)
+## Actors and authorization
 
-[Actor, desired outcome, and value]
+- **Primary actor**: [actor and allowed behavior]
+- **Other actors**: [read-only, denied, or supporting behavior]
+- **Authoritative boundary**: [where authorization is enforced]
 
-**Independent Test**: [Observable test that proves this slice delivers value]
+## In scope
 
-**Acceptance Scenarios**:
+- [Observable behavior delivered by this unit]
 
-1. **Given** [context], **When** [action], **Then** [observable result].
-
-## Edge Cases
-
-- [Boundary, failure, concurrency, authorization, or recovery behavior]
-
-## Requirements
-
-### Functional Requirements
-
-- **FR-001**: The system MUST [testable behavior].
-
-### Key Entities
-
-- **[Entity]**: [Business meaning and relevant invariants]
-
-## Success Criteria
-
-### Measurable Outcomes
-
-- **SC-001**: [Technology-independent, verifiable outcome]
-
-## Dependencies
-
-- [Issue, roadmap entry, ADR, domain concept, or external prerequisite]
-
-## Out of Scope
+## Out of scope
 
 - [Explicitly deferred behavior]
 
-## Assumptions and Clarifications
+## Acceptance scenarios
 
-- [Reasonable default or confirmed product decision]
-- [NEEDS CLARIFICATION: only when the decision materially affects scope, security, or user experience]
+1. **Given** [context], **When** [action], **Then** [observable result].
 
-## Traceability
+## Business rules and invariants
+
+- **BR-001**: [Testable rule or invariant.]
+
+## Edge and failure cases
+
+- [Validation, authorization, conflict, concurrency, recovery, or empty state.]
+
+## Dependencies and traceability
 
 - Source issue: [GitHub URL]
-- Parent roadmap: [relative path]
-- Related ADRs: [paths or N/A]
-- Related domain terms: [CONTEXT.md anchors or N/A]
+- Parent roadmap: [relative path or N/A]
+- Related ADRs and domain terms: [paths or N/A]
+
+## Assumptions and decisions
+
+- [Reasonable default or confirmed product decision.]
+- [NEEDS CLARIFICATION: only for a material product, authorization, irreversible-risk, or UX decision.]

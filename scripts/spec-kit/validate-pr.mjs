@@ -34,8 +34,14 @@ if (selectedTypes.length !== 1) {
 
 const reviewGateSection = section(body, '### Current review gate')
 const selectedGates = checkedItems(reviewGateSection)
-if (selectedGates.length !== 1) {
+const deliveryProfile = body.match(/^Profile:\s*`(lite|standard|high-assurance)`\s*$/m)?.[1]
+const leanWorkflow = body.includes('<!-- portflow:delivery-workflow:start -->')
+const currentDeliveryStep = body.match(/^\*\*Current step\*\*:\s*\*\*(.+)\*\*\s*$/m)?.[1]
+if (!deliveryProfile && selectedGates.length !== 1) {
   errors.push('Select exactly one item in ### Current review gate.')
+}
+if (deliveryProfile && !leanWorkflow) {
+  errors.push('Delivery PRs must include the managed workflow progress block.')
 }
 
 const issueSection = section(body, '## Issue')
@@ -71,10 +77,19 @@ const selectedGate = selectedGates[0] ?? ''
 const specMatch = body.match(/^Spec:\s*`([^`]+)`/m)
 
 if (isSpecDriven) {
-  if (selectedGate.startsWith('Not applicable')) {
+  if (deliveryProfile === 'lite') {
+    errors.push('Spec-driven behavior changes cannot use the lite delivery profile.')
+  }
+  if (!deliveryProfile && selectedGate.startsWith('Not applicable')) {
     errors.push('Spec-driven PRs must select a Spec Kit review gate.')
   }
-  if (!pullRequest.draft && selectedGate !== 'Delivery Review') {
+  if (
+    !pullRequest.draft &&
+    !(
+      currentDeliveryStep === 'Delivery review' ||
+      (!deliveryProfile && selectedGate === 'Delivery Review')
+    )
+  ) {
     errors.push('Ready spec-driven PRs must select Delivery Review.')
   }
 
@@ -97,8 +112,15 @@ if (isSpecDriven) {
         errors.push(`Spec file does not exist: ${specPath}`)
       }
 
-      const requiresPlan = selectedGate === 'Plan Review' || selectedGate === 'Delivery Review'
-      const requiresCompletedDelivery = selectedGate === 'Delivery Review' || !pullRequest.draft
+      const requiresPlan =
+        (Boolean(deliveryProfile) &&
+          !['Specification and plan', 'Spec review'].includes(currentDeliveryStep)) ||
+        selectedGate === 'Plan Review' ||
+        selectedGate === 'Delivery Review'
+      const requiresCompletedDelivery =
+        currentDeliveryStep === 'Delivery review' ||
+        selectedGate === 'Delivery Review' ||
+        !pullRequest.draft
 
       if ((requiresPlan || requiresCompletedDelivery) && specExists) {
         const featureDir = path.dirname(specFile)
@@ -110,7 +132,7 @@ if (isSpecDriven) {
             `${selectedGate || 'Ready PR'} is missing ${path.relative(process.cwd(), planFile)}.`,
           )
         }
-        if (requiresCompletedDelivery && !fs.existsSync(tasksFile)) {
+        if (!deliveryProfile && requiresCompletedDelivery && !fs.existsSync(tasksFile)) {
           errors.push(
             `${selectedGate || 'Ready PR'} is missing ${path.relative(process.cwd(), tasksFile)}.`,
           )
@@ -118,19 +140,35 @@ if (isSpecDriven) {
 
         const spec = fs.readFileSync(specFile, 'utf8')
         const tasks = fs.existsSync(tasksFile) ? fs.readFileSync(tasksFile, 'utf8') : ''
+        const plan = fs.existsSync(planFile) ? fs.readFileSync(planFile, 'utf8') : ''
+
+        if (deliveryProfile && plan) {
+          const slices = implementationSlices(plan)
+          if (slices.length < 5 || slices.length > 15) {
+            errors.push(
+              `${selectedGate || 'Delivery'} plan must contain 5–15 implementation slices.`,
+            )
+          }
+        }
 
         if (/\[NEEDS CLARIFICATION:/i.test(spec)) {
           errors.push(`${selectedGate || 'Ready PR'} spec still contains [NEEDS CLARIFICATION].`)
         }
 
-        if (requiresCompletedDelivery && /^- \[ \]/m.test(tasks)) {
+        if (
+          requiresCompletedDelivery &&
+          (deliveryProfile ? implementationSlicesIncomplete(plan) : /^- \[ \]/m.test(tasks))
+        ) {
           errors.push(`${selectedGate || 'Ready PR'} tasks.md still contains unchecked tasks.`)
         }
       }
     }
   }
 } else {
-  if (!selectedGate.startsWith('Not applicable')) {
+  if (deliveryProfile && deliveryProfile !== 'lite') {
+    errors.push('Workflow, documentation, and tooling PRs must use the lite delivery profile.')
+  }
+  if (!deliveryProfile && !selectedGate.startsWith('Not applicable')) {
     errors.push('Non-spec PRs must select the not-applicable review gate.')
   }
   if (specMatch?.[1] !== 'N/A') {
@@ -163,4 +201,18 @@ function section(markdown, heading) {
 
 function checkedItems(markdown) {
   return [...markdown.matchAll(/^- \[[xX]\] (.+)$/gm)].map((match) => match[1].trim())
+}
+
+function implementationSlicesIncomplete(plan) {
+  return implementationSlices(plan).some((slice) => !slice.completed)
+}
+
+function implementationSlices(plan) {
+  const match = plan.match(/^##\s+Implementation Slices\s*$([\s\S]*?)(?=^##\s|(?![\s\S]))/im)
+  if (!match) {
+    return []
+  }
+  return [...match[1].matchAll(/^- \[([ xX])\]\s+.+$/gm)].map((item) => ({
+    completed: item[1].toLowerCase() === 'x',
+  }))
 }

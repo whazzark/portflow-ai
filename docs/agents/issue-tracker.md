@@ -25,9 +25,9 @@ The [Spec Kit operator guide](./spec-kit.md) is the canonical command reference.
 
 1. Create or select the GitHub intake issue.
 2. Assign priority and milestone in the Project, then place the issue in the ordered `Backlog`.
-3. Create or update the linked spec with `$speckit-specify` and `$speckit-clarify`.
-4. Open a Draft PR once the spec is reviewable.
-5. Let the workflow synchronize the operational `Status` and the secondary `Spec Status` as gates pass.
+3. Start the selected delivery profile with `pnpm delivery:start -- <issue>`.
+4. Review the generated Draft PR and approve the current artifact hashes at the required gate.
+5. Let the workflow synchronize operational `Status` and detailed progress into the Draft PR.
 6. Keep issue comments for product discussion; update the spec when a decision changes behavior.
 
 When publishing a new issue from a generated task list, keep the issue short and link it to the relevant spec. Do not copy `tasks.md` into the issue body.
@@ -36,15 +36,15 @@ Administrative migration, validation, and cutover commands are documented centra
 
 ## Continuous Kanban
 
-The operational flow uses six `Status` values:
+The operational flow uses one field with six `Status` values:
 
 | Status | Meaning |
 | --- | --- |
 | `Backlog` | Qualified work, ordered but not yet startable. |
 | `Ready` | Approved work whose blocking dependencies are complete. |
-| `In Progress` | Specification, planning, implementation, or checks are actively underway. |
-| `Review` | Work awaits a human gate, convergence, review, CI, or delivery approval. |
+| `In Progress` | Specification, planning, or implementation is actively underway. |
+| `Review` | Work awaits a human gate, independent review, CI, or delivery approval. |
 | `Blocked` | Work cannot continue because of an external decision or dependency. |
 | `Done` | The issue is closed and the delivery or historical record is complete. |
 
-Use the `Kanban` view for day-to-day flow, `Active flow` for current work, `Backlog` for ordering, `Roadmap` for epics, and `Spec pipeline` for unfinished Spec Kit maturity. Epics are intentionally excluded from the operational boards. Do not reintroduce a `Sprint` field: flow and explicit ordering replace time-boxed commitments.
+Use the `Kanban` view for day-to-day flow, `Active flow` for current work, `Backlog` for ordering, and `Roadmap` for epics. Detailed delivery progress lives in the Draft PR. Epics are intentionally excluded from operational boards. Do not reintroduce `Spec Status` or a `Sprint` field.

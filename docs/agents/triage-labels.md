@@ -13,20 +13,10 @@ Delivery state is tracked in the Portflow Roadmap Project, not by mutually exclu
 | `Blocked` | An external decision or dependency prevents progress. |
 | `Done` | The linked issue is closed. |
 
-## Project `Spec Status` values
-
-| Status | Meaning |
-| --- | --- |
-| `Intake` | New request or product triage is still required. |
-| `Spec Draft` | A spec is being authored or clarified. |
-| `Spec Review` | The spec is in a Draft PR awaiting human approval. |
-| `Plan Review` | The spec is approved and the plan awaits human approval. |
-| `Ready` | Spec, plan, and tasks are approved for implementation. |
-| `In Progress` | Codex is implementing the approved tasks. |
-| `Review` | Implementation, convergence, and fresh review are in progress. |
-| `Blocked` | Work cannot continue until an external decision or dependency changes. |
-| `Done` | The PR is merged and the delivery is complete. |
+Detailed steps, implementation-slice progress, artifact-hash approvals, independent-review findings, and verification evidence are projected into the Draft PR. They are not a second editable Project field.
 
 Priority, `epic`, milestone, Wayfinder, and work-type labels remain orthogonal metadata. Do not add a second execution-state label.
 
-The old `triage:*`, `agent:ready`, `speckit:*`, and `speckit-*` labels are migration-only vocabulary and are removed by the reviewed GitHub cutover. New automation must update both Project fields and use explicit Spec Kit gates. The former `pnpm ai:run` launcher is retired.
+The stable `delivery:lite`, `delivery:standard`, and `delivery:high-assurance` labels select a risk profile; they do not represent workflow state. Apply at most one.
+
+The old `triage:*`, `agent:ready`, `speckit:*`, and `speckit-*` labels are migration-only vocabulary. New automation updates only Project `Status` and the managed PR workflow block. The former `pnpm ai:run`, duplicate `Spec Status`, and mandatory full Spec Kit loop are retired.
