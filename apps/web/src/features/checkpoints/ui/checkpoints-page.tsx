@@ -16,7 +16,8 @@ import {
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { dockQueries } from '@/features/checkpoints/queries/dock-queries'
-import type { DockDto } from '@/features/checkpoints/types'
+import { weighingAreaQueries } from '@/features/checkpoints/queries/weighing-area-queries'
+import type { DockDto, WeighingAreaDto } from '@/features/checkpoints/types'
 import { normalizeSearch } from '@/helpers/search'
 
 const checkpointsRoute = getRouteApi('/_authenticated/checkpoints')
@@ -149,12 +150,265 @@ function DockList({
   )
 }
 
+function WeighingAreaDetails({
+  area,
+  onClose,
+}: {
+  area: WeighingAreaDto
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-20 flex justify-end bg-black/20" role="presentation">
+      <aside
+        aria-label={area.name}
+        className="flex h-full w-full max-w-md flex-col bg-background p-6 shadow-xl"
+        role="dialog"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-semibold text-xl">{area.name}</h2>
+            <p className="text-muted-foreground text-sm">
+              {area.status === 'ARCHIVED' ? 'Archived' : 'Available'}
+            </p>
+          </div>
+          <Button
+            aria-label="Close weighing area details"
+            onClick={onClose}
+            size="icon"
+            variant="ghost"
+          >
+            <XIcon aria-hidden="true" />
+          </Button>
+        </div>
+        <dl className="mt-8 grid gap-4 text-sm">
+          <div>
+            <dt className="font-medium">GPS location</dt>
+            <dd>
+              {area.latitude}, {area.longitude}
+            </dd>
+          </div>
+          {area.archiveComment && (
+            <div>
+              <dt className="font-medium">Archive comment</dt>
+              <dd>{area.archiveComment}</dd>
+            </div>
+          )}
+        </dl>
+      </aside>
+    </div>
+  )
+}
+
+function WeighingAreaList({
+  areas,
+  status,
+  search,
+  sort,
+  onSort,
+  onSelect,
+}: {
+  areas: WeighingAreaDto[]
+  status: 'available' | 'archived'
+  search: string
+  sort: 'asc' | 'desc'
+  onSort: () => void
+  onSelect: (id: string) => void
+}) {
+  const visibleAreas = useMemo(() => {
+    const filter = normalizeSearch(search)
+    return areas
+      .filter((area) => area.status === (status === 'available' ? 'AVAILABLE' : 'ARCHIVED'))
+      .filter((area) => !filter || normalizeSearch(area.name).includes(filter))
+      .sort((left, right) => {
+        const result = normalizeSearch(left.name).localeCompare(normalizeSearch(right.name))
+        return sort === 'asc' ? result : -result
+      })
+  }, [areas, search, sort, status])
+
+  if (visibleAreas.length === 0) {
+    return (
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>
+            {search ? 'No weighing areas match your search' : `No ${status} weighing areas`}
+          </EmptyTitle>
+        </EmptyHeader>
+        <EmptyDescription>
+          {search
+            ? 'Try a different weighing area name.'
+            : 'Weighing areas will appear here when they are available.'}
+        </EmptyDescription>
+      </Empty>
+    )
+  }
+
+  return (
+    <Table aria-label={`${status === 'available' ? 'Available' : 'Archived'} weighing areas`}>
+      <TableHeader>
+        <TableRow>
+          <TableHead>
+            <Button
+              aria-label={`Weighing area name, sorted ${sort}`}
+              onClick={onSort}
+              variant="ghost"
+            >
+              Weighing area name
+            </Button>
+          </TableHead>
+          <TableHead>GPS location</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>
+            <span className="sr-only">Actions</span>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {visibleAreas.map((area) => (
+          <TableRow key={area.id}>
+            <TableCell>
+              <Button
+                aria-label={`View weighing area ${area.name}`}
+                className="h-auto px-0 font-medium"
+                onClick={() => onSelect(area.id)}
+                variant="link"
+              >
+                {area.name}
+              </Button>
+            </TableCell>
+            <TableCell>
+              {area.latitude}, {area.longitude}
+            </TableCell>
+            <TableCell>{area.status === 'ARCHIVED' ? 'Archived' : 'Available'}</TableCell>
+            <TableCell>
+              <Button
+                aria-label={`Inspect weighing area ${area.name}`}
+                onClick={() => onSelect(area.id)}
+                variant="outline"
+              >
+                Inspect
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
+
+function WeighingAreaWorkbench() {
+  const navigate = checkpointsRoute.useNavigate()
+  const { status, q, sort, detail, mode } = checkpointsRoute.useSearch()
+  const areasQuery = useQuery(weighingAreaQueries.list())
+  const detailQuery = useQuery({
+    ...weighingAreaQueries.detail(detail ?? ''),
+    enabled: Boolean(detail),
+  })
+  const areas = areasQuery.data?.data ?? []
+
+  return (
+    <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-4 md:p-6">
+      <div>
+        <p className="text-muted-foreground text-sm">Site references</p>
+        <h1 className="font-semibold text-2xl">Checkpoints</h1>
+      </div>
+      <div aria-label="Checkpoint resources" className="flex gap-2" role="tablist">
+        <button
+          aria-selected={false}
+          onClick={() => navigate({ search: (current) => ({ ...current, resource: 'docks' }) })}
+          role="tab"
+          type="button"
+        >
+          Docks
+        </button>
+        <button aria-selected={true} role="tab" type="button">
+          Weighing Areas
+        </button>
+      </div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-xl">
+          <label className="sr-only" htmlFor="weighing-area-search">
+            Search weighing areas
+          </label>
+          <span className="relative block">
+            <SearchIcon
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            />
+            <Input
+              id="weighing-area-search"
+              aria-label="Search weighing areas"
+              className="pl-9"
+              onChange={(event) =>
+                navigate({ search: (current) => ({ ...current, q: event.target.value }) })
+              }
+              placeholder="Search weighing areas"
+              value={q}
+            />
+          </span>
+        </div>
+      </div>
+      <div aria-label="Weighing area lifecycle" className="flex gap-2" role="tablist">
+        <button
+          aria-selected={status === 'available'}
+          onClick={() => navigate({ search: (current) => ({ ...current, status: 'available' }) })}
+          role="tab"
+          type="button"
+        >
+          Available ({areas.filter((area) => area.status === 'AVAILABLE').length})
+        </button>
+        <button
+          aria-selected={status === 'archived'}
+          onClick={() => navigate({ search: (current) => ({ ...current, status: 'archived' }) })}
+          role="tab"
+          type="button"
+        >
+          Archived ({areas.filter((area) => area.status === 'ARCHIVED').length})
+        </button>
+      </div>
+      {areasQuery.isPending && <p role="status">Loading weighing areas…</p>}
+      {areasQuery.isError && (
+        <div role="alert">
+          <p>Could not load weighing areas.</p>
+          <Button onClick={() => void areasQuery.refetch()}>Retry loading weighing areas</Button>
+        </div>
+      )}
+      {areasQuery.isSuccess && (
+        <WeighingAreaList
+          areas={areas}
+          search={q}
+          sort={sort}
+          status={status}
+          onSelect={(id) =>
+            navigate({ search: (current) => ({ ...current, detail: id, mode: 'view' }) })
+          }
+          onSort={() =>
+            navigate({
+              search: (current) => ({ ...current, sort: current.sort === 'asc' ? 'desc' : 'asc' }),
+            })
+          }
+        />
+      )}
+      {mode === 'view' && detail && detailQuery.data?.data && (
+        <WeighingAreaDetails
+          area={detailQuery.data.data}
+          onClose={() =>
+            navigate({ search: (current) => ({ ...current, detail: undefined, mode: undefined }) })
+          }
+        />
+      )}
+    </main>
+  )
+}
+
 export function CheckpointsPage() {
   const user = useAuthenticatedUser()
   const navigate = checkpointsRoute.useNavigate()
   const { resource, status, q, sort, detail, mode } = checkpointsRoute.useSearch()
-  const docksQuery = useQuery(dockQueries.list())
-  const detailQuery = useQuery({ ...dockQueries.detail(detail ?? ''), enabled: Boolean(detail) })
+  const docksQuery = useQuery({ ...dockQueries.list(), enabled: resource === 'docks' })
+  const detailQuery = useQuery({
+    ...dockQueries.detail(detail ?? ''),
+    enabled: resource === 'docks' && Boolean(detail),
+  })
 
   if (!isAdministrator(user)) {
     return (
@@ -165,12 +419,7 @@ export function CheckpointsPage() {
   }
 
   if (resource !== 'docks') {
-    return (
-      <main className="flex flex-1 flex-col gap-6 p-6">
-        <h1 className="font-semibold text-2xl">Checkpoints</h1>
-        <p>Weighing Areas administration is coming next.</p>
-      </main>
-    )
+    return <WeighingAreaWorkbench />
   }
 
   const docks = docksQuery.data?.data ?? []
