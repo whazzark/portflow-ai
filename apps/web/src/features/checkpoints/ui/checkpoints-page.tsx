@@ -1,9 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { SearchIcon, XIcon } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -13,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { useDockMutations } from '@/features/checkpoints/mutations/use-dock-mutations'
@@ -23,8 +35,80 @@ import type { DockDto, WeighingAreaDto } from '@/features/checkpoints/types'
 import { DockForm } from '@/features/checkpoints/ui/dock-form'
 import { WeighingAreaForm } from '@/features/checkpoints/ui/weighing-area-form'
 import { normalizeSearch } from '@/helpers/search'
+import { parseApiError } from '@/libraries/tuyau/api-error'
 
 const checkpointsRoute = getRouteApi('/_authenticated/checkpoints')
+
+function DockLifecycleActions({ dock }: { dock: DockDto }) {
+  const mutations = useDockMutations()
+  const [open, setOpen] = useState(false)
+  const [comment, setComment] = useState('')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const archived = dock.status === 'ARCHIVED'
+
+  const submit = async () => {
+    try {
+      setErrorMessage(null)
+      const result = archived
+        ? await mutations.reactivate.mutateAsync({
+            params: { id: dock.id },
+            body: { comment: comment.trim() || null },
+          })
+        : await mutations.archive.mutateAsync({
+            params: { id: dock.id },
+            body: { comment: comment.trim() || null },
+          })
+
+      setOpen(false)
+      setComment('')
+      return result.data
+    } catch (error) {
+      setErrorMessage(parseApiError(error).message)
+    }
+  }
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)} variant={archived ? 'default' : 'destructive'}>
+        {archived ? 'Reactivate dock' : 'Archive dock'}
+      </Button>
+      <AlertDialog modal={false} open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{archived ? 'Reactivate dock?' : 'Archive dock?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {archived
+                ? 'This dock will become selectable for new Discharges.'
+                : 'This dock will remain readable but no longer be selectable for new Discharges.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {errorMessage && <p role="alert">{errorMessage}</p>}
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="dock-lifecycle-comment">Comment (optional)</FieldLabel>
+              <Textarea
+                id="dock-lifecycle-comment"
+                maxLength={1000}
+                onChange={(event) => setComment(event.target.value)}
+                value={comment}
+              />
+              <FieldDescription>Maximum 1,000 characters.</FieldDescription>
+            </Field>
+          </FieldGroup>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={mutations.archive.isPending || mutations.reactivate.isPending}
+              onClick={() => void submit()}
+            >
+              {archived ? 'Reactivate' : 'Archive'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
 
 function DockDetails({
   dock,
@@ -95,6 +179,7 @@ function DockDetails({
                 Edit
               </Button>
             )}
+            <DockLifecycleActions dock={dock} />
             <Button aria-label="Close dock details" onClick={onClose} size="icon" variant="ghost">
               <XIcon aria-hidden="true" />
             </Button>
@@ -111,6 +196,12 @@ function DockDetails({
             <div>
               <dt className="font-medium">Archive comment</dt>
               <dd>{dock.archiveComment}</dd>
+            </div>
+          )}
+          {dock.reactivationComment && (
+            <div>
+              <dt className="font-medium">Reactivation comment</dt>
+              <dd>{dock.reactivationComment}</dd>
             </div>
           )}
         </dl>

@@ -13,6 +13,11 @@ export function useDockMutations() {
   }
 
   return {
+    archive: useMutation(
+      tuyauQuery.docks.archive.mutationOptions({
+        onSuccess: (result) => refreshDock(result.data.id),
+      }),
+    ),
     create: useMutation(
       tuyauQuery.docks.store.mutationOptions({
         onSuccess: (result) => refreshDock(result.data.id),
@@ -20,6 +25,11 @@ export function useDockMutations() {
     ),
     update: useMutation(
       tuyauQuery.docks.update.mutationOptions({
+        onSuccess: (result) => refreshDock(result.data.id),
+      }),
+    ),
+    reactivate: useMutation(
+      tuyauQuery.docks.reactivate.mutationOptions({
         onSuccess: (result) => refreshDock(result.data.id),
       }),
     ),

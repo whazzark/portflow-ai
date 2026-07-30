@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -192,4 +192,81 @@ test('creates and edits an available dock with field and conflict feedback', asy
     method: 'PATCH',
     body: { name: 'North Dock Updated', latitude: 48.4, longitude: 2.4 },
   })
+})
+
+test('archives and reactivates a dock while recovering from blocked and stale outcomes', async () => {
+  const user = userEvent.setup()
+  let dock = { ...DOCKS[0] }
+  const attempts = { archive: 0, reactivate: 0 }
+  const requests: Array<{ path: string; body: unknown }> = []
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ADMIN })),
+    http.get(`${API_BASE_URL}/api/v1/docks`, () => HttpResponse.json({ data: [dock] })),
+    http.get(`${API_BASE_URL}/api/v1/docks/:id`, () => HttpResponse.json({ data: dock })),
+    http.post(`${API_BASE_URL}/api/v1/docks/:id/archive`, async ({ request }) => {
+      requests.push({ path: 'archive', body: await request.json() })
+      attempts.archive += 1
+      if (attempts.archive === 1) {
+        return HttpResponse.json(
+          {
+            error: {
+              code: 'E_DOCK_IN_USE',
+              message: 'Dock is used by a planned or active discharge',
+            },
+          },
+          { status: 409 },
+        )
+      }
+      dock = { ...dock, status: 'ARCHIVED', archiveComment: 'Retired dock' }
+      return HttpResponse.json({ data: dock })
+    }),
+    http.post(`${API_BASE_URL}/api/v1/docks/:id/reactivate`, async ({ request }) => {
+      requests.push({ path: 'reactivate', body: await request.json() })
+      attempts.reactivate += 1
+      if (attempts.reactivate === 1) {
+        return HttpResponse.json(
+          { error: { code: 'E_DOCK_ALREADY_AVAILABLE', message: 'Dock is already available' } },
+          { status: 409 },
+        )
+      }
+      dock = { ...dock, status: 'AVAILABLE', archiveComment: undefined }
+      return HttpResponse.json({ data: dock })
+    }),
+  )
+
+  renderApp('/checkpoints')
+  await screen.findByRole('table', { name: 'Available docks' })
+  await user.click(screen.getByRole('button', { name: 'View dock Zulu Dock' }))
+
+  const details = await screen.findByRole('dialog', { name: 'Zulu Dock' })
+  fireEvent.click(within(details).getByRole('button', { name: 'Archive dock' }))
+  const archiveDialog = screen.getByRole('alertdialog')
+  fireEvent.change(within(archiveDialog).getByRole('textbox', { name: 'Comment (optional)' }), {
+    target: { value: 'Retired dock' },
+  })
+  fireEvent.click(within(archiveDialog).getByRole('button', { name: 'Archive' }))
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  expect(screen.getByText('Dock is used by a planned or active discharge')).toBeInTheDocument()
+  expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+  expect(within(details).getByText('Available')).toBeInTheDocument()
+
+  fireEvent.click(within(archiveDialog).getByRole('button', { name: 'Archive' }))
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  expect(within(details).getByText('Archived')).toBeInTheDocument()
+  expect(within(details).getByText('Retired dock')).toBeInTheDocument()
+  expect(requests[0]).toEqual({ path: 'archive', body: { comment: 'Retired dock' } })
+
+  fireEvent.click(within(details).getByRole('button', { name: 'Reactivate dock' }))
+  const reactivateDialog = screen.getByRole('alertdialog')
+  fireEvent.click(within(reactivateDialog).getByRole('button', { name: 'Reactivate' }))
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  expect(screen.getByText('Dock is already available')).toBeInTheDocument()
+  expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+  expect(within(details).getByText('Archived')).toBeInTheDocument()
+
+  fireEvent.click(within(reactivateDialog).getByRole('button', { name: 'Reactivate' }))
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  expect(within(details).getByText('Available')).toBeInTheDocument()
+  expect(requests[2]).toEqual({ path: 'reactivate', body: { comment: null } })
 })
