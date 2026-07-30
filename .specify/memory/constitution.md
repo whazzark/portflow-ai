@@ -10,9 +10,9 @@ Every behavior-changing delivery starts with a versioned feature specification u
 
 A spec must have one primary business objective, actor, main flow, and close technical surface. Large epics are shallow roadmaps that link to independently testable sub-specs. Do not hide unrelated stories in one feature.
 
-### III. Human gates protect product intent
+### III. Risk-proportionate human gates protect product intent
 
-Product decisions remain human. A spec must be reviewed before planning, and a plan must be reviewed before implementation. An ambiguous requirement is recorded as an explicit clarification, never silently invented.
+Product decisions remain human. Standard deliveries require one Ready-to-build approval of the current spec and plan. High-assurance deliveries require separate Spec and Plan approvals. Approval evidence is tied to artifact hashes and becomes stale when approved intent changes. An ambiguous material requirement is recorded as an explicit clarification, never silently invented.
 
 ### IV. Test-first observable behavior
 
@@ -28,7 +28,7 @@ Domain vocabulary belongs in `CONTEXT.md`; durable architectural decisions belon
 
 ### VII. Verification is part of delivery
 
-Before a PR is ready, run formatting/lint checks, typechecking, affected tests, the full fast suite, and relevant browser flows. Run cross-artifact analysis and convergence, then obtain a fresh Codex review. Human approval and merge remain mandatory.
+Before a PR is ready, run formatting/lint checks, typechecking, affected tests, the full fast suite, and relevant browser flows. Obtain a fresh read-only Codex review and resolve or explicitly justify every confirmed finding. Checklist, analysis, and convergence are targeted high-assurance or recovery tools, not mandatory loops. Human approval and merge remain mandatory.
 
 ### VIII. Secure, reversible automation
 
@@ -44,12 +44,14 @@ Workflow shell steps use fixed repository-owned commands and do not interpolate 
 
 ## Delivery workflow
 
-`specify → clarify → plan → checklist → human spec/plan review → tasks → analyze → implement → checks → converge → fresh review → human merge`
+Standard: `draft spec and plan → Ready to build → implementation slices → fresh review → checks → human delivery review → merge`
 
-The active feature directory is recorded in `.specify/feature.json`. Draft PRs are opened when the spec is reviewable and receive the full lifecycle artifacts and implementation commits.
+High assurance: `spec → Spec Review → plan → Plan Review → implementation slices → fresh review → checks → human delivery review → merge`
+
+The issue, branch, Draft PR, artifacts, approvals, reviews, and checks are the durable workflow record. `.specify/delivery.json` is an optional local cache. The Draft PR displays a managed workflow projection and preserves reviewer-authored content.
 
 ## Governance
 
 This constitution governs all Spec Kit workflows in Portflow. A change requires an ADR or a constitution amendment when it changes source-of-truth rules, human gates, test obligations, authorization boundaries, or the meaning of feature artifacts. The repository's root and nested `AGENTS.md` files provide operational guidance; they must not contradict this constitution.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-27 | **Last Amended**: 2026-07-27
+**Version**: 2.0.0 | **Ratified**: 2026-07-27 | **Last Amended**: 2026-07-29

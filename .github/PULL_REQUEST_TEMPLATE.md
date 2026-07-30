@@ -5,23 +5,17 @@
 ## Change type
 
 - [ ] Spec-driven behavior change
-- [ ] Bug fix with existing spec updated
-- [ ] Workflow, documentation, or tooling change
+- [ ] Bug fix, refactor, workflow, documentation, or tooling
 
-## Spec Kit
+## Delivery
 
 <!-- Use the exact canonical spec path. Workflow/docs/tooling-only PRs use N/A. -->
 
+Profile: `lite`, `standard`, or `high-assurance`
+
 Spec: `specs/.../spec.md` or `N/A`
 
-### Current review gate
-
-<!-- Select one and update it as this Draft PR progresses. -->
-
-- [ ] Spec Review
-- [ ] Plan Review
-- [ ] Delivery Review
-- [ ] Not applicable (`Spec: N/A`)
+<!-- The delivery workflow inserts and owns its progress block below. -->
 
 ## Issue
 
@@ -31,11 +25,7 @@ Issue: #
 
 ## Reviewer focus
 
-<!--
-Spec Review: requirements, acceptance criteria, edge cases, and unresolved ambiguity.
-Plan Review: architecture, data model, security, test strategy, and intentional trade-offs.
-Delivery Review: spec fidelity, implementation quality, security, tests, and operational risk.
--->
+Review the current workflow step, its evidence, product intent, implementation quality, security, tests, and operational risk.
 
 ## Delivered changes
 
@@ -51,7 +41,7 @@ Delivery Review: spec fidelity, implementation quality, security, tests, and ope
 
 ## Verification
 
-<!-- Record concrete evidence. During Spec/Plan Review, state what has not run yet. -->
+<!-- Record concrete evidence. Before implementation or while Draft, state what has not run yet. -->
 
 - Automated checks:
 - Browser journeys:
@@ -64,12 +54,11 @@ Delivery Review: spec fidelity, implementation quality, security, tests, and ope
 ## Ready-for-delivery checklist
 
 - [ ] Exactly one change type is selected
-- [ ] Human approval of the spec and plan is recorded, when applicable
-- [ ] Spec, plan, tasks, and implementation are aligned, when applicable
+- [ ] Current Ready-to-build or high-assurance approvals are recorded, when applicable
+- [ ] Spec, plan slices, and implementation are aligned, when applicable
 - [ ] Acceptance criteria verified one by one against the delivered result
 - [ ] `pnpm check && pnpm typecheck && pnpm test && pnpm test:spec-kit` run locally and green
 - [ ] For `apps/web` changes: golden path and edge cases exercised in the browser
-- [ ] `$speckit-analyze` and `$speckit-converge` completed, when applicable
 - [ ] Fresh Codex session reviewed spec fidelity, architecture, security, and tests
 - [ ] Every CONFIRMED finding from the fresh-session review resolved or explicitly justified
 - [ ] New or changed domain terms reflected in `CONTEXT.md`, and relevant ADR added/updated under `docs/adr/`

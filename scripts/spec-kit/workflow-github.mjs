@@ -1,12 +1,14 @@
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-
+import { parseStatusFiles } from './git-status.mjs'
 import {
   PROJECT_NUMBER,
   renderPullRequestBody,
   updateManagedPullRequestBody,
 } from './workflow-model.mjs'
+
+export { parseStatusFiles } from './git-status.mjs'
 
 export class WorkflowGitHub {
   constructor({ root = process.cwd(), exec = execFileSync, projectNumber = PROJECT_NUMBER } = {}) {
@@ -31,7 +33,7 @@ export class WorkflowGitHub {
   }
 
   git(args, options = {}) {
-    return this.command('git', args, options).trim()
+    return String(this.command('git', args, options) ?? '').trim()
   }
 
   resolveRepository() {
@@ -345,26 +347,6 @@ export class WorkflowGitHub {
     )
     item.values.set(fieldName, targetValue)
   }
-}
-
-export function parseStatusFiles(output) {
-  if (!output) {
-    return []
-  }
-  const records = output.split('\0').filter(Boolean)
-  const files = []
-  for (let index = 0; index < records.length; index += 1) {
-    const record = records[index]
-    const status = record.slice(0, 2)
-    files.push(record.slice(3))
-    if (status.includes('R') || status.includes('C')) {
-      index += 1
-      if (records[index]) {
-        files.push(records[index])
-      }
-    }
-  }
-  return files
 }
 
 export function formatUntrackedStat(file, content) {

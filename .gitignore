@@ -29,6 +29,7 @@ tmp/
 .specify/workflows/runs/
 .specify/migration-backup/
 .specify/feature.json
+.specify/delivery.json
 
 # Generated
 apps/web/src/routeTree.gen.ts
