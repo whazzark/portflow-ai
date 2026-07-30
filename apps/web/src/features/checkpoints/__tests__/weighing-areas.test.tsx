@@ -80,3 +80,97 @@ test('browses, searches, sorts, switches lifecycle, and inspects weighing areas'
   ).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Edit weighing area' })).not.toBeInTheDocument()
 })
+
+test('creates and edits an available weighing area with field and conflict feedback', async () => {
+  const user = userEvent.setup()
+  let areas = [...WEIGHING_AREAS]
+  const requests: Array<{ method: string; body?: unknown }> = []
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ADMIN })),
+    http.get(`${API_BASE_URL}/api/v1/weighing-areas`, () => HttpResponse.json({ data: areas })),
+    http.get(`${API_BASE_URL}/api/v1/weighing-areas/:id`, ({ params }) => {
+      const area = areas.find(({ id }) => id === params.id)
+      return area
+        ? HttpResponse.json({ data: area })
+        : HttpResponse.json({ error: { message: 'Not found' } }, { status: 404 })
+    }),
+    http.post(`${API_BASE_URL}/api/v1/weighing-areas`, async ({ request }) => {
+      const body = await request.json()
+      requests.push({ method: 'POST', body })
+      if ((body as { name: string }).name === 'Zulu Scale') {
+        return HttpResponse.json(
+          {
+            error: {
+              code: 'E_VALIDATION_ERROR',
+              message: 'The name has already been taken.',
+              details: [{ field: 'name', message: 'The name has already been taken.' }],
+            },
+          },
+          { status: 422 },
+        )
+      }
+      const created = {
+        id: 'area-new',
+        ...(body as object),
+        status: 'AVAILABLE',
+      }
+      areas = [...areas, created as (typeof WEIGHING_AREAS)[number]]
+      return HttpResponse.json({ data: created }, { status: 201 })
+    }),
+    http.patch(`${API_BASE_URL}/api/v1/weighing-areas/:id`, async ({ params, request }) => {
+      const body = await request.json()
+      requests.push({ method: 'PATCH', body })
+      if ((body as { name: string }).name === 'Zulu Scale') {
+        return HttpResponse.json(
+          {
+            error: {
+              code: 'E_VALIDATION_ERROR',
+              message: 'The name has already been taken.',
+              details: [{ field: 'name', message: 'The name has already been taken.' }],
+            },
+          },
+          { status: 422 },
+        )
+      }
+      const updated = { ...areas.find(({ id }) => id === params.id), ...(body as object) }
+      areas = areas.map((area) => (area.id === params.id ? updated : area)) as typeof areas
+      return HttpResponse.json({ data: updated })
+    }),
+  )
+
+  renderApp('/checkpoints?resource=weighing-areas')
+  await screen.findByRole('table', { name: 'Available weighing areas' })
+
+  await user.click(screen.getByRole('button', { name: 'Create weighing area' }))
+  const createDialog = await screen.findByRole('dialog', { name: 'Create weighing area' })
+  await user.click(within(createDialog).getByRole('button', { name: 'Create weighing area' }))
+  expect(screen.getByText('Weighing area name is required.')).toBeInTheDocument()
+
+  await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), 'North Scale')
+  await user.type(screen.getByRole('textbox', { name: 'Latitude' }), '48.4')
+  await user.type(screen.getByRole('textbox', { name: 'Longitude' }), '2.4')
+  await user.click(within(createDialog).getByRole('button', { name: 'Create weighing area' }))
+
+  expect(await screen.findByRole('dialog', { name: 'North Scale' })).toBeInTheDocument()
+  expect(requests[0]).toEqual({
+    method: 'POST',
+    body: { name: 'North Scale', latitude: 48.4, longitude: 2.4 },
+  })
+
+  await user.click(screen.getByRole('button', { name: 'Edit weighing area' }))
+  const name = screen.getByRole('textbox', { name: 'Weighing area name' })
+  await user.clear(name)
+  await user.type(name, 'Zulu Scale')
+  await user.click(screen.getByRole('button', { name: 'Save weighing area changes' }))
+  expect((await screen.findAllByText('The name has already been taken.')).length).toBeGreaterThan(0)
+
+  await user.clear(name)
+  await user.type(name, 'North Scale Updated')
+  await user.click(screen.getByRole('button', { name: 'Save weighing area changes' }))
+  expect(await screen.findByRole('dialog', { name: 'North Scale Updated' })).toBeInTheDocument()
+  expect(requests[2]).toEqual({
+    method: 'PATCH',
+    body: { name: 'North Scale Updated', latitude: 48.4, longitude: 2.4 },
+  })
+})

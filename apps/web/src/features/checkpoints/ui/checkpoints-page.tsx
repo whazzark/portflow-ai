@@ -16,10 +16,12 @@ import {
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { useDockMutations } from '@/features/checkpoints/mutations/use-dock-mutations'
+import { useWeighingAreaMutations } from '@/features/checkpoints/mutations/use-weighing-area-mutations'
 import { dockQueries } from '@/features/checkpoints/queries/dock-queries'
 import { weighingAreaQueries } from '@/features/checkpoints/queries/weighing-area-queries'
 import type { DockDto, WeighingAreaDto } from '@/features/checkpoints/types'
 import { DockForm } from '@/features/checkpoints/ui/dock-form'
+import { WeighingAreaForm } from '@/features/checkpoints/ui/weighing-area-form'
 import { normalizeSearch } from '@/helpers/search'
 
 const checkpointsRoute = getRouteApi('/_authenticated/checkpoints')
@@ -207,7 +209,69 @@ function DockList({
   )
 }
 
-function WeighingAreaDetails({ area, onClose }: { area: WeighingAreaDto; onClose: () => void }) {
+function WeighingAreaDetails({
+  area,
+  onClose,
+  onEdit,
+  onCreate,
+  onUpdate,
+  mode = 'view',
+  onSuccess,
+}: {
+  area?: WeighingAreaDto
+  onClose: () => void
+  onEdit?: () => void
+  onCreate?: (value: {
+    name: string
+    latitude: number
+    longitude: number
+  }) => Promise<WeighingAreaDto>
+  onUpdate?: (value: {
+    name: string
+    latitude: number
+    longitude: number
+  }) => Promise<WeighingAreaDto>
+  mode?: 'view' | 'edit' | 'create'
+  onSuccess?: (area: WeighingAreaDto) => void
+}) {
+  if ((mode === 'create' && onCreate) || (mode === 'edit' && area && onUpdate)) {
+    const isCreate = mode === 'create'
+    return (
+      <div className="fixed inset-0 z-20 flex justify-end bg-black/20" role="presentation">
+        <aside
+          aria-label={isCreate ? 'Create weighing area' : `Edit ${area?.name}`}
+          className="flex h-full w-full max-w-md flex-col overflow-y-auto bg-background p-6 shadow-xl"
+          role="dialog"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <h2 className="font-semibold text-xl">
+              {isCreate ? 'Create weighing area' : 'Edit weighing area'}
+            </h2>
+            <Button
+              aria-label="Close weighing area form"
+              onClick={onClose}
+              size="icon"
+              variant="ghost"
+            >
+              <XIcon aria-hidden="true" />
+            </Button>
+          </div>
+          <div className="mt-8">
+            <WeighingAreaForm
+              area={isCreate ? undefined : area}
+              onCreate={onCreate ?? (async () => area as WeighingAreaDto)}
+              onSuccess={onSuccess ?? onClose}
+              onUpdate={onUpdate ?? (async () => area as WeighingAreaDto)}
+            />
+          </div>
+        </aside>
+      </div>
+    )
+  }
+  if (!area) {
+    return null
+  }
+
   return (
     <div className="fixed inset-0 z-20 flex justify-end bg-black/20" role="presentation">
       <aside
@@ -222,14 +286,21 @@ function WeighingAreaDetails({ area, onClose }: { area: WeighingAreaDto; onClose
               {area.status === 'ARCHIVED' ? 'Archived' : 'Available'}
             </p>
           </div>
-          <Button
-            aria-label="Close weighing area details"
-            onClick={onClose}
-            size="icon"
-            variant="ghost"
-          >
-            <XIcon aria-hidden="true" />
-          </Button>
+          <div className="flex gap-2">
+            {area.status === 'AVAILABLE' && onEdit && (
+              <Button aria-label="Edit weighing area" onClick={onEdit} variant="outline">
+                Edit
+              </Button>
+            )}
+            <Button
+              aria-label="Close weighing area details"
+              onClick={onClose}
+              size="icon"
+              variant="ghost"
+            >
+              <XIcon aria-hidden="true" />
+            </Button>
+          </div>
         </div>
         <dl className="mt-8 grid gap-4 text-sm">
           <div>
@@ -349,6 +420,7 @@ function WeighingAreaList({
 function WeighingAreaWorkbench() {
   const navigate = checkpointsRoute.useNavigate()
   const { status, q, sort, detail, mode } = checkpointsRoute.useSearch()
+  const mutations = useWeighingAreaMutations()
   const areasQuery = useQuery(weighingAreaQueries.list())
   const detailQuery = useQuery({
     ...weighingAreaQueries.detail(detail ?? ''),
@@ -360,7 +432,16 @@ function WeighingAreaWorkbench() {
     <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-4 md:p-6">
       <div>
         <p className="text-muted-foreground text-sm">Site references</p>
-        <h1 className="font-semibold text-2xl">Checkpoints</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-semibold text-2xl">Checkpoints</h1>
+          <Button
+            onClick={() =>
+              navigate({ search: (current) => ({ ...current, mode: 'create', detail: undefined }) })
+            }
+          >
+            Create weighing area
+          </Button>
+        </div>
       </div>
       <div aria-label="Checkpoint resources" className="flex gap-2" role="tablist">
         <button
@@ -442,8 +523,32 @@ function WeighingAreaWorkbench() {
       {mode === 'view' && detail && detailQuery.data?.data && (
         <WeighingAreaDetails
           area={detailQuery.data.data}
+          onEdit={() => navigate({ search: (current) => ({ ...current, mode: 'edit' }) })}
           onClose={() =>
             navigate({ search: (current) => ({ ...current, detail: undefined, mode: undefined }) })
+          }
+        />
+      )}
+      {mode === 'edit' && detail && detailQuery.data?.data && (
+        <WeighingAreaDetails
+          area={detailQuery.data.data}
+          mode="edit"
+          onClose={() => navigate({ search: (current) => ({ ...current, mode: 'view' }) })}
+          onUpdate={async (value) =>
+            (await mutations.update.mutateAsync({ params: { id: detail }, body: value })).data
+          }
+          onSuccess={(area) =>
+            navigate({ search: (current) => ({ ...current, detail: area.id, mode: 'view' }) })
+          }
+        />
+      )}
+      {mode === 'create' && (
+        <WeighingAreaDetails
+          mode="create"
+          onClose={() => navigate({ search: (current) => ({ ...current, mode: undefined }) })}
+          onCreate={async (value) => (await mutations.create.mutateAsync({ body: value })).data}
+          onSuccess={(area) =>
+            navigate({ search: (current) => ({ ...current, detail: area.id, mode: 'view' }) })
           }
         />
       )}

@@ -22,6 +22,18 @@ export function isUnauthorizedError(error: unknown): boolean {
 }
 
 export function parseApiError(error: unknown): ApiError {
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const response = (error as { response?: { error?: Partial<ApiError> } }).response
+    if (response?.error?.code && response.error.message) {
+      return {
+        code: response.error.code,
+        message: response.error.message,
+        details: response.error.details,
+        meta: response.error.meta,
+      }
+    }
+  }
+
   if (!(error instanceof TuyauError)) {
     return UNKNOWN_ERROR
   }
