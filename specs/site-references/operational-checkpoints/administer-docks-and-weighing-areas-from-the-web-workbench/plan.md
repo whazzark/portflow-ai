@@ -99,4 +99,4 @@ No constitution exception is required.
 - [x] S05: An administrator can create and correct an available Weighing Area with accurate field and conflict feedback.
 - [x] S06: An administrator can archive or reactivate one Dock and recover from blocked or stale lifecycle outcomes without false success.
 - [x] S07: An administrator can archive or reactivate one Weighing Area and recover from blocked or stale lifecycle outcomes without false success.
-- [ ] S08: The complete Checkpoints flow is keyboard-accessible, focus-safe, responsive, cache-consistent, and verified through the affected browser journey.
+- [x] S08: The complete Checkpoints flow is keyboard-accessible, focus-safe, responsive, cache-consistent, and verified through the affected browser journey.

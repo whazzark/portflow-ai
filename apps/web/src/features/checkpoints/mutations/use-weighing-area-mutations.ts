@@ -23,6 +23,7 @@ export function useWeighingAreaMutations() {
 
   const refreshWeighingArea = async (id?: string) => {
     await queryClient.invalidateQueries({ queryKey: weighingAreaQueries.list().queryKey })
+    await queryClient.invalidateQueries({ queryKey: weighingAreaQueries.available().queryKey })
     if (id) {
       await queryClient.invalidateQueries({ queryKey: weighingAreaQueries.detail(id).queryKey })
     }
@@ -41,22 +42,22 @@ export function useWeighingAreaMutations() {
       },
     }),
     create: useMutation({
-      mutationFn: (variables: { body: Payload }) =>
-        request<{ data: WeighingAreaDto }>('/api/v1/weighing-areas', {
+        mutationFn: (variables: { body: Payload }) =>
+          request<{ data: WeighingAreaDto }>('/api/v1/weighing-areas', {
           method: 'POST',
           body: JSON.stringify(variables.body),
-      }),
+        }),
       onSuccess: (result) => refreshWeighingArea(result.data.id),
       onError: () => {
         void refreshWeighingArea()
       },
     }),
     update: useMutation({
-      mutationFn: (variables: { params: { id: string }; body: Payload }) =>
-        request<{ data: WeighingAreaDto }>(`/api/v1/weighing-areas/${variables.params.id}`, {
+        mutationFn: (variables: { params: { id: string }; body: Payload }) =>
+          request<{ data: WeighingAreaDto }>(`/api/v1/weighing-areas/${variables.params.id}`, {
           method: 'PATCH',
           body: JSON.stringify(variables.body),
-      }),
+        }),
       onSuccess: (result) => refreshWeighingArea(result.data.id),
       onError: (_error, variables) => {
         void refreshWeighingArea(String(variables.params.id))

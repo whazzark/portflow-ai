@@ -7,7 +7,9 @@ async function request<T>(path: string): Promise<T> {
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}${path}`, {
     credentials: 'include',
   })
-  if (!response.ok) throw new Error(`Request failed with status ${response.status}`)
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`)
+  }
   return response.json() as Promise<T>
 }
 
@@ -15,6 +17,10 @@ export const weighingAreaQueries = {
   list: () => ({
     queryKey: ['weighing-areas', 'list'],
     queryFn: () => request<WeighingAreaResponse>('/api/v1/weighing-areas'),
+  }),
+  available: () => ({
+    queryKey: ['weighing-areas', 'available'],
+    queryFn: () => request<WeighingAreaResponse>('/api/v1/weighing-areas/available'),
   }),
   detail: (id: string) => ({
     queryKey: ['weighing-areas', 'detail', id],

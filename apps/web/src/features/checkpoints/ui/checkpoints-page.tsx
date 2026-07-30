@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { SearchIcon, XIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -99,7 +99,7 @@ function DockLifecycleActions({
       <Button onClick={() => setOpen(true)} variant={archived ? 'default' : 'destructive'}>
         {archived ? 'Reactivate dock' : 'Archive dock'}
       </Button>
-      <AlertDialog modal={false} open={open} onOpenChange={setOpen}>
+      <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{archived ? 'Reactivate dock?' : 'Archive dock?'}</AlertDialogTitle>
@@ -165,6 +165,7 @@ function DockDetails({
       <div className="fixed inset-0 z-20 flex justify-end bg-black/20" role="presentation">
         <aside
           aria-label={isCreate ? 'Create dock' : `Edit ${dock?.name}`}
+          aria-modal="true"
           className="flex h-full w-full max-w-md flex-col overflow-y-auto bg-background p-6 shadow-xl"
           role="dialog"
         >
@@ -195,6 +196,7 @@ function DockDetails({
     <div className="fixed inset-0 z-20 flex justify-end bg-black/20" role="presentation">
       <aside
         aria-label={dock.name}
+        aria-modal="true"
         className="flex h-full w-full max-w-md flex-col bg-background p-6 shadow-xl"
         role="dialog"
       >
@@ -212,7 +214,13 @@ function DockDetails({
               </Button>
             )}
             <DockLifecycleActions dock={dock} onStale={onLifecycleStale ?? (() => undefined)} />
-            <Button aria-label="Close dock details" onClick={onClose} size="icon" variant="ghost">
+            <Button
+              aria-label="Close dock details"
+              autoFocus
+              onClick={onClose}
+              size="icon"
+              variant="ghost"
+            >
               <XIcon aria-hidden="true" />
             </Button>
           </div>
@@ -255,7 +263,7 @@ function DockList({
   search: string
   sort: 'asc' | 'desc'
   onSort: () => void
-  onSelect: (id: string) => void
+  onSelect: (id: string, trigger: HTMLButtonElement) => void
 }) {
   const visibleDocks = useMemo(() => {
     const filter = normalizeSearch(search)
@@ -306,7 +314,7 @@ function DockList({
               <Button
                 aria-label={`View dock ${dock.name}`}
                 className="h-auto px-0 font-medium"
-                onClick={() => onSelect(dock.id)}
+                onClick={(event) => onSelect(dock.id, event.currentTarget)}
                 variant="link"
               >
                 {dock.name}
@@ -319,7 +327,7 @@ function DockList({
             <TableCell>
               <Button
                 aria-label={`Inspect dock ${dock.name}`}
-                onClick={() => onSelect(dock.id)}
+                onClick={(event) => onSelect(dock.id, event.currentTarget)}
                 variant="outline"
               >
                 Inspect
@@ -365,6 +373,7 @@ function WeighingAreaDetails({
       <div className="fixed inset-0 z-20 flex justify-end bg-black/20" role="presentation">
         <aside
           aria-label={isCreate ? 'Create weighing area' : `Edit ${area?.name}`}
+          aria-modal="true"
           className="flex h-full w-full max-w-md flex-col overflow-y-auto bg-background p-6 shadow-xl"
           role="dialog"
         >
@@ -374,6 +383,7 @@ function WeighingAreaDetails({
             </h2>
             <Button
               aria-label="Close weighing area form"
+              autoFocus
               onClick={onClose}
               size="icon"
               variant="ghost"
@@ -401,6 +411,7 @@ function WeighingAreaDetails({
     <div className="fixed inset-0 z-20 flex justify-end bg-black/20" role="presentation">
       <aside
         aria-label={area.name}
+        aria-modal="true"
         className="flex h-full w-full max-w-md flex-col bg-background p-6 shadow-xl"
         role="dialog"
       >
@@ -423,6 +434,7 @@ function WeighingAreaDetails({
             />
             <Button
               aria-label="Close weighing area details"
+              autoFocus
               onClick={onClose}
               size="icon"
               variant="ghost"
@@ -499,7 +511,7 @@ function WeighingAreaLifecycleActions({
       <Button onClick={() => setOpen(true)} variant={archived ? 'default' : 'destructive'}>
         {archived ? 'Reactivate weighing area' : 'Archive weighing area'}
       </Button>
-      <AlertDialog modal={false} open={open} onOpenChange={setOpen}>
+      <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -555,7 +567,7 @@ function WeighingAreaList({
   search: string
   sort: 'asc' | 'desc'
   onSort: () => void
-  onSelect: (id: string) => void
+  onSelect: (id: string, trigger: HTMLButtonElement) => void
 }) {
   const visibleAreas = useMemo(() => {
     const filter = normalizeSearch(search)
@@ -612,7 +624,7 @@ function WeighingAreaList({
               <Button
                 aria-label={`View weighing area ${area.name}`}
                 className="h-auto px-0 font-medium"
-                onClick={() => onSelect(area.id)}
+                onClick={(event) => onSelect(area.id, event.currentTarget)}
                 variant="link"
               >
                 {area.name}
@@ -625,7 +637,7 @@ function WeighingAreaList({
             <TableCell>
               <Button
                 aria-label={`Inspect weighing area ${area.name}`}
-                onClick={() => onSelect(area.id)}
+                onClick={(event) => onSelect(area.id, event.currentTarget)}
                 variant="outline"
               >
                 Inspect
@@ -641,6 +653,8 @@ function WeighingAreaList({
 function WeighingAreaWorkbench() {
   const navigate = checkpointsRoute.useNavigate()
   const { status, q, sort, detail, mode } = checkpointsRoute.useSearch()
+  const returnFocusRef = useRef<HTMLButtonElement | null>(null)
+  const hadModalRef = useRef(false)
   const [lifecycleFeedback, setLifecycleFeedback] = useState<string | null>(null)
   const mutations = useWeighingAreaMutations()
   const areasQuery = useQuery(weighingAreaQueries.list())
@@ -650,23 +664,34 @@ function WeighingAreaWorkbench() {
   })
   const areas = areasQuery.data?.data ?? []
 
+  useEffect(() => {
+    const modalOpen = Boolean(detail && mode) || mode === 'create'
+    if (hadModalRef.current && !modalOpen) {
+      requestAnimationFrame(() => returnFocusRef.current?.focus())
+    }
+    hadModalRef.current = modalOpen
+  }, [detail, mode])
+
   return (
-    <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-4 md:p-6">
+    <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden p-4 md:p-6">
       {lifecycleFeedback && <p role="alert">{lifecycleFeedback}</p>}
       <div>
         <p className="text-muted-foreground text-sm">Site references</p>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="font-semibold text-2xl">Checkpoints</h1>
           <Button
-            onClick={() =>
-              navigate({ search: (current) => ({ ...current, mode: 'create', detail: undefined }) })
-            }
+            onClick={(event) => {
+              returnFocusRef.current = event.currentTarget
+              void navigate({
+                search: (current) => ({ ...current, mode: 'create', detail: undefined }),
+              })
+            }}
           >
             Create weighing area
           </Button>
         </div>
       </div>
-      <div aria-label="Checkpoint resources" className="flex gap-2" role="tablist">
+      <div aria-label="Checkpoint resources" className="flex flex-wrap gap-2" role="tablist">
         <button
           aria-selected={false}
           onClick={() => navigate({ search: (current) => ({ ...current, resource: 'docks' }) })}
@@ -733,9 +758,10 @@ function WeighingAreaWorkbench() {
           search={q}
           sort={sort}
           status={status}
-          onSelect={(id) =>
-            navigate({ search: (current) => ({ ...current, detail: id, mode: 'view' }) })
-          }
+          onSelect={(id, trigger) => {
+            returnFocusRef.current = trigger
+            void navigate({ search: (current) => ({ ...current, detail: id, mode: 'view' }) })
+          }}
           onSort={() =>
             navigate({
               search: (current) => ({ ...current, sort: current.sort === 'asc' ? 'desc' : 'asc' }),
@@ -789,6 +815,8 @@ export function CheckpointsPage() {
   const user = useAuthenticatedUser()
   const navigate = checkpointsRoute.useNavigate()
   const { resource, status, q, sort, detail, mode } = checkpointsRoute.useSearch()
+  const returnFocusRef = useRef<HTMLButtonElement | null>(null)
+  const hadModalRef = useRef(false)
   const [lifecycleFeedback, setLifecycleFeedback] = useState<string | null>(null)
   const mutations = useDockMutations()
   const docksQuery = useQuery({ ...dockQueries.list(), enabled: resource === 'docks' })
@@ -796,6 +824,14 @@ export function CheckpointsPage() {
     ...dockQueries.detail(detail ?? ''),
     enabled: resource === 'docks' && Boolean(detail),
   })
+
+  useEffect(() => {
+    const modalOpen = Boolean(detail && mode) || mode === 'create'
+    if (hadModalRef.current && !modalOpen) {
+      requestAnimationFrame(() => returnFocusRef.current?.focus())
+    }
+    hadModalRef.current = modalOpen
+  }, [detail, mode])
 
   if (!isAdministrator(user)) {
     return (
@@ -805,32 +841,36 @@ export function CheckpointsPage() {
     )
   }
 
+  const docks = docksQuery.data?.data ?? []
+
   if (resource !== 'docks') {
     return <WeighingAreaWorkbench />
   }
 
-  const docks = docksQuery.data?.data ?? []
   const count = docks.filter(
     (dock) => dock.status === (status === 'available' ? 'AVAILABLE' : 'ARCHIVED'),
   ).length
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto p-4 md:p-6">
+    <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden p-4 md:p-6">
       {lifecycleFeedback && <p role="alert">{lifecycleFeedback}</p>}
       <div>
         <p className="text-muted-foreground text-sm">Site references</p>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="font-semibold text-2xl">Checkpoints</h1>
           <Button
-            onClick={() =>
-              navigate({ search: (current) => ({ ...current, mode: 'create', detail: undefined }) })
-            }
+            onClick={(event) => {
+              returnFocusRef.current = event.currentTarget
+              void navigate({
+                search: (current) => ({ ...current, mode: 'create', detail: undefined }),
+              })
+            }}
           >
             Create dock
           </Button>
         </div>
       </div>
-      <div aria-label="Checkpoint resources" className="flex gap-2" role="tablist">
+      <div aria-label="Checkpoint resources" className="flex flex-wrap gap-2" role="tablist">
         <button
           aria-selected={true}
           onClick={() => navigate({ search: (current) => ({ ...current, resource: 'docks' }) })}
@@ -904,9 +944,10 @@ export function CheckpointsPage() {
           search={q}
           sort={sort}
           status={status}
-          onSelect={(id) =>
-            navigate({ search: (current) => ({ ...current, detail: id, mode: 'view' }) })
-          }
+          onSelect={(id, trigger) => {
+            returnFocusRef.current = trigger
+            void navigate({ search: (current) => ({ ...current, detail: id, mode: 'view' }) })
+          }}
           onSort={() =>
             navigate({
               search: (current) => ({ ...current, sort: current.sort === 'asc' ? 'desc' : 'asc' }),
