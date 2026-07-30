@@ -15,9 +15,31 @@ const ADMIN = {
   accessStatus: 'ACTIVE',
 }
 
-const WEIGHING_AREAS = [
-  { id: 'area-z', name: 'Zulu Scale', latitude: 48.1, longitude: 2.1, status: 'AVAILABLE' },
-  { id: 'area-a', name: 'Alpha Scale', latitude: 48.2, longitude: 2.2, status: 'AVAILABLE' },
+const WEIGHING_AREAS: Array<{
+  id: string
+  name: string
+  latitude: number
+  longitude: number
+  status: 'AVAILABLE' | 'ARCHIVED'
+  archiveComment?: string
+  reactivationComment?: string
+}> = [
+  {
+    id: 'area-z',
+    name: 'Zulu Scale',
+    latitude: 48.1,
+    longitude: 2.1,
+    status: 'AVAILABLE',
+    reactivationComment: undefined,
+  },
+  {
+    id: 'area-a',
+    name: 'Alpha Scale',
+    latitude: 48.2,
+    longitude: 2.2,
+    status: 'AVAILABLE',
+    reactivationComment: undefined,
+  },
   {
     id: 'area-old',
     name: 'Old Scale',
@@ -25,6 +47,7 @@ const WEIGHING_AREAS = [
     longitude: 2.3,
     status: 'ARCHIVED',
     archiveComment: 'Replaced',
+    reactivationComment: undefined,
   },
 ]
 
@@ -186,7 +209,7 @@ test('archives and reactivates a weighing area while recovering from blocked and
     http.get(`${API_BASE_URL}/api/v1/weighing-areas`, () => HttpResponse.json({ data: [area] })),
     http.get(`${API_BASE_URL}/api/v1/weighing-areas/:id`, () => HttpResponse.json({ data: area })),
     http.post(`${API_BASE_URL}/api/v1/weighing-areas/:id/archive`, async ({ request }) => {
-      requests.push({ path: 'archive', body: null })
+      requests.push({ path: 'archive', body: await request.json() })
       attempts.archive += 1
       if (attempts.archive === 1) {
         return HttpResponse.json(
@@ -203,7 +226,7 @@ test('archives and reactivates a weighing area while recovering from blocked and
       return HttpResponse.json({ data: area })
     }),
     http.post(`${API_BASE_URL}/api/v1/weighing-areas/:id/reactivate`, () => {
-      requests.push({ path: 'reactivate', body: null })
+      requests.push({ path: 'reactivate', body: { comment: null } })
       attempts.reactivate += 1
       if (attempts.reactivate === 1) {
         return HttpResponse.json(
@@ -216,7 +239,12 @@ test('archives and reactivates a weighing area while recovering from blocked and
           { status: 409 },
         )
       }
-      area = { ...area, status: 'AVAILABLE', archiveComment: undefined }
+      area = {
+        ...area,
+        status: 'AVAILABLE',
+        archiveComment: undefined,
+        reactivationComment: 'Scale returned to service',
+      }
       return HttpResponse.json({ data: area })
     }),
   )
@@ -233,7 +261,9 @@ test('archives and reactivates a weighing area while recovering from blocked and
   })
   fireEvent.click(within(archiveDialog).getByRole('button', { name: 'Archive' }))
   await new Promise((resolve) => setTimeout(resolve, 50))
-  expect(screen.getByText('Weighing area is used by a planned or active discharge')).toBeInTheDocument()
+  expect(
+    screen.getByText('Weighing area is used by a planned or active discharge'),
+  ).toBeInTheDocument()
   expect(screen.getByRole('alertdialog')).toBeInTheDocument()
   expect(within(details).getByText('Available')).toBeInTheDocument()
 
@@ -241,7 +271,7 @@ test('archives and reactivates a weighing area while recovering from blocked and
   await new Promise((resolve) => setTimeout(resolve, 50))
   expect(within(details).getByText('Archived')).toBeInTheDocument()
   expect(within(details).getByText('Replaced scale')).toBeInTheDocument()
-  expect(requests[0]).toEqual({ path: 'archive', body: null })
+  expect(requests[0]).toEqual({ path: 'archive', body: { comment: 'Replaced scale' } })
 
   fireEvent.click(within(details).getByRole('button', { name: 'Reactivate weighing area' }))
   const reactivateDialog = screen.getByRole('alertdialog')
@@ -254,5 +284,6 @@ test('archives and reactivates a weighing area while recovering from blocked and
   fireEvent.click(within(reactivateDialog).getByRole('button', { name: 'Reactivate' }))
   await new Promise((resolve) => setTimeout(resolve, 50))
   expect(within(details).getByText('Available')).toBeInTheDocument()
-  expect(requests[2]).toEqual({ path: 'reactivate', body: null })
+  expect(within(details).getByText('Scale returned to service')).toBeInTheDocument()
+  expect(requests[2]).toEqual({ path: 'reactivate', body: { comment: null } })
 })

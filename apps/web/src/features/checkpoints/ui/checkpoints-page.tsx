@@ -444,6 +444,12 @@ function WeighingAreaDetails({
               <dd>{area.archiveComment}</dd>
             </div>
           )}
+          {area.reactivationComment && (
+            <div>
+              <dt className="font-medium">Reactivation comment</dt>
+              <dd>{area.reactivationComment}</dd>
+            </div>
+          )}
         </dl>
       </aside>
     </div>
