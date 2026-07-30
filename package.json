@@ -18,6 +18,7 @@
     "delivery:status": "node scripts/spec-kit/delivery.mjs status",
     "delivery:approve": "node scripts/spec-kit/delivery.mjs approve",
     "delivery:continue": "node scripts/spec-kit/delivery.mjs continue",
+    "delivery:run": "node scripts/spec-kit/delivery.mjs run",
     "delivery:review": "node scripts/spec-kit/delivery.mjs review",
     "delivery:validate": "node scripts/spec-kit/delivery.mjs validate",
     "delivery:adopt": "node scripts/spec-kit/delivery.mjs adopt",

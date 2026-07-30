@@ -276,6 +276,7 @@ test('parses delivery CLI arguments', () => {
     },
   )
   assert.equal(parseDeliveryArguments(['start', '--', '123']).issue, 123)
+  assert.equal(parseDeliveryArguments(['run', '--', '123']).action, 'run')
 })
 
 test('renders and idempotently updates one managed PR progress block', () => {

@@ -93,7 +93,7 @@ No constitution exception is required.
 ## Implementation Slices
 
 - [x] S01: An authorized administrator can reach `/checkpoints` from navigation, while invalid or unauthorized route and URL states resolve safely.
-- [ ] S02: An administrator can browse, search, sort, inspect, and recover the available and archived Dock views.
+- [x] S02: An administrator can browse, search, sort, inspect, and recover the available and archived Dock views.
 - [ ] S03: An administrator can browse, search, sort, inspect, and recover the available and archived Weighing Area views.
 - [ ] S04: An administrator can create and correct an available Dock with accurate field and conflict feedback.
 - [ ] S05: An administrator can create and correct an available Weighing Area with accurate field and conflict feedback.

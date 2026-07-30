@@ -24,7 +24,16 @@ import {
   validateFeatureDirectory,
 } from './workflow-model.mjs'
 
-const ACTIONS = new Set(['start', 'status', 'approve', 'continue', 'review', 'validate', 'adopt'])
+const ACTIONS = new Set([
+  'start',
+  'status',
+  'approve',
+  'continue',
+  'run',
+  'review',
+  'validate',
+  'adopt',
+])
 
 export class DeliveryWorkflow {
   constructor({
@@ -80,6 +89,9 @@ export class DeliveryWorkflow {
     }
     if (options.action === 'continue') {
       return this.continue({ issue, options, ...resolved })
+    }
+    if (options.action === 'run') {
+      return this.runAll({ issue, options, ...resolved })
     }
     if (options.action === 'review') {
       return this.review({ issue, options, ...resolved })
@@ -295,7 +307,7 @@ export class DeliveryWorkflow {
       return 0
     }
     if (context.state.stage === 'independent-review') {
-      return this.review({ issue, options, profile, featureDirectory, branch })
+      return await this.review({ issue, options, profile, featureDirectory, branch })
     }
     if (context.state.stage === 'final-verification') {
       if (context.checks.commit && context.checks.commit === context.pullRequest?.headRefOid) {
@@ -303,7 +315,7 @@ export class DeliveryWorkflow {
         this.write('Local verification is current; waiting for GitHub checks to finish.')
         return 0
       }
-      return this.verify({ issue, profile, featureDirectory, branch })
+      return await this.verify({ issue, profile, featureDirectory, branch })
     }
     if (context.state.stage === 'delivery-review') {
       const metadataErrors = readyMetadataErrors(context.pullRequest.body)
@@ -318,6 +330,84 @@ export class DeliveryWorkflow {
       return 0
     }
     throw new Error(`Delivery cannot continue from ${context.state.stage}.`)
+  }
+
+  async runAll({ issue, options, profile, featureDirectory, branch }) {
+    if (options.dryRun) {
+      this.print(
+        {
+          issue: issue.number,
+          branch,
+          featureDirectory,
+          profile: profile.id,
+          action: 'run-until-human-gate',
+        },
+        options,
+      )
+      return 0
+    }
+
+    const currentBranch = this.github.currentBranch()
+    if (currentBranch !== branch) {
+      if (currentBranch !== 'master') {
+        throw new Error(`Switch to ${branch} or master before running this delivery.`)
+      }
+      const initial = this.context({ issue, profile, featureDirectory, branch })
+      if (initial.pullRequest) {
+        throw new Error(
+          `Delivery already has PR #${initial.pullRequest.number}; switch to ${branch}.`,
+        )
+      }
+      await this.start({ issue, options, profile, featureDirectory, branch })
+    }
+
+    let deliveryReviewHandled = false
+    for (let iteration = 0; iteration < 100; iteration += 1) {
+      const context = this.context({ issue, profile, featureDirectory, branch })
+      const stage = context.state.stage
+
+      if (
+        [
+          'waiting-for-build-approval',
+          'waiting-for-spec-approval',
+          'waiting-for-plan-approval',
+        ].includes(stage)
+      ) {
+        this.write(
+          `${context.state.stageLabel} requires human approval. Run:\n` +
+            `pnpm delivery:approve -- ${issue.number} --gate ${gateForStage(stage)}\n` +
+            `Then resume with: pnpm delivery:run -- ${issue.number}`,
+        )
+        return 0
+      }
+      if (stage === 'waiting-for-decision' || stage === 'blocked') {
+        this.write(`${context.state.stageLabel} requires human intervention before resuming.`)
+        return 0
+      }
+      if (stage === 'done') {
+        this.write(`Delivery for #${issue.number} is already done.`)
+        return 0
+      }
+      if (
+        stage === 'final-verification' &&
+        context.checks.commit &&
+        context.checks.commit === context.pullRequest?.headRefOid
+      ) {
+        this.write('Local verification is current; waiting for GitHub checks to finish.')
+        return 0
+      }
+      if (stage === 'delivery-review' && deliveryReviewHandled) {
+        this.write(`PR #${context.pullRequest.number} is ready for human delivery review.`)
+        return 0
+      }
+
+      const transition = this.continue({ issue, options, profile, featureDirectory, branch })
+      await transition
+      if (stage === 'delivery-review') {
+        deliveryReviewHandled = true
+      }
+    }
+    throw new Error('Automatic delivery run exceeded 100 transitions; inspect the workflow state.')
   }
 
   async review({ issue, options, profile, featureDirectory, branch }) {

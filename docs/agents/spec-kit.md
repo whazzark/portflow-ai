@@ -21,6 +21,7 @@ Start from a clean `master` worktree:
 ```bash
 pnpm delivery:start -- 123
 pnpm delivery:start -- 123 --profile standard --dry-run
+pnpm delivery:run -- 123 --profile standard
 ```
 
 The command resolves the canonical feature directory, creates the required issue branch, pushes the first checkpoint, opens one Draft PR, and projects workflow progress into its managed block. Standard and high-assurance deliveries draft lean artifacts; lite deliveries implement one small focused checkpoint without creating Spec Kit artifacts.
@@ -59,6 +60,8 @@ Then advance one calculated action at a time:
 ```bash
 pnpm delivery:continue -- 123
 ```
+
+For the normal path, `delivery:run` is the preferred command. It can start the delivery from a clean `master`, execute every technical transition, commit and push each implementation slice, run the independent review, and perform final verification. It stops only for a human gate, a product decision, an external blocker, pending GitHub checks, or the final PR checklist. After approving a gate, run the same command again.
 
 The command implements one slice, runs its focused observable test, marks that slice complete, creates a focused Conventional Commit, pushes it, and refreshes the PR. It pauses only for a material product decision, irreversible risk, authorization choice, or external blocker.
 
