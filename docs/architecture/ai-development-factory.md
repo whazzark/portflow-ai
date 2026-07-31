@@ -1,53 +1,46 @@
-# AI Development Factory
+# AI Development Workflow
 
 ## Purpose
 
-Portflow uses Codex-only Spec Kit workflows to turn human-approved intent into tested delivery artifacts and a Draft Pull Request. Product decisions, final validation, and merge remain human responsibilities.
+Portflow uses upstream Spec Kit with Codex to turn one selected GitHub issue into reviewed feature
+artifacts and tested code. Product decisions, final validation, and merge remain human
+responsibilities.
 
-## Source-of-truth model
+## Ownership model
 
 ```text
 GitHub Issue / Project
         ↓ intake, priority, dependencies
-Spec Kit roadmap or feature spec
-        ↓ spec → plan → tasks
-Codex workflow
-        ↓ implementation and verification
+Vanilla Spec Kit
+        ↓ spec → plan → tasks → implement
+Code and tests
+        ↓ deterministic CI + fresh Codex review
 Draft PR
-        ↓ fresh Codex review + human approval
-Merged delivery
+        ↓ human review and merge
+Delivered feature
 ```
 
-- Issues are short intake/tracking records.
-- `roadmap.md` decomposes large epics.
-- `spec.md` defines behavior.
-- `plan.md` defines the technical approach.
-- `tasks.md` defines executable work.
+- Issues are created and refined before feature artifacts.
+- `spec.md` defines observable behavior for one selected feature.
+- `plan.md` and its supporting artifacts define the technical approach.
+- `tasks.md` defines executable work grouped by independently testable user story.
 - `CONTEXT.md` and ADRs preserve durable knowledge.
-
-## Codex roles
-
-- **Specifier**: writes and clarifies intent.
-- **Planner**: maps intent to architecture, boundaries, tests, and rollout.
-- **Implementer**: follows the approved tasks with TDD.
-- **Reviewer**: uses a fresh context to check the diff against spec, plan, architecture, security, and tests.
-- **Validator**: runs deterministic checks and relevant browser journeys.
-- **Coordinator**: later automation may distribute independent tasks across Codex worktrees; it must not bypass Spec Kit gates.
 
 ## Workflow
 
-`specify → clarify → spec review → plan → checklist → plan review → tasks → analyze → implement → checks → converge → fresh review → human merge`
+The upstream workflow is `specify → spec review → plan → plan review → tasks → implement`.
+Clarification, checklist, analysis, and convergence are targeted optional skills. Verification,
+fresh review, PR readiness, and merge follow implementation.
 
-The project workflow is `.specify/workflows/portflow-feature/workflow.yml`. Workflow runs may pause and resume at human gates. Shell steps are repository-owned fixed commands; arbitrary agent output must never be interpolated into them.
-
-Use the [Spec Kit operator guide](../agents/spec-kit.md) for the supported commands, feature-path guardrails, gate handling, and maintenance procedure.
+Use the [Spec Kit operator guide](../agents/spec-kit.md) for commands and maintenance.
 
 ## Automation boundaries
 
-- Spec Kit owns artifact lifecycle, workflow state, and gates.
-- Codex owns all AI work.
-- Orca may own worktree/process supervision when parallel execution is introduced.
+- Spec Kit owns feature artifacts and its internal workflow state.
+- Codex owns AI-assisted specification, planning, implementation, and review work.
 - GitHub Actions owns deterministic CI.
-- GitHub Project owns delivery status.
+- GitHub Issues and Project own intake and operational status.
+- GitHub pull requests own review and delivery evidence.
 
-No `tools/ai-orchestrator` package is required until a concrete coordination capability exceeds these boundaries.
+Portflow does not maintain a second delivery orchestrator or synchronize every Spec Kit phase into
+GitHub.

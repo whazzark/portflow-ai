@@ -1,47 +1,29 @@
 ## Summary
 
-<!-- What this PR changes and why, in a couple of sentences. Keep this current as the PR progresses. -->
+<!-- What this PR changes and why. Keep this current as the PR evolves. -->
 
-## Change type
-
-- [ ] Spec-driven behavior change
-- [ ] Bug fix, refactor, workflow, documentation, or tooling
-
-## Delivery
-
-<!-- Use the exact canonical spec path. Workflow/docs/tooling-only PRs use N/A. -->
-
-Profile: `lite`, `standard`, or `high-assurance`
-
-Spec: `specs/.../spec.md` or `N/A`
-
-<!-- The delivery workflow inserts and owns its progress block below. -->
-
-## Issue
+## Issue and feature artifacts
 
 Issue: #
 
-<!-- Add `Closes #123` only when merging this PR fully resolves the issue. -->
+<!-- Add `Closes #123` only when this PR fully resolves the issue. -->
+
+Spec: `specs/.../spec.md` or `N/A`
 
 ## Reviewer focus
 
-Review the current workflow step, its evidence, product intent, implementation quality, security, tests, and operational risk.
+<!-- Highlight product intent, security, migration, architecture, or testing concerns. -->
 
 ## Delivered changes
-
-<!-- Bullet list of the notable changes. Delete this section for trivial PRs. -->
 
 -
 
 ## Database
 
-- [ ] Not assessed yet (Draft PR only)
 - [ ] No migration in this PR
 - [ ] Migration included and reversible (`down` mirrors `up`)
 
 ## Verification
-
-<!-- Record concrete evidence. Before implementation or while Draft, state what has not run yet. -->
 
 - Automated checks:
 - Browser journeys:
@@ -49,16 +31,15 @@ Review the current workflow step, its evidence, product intent, implementation q
 
 ## Screenshots
 
-<!-- For `apps/web` changes: before/after screenshots or a short clip. Delete this section for API-only PRs. -->
+<!-- For apps/web changes: before/after screenshots or a short clip. Delete if not relevant. -->
 
-## Ready-for-delivery checklist
+## Ready-for-review checklist
 
-- [ ] Exactly one change type is selected
-- [ ] Current Ready-to-build or high-assurance approvals are recorded, when applicable
-- [ ] Spec, plan slices, and implementation are aligned, when applicable
-- [ ] Acceptance criteria verified one by one against the delivered result
-- [ ] `pnpm check && pnpm typecheck && pnpm test && pnpm test:spec-kit` run locally and green
-- [ ] For `apps/web` changes: golden path and edge cases exercised in the browser
-- [ ] Fresh Codex session reviewed spec fidelity, architecture, security, and tests
-- [ ] Every CONFIRMED finding from the fresh-session review resolved or explicitly justified
-- [ ] New or changed domain terms reflected in `CONTEXT.md`, and relevant ADR added/updated under `docs/adr/`
+- [ ] The linked issue and spec describe the delivered scope without duplication
+- [ ] Spec, plan, tasks, and implementation are aligned when Spec Kit artifacts apply
+- [ ] Acceptance criteria were verified against the delivered result
+- [ ] `pnpm check && pnpm typecheck && pnpm test` run locally and pass
+- [ ] Affected browser journeys were exercised when `apps/web` changed
+- [ ] A fresh Codex session reviewed the final diff
+- [ ] Confirmed review findings were resolved or explicitly justified
+- [ ] New domain terms and durable architecture decisions are documented where applicable

@@ -84,7 +84,6 @@ Ces éléments sont documentés, mais pas tous implémentés dans ce dépôt auj
 │   └── adr/                # ADRs racine
 ├── specs/                  # Roadmaps et spécifications Spec Kit canoniques
 ├── .specify/               # Constitution, templates et workflows Spec Kit
-├── scripts/spec-kit/       # Validation et migration déterministes
 ├── CONTEXT.md              # Glossaire métier
 ├── AGENTS.md               # Conventions agentiques du repo
 ├── package.json
@@ -300,7 +299,7 @@ La source canonique de planification est GitHub :
 - [GitHub Issues](https://github.com/whazzark/portflow-ai/issues) : intake et coordination du delivery ;
 - [docs/architecture/ai-development-factory.md](./docs/architecture/ai-development-factory.md) : workflow Codex + Spec Kit ;
 - [docs/agents/spec-kit.md](./docs/agents/spec-kit.md) : commandes quotidiennes, gates, maintenance et dépannage ;
-- [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) : statut, priorité et découpage en sprints.
+- [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) : statut, priorité et ordre de livraison.
 
 Les idées non encore spécifiées entrent par les [GitHub Issues](https://github.com/whazzark/portflow-ai/issues).
 

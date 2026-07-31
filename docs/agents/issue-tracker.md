@@ -1,50 +1,58 @@
-# Issue tracker: GitHub Issues
+# Issue Tracker: GitHub Issues
 
-GitHub Issues are the intake and coordination surface for Portflow. They carry the problem statement needed to start discovery, priority, milestone, parent/sub-issue relationships, and discussion history. The detailed functional contract lives in the linked Spec Kit artifact under `specs/`.
+GitHub Issues are Portflow's intake and coordination surface. They own the problem statement,
+priority, milestone, parent/child relationships, dependencies, and discussion. A selected
+behavior-changing issue links to its generated Spec Kit feature directory, whose `spec.md` becomes
+the detailed behavioral contract.
+
+## Work hierarchy
+
+- An **epic** is a broad outcome represented by a parent issue. It does not enter the operational
+  Kanban and does not receive a Spec Kit feature directory by default.
+- A **feature issue** is independently implementable, testable, reviewable, and mergeable. It maps
+  to one feature directory, branch, and PR.
+- An **implementation task** stays in `tasks.md`. Create another GitHub issue only when that task
+  can be delivered independently.
+
+Split issues vertically by observable outcome, not horizontally into API, web, and test issues
+that only become useful when merged together.
+
+## Incremental backlog refinement
+
+Do not generate specs for the whole backlog. Refine one candidate issue when it approaches
+`Ready`:
+
+1. Confirm one primary actor and outcome.
+2. Add observable acceptance criteria and explicit exclusions.
+3. Identify dependencies and parent/child relationships.
+4. Split independently deliverable outcomes into child issues.
+5. Move only the next unblocked feature issue to `Ready`.
+6. Start its vanilla Spec Kit lifecycle from a dedicated branch.
+
+Existing specs marked historical remain readable. Existing draft or unclear specs are reconsidered
+only when their issue is selected; they are not bulk-rewritten.
 
 ## Canonical ownership
 
-- `specs/<roadmap-or-feature>/` owns detailed behavior, acceptance scenarios, assumptions, dependencies, and implementation artifacts.
-- `CONTEXT.md` owns ubiquitous domain language.
-- ADRs own durable architectural decisions.
-- GitHub Project owns delivery status, implementation order, priority, and milestone.
-- Issues retain their stable number as the traceability anchor and link to the canonical spec or roadmap.
+- GitHub Project: operational `Status`, ordering, priority, and milestone.
+- GitHub issue: intake, relationships, dependencies, and product discussion.
+- `spec.md`: detailed behavior and acceptance scenarios for a selected feature.
+- `plan.md` and design artifacts: technical approach for that feature.
+- `tasks.md`: implementation sequence.
+- `CONTEXT.md`: ubiquitous domain language.
+- ADRs: durable architectural decisions.
 
-An issue body is a short tracking stub after migration. It must not become a second editable copy of the spec.
-
-## Spec hierarchy
-
-- An epic becomes `specs/<domain>/<epic-slug>/roadmap.md` and lists independently deliverable sub-specs.
-- A child delivery issue becomes `specs/<domain>/<epic-slug>/<feature-slug>/spec.md`; standalone work uses `specs/standalone/<feature-slug>/spec.md`.
-- Closed historical child issues are represented by `spec.md` artifacts marked `Done (historical)` and linked from their roadmap.
-- A feature directory must contain the GitHub issue number in its metadata even when the path is organized by domain rather than issue number.
-
-## Creating and updating work
-
-The [Spec Kit operator guide](./spec-kit.md) is the canonical command reference.
-
-1. Create or select the GitHub intake issue.
-2. Assign priority and milestone in the Project, then place the issue in the ordered `Backlog`.
-3. Start the selected delivery profile with `pnpm delivery:start -- <issue>`.
-4. Review the generated Draft PR and approve the current artifact hashes at the required gate.
-5. Let the workflow synchronize operational `Status` and detailed progress into the Draft PR.
-6. Keep issue comments for product discussion; update the spec when a decision changes behavior.
-
-When publishing a new issue from a generated task list, keep the issue short and link it to the relevant spec. Do not copy `tasks.md` into the issue body.
-
-Administrative migration, validation, and cutover commands are documented centrally in the [Spec Kit operator guide](./spec-kit.md).
+Avoid keeping editable copies of the same decision in multiple places.
 
 ## Continuous Kanban
 
-The operational flow uses one field with six `Status` values:
-
 | Status | Meaning |
 | --- | --- |
-| `Backlog` | Qualified work, ordered but not yet startable. |
-| `Ready` | Approved work whose blocking dependencies are complete. |
-| `In Progress` | Specification, planning, or implementation is actively underway. |
-| `Review` | Work awaits a human gate, independent review, CI, or delivery approval. |
-| `Blocked` | Work cannot continue because of an external decision or dependency. |
-| `Done` | The issue is closed and the delivery or historical record is complete. |
+| `Backlog` | Qualified and ordered, but not selected or still blocked. |
+| `Ready` | Independently deliverable and free of blocking dependencies. |
+| `In Progress` | Specification, planning, or implementation is active. |
+| `Review` | Waiting for a human gate, PR review, or CI. |
+| `Blocked` | An external dependency or material decision prevents progress. |
+| `Done` | The issue is closed and its delivery is merged. |
 
-Use the `Kanban` view for day-to-day flow, `Active flow` for current work, `Backlog` for ordering, and `Roadmap` for epics. Detailed delivery progress lives in the Draft PR. Epics are intentionally excluded from operational boards. Do not reintroduce `Spec Status` or a `Sprint` field.
+Spec Kit phase progress stays in Spec Kit. Do not create a second Project workflow field.
