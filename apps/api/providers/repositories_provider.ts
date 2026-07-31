@@ -6,6 +6,8 @@ import DockRepository from '#docks/shared/repositories/dock_repository'
 import LucidDockRepository from '#docks/shared/repositories/lucid_dock_repository'
 import NoDischargeSiteReferenceUsageChecker from '#site_references/shared/no_discharge_site_reference_usage_checker'
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
+import LucidTransportCompanyRepository from '#transport_companies/shared/repositories/lucid_transport_company_repository'
+import TransportCompanyRepository from '#transport_companies/shared/repositories/transport_company_repository'
 import LucidUserRepository from '#users/shared/repositories/lucid_user_repository'
 import UserRepository from '#users/shared/repositories/user_repository'
 import LucidWeighingAreaRepository from '#weighing_areas/shared/repositories/lucid_weighing_area_repository'
@@ -21,6 +23,10 @@ export default class RepositoriesProvider {
 
     this.app.container.bind(CustomerRepository, () => {
       return this.app.container.make(LucidCustomerRepository)
+    })
+
+    this.app.container.bind(TransportCompanyRepository, () => {
+      return this.app.container.make(LucidTransportCompanyRepository)
     })
 
     this.app.container.bind(DockRepository, () => {
