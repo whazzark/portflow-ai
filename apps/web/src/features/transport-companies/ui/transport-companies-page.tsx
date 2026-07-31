@@ -8,6 +8,7 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
+import { TransportCompaniesError } from '@/features/transport-companies/ui/transport-companies-error'
 import { TransportCompanyDetails } from '@/features/transport-companies/ui/transport-company-details'
 import { TransportCompanyOverview } from '@/features/transport-companies/ui/transport-company-overview'
 import { TransportCompanySection } from '@/features/transport-companies/ui/transport-company-section'
@@ -43,6 +44,10 @@ export function TransportCompaniesPage() {
       })
     }
   }, [companyStatus, navigate, selected])
+
+  if (companiesQuery.isError) {
+    return <TransportCompaniesError onRetry={() => companiesQuery.refetch()} />
+  }
 
   if (!companiesQuery.data) {
     return null

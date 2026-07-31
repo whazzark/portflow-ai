@@ -4,11 +4,20 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
 
-export function TransportCompaniesError() {
+type TransportCompaniesErrorProps = {
+  onRetry?: () => Promise<unknown>
+}
+
+export function TransportCompaniesError({ onRetry }: TransportCompaniesErrorProps) {
   const queryClient = useQueryClient()
   const router = useRouter()
 
   const retry = async () => {
+    if (onRetry) {
+      await onRetry()
+      return
+    }
+
     queryClient.removeQueries({ queryKey: transportCompanyQueries.all().queryKey })
     await router.invalidate()
   }
