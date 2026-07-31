@@ -9,6 +9,9 @@
 - A behavior-changing issue receives a feature directory under `specs/` only when selected for
   delivery. Its `spec.md` is then the canonical behavioral contract; the issue links to it rather
   than duplicating it.
+- Roadmap-owned features use an explicit stable domain/resource path such as
+  `specs/site-references/operational-checkpoints/docks/list-docks/`; standalone features may use
+  Spec Kit's sequential default.
 - Durable domain vocabulary lives in `CONTEXT.md`. Durable architectural decisions live in
   `docs/adr/` or the relevant application ADR directory.
 - Use one issue, one feature directory, one branch, and one PR per independently deliverable

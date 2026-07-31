@@ -4,22 +4,22 @@
 **Domain**: site-references
 **Status**: in-progress
 
-The roadmap groups independently deliverable slices from the source issue.
+The roadmap groups resource roadmaps. Each resource is decomposed into independently deliverable
+operation slices.
 
-## Delivery slices
+## Resource roadmaps
 
-| ID | Sub-feature | Status | Artifact |
+| ID | Resource | Status | Artifact |
 |---|---|---|---|
-| GH-39 | Administer Dock References | done (historical) | ./administer-dock-references/ |
-| GH-40 | Administer Weighing Area References | done (historical) | ./administer-weighing-area-references/ |
-| GH-41 | Administer Docks and Weighing Areas From the Web Workbench | planned | ./administer-docks-and-weighing-areas-from-the-web-workbench/ |
+| GH-190 | Docks | in-progress | ./docks/ |
+| GH-191 | Weighing Areas | planned | ./weighing-areas/ |
 
-## Cross-cutting context
+## Historical and migration records
 
-The source issue did not provide additional cross-cutting context.
+- GH-39 is the historical dock foundation under `./docks/legacy/`.
+- GH-40 is the historical weighing-area foundation under `./weighing-areas/legacy/`.
+- GH-41 tracks the site-reference decomposition migration.
 
 ## Traceability
 
 - Canonical issue: https://github.com/whazzark/portflow-ai/issues/38
-- Child issue relationships are read from GitHub sub-issues.
-- Each child owns an independently reviewable roadmap or feature spec.
