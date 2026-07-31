@@ -49,10 +49,13 @@ $speckit-tasks
 $speckit-implement
 ```
 
-`speckit-specify` creates one sequentially numbered feature directory under `specs/` and records
-the active directory in the ignored `.specify/feature.json` pointer. The feature directory and git
-branch names are intentionally independent. Include the source issue URL in the feature input for
-traceability.
+`speckit-specify` creates one feature directory under `specs/` and records the active directory in
+the ignored `.specify/feature.json` pointer. For an issue belonging to a roadmap, pass an explicit
+`SPECIFY_FEATURE_DIRECTORY` such as
+`specs/site-references/operational-checkpoints/docks/list-docks/` so related slices stay grouped by
+domain and resource. Standalone features may use Spec Kit's sequential default. The feature
+directory and git branch names are intentionally independent. Include the source issue URL in the
+feature input for traceability.
 
 Clarification is optional and is used only for material ambiguity. Review the current `spec.md`
 before planning. Review `plan.md` and its generated design artifacts before generating tasks and

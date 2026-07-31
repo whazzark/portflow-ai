@@ -1,0 +1,15 @@
+# Roadmap: Transport Companies
+
+**GitHub Issue**: [#48](https://github.com/whazzark/portflow-ai/issues/48)
+**Parent Roadmap**: `specs/site-references/transport-resources/roadmap.md`
+**Domain**: site-references
+
+| Issue | Slice | Status | Artifact |
+|---|---|---|---|
+| #217 | List Transport Companies | backlog | pending selection |
+| #218 | Create a Transport Company | backlog | pending selection |
+| #219 | Update a Transport Company | backlog | pending selection |
+| #220 | Archive a Transport Company | backlog | pending selection |
+| #221 | Reactivate a Transport Company | backlog | pending selection |
+
+Lifecycle actions preserve company identity and enforce the rules for available trucks.
