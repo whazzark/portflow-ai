@@ -151,6 +151,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'transport_companies.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/transport-companies'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['index']>>>
+    }
+  }
+  'transport_companies.available': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/transport-companies/available'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['available']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['available']>>>
+    }
+  }
   'docks.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/docks'
