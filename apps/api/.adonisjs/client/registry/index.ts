@@ -78,6 +78,18 @@ const routes = {
     tokens: [{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"customers","end":""},{"old":"/api/v1/customers/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/customers/:id/reactivate","type":0,"val":"reactivate","end":""}],
     types: placeholder as Registry['customers.reactivate']['types'],
   },
+  'transport_companies.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/transport-companies',
+    tokens: [{"old":"/api/v1/transport-companies","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies","type":0,"val":"transport-companies","end":""}],
+    types: placeholder as Registry['transport_companies.index']['types'],
+  },
+  'transport_companies.available': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/transport-companies/available',
+    tokens: [{"old":"/api/v1/transport-companies/available","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/available","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/available","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/available","type":0,"val":"available","end":""}],
+    types: placeholder as Registry['transport_companies.available']['types'],
+  },
   'docks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/docks',

@@ -10,5 +10,6 @@ export const controllers = {
   Login: () => import('#controllers/login_controller'),
   Logout: () => import('#controllers/logout_controller'),
   Me: () => import('#controllers/me_controller'),
+  TransportCompanies: () => import('#controllers/transport_companies_controller'),
   WeighingAreas: () => import('#controllers/weighing_areas_controller'),
 }
