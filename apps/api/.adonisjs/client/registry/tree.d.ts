@@ -20,6 +20,10 @@ export interface ApiDefinition {
     archive: typeof routes['customers.archive']
     reactivate: typeof routes['customers.reactivate']
   }
+  transportCompanies: {
+    index: typeof routes['transport_companies.index']
+    available: typeof routes['transport_companies.available']
+  }
   docks: {
     index: typeof routes['docks.index']
     store: typeof routes['docks.store']

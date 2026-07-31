@@ -39,7 +39,7 @@ const NAVIGATION_GROUPS: NavigationGroupType[] = [
     label: 'Site references',
     items: [
       { label: 'Customers', icon: ContactIcon, href: '/customers' },
-      { label: 'Trucks', icon: TruckIcon },
+      { label: 'Transport resources', icon: TruckIcon, href: '/transport-resources' },
       { label: 'Checkpoints', icon: MapPinIcon },
       { label: 'Warehouses', icon: WarehouseIcon },
     ],

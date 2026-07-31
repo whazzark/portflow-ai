@@ -16,6 +16,8 @@ export type ScannedRoutes = {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'customers.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'transport_companies.index': { paramsTuple?: []; params?: {} }
+    'transport_companies.available': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.store': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
@@ -36,6 +38,8 @@ export type ScannedRoutes = {
     'auth.me': { paramsTuple?: []; params?: {} }
     'customers.index': { paramsTuple?: []; params?: {} }
     'customers.available': { paramsTuple?: []; params?: {} }
+    'transport_companies.index': { paramsTuple?: []; params?: {} }
+    'transport_companies.available': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
     'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -48,6 +52,8 @@ export type ScannedRoutes = {
     'auth.me': { paramsTuple?: []; params?: {} }
     'customers.index': { paramsTuple?: []; params?: {} }
     'customers.available': { paramsTuple?: []; params?: {} }
+    'transport_companies.index': { paramsTuple?: []; params?: {} }
+    'transport_companies.available': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
     'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

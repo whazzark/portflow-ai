@@ -1,0 +1,109 @@
+import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
+
+import { TransportCompanyFactory } from '#database/factories/transport_company_factory'
+import { UserFactory } from '#database/factories/user_factory'
+import TransportCompany from '#models/transport_company'
+import { USER_ROLES } from '#models/user'
+
+test.group('GET /api/v1/transport-companies', (group) => {
+  group.each.setup(async () => {
+    await TransportCompany.query().delete()
+  })
+
+  test('rejects unauthenticated access', async ({ assert, client }) => {
+    const response = await client.get('/api/v1/transport-companies')
+
+    response.assertStatus(401)
+    assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+  })
+
+  for (const role of USER_ROLES) {
+    test(`allows an active ${role} to browse all lifecycle states`, async ({ assert, client }) => {
+      const user = await UserFactory.apply('active').merge({ role }).create()
+      const available = await TransportCompanyFactory.merge({ name: `Available ${role}` }).create()
+      const archived = await TransportCompanyFactory.apply('archived')
+        .merge({ name: `Archived ${role}` })
+        .create()
+
+      const response = await client.get('/api/v1/transport-companies').loginAs(user)
+
+      response.assertStatus(200)
+      assert.includeMembers(
+        response.body().data.map((company: { id: string }) => company.id),
+        [available.id, archived.id],
+      )
+    })
+  }
+
+  test('rejects a non-active user without exposing records', async ({ assert, client }) => {
+    const user = await UserFactory.apply('deactivated').create()
+    await TransportCompanyFactory.create()
+
+    const response = await client.get('/api/v1/transport-companies').loginAs(user)
+
+    response.assertStatus(401)
+    assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    assert.isUndefined(response.body().data)
+  })
+
+  test('orders by name then UUID and includes nullable lifecycle actor summaries', async ({
+    assert,
+    client,
+  }) => {
+    const actor = await UserFactory.apply('active').create()
+    const laterId = 'ffffffff-ffff-4fff-8fff-ffffffffffff'
+    const earlierId = '00000000-0000-4000-8000-000000000001'
+    const archivedAt = DateTime.fromISO('2026-07-20T14:32:11.000Z')
+    const archived = await TransportCompanyFactory.apply('archived')
+      .merge({
+        id: laterId,
+        name: 'Atlantic Transport',
+        archivedAt,
+      })
+      .create()
+    archived.archivedByUserId = actor.id
+    archived.archiveComment = 'Provider no longer serves the site'
+    await archived.save()
+    await TransportCompanyFactory.merge({ id: earlierId, name: 'Atlantic Transport' }).create()
+    await TransportCompanyFactory.merge({ name: 'Baltic Trucks' }).create()
+
+    const response = await client.get('/api/v1/transport-companies').loginAs(actor)
+
+    response.assertStatus(200)
+    assert.deepEqual(
+      response
+        .body()
+        .data.filter((company: { name: string }) => company.name === 'Atlantic Transport')
+        .map((company: { id: string }) => company.id),
+      [earlierId, laterId],
+    )
+    const serialized = response
+      .body()
+      .data.find((company: { id: string }) => company.id === archived.id)
+    assert.deepInclude(serialized, {
+      archivedBy: { id: actor.id, firstName: actor.firstName, lastName: actor.lastName },
+      archiveComment: 'Provider no longer serves the site',
+    })
+  })
+
+  test('returns an empty collection and reflects authoritative state on a later request', async ({
+    assert,
+    client,
+  }) => {
+    const user = await UserFactory.apply('active').create()
+    const empty = await client.get('/api/v1/transport-companies').loginAs(user)
+
+    empty.assertStatus(200)
+    assert.deepEqual(empty.body(), { data: [] })
+
+    const company = await TransportCompanyFactory.create()
+    company.status = 'ARCHIVED'
+    company.archivedAt = DateTime.now()
+    await company.save()
+
+    const refreshed = await client.get('/api/v1/transport-companies').loginAs(user)
+
+    assert.equal(refreshed.body().data[0].status, 'ARCHIVED')
+  })
+})

@@ -84,6 +84,33 @@ export class RememberMeTokenSchema extends BaseModel {
   declare updatedAt: DateTime
 }
 
+export class TransportCompanySchema extends BaseModel {
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt'] as const
+  $columns = TransportCompanySchema.$columns
+  @column()
+  declare archiveComment: string | null
+  @column.dateTime()
+  declare archivedAt: DateTime | null
+  @column()
+  declare archivedByUserId: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare name: string
+  @column.dateTime()
+  declare reactivatedAt: DateTime | null
+  @column()
+  declare reactivatedByUserId: string | null
+  @column()
+  declare reactivationComment: string | null
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class UserSchema extends BaseModel {
   static $columns = ['accessStatus', 'activatedAt', 'activatedByUserId', 'cancelledAt', 'cancelledByUserId', 'createdAt', 'deactivatedAt', 'deactivatedByUserId', 'email', 'firstName', 'id', 'invitedAt', 'invitedByUserId', 'lastName', 'password', 'reactivatedAt', 'reactivatedByUserId', 'role', 'updatedAt'] as const
   $columns = UserSchema.$columns
