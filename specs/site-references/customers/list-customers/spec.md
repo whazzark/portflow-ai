@@ -3,10 +3,10 @@
 **Feature ID**: `GH-192`
 **GitHub Issue**: [#192](https://github.com/whazzark/portflow-ai/issues/192)
 **Parent Roadmap**: `specs/site-references/customers/roadmap.md`
-**Status**: Done (historical)
+**Status**: Done
 **Domain**: site-references
 
-## Historical scope
+## Scope
 
 List the delivered customer collection, detail, available and archived states.
 
@@ -16,9 +16,8 @@ An active user can consult customer records, distinguish available from archived
 
 ## Boundaries
 
-Customer consultation remains available to active users while mutation controls remain restricted to authorized administrators. API authorization remains authoritative, permanent deletion is out of scope, and the behavior was delivered across the historical customer foundation issues #35, #36, and #37.
+Customer consultation remains available to active users while mutation controls remain restricted to authorized administrators. API authorization remains authoritative and permanent deletion is out of scope.
 
 ## Traceability
 
-- Historical source issues: #35, #36, #37
 - Parent roadmap: `specs/site-references/customers/roadmap.md`

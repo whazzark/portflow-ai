@@ -14,11 +14,9 @@ operation slices.
 | GH-190 | Docks | in-progress | ./docks/ |
 | GH-191 | Weighing Areas | planned | ./weighing-areas/ |
 
-## Historical and migration records
+## Migration record
 
-- GH-39 is the historical dock foundation under `./docks/legacy/`.
-- GH-40 is the historical weighing-area foundation under `./weighing-areas/legacy/`.
-- GH-41 tracks the site-reference decomposition migration.
+GH-41 tracks the site-reference decomposition migration.
 
 ## Traceability
 

@@ -6,12 +6,12 @@
 
 | Issue | Slice | Status | Artifact |
 |---|---|---|---|
-| #40 | Historical weighing-area foundation | done (historical) | ./legacy/administer-weighing-area-references/ |
-| #202 | List Weighing Areas | backlog | pending selection |
-| #203 | Create a Weighing Area | backlog | pending selection |
-| #204 | Update a Weighing Area | backlog | pending selection |
-| #205 | Archive a Weighing Area | backlog | pending selection |
-| #206 | Reactivate a Weighing Area | backlog | pending selection |
+| #202 | List Weighing Areas | backlog | ./list-weighing-areas/ (created when selected) |
+| #203 | Create a Weighing Area | backlog | ./create-a-weighing-area/ (created when selected) |
+| #204 | Update a Weighing Area | backlog | ./update-a-weighing-area/ (created when selected) |
+| #205 | Archive Weighing Areas | backlog | ./archive-weighing-areas/ (created when selected) |
+| #206 | Reactivate Weighing Areas | backlog | ./reactivate-weighing-areas/ (created when selected) |
 
 Each active slice owns its end-to-end behavior. API, interface, authorization, validation, and
-tests remain together in the selected issue.
+tests remain together in the selected issue. Archive and Reactivate each cover individual and
+selection-scoped multiple operations with partial-success feedback.

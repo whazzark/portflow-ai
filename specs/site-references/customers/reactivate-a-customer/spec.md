@@ -3,10 +3,10 @@
 **Feature ID**: `GH-196`
 **GitHub Issue**: [#196](https://github.com/whazzark/portflow-ai/issues/196)
 **Parent Roadmap**: `specs/site-references/customers/roadmap.md`
-**Status**: Done (historical)
+**Status**: Done
 **Domain**: site-references
 
-## Historical scope
+## Scope
 
 Reactivate an archived customer while preserving its identity and history.
 
@@ -16,9 +16,8 @@ An authorized administrator can reactivate an archived customer; it becomes avai
 
 ## Boundaries
 
-Repeated or stale transitions are reported without falsely changing state. API authorization remains authoritative, permanent deletion is out of scope, and the behavior was delivered across the historical customer foundation issues #35, #36, and #37.
+Repeated or stale transitions are reported without falsely changing state. API authorization remains authoritative and permanent deletion is out of scope.
 
 ## Traceability
 
-- Historical source issues: #35, #36, #37
 - Parent roadmap: `specs/site-references/customers/roadmap.md`

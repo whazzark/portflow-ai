@@ -3,10 +3,10 @@
 **Feature ID**: `GH-194`
 **GitHub Issue**: [#194](https://github.com/whazzark/portflow-ai/issues/194)
 **Parent Roadmap**: `specs/site-references/customers/roadmap.md`
-**Status**: Done (historical)
+**Status**: Done
 **Domain**: site-references
 
-## Historical scope
+## Scope
 
 Update the mutable identity of an available customer.
 
@@ -16,9 +16,8 @@ An authorized administrator can edit an available customer's identity while pres
 
 ## Boundaries
 
-Archived customers remain read-only until reactivation. API authorization remains authoritative, permanent deletion is out of scope, and the behavior was delivered across the historical customer foundation issues #35, #36, and #37.
+Archived customers remain read-only until reactivation. API authorization remains authoritative and permanent deletion is out of scope.
 
 ## Traceability
 
-- Historical source issues: #35, #36, #37
 - Parent roadmap: `specs/site-references/customers/roadmap.md`

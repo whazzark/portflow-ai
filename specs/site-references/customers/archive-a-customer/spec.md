@@ -3,10 +3,10 @@
 **Feature ID**: `GH-195`
 **GitHub Issue**: [#195](https://github.com/whazzark/portflow-ai/issues/195)
 **Parent Roadmap**: `specs/site-references/customers/roadmap.md`
-**Status**: Done (historical)
+**Status**: Done
 **Domain**: site-references
 
-## Historical scope
+## Scope
 
 Archive an eligible customer while preserving history and lifecycle metadata.
 
@@ -16,9 +16,8 @@ An authorized administrator can archive an available customer when domain usage 
 
 ## Boundaries
 
-In-use or stale records remain unchanged and expose an actionable reason. API authorization remains authoritative, permanent deletion is out of scope, and the behavior was delivered across the historical customer foundation issues #35, #36, and #37.
+In-use or stale records remain unchanged and expose an actionable reason. API authorization remains authoritative and permanent deletion is out of scope.
 
 ## Traceability
 
-- Historical source issues: #35, #36, #37
 - Parent roadmap: `specs/site-references/customers/roadmap.md`
