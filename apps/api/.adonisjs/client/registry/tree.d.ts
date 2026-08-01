@@ -28,7 +28,6 @@ export interface ApiDefinition {
     index: typeof routes['docks.index']
     store: typeof routes['docks.store']
     available: typeof routes['docks.available']
-    show: typeof routes['docks.show']
     update: typeof routes['docks.update']
     archive: typeof routes['docks.archive']
     reactivate: typeof routes['docks.reactivate']
