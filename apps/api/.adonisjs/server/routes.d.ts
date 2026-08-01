@@ -24,13 +24,12 @@ export type ScannedRoutes = {
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'weighingAreas.index': { paramsTuple?: []; params?: {} }
-    'weighingAreas.store': { paramsTuple?: []; params?: {} }
-    'weighingAreas.available': { paramsTuple?: []; params?: {} }
-    'weighingAreas.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'weighingAreas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'weighingAreas.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'weighingAreas.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighing_areas.index': { paramsTuple?: []; params?: {} }
+    'weighing_areas.store': { paramsTuple?: []; params?: {} }
+    'weighing_areas.available': { paramsTuple?: []; params?: {} }
+    'weighing_areas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighing_areas.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighing_areas.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   GET: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -41,9 +40,8 @@ export type ScannedRoutes = {
     'transport_companies.available': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
-    'weighingAreas.index': { paramsTuple?: []; params?: {} }
-    'weighingAreas.available': { paramsTuple?: []; params?: {} }
-    'weighingAreas.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighing_areas.index': { paramsTuple?: []; params?: {} }
+    'weighing_areas.available': { paramsTuple?: []; params?: {} }
   }
   HEAD: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -54,9 +52,8 @@ export type ScannedRoutes = {
     'transport_companies.available': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
-    'weighingAreas.index': { paramsTuple?: []; params?: {} }
-    'weighingAreas.available': { paramsTuple?: []; params?: {} }
-    'weighingAreas.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighing_areas.index': { paramsTuple?: []; params?: {} }
+    'weighing_areas.available': { paramsTuple?: []; params?: {} }
   }
   POST: {
     'auth.login': { paramsTuple?: []; params?: {} }
@@ -69,14 +66,14 @@ export type ScannedRoutes = {
     'docks.store': { paramsTuple?: []; params?: {} }
     'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'weighingAreas.store': { paramsTuple?: []; params?: {} }
-    'weighingAreas.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'weighingAreas.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighing_areas.store': { paramsTuple?: []; params?: {} }
+    'weighing_areas.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighing_areas.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PATCH: {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'weighingAreas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'weighing_areas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

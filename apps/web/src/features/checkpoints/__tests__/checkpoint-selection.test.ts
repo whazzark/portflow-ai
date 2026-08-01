@@ -13,6 +13,9 @@ test('round-trips typed checkpoint selections', () => {
     id: 'scale-id',
     kind: 'WEIGHING_AREA',
   })
+  expect(serializeCheckpointSelection({ id: 'scale-id', kind: 'WEIGHING_AREA' })).toBe(
+    'weighing-area:scale-id',
+  )
 })
 
 test.each([undefined, '', 'dock:', 'missing-kind:id', 'dock:id:extra'])(

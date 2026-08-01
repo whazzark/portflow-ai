@@ -1,5 +1,6 @@
 import type {
   Checkpoint,
+  CheckpointLayerVisibility,
   CheckpointStatusFilter,
   PresentedCheckpoint,
 } from '@/features/checkpoints/types'
@@ -24,11 +25,16 @@ export function presentCheckpoints(
   checkpoints: Checkpoint[],
   status: CheckpointStatusFilter,
   search: string,
+  visibility?: CheckpointLayerVisibility,
 ): PresentedCheckpoint[] {
   const expectedStatus = status === 'all' ? undefined : status.toUpperCase()
 
   return checkpoints
-    .filter((checkpoint) => !expectedStatus || checkpoint.status === expectedStatus)
+    .filter(
+      (checkpoint) =>
+        (!visibility || visibility[checkpoint.kind]) &&
+        (!expectedStatus || checkpoint.status === expectedStatus),
+    )
     .map((checkpoint) => ({
       ...checkpoint,
       isSearchMatch: isCheckpointSearchMatch(checkpoint, search),

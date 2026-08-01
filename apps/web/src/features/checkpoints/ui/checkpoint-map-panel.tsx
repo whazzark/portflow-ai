@@ -2,17 +2,25 @@ import { type ReactNode, useState } from 'react'
 import { hasConfiguredMapStyles } from '@/config/map'
 import { CheckpointMap } from '@/features/checkpoints/map/checkpoint-map'
 import { CheckpointLegend } from '@/features/checkpoints/map/checkpoint-marker'
-import type { PresentedCheckpoint } from '@/features/checkpoints/types'
+import type { CheckpointKind, PresentedCheckpoint } from '@/features/checkpoints/types'
 
 export function CheckpointMapPanel({
   checkpoints,
   controls,
   emptyMessage,
+  sourceMessage,
+  sourceError = false,
+  onRetrySource,
+  legendKinds,
   onSelect,
 }: {
   checkpoints: PresentedCheckpoint[]
   controls: ReactNode
   emptyMessage?: string
+  sourceMessage?: string
+  sourceError?: boolean
+  onRetrySource?: () => void
+  legendKinds?: CheckpointKind[]
   onSelect: (checkpoint: PresentedCheckpoint) => void
 }) {
   const [hasMapError, setHasMapError] = useState(false)
@@ -34,18 +42,35 @@ export function CheckpointMapPanel({
           The map background is currently unavailable.
         </div>
       )}
-      {hasMapError && (
-        <div
-          aria-label="Checkpoint map unavailable"
-          className="absolute top-3 right-3 z-10 max-w-sm rounded-lg border bg-background/95 px-3 py-2 text-center text-muted-foreground text-sm shadow-md backdrop-blur"
-          role="status"
-        >
-          The map background is currently unavailable. Checkpoint markers remain selectable.
-        </div>
-      )}
       <div className="absolute top-4 left-4 z-10 max-w-[calc(100%-2rem)] md:top-6 md:left-6 md:max-w-[calc(100%-3rem)]">
         {controls}
       </div>
+      {(hasMapError || sourceMessage) && (
+        <div className="absolute top-3 right-3 z-10 flex max-w-sm flex-col gap-2">
+          {hasMapError && (
+            <div
+              aria-label="Checkpoint map unavailable"
+              className="rounded-lg border bg-background/95 px-3 py-2 text-center text-muted-foreground text-sm shadow-md backdrop-blur"
+              role="status"
+            >
+              The map background is currently unavailable. Checkpoint markers remain selectable.
+            </div>
+          )}
+          {sourceMessage && (
+            <div
+              className="rounded-lg border bg-background/95 px-3 py-2 text-muted-foreground text-sm shadow-md backdrop-blur"
+              role={sourceError ? 'alert' : 'status'}
+            >
+              <div>{sourceMessage}</div>
+              {sourceError && onRetrySource && (
+                <button className="mt-2 underline" onClick={onRetrySource} type="button">
+                  Try again
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       {(emptyMessage || hasConfiguredMapStyles) && (
         <div className="absolute bottom-3 left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col gap-2">
           {emptyMessage && (
@@ -56,7 +81,7 @@ export function CheckpointMapPanel({
               {emptyMessage}
             </div>
           )}
-          {hasConfiguredMapStyles && !hasMapError && <CheckpointLegend />}
+          {hasConfiguredMapStyles && !hasMapError && <CheckpointLegend kinds={legendKinds} />}
         </div>
       )}
     </section>

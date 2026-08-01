@@ -48,5 +48,5 @@ export function renderApp(initialPath: string) {
 
   activeTestApps.add({ queryClient, router })
 
-  return { ...render(<RouterProvider router={router} />), router }
+  return { ...render(<RouterProvider router={router} />), queryClient, router }
 }

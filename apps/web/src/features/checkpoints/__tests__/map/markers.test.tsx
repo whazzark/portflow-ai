@@ -21,10 +21,18 @@ test('exposes both marker statuses in accessible labels and the map legend', asy
     'data-status',
     'ARCHIVED',
   )
+  expect(
+    await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' }),
+  ).toHaveAttribute('data-checkpoint-kind', 'WEIGHING_AREA')
+  expect(
+    await screen.findByRole('button', { name: 'View weighing area Retired Scale (Archived)' }),
+  ).toHaveAttribute('data-status', 'ARCHIVED')
 
   const legend = screen.getByRole('region', { name: 'Checkpoint legend' })
   expect(legend).toHaveTextContent('Available')
   expect(legend).toHaveTextContent('Archived')
+  expect(legend).toHaveTextContent('Dock')
+  expect(legend).toHaveTextContent('Weighing area')
 })
 
 test('exposes a dock-name tooltip on marker hover and focus', async () => {
