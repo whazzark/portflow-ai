@@ -1,0 +1,125 @@
+openapi: 3.1.0
+info:
+  title: Portflow List Docks Contract
+  version: 1.0.0
+  description: Sole dock read contract consumed by issue 197; the former item-detail route is removed.
+paths:
+  /api/v1/docks:
+    get:
+      operationId: docks.index
+      summary: List available and archived docks for consultation
+      description: >-
+        Requires an authenticated active organization administrator or operations administrator.
+        Returns the complete dock collection ordered by name ascending.
+      responses:
+        "200":
+          description: Complete current dock collection; an empty data array is successful.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Dock"
+        "401":
+          description: No authenticated session; no dock data is disclosed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: Authenticated user lacks complete dock consultation permission.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+components:
+  schemas:
+    Dock:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - latitude
+        - longitude
+        - status
+        - archivedAt
+        - archivedByUserId
+        - archiveComment
+        - reactivatedAt
+        - reactivatedByUserId
+        - reactivationComment
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+        archivedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        archivedByUserId:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: "null"
+        archiveComment:
+          oneOf:
+            - type: string
+            - type: "null"
+        reactivatedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        reactivatedByUserId:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: "null"
+        reactivationComment:
+          oneOf:
+            - type: string
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ApiErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: true
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items: {}

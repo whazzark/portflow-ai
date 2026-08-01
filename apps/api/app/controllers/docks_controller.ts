@@ -15,7 +15,6 @@ import {
   reactivateDockValidator,
   updateDockValidator,
 } from '#docks/shared/dock_validator'
-import GetDockUseCase from '#docks/show/get_dock_use_case'
 import UpdateDockUseCase from '#docks/update/update_dock_use_case'
 
 @inject()
@@ -24,7 +23,6 @@ export default class DocksController {
     private createDockUseCase: CreateDockUseCase,
     private listDocksUseCase: ListDocksUseCase,
     private listAvailableDocksUseCase: ListAvailableDocksUseCase,
-    private getDockUseCase: GetDockUseCase,
     private updateDockUseCase: UpdateDockUseCase,
     private archiveDockUseCase: ArchiveDockUseCase,
     private reactivateDockUseCase: ReactivateDockUseCase,
@@ -44,14 +42,6 @@ export default class DocksController {
     const docks = await this.listAvailableDocksUseCase.handle()
 
     return serialize(DockTransformer.transform(docks))
-  }
-
-  async show({ bouncer, params, serialize }: HttpContext) {
-    await bouncer.with(DockPolicy).authorize('view')
-
-    const dock = await this.getDockUseCase.handle(params.id)
-
-    return serialize(DockTransformer.transform(dock))
   }
 
   async store({ bouncer, request, response, serialize }: HttpContext) {

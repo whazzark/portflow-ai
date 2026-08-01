@@ -76,17 +76,40 @@ test.group('Docks administration', () => {
     assert.equal(unauthorizedResponse.body().error.code, 'E_AUTHORIZATION_FAILURE')
   })
 
-  test('lists available and archived docks', async ({ assert, client }) => {
+  test('lists available and archived docks by name with the complete consultation DTO', async ({
+    assert,
+    client,
+  }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
-    const available = await DockFactory.merge({ name: 'Selectable Dock' }).create()
-    const archived = await DockFactory.apply('archived').merge({ name: 'Retired Dock' }).create()
+    const available = await DockFactory.merge({ name: 'Zulu Dock' }).create()
+    const archived = await DockFactory.apply('archived').merge({ name: 'Alpha Dock' }).create()
     const response = await client.get('/api/v1/docks').loginAs(admin)
 
     response.assertStatus(200)
-    assert.includeMembers(
-      response.body().data.map((dock: { id: string }) => dock.id),
-      [available.id, archived.id],
+    const createdIds = new Set([available.id, archived.id])
+    const createdDocks = response
+      .body()
+      .data.filter((dock: { id: string }) => createdIds.has(dock.id))
+    assert.deepEqual(
+      createdDocks.map((dock: { id: string }) => dock.id),
+      [archived.id, available.id],
     )
+    assert.deepEqual(Object.keys(createdDocks[0]).sort(), [
+      'archiveComment',
+      'archivedAt',
+      // biome-ignore lint/security/noSecrets: This is a public DTO field name, not a secret.
+      'archivedByUserId',
+      'createdAt',
+      'id',
+      'latitude',
+      'longitude',
+      'name',
+      'reactivatedAt',
+      'reactivatedByUserId',
+      'reactivationComment',
+      'status',
+      'updatedAt',
+    ])
   })
 
   test('rejects unauthenticated access to available docks', async ({ assert, client }) => {
@@ -113,26 +136,12 @@ test.group('Docks administration', () => {
     )
   })
 
-  test('rejects unauthenticated dock inspection', async ({ assert, client }) => {
+  test('does not expose a dock item-detail route', async ({ client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
     const dock = await DockFactory.create()
-    const response = await client.get(`/api/v1/docks/${dock.id}`)
+    const response = await client.get(`/api/v1/docks/${dock.id}`).loginAs(admin)
 
-    response.assertStatus(401)
-    assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
-  })
-
-  test('shows an archived dock with its current coordinates', async ({ assert, client }) => {
-    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
-    const dock = await DockFactory.apply('archived')
-      .merge({ name: 'Historic Dock', latitude: 48.4, longitude: 2.7 })
-      .create()
-    const response = await client.get(`/api/v1/docks/${dock.id}`).loginAs(observer)
-
-    response.assertStatus(200)
-    assert.equal(response.body().data.id, dock.id)
-    assert.equal(response.body().data.status, 'ARCHIVED')
-    assert.equal(response.body().data.latitude, 48.4)
-    assert.equal(response.body().data.longitude, 2.7)
+    response.assertStatus(404)
   })
 
   test('rejects unauthenticated and unauthorized dock updates', async ({ assert, client }) => {

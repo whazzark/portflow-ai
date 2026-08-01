@@ -40,7 +40,7 @@ const NAVIGATION_GROUPS: NavigationGroupType[] = [
     items: [
       { label: 'Customers', icon: ContactIcon, href: '/customers' },
       { label: 'Transport resources', icon: TruckIcon, href: '/transport-resources' },
-      { label: 'Checkpoints', icon: MapPinIcon },
+      { label: 'Checkpoints', icon: MapPinIcon, href: '/checkpoints' },
       { label: 'Warehouses', icon: WarehouseIcon },
     ],
   },
@@ -48,6 +48,14 @@ const NAVIGATION_GROUPS: NavigationGroupType[] = [
 
 export function AppSidebar({ user }: { user: SessionUser }) {
   const canBrowseUsers = isAdministrator(user)
+  const navigationGroups = NAVIGATION_GROUPS.map((group) =>
+    group.label === 'Site references'
+      ? {
+          ...group,
+          items: group.items.filter((item) => item.label !== 'Checkpoints' || canBrowseUsers),
+        }
+      : group,
+  )
 
   return (
     <Sidebar collapsible="icon" aria-label="Application sidebar">
@@ -66,7 +74,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
 
       <SidebarContent>
         <nav aria-label="Primary">
-          {NAVIGATION_GROUPS.map((group) => (
+          {navigationGroups.map((group) => (
             <NavigationGroup key={group.label} group={group} />
           ))}
 

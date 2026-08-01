@@ -211,18 +211,6 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['available']>>>
     }
   }
-  'docks.show': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/docks/:id'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue]
-      params: { id: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['show']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['show']>>>
-    }
-  }
   'docks.update': {
     methods: ["PATCH"]
     pattern: '/api/v1/docks/:id'

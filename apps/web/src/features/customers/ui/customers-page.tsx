@@ -1,11 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { OnChangeFn, SortingState } from '@tanstack/react-table'
-import { SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+import { InputSearch } from '@/components/ui/input-search'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
@@ -120,24 +118,14 @@ export function CustomersPage() {
       <h1 className="sr-only">Customers</h1>
 
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <Field className="max-w-xl">
-          <FieldLabel className="sr-only" htmlFor="customer-search">
-            Search customers
-          </FieldLabel>
-          <div className="relative">
-            <SearchIcon
-              aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              className="pl-9"
-              id="customer-search"
-              onChange={(event) => updateSearch(event.target.value)}
-              placeholder="Search by code, company name, or lifecycle comment"
-              value={search}
-            />
-          </div>
-        </Field>
+        <InputSearch
+          fieldClassName="max-w-xl"
+          id="customer-search"
+          label="Search customers"
+          onValueChange={updateSearch}
+          placeholder="Search by code, company name, or lifecycle comment"
+          value={search}
+        />
         {canAdminister && (
           <Button
             onClick={() =>

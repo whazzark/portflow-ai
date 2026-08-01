@@ -13,7 +13,11 @@ RUN pnpm install --frozen-lockfile --filter @portflow/web...
 COPY . .
 
 ARG VITE_API_BASE_URL
+ARG VITE_MAP_STYLE_LIGHT_URL=https://basemaps.cartocdn.com/gl/positron-gl-style/style.json
+ARG VITE_MAP_STYLE_DARK_URL=https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_MAP_STYLE_LIGHT_URL=${VITE_MAP_STYLE_LIGHT_URL}
+ENV VITE_MAP_STYLE_DARK_URL=${VITE_MAP_STYLE_DARK_URL}
 RUN pnpm --dir apps/web build
 
 FROM nginxinc/nginx-unprivileged:alpine AS runtime

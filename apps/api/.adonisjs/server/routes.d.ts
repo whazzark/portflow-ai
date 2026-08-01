@@ -21,7 +21,6 @@ export type ScannedRoutes = {
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.store': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
-    'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -42,7 +41,6 @@ export type ScannedRoutes = {
     'transport_companies.available': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
-    'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighingAreas.index': { paramsTuple?: []; params?: {} }
     'weighingAreas.available': { paramsTuple?: []; params?: {} }
     'weighingAreas.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -56,7 +54,6 @@ export type ScannedRoutes = {
     'transport_companies.available': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
-    'docks.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighingAreas.index': { paramsTuple?: []; params?: {} }
     'weighingAreas.available': { paramsTuple?: []; params?: {} }
     'weighingAreas.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

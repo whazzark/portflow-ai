@@ -40,6 +40,8 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3333}
+        VITE_MAP_STYLE_LIGHT_URL: ${VITE_MAP_STYLE_LIGHT_URL:-https://basemaps.cartocdn.com/gl/positron-gl-style/style.json}
+        VITE_MAP_STYLE_DARK_URL: ${VITE_MAP_STYLE_DARK_URL:-https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json}
     env_file:
       - ../apps/web/.env.docker
     depends_on:

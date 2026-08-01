@@ -18,4 +18,11 @@ export const handlers = [
   ),
 
   http.post(`${API_BASE_URL}/api/v1/auth/logout`, () => new HttpResponse(null, { status: 204 })),
+
+  http.get(`${API_BASE_URL}/api/v1/docks`, () =>
+    HttpResponse.json(
+      { error: { code: 'E_UNAUTHORIZED_ACCESS', message: 'Invalid or expired user session' } },
+      { status: 401 },
+    ),
+  ),
 ]

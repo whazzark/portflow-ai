@@ -57,6 +57,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
   const { queryClient } = Route.useRouteContext()
 
+  if (import.meta.env.MODE === 'test') {
+    return (
+      <StrictMode>
+        <RootContent queryClient={queryClient} />
+      </StrictMode>
+    )
+  }
+
   return (
     <StrictMode>
       <html lang="en">
@@ -72,19 +80,25 @@ function RootComponent() {
           <HeadContent />
         </head>
         <body>
-          <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-              <ThemeProvider>
-                <SessionProvider>
-                  <Outlet />
-                </SessionProvider>
-                <Toaster />
-              </ThemeProvider>
-            </TooltipProvider>
-          </QueryClientProvider>
+          <RootContent queryClient={queryClient} />
           <Scripts />
         </body>
       </html>
     </StrictMode>
+  )
+}
+
+function RootContent({ queryClient }: { queryClient: QueryClient }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <ThemeProvider>
+          <SessionProvider>
+            <Outlet />
+          </SessionProvider>
+          <Toaster />
+        </ThemeProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   )
 }

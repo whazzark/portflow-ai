@@ -6,7 +6,7 @@
   "scripts": {
     "db:fresh": "node --import tsx ace.js migration:fresh --seed --drop-types",
     "db:migrate": "node --import tsx ace.js migration:run",
-    "db:seed": "node --import tsx ace.js db:seed",
+    "db:seed": "node --import reflect-metadata --import tsx ace.js db:seed",
     "db:rollback": "node --import tsx ace.js migration:rollback",
     "dev": "node --import tsx ace.js serve --watch",
     "build": "node --import tsx ace.js build",
