@@ -24,7 +24,7 @@ An authorized user opens the Checkpoints page, consults the site's docks, and ca
 
 **Acceptance Scenarios**:
 
-1. **Given** the site has available and archived docks and the user is authorized to consult them, **When** the user opens the dock consultation area, **Then** all docks are shown by default and each dock's lifecycle status is clearly identified.
+1. **Given** the site has available and archived docks and the user is authorized to consult them, **When** the user opens the dock consultation area, **Then** available docks are shown by default and each dock's lifecycle status is clearly identified; the explicit All filter remains available.
 2. **Given** an available dock and an archived dock are visible, **When** the user reviews the map, **Then** each dock appears exactly once at its recorded GPS location.
 3. **Given** the user is not authenticated or is not authorized to consult docks, **When** the user attempts to access the dock consultation area, **Then** no dock information is disclosed and access is refused using the application's established access-handling behavior.
 4. **Given** all docks are displayed, **When** the user chooses Available or Archived from the status filter, **Then** only docks with that status remain on the map, and the active choice is clearly indicated.

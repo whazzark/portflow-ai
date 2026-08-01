@@ -49,9 +49,12 @@ test('renders the protected frame with navigation for an authenticated user', as
     'href',
     '/checkpoints',
   )
-  expect(within(nav).getByRole('button', { name: /Warehouses/ })).toBeDisabled()
+  expect(within(nav).getByRole('link', { name: /Warehouses/ })).toHaveAttribute(
+    'href',
+    '/warehouses',
+  )
   expect(within(nav).getByRole('button', { name: /Users/ })).toBeDisabled()
-  expect(within(nav).getAllByText('Coming soon')).toHaveLength(4)
+  expect(within(nav).getAllByText('Coming soon')).toHaveLength(3)
   const themeToggle = screen.getByRole('switch', { name: 'Switch to light theme' })
   const profileTrigger = screen.getByRole('button', {
     name: 'Open user menu for Claire Martin',

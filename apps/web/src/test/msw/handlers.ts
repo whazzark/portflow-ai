@@ -25,4 +25,11 @@ export const handlers = [
       { status: 401 },
     ),
   ),
+
+  http.get(`${API_BASE_URL}/api/v1/warehouses`, () =>
+    HttpResponse.json(
+      { error: { code: 'E_UNAUTHORIZED_ACCESS', message: 'Invalid or expired user session' } },
+      { status: 401 },
+    ),
+  ),
 ]

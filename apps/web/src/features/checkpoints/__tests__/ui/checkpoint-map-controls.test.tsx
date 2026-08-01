@@ -29,12 +29,14 @@ test('supports keyboard navigation and escape in the status menu', async () => {
   expect(screen.getByRole('menu')).toHaveFocus()
 
   await user.keyboard('{ArrowDown}')
-  expect(screen.getByRole('menuitemradio', { name: 'All' })).toHaveFocus()
+  expect(screen.getByRole('menuitemradio', { name: 'All, 0 checkpoints' })).toHaveFocus()
   await user.keyboard('{ArrowDown}')
-  expect(screen.getByRole('menuitemradio', { name: 'Available' })).toHaveFocus()
+  expect(screen.getByRole('menuitemradio', { name: 'Available, 0 checkpoints' })).toHaveFocus()
 
   await user.keyboard('{Escape}')
-  expect(screen.queryByRole('menuitemradio', { name: 'Available' })).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('menuitemradio', { name: 'Available, 0 checkpoints' }),
+  ).not.toBeInTheDocument()
   expect(trigger).toHaveFocus()
 })
 
