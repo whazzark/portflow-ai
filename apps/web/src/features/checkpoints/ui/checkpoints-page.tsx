@@ -152,6 +152,10 @@ export function CheckpointsPage() {
     !layerVisibility.DOCK &&
     layerVisibility.WEIGHING_AREA &&
     (weighingAreasQuery.isPending || weighingAreasQuery.isError)
+  const showWeighingAreaMessage =
+    weighingAreasQuery.isPending ||
+    weighingAreasQuery.isError ||
+    (layerVisibility.DOCK && checkpointCollection.some((checkpoint) => checkpoint.kind === 'DOCK'))
 
   return (
     <>
@@ -176,7 +180,7 @@ export function CheckpointsPage() {
                 : `No ${status} ${visibleKindLabel} match this filter.`
               : undefined
           }
-          sourceMessage={weighingAreaMessage}
+          sourceMessage={showWeighingAreaMessage ? weighingAreaMessage : undefined}
           sourceError={layerVisibility.WEIGHING_AREA && weighingAreasQuery.isError}
           onRetrySource={() => void weighingAreasQuery.refetch()}
           legendKinds={CHECKPOINT_KINDS.filter((kind) => layerVisibility[kind])}

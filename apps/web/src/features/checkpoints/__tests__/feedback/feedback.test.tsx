@@ -104,6 +104,15 @@ test('does not show an empty state while the selected weighing-area source is pe
   expect(screen.queryByText('No weighing areas have been configured.')).not.toBeInTheDocument()
 })
 
+test('does not duplicate the empty state when only weighing areas are visible', async () => {
+  mockDocks(DOCK_ADMIN, DOCKS, [])
+
+  renderCheckpoints('/checkpoints?kinds=weighing-area')
+
+  expect(await screen.findByText('No weighing areas have been configured.')).toBeInTheDocument()
+  expect(screen.getAllByText('No weighing areas have been configured.')).toHaveLength(1)
+})
+
 test('shows a weighing-area status-specific empty state without masking other checkpoints', async () => {
   mockDocks(
     DOCK_ADMIN,
