@@ -17,6 +17,13 @@ export default class WarehouseTransformer extends BaseTransformer<Warehouse> {
           longitude: point.longitude,
         })),
       },
+      doors: this.resource.doors.map((door) => ({
+        id: door.id,
+        name: door.name,
+        status: door.status,
+        latitude: door.latitude,
+        longitude: door.longitude,
+      })),
     }
   }
 }

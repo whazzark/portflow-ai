@@ -17,14 +17,14 @@ export function ResourceDetailHeader({
 }: {
   name: string
   status: 'AVAILABLE' | 'ARCHIVED'
-  archivedMessage: string
+  archivedMessage?: string
 }) {
   return (
     <SheetHeader className="shrink-0 border-b">
       <SheetTitle>{name}</SheetTitle>
       <SheetDescription className="flex flex-wrap items-center gap-2">
         <ResourceStatusBadge status={status} />
-        {status === 'ARCHIVED' && <span>{archivedMessage}</span>}
+        {status === 'ARCHIVED' && archivedMessage && <span>{archivedMessage}</span>}
       </SheetDescription>
     </SheetHeader>
   )

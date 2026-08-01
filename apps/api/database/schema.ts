@@ -154,6 +154,27 @@ export class UserSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class WarehouseDoorSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'latitude', 'longitude', 'name', 'status', 'updatedAt', 'warehouseId'] as const
+  $columns = WarehouseDoorSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare latitude: number
+  @column()
+  declare longitude: number
+  @column()
+  declare name: string
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare warehouseId: string
+}
+
 export class WarehouseFootprintPointSchema extends BaseModel {
   static $columns = ['latitude', 'longitude', 'position', 'warehouseId'] as const
   $columns = WarehouseFootprintPointSchema.$columns

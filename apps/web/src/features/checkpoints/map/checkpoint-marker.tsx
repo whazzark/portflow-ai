@@ -1,4 +1,8 @@
 import { AnchorIcon, ArchiveIcon, ScaleIcon } from 'lucide-react'
+import {
+  ResourceLegend,
+  ResourceLegendStatusSymbol,
+} from '@/components/resource-map/resource-legend'
 import { MapMarker, MarkerContent, MarkerTooltip } from '@/components/ui/map'
 import {
   CHECKPOINT_KIND_LABELS,
@@ -171,70 +175,26 @@ function CheckpointLegendKindSymbol({ kind }: { kind: CheckpointKind }) {
   )
 }
 
-function CheckpointLegendStatusSymbol({ status }: { status: CheckpointStatus }) {
-  const isArchived = status === 'ARCHIVED'
-
-  return (
-    <span
-      aria-hidden="true"
-      className={classnames(
-        'relative grid size-6 shrink-0 place-items-center rounded-full border-2 shadow-sm',
-        isArchived
-          ? 'border-muted-foreground border-dashed bg-background/95 text-muted-foreground'
-          : 'border-background bg-primary',
-      )}
-      data-checkpoint-legend-status={status}
-    >
-      {isArchived && (
-        <span className="absolute -right-1 -bottom-1 grid size-3.5 place-items-center rounded-full border border-background bg-muted text-muted-foreground">
-          <ArchiveIcon className="size-2" />
-        </span>
-      )}
-    </span>
-  )
-}
-
 export function CheckpointLegend({
   kinds = ['DOCK', 'WEIGHING_AREA'],
 }: {
   kinds?: CheckpointKind[]
 }) {
   return (
-    <section
-      aria-label="Checkpoint legend"
-      className="pointer-events-none w-fit max-w-full rounded-lg border bg-background/95 px-3 py-2.5 text-foreground shadow-md backdrop-blur"
-    >
-      <div className="grid gap-2.5 sm:flex sm:items-center sm:gap-4">
-        <fieldset aria-label="Checkpoint types" className="grid gap-1.5">
-          <legend className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.14em]">
-            Type
-          </legend>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            {kinds.map((kind) => (
-              <span className="flex items-center gap-1.5 text-xs" key={kind}>
-                <CheckpointLegendKindSymbol kind={kind} />
-                {CHECKPOINT_KIND_LABELS[kind]}
-              </span>
-            ))}
-          </div>
-        </fieldset>
-        <fieldset
-          aria-label="Checkpoint statuses"
-          className="grid gap-1.5 border-t pt-2.5 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-4"
-        >
-          <legend className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.14em]">
-            Status
-          </legend>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            {CHECKPOINT_STATUSES.map((status) => (
-              <span className="flex items-center gap-1.5 text-xs" key={status}>
-                <CheckpointLegendStatusSymbol status={status} />
-                {CHECKPOINT_STATUS_LABELS[status]}
-              </span>
-            ))}
-          </div>
-        </fieldset>
-      </div>
-    </section>
+    <ResourceLegend
+      ariaLabel="Checkpoint legend"
+      typeAriaLabel="Checkpoint types"
+      types={kinds.map((kind) => ({
+        label: CHECKPOINT_KIND_LABELS[kind],
+        symbol: <CheckpointLegendKindSymbol kind={kind} />,
+      }))}
+      statusAriaLabel="Checkpoint statuses"
+      statuses={CHECKPOINT_STATUSES.map((status) => ({
+        label: CHECKPOINT_STATUS_LABELS[status],
+        symbol: (
+          <ResourceLegendStatusSymbol status={status} dataAttribute="checkpoint-legend-status" />
+        ),
+      }))}
+    />
   )
 }
