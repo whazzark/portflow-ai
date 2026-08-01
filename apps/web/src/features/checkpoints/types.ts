@@ -19,10 +19,37 @@ export type PresentedCheckpoint = Checkpoint & {
 
 export type CheckpointStatusFilter = 'all' | 'available' | 'archived'
 export type CheckpointLayerVisibility = Record<CheckpointKind, boolean>
+export type CheckpointKindFilter = 'dock' | 'weighing-area'
 
 export const DEFAULT_CHECKPOINT_LAYER_VISIBILITY: CheckpointLayerVisibility = {
   DOCK: true,
-  WEIGHING_AREA: false,
+  WEIGHING_AREA: true,
+}
+
+export function checkpointLayerVisibilityFromFilter(
+  filter: CheckpointKindFilter | string | undefined,
+): CheckpointLayerVisibility {
+  if (filter === 'dock') {
+    return { DOCK: true, WEIGHING_AREA: false }
+  }
+
+  if (filter === 'weighing-area') {
+    return { DOCK: false, WEIGHING_AREA: true }
+  }
+
+  return {
+    ...DEFAULT_CHECKPOINT_LAYER_VISIBILITY,
+  }
+}
+
+export function checkpointKindFilterFromVisibility(
+  visibility: CheckpointLayerVisibility,
+): CheckpointKindFilter | undefined {
+  if (visibility.DOCK && visibility.WEIGHING_AREA) {
+    return undefined
+  }
+
+  return visibility.DOCK ? 'dock' : 'weighing-area'
 }
 
 export const CHECKPOINT_KIND_LABELS: Record<CheckpointKind, string> = {

@@ -25,4 +25,8 @@ export const WeighingAreaFactory = factory
     area.reactivatedByUserId = null
     area.reactivationComment = null
   })
+  .state('boundaryCoordinates', (area) => {
+    area.latitude = -90
+    area.longitude = 180
+  })
   .build()

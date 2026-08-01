@@ -31,7 +31,10 @@ export default class LucidWeighingAreaRepository extends WeighingAreaRepository 
   }
 
   list(): Promise<WeighingArea[]> {
-    return WeighingArea.query().orderBy('name', 'asc')
+    return WeighingArea.query()
+      .orderByRaw('LOWER(name) ASC')
+      .orderBy('name', 'asc')
+      .orderBy('id', 'asc')
   }
 
   listAvailable(): Promise<WeighingArea[]> {

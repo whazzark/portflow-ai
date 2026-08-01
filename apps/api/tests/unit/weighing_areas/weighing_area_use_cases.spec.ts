@@ -14,6 +14,7 @@ import UnusedChecker from '#site_references/shared/unused_checker'
 import UsedChecker from '#site_references/shared/used_checker'
 import ArchiveWeighingAreaUseCase from '#weighing_areas/archive/archive_weighing_area_use_case'
 import CreateWeighingAreaUseCase from '#weighing_areas/create/create_weighing_area_use_case'
+import ListWeighingAreasUseCase from '#weighing_areas/list/list_weighing_areas_use_case'
 import ReactivateWeighingAreaUseCase from '#weighing_areas/reactivate/reactivate_weighing_area_use_case'
 import {
   ArchivedWeighingAreaReadOnlyException,
@@ -37,6 +38,24 @@ test.group('Weighing area use cases', (group) => {
     assert.equal(area.latitude, -90)
     assert.equal(area.longitude, 180)
     assert.equal(area.status, 'AVAILABLE')
+  })
+
+  test('delegates complete collection reads and preserves repository ordering', async ({
+    assert,
+  }) => {
+    const zulu = await WeighingAreaFactory.merge({ name: 'Zulu Scale' }).create()
+    const alpha = await WeighingAreaFactory.apply('archived')
+      .merge({ name: 'alpha Scale' })
+      .create()
+    const beta = await WeighingAreaFactory.merge({ name: 'Beta Scale' }).create()
+
+    const areas = await (await app.container.make(ListWeighingAreasUseCase)).handle()
+
+    const ids = new Set([zulu.id, alpha.id, beta.id])
+    assert.deepEqual(
+      areas.filter((area) => ids.has(area.id)).map((area) => area.id),
+      [alpha.id, beta.id, zulu.id],
+    )
   })
 
   test('updates coordinates while preserving identity', async ({ assert }) => {

@@ -1,0 +1,94 @@
+openapi: 3.1.0
+info:
+  title: Portflow Weighing Area Consultation Contract
+  version: 1.0.0
+  description: >-
+    Existing REST/Tuyau read contract consumed as the Weighing Area resource source inside the
+    shared administrator Checkpoint map.
+servers:
+  - url: /api/v1
+paths:
+  /weighing-areas:
+    get:
+      operationId: weighingAreas.index
+      summary: List every available and archived weighing area
+      description: >-
+        Requires an authenticated ORGANIZATION_ADMIN or OPERATIONS_ADMIN. Results are ordered by
+        case-folded name, original name, and stable ID, all ascending.
+      responses:
+        "200":
+          description: Complete ordered collection; an empty data array is a successful response.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WeighingArea"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/RetrievalFailure"
+components:
+  schemas:
+    WeighingArea:
+      type: object
+      required: [id, name, latitude, longitude, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+      additionalProperties: true
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      additionalProperties: true
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: "#/components/schemas/Error"
+  responses:
+    Unauthorized:
+      description: Authentication is absent or no longer valid; no collection data is disclosed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Forbidden:
+      description: The authenticated user lacks the required authorization; no collection data is disclosed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    RetrievalFailure:
+      description: The consultation could not be completed because of an unexpected server failure.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"

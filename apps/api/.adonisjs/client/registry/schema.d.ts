@@ -247,7 +247,7 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
-  'weighingAreas.index': {
+  'weighing_areas.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/weighing-areas'
     types: {
@@ -259,7 +259,7 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['index']>>>
     }
   }
-  'weighingAreas.store': {
+  'weighing_areas.store': {
     methods: ["POST"]
     pattern: '/api/v1/weighing-areas'
     types: {
@@ -271,7 +271,7 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
-  'weighingAreas.available': {
+  'weighing_areas.available': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/weighing-areas/available'
     types: {
@@ -283,19 +283,7 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['available']>>>
     }
   }
-  'weighingAreas.show': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/weighing-areas/:id'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue]
-      params: { id: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['show']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['show']>>>
-    }
-  }
-  'weighingAreas.update': {
+  'weighing_areas.update': {
     methods: ["PATCH"]
     pattern: '/api/v1/weighing-areas/:id'
     types: {
@@ -307,7 +295,7 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
-  'weighingAreas.archive': {
+  'weighing_areas.archive': {
     methods: ["POST"]
     pattern: '/api/v1/weighing-areas/:id/archive'
     types: {
@@ -319,7 +307,7 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
-  'weighingAreas.reactivate': {
+  'weighing_areas.reactivate': {
     methods: ["POST"]
     pattern: '/api/v1/weighing-areas/:id/reactivate'
     types: {

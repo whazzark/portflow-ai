@@ -15,7 +15,6 @@ import {
   reactivateWeighingAreaValidator,
   updateWeighingAreaValidator,
 } from '#weighing_areas/shared/weighing_area_validator'
-import GetWeighingAreaUseCase from '#weighing_areas/show/get_weighing_area_use_case'
 import UpdateWeighingAreaUseCase from '#weighing_areas/update/update_weighing_area_use_case'
 
 @inject()
@@ -24,7 +23,6 @@ export default class WeighingAreasController {
     private create: CreateWeighingAreaUseCase,
     private list: ListWeighingAreasUseCase,
     private listAvailable: ListAvailableWeighingAreasUseCase,
-    private showUseCase: GetWeighingAreaUseCase,
     private updateUseCase: UpdateWeighingAreaUseCase,
     private archiveUseCase: ArchiveWeighingAreaUseCase,
     private reactivateUseCase: ReactivateWeighingAreaUseCase,
@@ -44,14 +42,6 @@ export default class WeighingAreasController {
     const areas = await this.listAvailable.handle()
 
     return serialize(WeighingAreaTransformer.transform(areas))
-  }
-
-  async show({ bouncer, params, serialize }: HttpContext) {
-    await bouncer.with(WeighingAreaPolicy).authorize('view')
-
-    const area = await this.showUseCase.handle(params.id)
-
-    return serialize(WeighingAreaTransformer.transform(area))
   }
 
   async store({ bouncer, request, response, serialize }: HttpContext) {
