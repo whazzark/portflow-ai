@@ -128,3 +128,17 @@ test('clears stale and status-excluded weighing-area selections without substitu
   )
   expect(screen.queryByRole('heading', { name: archived.name })).not.toBeInTheDocument()
 })
+
+test('clears malformed selections even when weighing areas fail to load', async () => {
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/weighing-areas`, () =>
+      HttpResponse.json({ error: { code: 'E_WEIGHING_AREAS_UNAVAILABLE' } }, { status: 503 }),
+    ),
+  )
+
+  const result = renderCheckpoints('/checkpoints?checkpoint=unknown:missing')
+  await screen.findByRole('region', { name: 'Checkpoint map' })
+
+  await waitFor(() => expect(result.router.state.location.search).not.toHaveProperty('checkpoint'))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})

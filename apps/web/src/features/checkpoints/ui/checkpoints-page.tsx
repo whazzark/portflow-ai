@@ -64,7 +64,12 @@ export function CheckpointsPage() {
         : undefined
 
   useEffect(() => {
-    const sourceLoaded = selection?.kind === 'DOCK' ? docksQuery.data : weighingAreasQuery.data
+    const sourceLoaded =
+      selection === undefined
+        ? docksQuery.data
+        : selection.kind === 'DOCK'
+          ? docksQuery.data
+          : weighingAreasQuery.data
     if (sourceLoaded && checkpointParam && !selectedResource) {
       void navigate({
         replace: true,
@@ -76,6 +81,7 @@ export function CheckpointsPage() {
     docksQuery.data,
     navigate,
     selectedResource,
+    selection,
     selection?.kind,
     weighingAreasQuery.data,
   ])
