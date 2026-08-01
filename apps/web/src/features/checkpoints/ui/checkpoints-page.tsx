@@ -155,9 +155,7 @@ export function CheckpointsPage() {
         ? 'docks'
         : 'weighing areas'
   const sourceUnavailable =
-    !layerVisibility.DOCK &&
-    layerVisibility.WEIGHING_AREA &&
-    (weighingAreasQuery.isPending || weighingAreasQuery.isError)
+    layerVisibility.WEIGHING_AREA && (weighingAreasQuery.isPending || weighingAreasQuery.isError)
   const showWeighingAreaMessage =
     weighingAreasQuery.isPending ||
     weighingAreasQuery.isError ||

@@ -60,6 +60,7 @@ test('uses status-specific copy when a filter has no docks', async () => {
   mockDocks(
     DOCK_ADMIN,
     DOCKS.filter((dock) => dock.status === 'AVAILABLE'),
+    WEIGHING_AREAS.filter((area) => area.status === 'AVAILABLE'),
   )
   renderCheckpoints(`/checkpoints?${'status=archived'}`)
 
@@ -87,6 +88,20 @@ test('shows source-specific pending feedback while dock markers remain usable', 
   expect(await screen.findByText('Loading weighing areas…')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Bêta Dock' })).toBeInTheDocument()
   expect(await screen.findByRole('button', { name: 'Alpha Scale' })).toBeInTheDocument()
+})
+
+test('does not show an aggregate empty state while weighing areas are unavailable', async () => {
+  mockDocks(DOCK_ADMIN, [])
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/weighing-areas`, () =>
+      HttpResponse.json({ error: { code: 'E_WEIGHING_AREAS_UNAVAILABLE' } }, { status: 503 }),
+    ),
+  )
+
+  renderCheckpoints()
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load weighing areas.')
+  expect(screen.queryByText('No checkpoints have been configured.')).not.toBeInTheDocument()
 })
 
 test('does not show an empty state while the selected weighing-area source is pending', async () => {
