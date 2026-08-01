@@ -108,12 +108,6 @@ const routes = {
     tokens: [{"old":"/api/v1/docks/available","type":0,"val":"api","end":""},{"old":"/api/v1/docks/available","type":0,"val":"v1","end":""},{"old":"/api/v1/docks/available","type":0,"val":"docks","end":""},{"old":"/api/v1/docks/available","type":0,"val":"available","end":""}],
     types: placeholder as Registry['docks.available']['types'],
   },
-  'docks.show': {
-    methods: ["GET","HEAD"],
-    pattern: '/api/v1/docks/:id',
-    tokens: [{"old":"/api/v1/docks/:id","type":0,"val":"api","end":""},{"old":"/api/v1/docks/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/docks/:id","type":0,"val":"docks","end":""},{"old":"/api/v1/docks/:id","type":1,"val":"id","end":""}],
-    types: placeholder as Registry['docks.show']['types'],
-  },
   'docks.update': {
     methods: ["PATCH"],
     pattern: '/api/v1/docks/:id',
