@@ -10,6 +10,8 @@ import LucidTransportCompanyRepository from '#transport_companies/shared/reposit
 import TransportCompanyRepository from '#transport_companies/shared/repositories/transport_company_repository'
 import LucidUserRepository from '#users/shared/repositories/lucid_user_repository'
 import UserRepository from '#users/shared/repositories/user_repository'
+import LucidWarehouseRepository from '#warehouses/shared/repositories/lucid_warehouse_repository'
+import WarehouseRepository from '#warehouses/shared/repositories/warehouse_repository'
 import LucidWeighingAreaRepository from '#weighing_areas/shared/repositories/lucid_weighing_area_repository'
 import WeighingAreaRepository from '#weighing_areas/shared/repositories/weighing_area_repository'
 
@@ -35,6 +37,10 @@ export default class RepositoriesProvider {
 
     this.app.container.bind(WeighingAreaRepository, () => {
       return this.app.container.make(LucidWeighingAreaRepository)
+    })
+
+    this.app.container.bind(WarehouseRepository, () => {
+      return this.app.container.make(LucidWarehouseRepository)
     })
 
     this.app.container.bind(SiteReferenceUsageChecker, () => {

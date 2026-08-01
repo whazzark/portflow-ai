@@ -9,7 +9,7 @@ const checkpointSearchSchema = z.object({
   checkpoint: z.string().optional().catch(undefined),
   kinds: z.enum(['dock', 'weighing-area']).optional().catch(undefined),
   search: z.string().catch(''),
-  status: z.enum(['all', 'available', 'archived']).catch('all'),
+  status: z.enum(['all', 'available', 'archived']).catch('available'),
 })
 
 export const Route = createFileRoute('/_authenticated/checkpoints')({

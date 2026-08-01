@@ -1,3 +1,8 @@
+import {
+  normalizeResourceSearch,
+  presentResources,
+  resourceMatchesSearch,
+} from '@/components/resource-map/resource-map-search'
 import type {
   Checkpoint,
   CheckpointLayerVisibility,
@@ -5,20 +10,10 @@ import type {
   PresentedCheckpoint,
 } from '@/features/checkpoints/types'
 
-export function normalizeCheckpointSearch(value: string) {
-  return value
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .trim()
-    .toLocaleLowerCase()
-}
+export const normalizeCheckpointSearch = normalizeResourceSearch
 
 export function isCheckpointSearchMatch(entity: Pick<Checkpoint, 'name'>, search: string) {
-  const normalizedSearch = normalizeCheckpointSearch(search)
-  return (
-    normalizedSearch.length === 0 ||
-    normalizeCheckpointSearch(entity.name).includes(normalizedSearch)
-  )
+  return resourceMatchesSearch(entity, search)
 }
 
 export function presentCheckpoints(
@@ -27,16 +22,10 @@ export function presentCheckpoints(
   search: string,
   visibility?: CheckpointLayerVisibility,
 ): PresentedCheckpoint[] {
-  const expectedStatus = status === 'all' ? undefined : status.toUpperCase()
-
-  return checkpoints
-    .filter(
-      (checkpoint) =>
-        (!visibility || visibility[checkpoint.kind]) &&
-        (!expectedStatus || checkpoint.status === expectedStatus),
-    )
-    .map((checkpoint) => ({
-      ...checkpoint,
-      isSearchMatch: isCheckpointSearchMatch(checkpoint, search),
-    }))
+  return presentResources(
+    checkpoints,
+    status,
+    search,
+    (checkpoint) => !visibility || visibility[checkpoint.kind],
+  ) as PresentedCheckpoint[]
 }

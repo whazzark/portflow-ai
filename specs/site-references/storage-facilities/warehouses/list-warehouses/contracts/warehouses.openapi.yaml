@@ -1,0 +1,116 @@
+openapi: 3.1.0
+info:
+  title: Portflow Warehouse Consultation Contract
+  version: 1.0.0
+  description: Read-only contract for Issue #207 List Warehouses.
+paths:
+  /api/v1/warehouses:
+    get:
+      operationId: listWarehouses
+      summary: List available and archived warehouses in the active user's site scope
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Complete warehouse collection ordered by name.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    maxItems: 200
+                    items:
+                      $ref: "#/components/schemas/Warehouse"
+              examples:
+                mixed:
+                  value:
+                    data:
+                      - id: 018f80c0-8799-7cb0-bb14-2d2c8d206a8c
+                        name: North Shed
+                        status: AVAILABLE
+                        footprint:
+                          points:
+                            - { latitude: 49.4938, longitude: 0.1077 }
+                            - { latitude: 49.4938, longitude: 0.1092 }
+                            - { latitude: 49.4929, longitude: 0.1088 }
+                      - id: 018f80c0-b59d-77fc-87ed-61da95229ba2
+                        name: Old Grain Store
+                        status: ARCHIVED
+                        footprint:
+                          points:
+                            - { latitude: 49.4918, longitude: 0.1040 }
+                            - { latitude: 49.4924, longitude: 0.1051 }
+                            - { latitude: 49.4913, longitude: 0.1054 }
+        "401":
+          description: The session is missing, invalid, expired, or belongs to a user who is no longer active.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Warehouse information could not be loaded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: adonis-session
+  schemas:
+    Warehouse:
+      type: object
+      additionalProperties: false
+      required: [id, name, status, footprint]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+        footprint:
+          $ref: "#/components/schemas/WarehouseFootprint"
+    WarehouseFootprint:
+      type: object
+      additionalProperties: false
+      required: [points]
+      properties:
+        points:
+          type: array
+          minItems: 3
+          items:
+            $ref: "#/components/schemas/GeographicPoint"
+    GeographicPoint:
+      type: object
+      additionalProperties: false
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string

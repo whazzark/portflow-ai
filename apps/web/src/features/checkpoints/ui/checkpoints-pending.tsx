@@ -1,9 +1,5 @@
-import { Skeleton } from '@/components/ui/skeleton'
+import { ResourceMapPending } from '@/components/resource-map/resource-map-feedback'
 
 export function CheckpointsPending() {
-  return (
-    <main aria-label="Loading checkpoints" className="flex min-h-0 flex-1 overflow-hidden">
-      <Skeleton className="h-full w-full rounded-none" />
-    </main>
-  )
+  return <ResourceMapPending label="checkpoints" />
 }

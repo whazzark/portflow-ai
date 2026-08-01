@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "db:fresh": "node --import tsx ace.js migration:fresh --seed --drop-types",
-    "db:migrate": "node --import tsx ace.js migration:run",
+    "db:fresh": "node --import reflect-metadata --import tsx ace.js migration:fresh --seed --drop-types",
+    "db:migrate": "node --import reflect-metadata --import tsx ace.js migration:run",
     "db:seed": "node --import reflect-metadata --import tsx ace.js db:seed",
-    "db:rollback": "node --import tsx ace.js migration:rollback",
+    "db:rollback": "node --import reflect-metadata --import tsx ace.js migration:rollback",
     "dev": "node --import tsx ace.js serve --watch",
     "build": "node --import tsx ace.js build",
     "start": "node build/bin/server.js",
@@ -35,7 +35,8 @@
     "#transport_companies/*": "./app/transport_companies/*.js",
     "#start/*": "./start/*.js",
     "#users/*": "./app/users/*.js",
-    "#weighing_areas/*": "./app/weighing_areas/*.js"
+    "#weighing_areas/*": "./app/weighing_areas/*.js",
+    "#warehouses/*": "./app/warehouses/*.js"
   },
   "dependencies": {
     "@adonisjs/auth": "^10.1.0",

@@ -7,6 +7,7 @@ import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixt
 import { weighingAreasSequenceHandler } from '@/features/weighing-areas/__tests__/support/handlers'
 import { weighingAreaQueries } from '@/features/weighing-areas/queries/weighing-area-queries'
 import { server } from '@/test/msw/server'
+import { renderApp } from '@/test/render-app'
 import { mockDocks, renderCheckpoints } from '../support/test-helpers'
 
 vi.mock(
@@ -16,6 +17,19 @@ vi.mock(
 
 beforeEach(() => {
   mockDocks()
+})
+
+test('opens the shared consultation on available checkpoints by default', async () => {
+  const { router } = renderApp('/checkpoints')
+  const map = await screen.findByRole('region', { name: 'Checkpoint map' })
+
+  expect(
+    within(map).getByRole('button', { name: 'View dock North Dock (Available)' }),
+  ).toBeInTheDocument()
+  expect(
+    within(map).queryByRole('button', { name: 'View dock Retired Dock (Archived)' }),
+  ).not.toBeInTheDocument()
+  expect(router.state.location.search).toMatchObject({ status: 'available' })
 })
 
 test('shows all available and archived checkpoints on a full-page map by default', async () => {

@@ -41,7 +41,7 @@ const NAVIGATION_GROUPS: NavigationGroupType[] = [
       { label: 'Customers', icon: ContactIcon, href: '/customers' },
       { label: 'Transport resources', icon: TruckIcon, href: '/transport-resources' },
       { label: 'Checkpoints', icon: MapPinIcon, href: '/checkpoints' },
-      { label: 'Warehouses', icon: WarehouseIcon },
+      { label: 'Warehouses', icon: WarehouseIcon, href: '/warehouses' },
     ],
   },
 ]

@@ -6,9 +6,16 @@ import { CheckpointMarker } from '@/features/checkpoints/map/checkpoint-marker'
 import { getCheckpointMarkerOffset } from '@/features/checkpoints/map/checkpoint-marker-offset'
 import type { PresentedCheckpoint } from '@/features/checkpoints/types'
 
-function FitCheckpointBounds({ checkpoints }: { checkpoints: PresentedCheckpoint[] }) {
+function FitCheckpointBounds({
+  checkpoints,
+  selected,
+}: {
+  checkpoints: PresentedCheckpoint[]
+  selected?: PresentedCheckpoint
+}) {
   const { map, isLoaded } = useMap()
-  const boundsKey = checkpoints
+  const items = selected ? [selected] : checkpoints
+  const boundsKey = items
     .map(
       (checkpoint) =>
         `${checkpoint.kind}:${checkpoint.id}:${checkpoint.longitude}:${checkpoint.latitude}`,
@@ -48,10 +55,12 @@ function FitCheckpointBounds({ checkpoints }: { checkpoints: PresentedCheckpoint
 
 export function CheckpointMap({
   checkpoints,
+  selected,
   onError,
   onSelect,
 }: {
   checkpoints: PresentedCheckpoint[]
+  selected?: PresentedCheckpoint
   onError?: (error: unknown) => void
   onSelect: (checkpoint: PresentedCheckpoint) => void
 }) {
@@ -70,7 +79,7 @@ export function CheckpointMap({
       styles={mapStyleUrls}
       zoom={checkpoints.length === 1 ? 13 : 5}
     >
-      <FitCheckpointBounds checkpoints={checkpoints} />
+      <FitCheckpointBounds checkpoints={checkpoints} selected={selected} />
       {checkpoints.map((checkpoint) => (
         <CheckpointMarker
           checkpoint={checkpoint}
