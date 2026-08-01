@@ -40,4 +40,7 @@ export interface ApiDefinition {
     archive: typeof routes['weighing_areas.archive']
     reactivate: typeof routes['weighing_areas.reactivate']
   }
+  warehouses: {
+    index: typeof routes['warehouses.index']
+  }
 }

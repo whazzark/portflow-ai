@@ -30,6 +30,7 @@ export type ScannedRoutes = {
     'weighing_areas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighing_areas.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighing_areas.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'warehouses.index': { paramsTuple?: []; params?: {} }
   }
   GET: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -42,6 +43,7 @@ export type ScannedRoutes = {
     'docks.available': { paramsTuple?: []; params?: {} }
     'weighing_areas.index': { paramsTuple?: []; params?: {} }
     'weighing_areas.available': { paramsTuple?: []; params?: {} }
+    'warehouses.index': { paramsTuple?: []; params?: {} }
   }
   HEAD: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -54,6 +56,7 @@ export type ScannedRoutes = {
     'docks.available': { paramsTuple?: []; params?: {} }
     'weighing_areas.index': { paramsTuple?: []; params?: {} }
     'weighing_areas.available': { paramsTuple?: []; params?: {} }
+    'warehouses.index': { paramsTuple?: []; params?: {} }
   }
   POST: {
     'auth.login': { paramsTuple?: []; params?: {} }

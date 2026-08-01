@@ -11,5 +11,6 @@ export const controllers = {
   Logout: () => import('#controllers/logout_controller'),
   Me: () => import('#controllers/me_controller'),
   TransportCompanies: () => import('#controllers/transport_companies_controller'),
+  Warehouses: () => import('#controllers/warehouses_controller'),
   WeighingAreas: () => import('#controllers/weighing_areas_controller'),
 }

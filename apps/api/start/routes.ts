@@ -61,6 +61,13 @@ router
       })
       .prefix('/weighing-areas')
       .as('weighing_areas')
+
+    router
+      .group(() => {
+        router.get('/', [controllers.Warehouses, 'index']).as('index')
+      })
+      .prefix('/warehouses')
+      .as('warehouses')
   })
   .prefix('/api/v1')
   .use(middleware.auth())

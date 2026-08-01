@@ -154,6 +154,34 @@ export class UserSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class WarehouseFootprintPointSchema extends BaseModel {
+  static $columns = ['latitude', 'longitude', 'position', 'warehouseId'] as const
+  $columns = WarehouseFootprintPointSchema.$columns
+  @column()
+  declare latitude: number
+  @column()
+  declare longitude: number
+  @column()
+  declare position: number
+  @column({ isPrimary: true })
+  declare warehouseId: string
+}
+
+export class WarehouseSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'name', 'status', 'updatedAt'] as const
+  $columns = WarehouseSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare name: string
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class WeighingAreaSchema extends BaseModel {
   static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt'] as const
   $columns = WeighingAreaSchema.$columns

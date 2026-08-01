@@ -1,11 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useEffect, useMemo } from 'react'
+import { countResources } from '@/components/resource-map/resource-map-search'
+import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
 import { presentCheckpoints } from '@/features/checkpoints/checkpoint-search'
 import {
   parseCheckpointSelection,
   serializeCheckpointSelection,
 } from '@/features/checkpoints/checkpoint-selection'
+import { CheckpointMap } from '@/features/checkpoints/map/checkpoint-map'
+import { CheckpointLegend } from '@/features/checkpoints/map/checkpoint-marker'
 import type { PresentedCheckpoint } from '@/features/checkpoints/types'
 import {
   CHECKPOINT_KINDS,
@@ -14,7 +18,6 @@ import {
   checkpointLayerVisibilityFromFilter,
 } from '@/features/checkpoints/types'
 import { CheckpointMapControls } from '@/features/checkpoints/ui/checkpoint-map-controls'
-import { CheckpointMapPanel } from '@/features/checkpoints/ui/checkpoint-map-panel'
 import {
   CheckpointSheet,
   type SelectedCheckpoint,
@@ -37,6 +40,10 @@ export function CheckpointsPage() {
   const checkpointCollection = useMemo(
     () => [...docks.map(toDockCheckpoint), ...weighingAreas.map(toWeighingAreaCheckpoint)],
     [docks, weighingAreas],
+  )
+  const counts = countResources(
+    checkpointCollection,
+    (checkpoint) => !layerVisibility || layerVisibility[checkpoint.kind],
   )
   const checkpoints = presentCheckpoints(checkpointCollection, status, search, layerVisibility)
   const selection = parseCheckpointSelection(checkpointParam)
@@ -163,34 +170,42 @@ export function CheckpointsPage() {
 
   return (
     <>
-      <main className="flex min-h-0 flex-1 overflow-hidden">
-        <CheckpointMapPanel
-          checkpoints={checkpoints}
-          controls={
-            <CheckpointMapControls
-              hasMatches={hasMatches}
-              layerVisibility={layerVisibility}
-              onLayerVisibilityChange={updateLayerVisibility}
-              onSearchChange={updateSearch}
-              onStatusChange={updateStatus}
-              search={search}
-              status={status}
-            />
-          }
-          emptyMessage={
-            checkpoints.length === 0 && !sourceUnavailable
-              ? status === 'all'
-                ? `No ${visibleKindLabel} have been configured.`
-                : `No ${status} ${visibleKindLabel} match this filter.`
-              : undefined
-          }
-          sourceMessage={showWeighingAreaMessage ? weighingAreaMessage : undefined}
-          sourceError={layerVisibility.WEIGHING_AREA && weighingAreasQuery.isError}
-          onRetrySource={() => void weighingAreasQuery.refetch()}
-          legendKinds={CHECKPOINT_KINDS.filter((kind) => layerVisibility[kind])}
-          onSelect={selectCheckpoint}
-        />
-      </main>
+      <ResourceMapWorkspace
+        controls={
+          <CheckpointMapControls
+            counts={counts}
+            hasMatches={hasMatches}
+            layerVisibility={layerVisibility}
+            onLayerVisibilityChange={updateLayerVisibility}
+            onSearchChange={updateSearch}
+            onStatusChange={updateStatus}
+            search={search}
+            status={status}
+          />
+        }
+        emptyMessage={
+          checkpoints.length === 0 && !sourceUnavailable
+            ? status === 'all'
+              ? `No ${visibleKindLabel} have been configured.`
+              : `No ${status} ${visibleKindLabel} match this filter.`
+            : undefined
+        }
+        legend={
+          <CheckpointLegend kinds={CHECKPOINT_KINDS.filter((kind) => layerVisibility[kind])} />
+        }
+        map={(onMapError) => (
+          <CheckpointMap
+            checkpoints={checkpoints}
+            onError={onMapError}
+            onSelect={selectCheckpoint}
+            selected={selectedCheckpoint}
+          />
+        )}
+        onRetrySource={() => void weighingAreasQuery.refetch()}
+        resourceLabel="Checkpoints"
+        sourceError={layerVisibility.WEIGHING_AREA && weighingAreasQuery.isError}
+        sourceMessage={showWeighingAreaMessage ? weighingAreaMessage : undefined}
+      />
       <CheckpointSheet
         checkpoint={selectedResource}
         onClose={() => {

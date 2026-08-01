@@ -20,5 +20,11 @@ export function mockDocks(
 }
 
 export function renderCheckpoints(initialPath = '/checkpoints') {
-  return renderApp(initialPath)
+  if (!initialPath.startsWith('/checkpoints')) {
+    return renderApp(initialPath)
+  }
+  if (initialPath.includes('status=')) {
+    return renderApp(initialPath)
+  }
+  return renderApp(`${initialPath}${initialPath.includes('?') ? '&' : '?'}status=all`)
 }
