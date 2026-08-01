@@ -57,4 +57,12 @@ test.group('Warehouse consultation', () => {
     )
     assert.equal(data.find((warehouse) => warehouse.id === archived.id)?.status, 'ARCHIVED')
   })
+
+  test('does not expose a warehouse with an incomplete footprint', async ({ client }) => {
+    const user = await UserFactory.apply('active').create()
+    await WarehouseFactory.merge({ name: 'Incomplete Shed' }).create()
+
+    const response = await client.get('/api/v1/warehouses').loginAs(user)
+    response.assertStatus(500)
+  })
 })

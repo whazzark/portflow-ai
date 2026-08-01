@@ -97,11 +97,11 @@ An active user receives clear feedback when warehouses cannot be loaded and can 
 - **FR-003**: The system MUST include every warehouse in the user's site scope, whether available or archived, and MUST NOT expose warehouses outside that scope.
 - **FR-004**: The warehouse and checkpoint consultation experiences MUST separate available resources from archived resources and MUST select the available view by default.
 - **FR-004a**: The warehouse consultation experience MUST provide the same map-oriented status filtering pattern as the checkpoints area, including available and archived filters and a way to show all warehouses.
-- **FR-004b**: The warehouse consultation experience MUST provide a name search field that filters the visible warehouse presentation without requiring another collection request.
+- **FR-004b**: The warehouse consultation experience MUST provide a name search field that highlights matching warehouses while preserving the spatial context of the current lifecycle view, without requiring another collection request.
 - **FR-005**: Each lifecycle view MUST display a count equal to the warehouses currently represented in that view.
 - **FR-006**: Each listed warehouse MUST expose a stable identity, its name, its current lifecycle status, and its complete warehouse footprint.
 - **FR-007**: The system MUST let a user select a listed warehouse and inspect its name, lifecycle status, and complete footprint as one coherent detail view.
-- **FR-007a**: The map MUST present every warehouse matching the active status and search filters as a geographic polygon, and selecting a polygon MUST open the corresponding warehouse detail view.
+- **FR-007a**: The map MUST present every warehouse matching the active status filter as a geographic polygon, visually emphasize warehouses matching the search, and selecting a polygon MUST open the corresponding warehouse detail view.
 - **FR-007b**: Hovering or focusing a visible warehouse polygon MUST expose a tooltip containing the warehouse name and current lifecycle status.
 - **FR-007c**: The map MUST provide a visible legend explaining the visual treatments for available and archived warehouses.
 - **FR-008**: A displayed footprint MUST represent the warehouse's geographic polygon, including all of its boundary points, and MUST frame the complete polygon using a display position derived from that polygon.

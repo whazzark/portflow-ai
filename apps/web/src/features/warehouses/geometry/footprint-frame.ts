@@ -7,8 +7,12 @@ export type Bounds = {
   maxLatitude: number
 }
 
+export function isValidFootprint(points: WarehousePoint[]) {
+  return points.length >= 3
+}
+
 export function getFootprintBounds(points: WarehousePoint[]): Bounds | null {
-  if (points.length === 0) {
+  if (!isValidFootprint(points)) {
     return null
   }
   return points.reduce(
@@ -28,7 +32,7 @@ export function getFootprintBounds(points: WarehousePoint[]): Bounds | null {
 }
 
 export function toPolygonCoordinates(points: WarehousePoint[]): [number, number][][] {
-  if (points.length === 0) {
+  if (!isValidFootprint(points)) {
     return []
   }
   const coordinates = points.map(

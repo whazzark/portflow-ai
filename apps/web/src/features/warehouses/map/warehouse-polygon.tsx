@@ -49,13 +49,19 @@ export function WarehousePolygons({
   selectedId?: string
   onSelect: (warehouse: PresentedWarehouse) => void
 }) {
+  const [hovered, setHovered] = useState<HoveredWarehouse>(null)
+  const [focused, setFocused] = useState<PresentedWarehouse | null>(null)
   const available = warehouses.filter((warehouse) => warehouse.status === 'AVAILABLE')
   const archived = warehouses.filter((warehouse) => warehouse.status === 'ARCHIVED')
+  const focusedBounds = focused ? getFootprintBounds(focused.footprint.points) : null
+  const tooltipWarehouse = focused ?? hovered?.warehouse
 
   const renderLayer = (items: PresentedWarehouse[], status: PresentedWarehouse['status']) => (
     <WarehousePolygonLayer
       items={items}
       onSelect={onSelect}
+      onHover={setHovered}
+      onFocus={setFocused}
       selectedId={selectedId}
       status={status}
     />
@@ -65,6 +71,23 @@ export function WarehousePolygons({
     <>
       {renderLayer(available, 'AVAILABLE')}
       {renderLayer(archived, 'ARCHIVED')}
+      {tooltipWarehouse && (
+        <MapPopup
+          latitude={
+            hovered?.latitude ??
+            (focusedBounds ? (focusedBounds.minLatitude + focusedBounds.maxLatitude) / 2 : 0)
+          }
+          longitude={
+            hovered?.longitude ??
+            (focusedBounds ? (focusedBounds.minLongitude + focusedBounds.maxLongitude) / 2 : 0)
+          }
+          closeButton={false}
+          closeOnClick={false}
+          className="pointer-events-none text-balance rounded-md bg-foreground px-2 py-1 text-background text-xs shadow-md"
+        >
+          <WarehouseTooltip warehouse={tooltipWarehouse} />
+        </MapPopup>
+      )}
     </>
   )
 }
@@ -74,13 +97,16 @@ function WarehousePolygonLayer({
   status,
   selectedId,
   onSelect,
+  onHover,
+  onFocus,
 }: {
   items: PresentedWarehouse[]
   selectedId?: string
   status: PresentedWarehouse['status']
   onSelect: (warehouse: PresentedWarehouse) => void
+  onHover: (warehouse: HoveredWarehouse) => void
+  onFocus: (warehouse: PresentedWarehouse | null) => void
 }) {
-  const [hovered, setHovered] = useState<HoveredWarehouse>(null)
   const data: GeoJSON.FeatureCollection<GeoJSON.Polygon, WarehouseProperties> = {
     type: 'FeatureCollection',
     features: items.map((item) => toFeature(item, selectedId)),
@@ -127,27 +153,16 @@ function WarehousePolygonLayer({
         }}
         onHover={(event: MapGeoJSONEvent<WarehouseProperties> | null) => {
           if (!event) {
-            setHovered(null)
+            onHover(null)
             return
           }
           const warehouse = items.find((item) => item.id === event.feature.properties.id)
-          setHovered(
+          onHover(
             warehouse ? { warehouse, longitude: event.longitude, latitude: event.latitude } : null,
           )
         }}
         promoteId="id"
       />
-      {hovered && (
-        <MapPopup
-          latitude={hovered.latitude}
-          longitude={hovered.longitude}
-          closeOnClick={false}
-          closeButton={false}
-          className="pointer-events-none text-balance rounded-md bg-foreground px-2 py-1 text-background text-xs shadow-md"
-        >
-          <WarehouseTooltip warehouse={hovered.warehouse} />
-        </MapPopup>
-      )}
       {items.map((warehouse) => {
         const bounds = getFootprintBounds(warehouse.footprint.points)
         if (!bounds) {
@@ -159,13 +174,14 @@ function WarehousePolygonLayer({
             latitude={(bounds.minLatitude + bounds.maxLatitude) / 2}
             longitude={(bounds.minLongitude + bounds.maxLongitude) / 2}
           >
-            <MarkerContent className="pointer-events-none">
+            <MarkerContent>
               <button
                 aria-label={`View warehouse ${warehouse.name} (${warehouse.status === 'AVAILABLE' ? 'Available' : 'Archived'})`}
                 className="size-10 rounded-full bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 data-search-match={warehouse.isSearchMatch}
+                onBlur={() => onFocus(null)}
                 onClick={() => onSelect(warehouse)}
-                title={`${warehouse.name} — ${warehouse.status === 'AVAILABLE' ? 'Available' : 'Archived'}`}
+                onFocus={() => onFocus(warehouse)}
                 type="button"
               />
             </MarkerContent>

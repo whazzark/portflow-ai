@@ -89,7 +89,11 @@ export function ResourceMapControls({
                   value={status}
                 >
                   {RESOURCE_STATUS_FILTERS.map((value) => (
-                    <DropdownMenuRadioItem key={value} value={value}>
+                    <DropdownMenuRadioItem
+                      aria-label={`${RESOURCE_STATUS_LABELS[value]}, ${counts[value]} ${resourceLabelPlural}`}
+                      key={value}
+                      value={value}
+                    >
                       <span>{RESOURCE_STATUS_LABELS[value]}</span>
                       <span aria-hidden="true">({counts[value]})</span>
                     </DropdownMenuRadioItem>

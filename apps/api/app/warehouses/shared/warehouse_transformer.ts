@@ -3,6 +3,10 @@ import type Warehouse from '#models/warehouse'
 
 export default class WarehouseTransformer extends BaseTransformer<Warehouse> {
   toObject() {
+    if (this.resource.footprintPoints.length < 3) {
+      throw new Error(`Warehouse ${this.resource.id} has an invalid footprint`)
+    }
+
     return {
       id: this.resource.id,
       name: this.resource.name,

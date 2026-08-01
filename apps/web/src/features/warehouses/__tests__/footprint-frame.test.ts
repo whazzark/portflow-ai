@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   getFootprintBounds,
+  isValidFootprint,
   toPolygonCoordinates,
 } from '@/features/warehouses/geometry/footprint-frame'
 
@@ -25,4 +26,9 @@ describe('warehouse footprint framing', () => {
       [2, 50],
       [1, 49],
     ]))
+  test('rejects footprints that cannot form a polygon', () => {
+    expect(isValidFootprint(points.slice(0, 2))).toBe(false)
+    expect(getFootprintBounds(points.slice(0, 2))).toBeNull()
+    expect(toPolygonCoordinates(points.slice(0, 2))).toEqual([])
+  })
 })

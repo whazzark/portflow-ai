@@ -38,7 +38,7 @@ describe('warehouse consultation controls', () => {
     await user.click(screen.getByRole('button', { name: 'Filter warehouses: Available' }))
 
     expect(screen.getByRole('menu')).toBeInTheDocument()
-    expect(screen.getByRole('menuitemradio', { name: 'Available' })).toBeChecked()
+    expect(screen.getByRole('menuitemradio', { name: 'Available, 0 warehouses' })).toBeChecked()
   })
 
   test('shows the complete read-only archived footprint', () => {
