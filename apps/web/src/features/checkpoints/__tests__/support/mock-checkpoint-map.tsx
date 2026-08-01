@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { CHECKPOINT_STATUS_LABELS, type PresentedCheckpoint } from '@/features/checkpoints/types'
+import {
+  CHECKPOINT_KIND_LABELS,
+  CHECKPOINT_STATUS_LABELS,
+  type PresentedCheckpoint,
+} from '@/features/checkpoints/types'
 
 function MockMarker({
   checkpoint,
@@ -13,7 +17,8 @@ function MockMarker({
   return (
     <>
       <button
-        aria-label={`View dock ${checkpoint.name} (${CHECKPOINT_STATUS_LABELS[checkpoint.status]})`}
+        aria-label={`View ${CHECKPOINT_KIND_LABELS[checkpoint.kind].toLowerCase()} ${checkpoint.name} (${CHECKPOINT_STATUS_LABELS[checkpoint.status]})`}
+        data-checkpoint-kind={checkpoint.kind}
         data-search-match={checkpoint.isSearchMatch}
         data-status={checkpoint.status}
         onBlur={() => setShowsTooltip(false)}

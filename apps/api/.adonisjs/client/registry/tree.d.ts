@@ -33,12 +33,11 @@ export interface ApiDefinition {
     reactivate: typeof routes['docks.reactivate']
   }
   weighingAreas: {
-    index: typeof routes['weighingAreas.index']
-    store: typeof routes['weighingAreas.store']
-    available: typeof routes['weighingAreas.available']
-    show: typeof routes['weighingAreas.show']
-    update: typeof routes['weighingAreas.update']
-    archive: typeof routes['weighingAreas.archive']
-    reactivate: typeof routes['weighingAreas.reactivate']
+    index: typeof routes['weighing_areas.index']
+    store: typeof routes['weighing_areas.store']
+    available: typeof routes['weighing_areas.available']
+    update: typeof routes['weighing_areas.update']
+    archive: typeof routes['weighing_areas.archive']
+    reactivate: typeof routes['weighing_areas.reactivate']
   }
 }
