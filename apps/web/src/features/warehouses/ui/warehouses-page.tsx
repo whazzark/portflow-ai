@@ -127,6 +127,7 @@ export function WarehousesPage() {
         legend={<WarehouseLegend showDoors={Boolean(selected)} />}
         map={(onMapError) => (
           <WarehouseMap
+            detailsPanelSide={isMobile ? 'bottom' : 'right'}
             onError={onMapError}
             selected={selected}
             warehouses={visible}

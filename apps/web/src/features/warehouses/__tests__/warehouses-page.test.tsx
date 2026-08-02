@@ -26,7 +26,9 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 vi.mock('@/features/warehouses/map/warehouse-map', () => ({
-  WarehouseMap: () => <div />,
+  WarehouseMap: ({ detailsPanelSide }: { detailsPanelSide?: string }) => (
+    <div data-panel-side={detailsPanelSide} data-testid="warehouse-map" />
+  ),
 }))
 
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => isMobileMock() }))
@@ -45,12 +47,20 @@ describe('warehouse details sheet', () => {
       'data-side',
       'bottom',
     )
+    expect(document.querySelector('[data-testid="warehouse-map"]')).toHaveAttribute(
+      'data-panel-side',
+      'bottom',
+    )
 
     isMobileMock.mockReturnValue(false)
     rerender(<WarehousesPage />)
 
     expect(document.querySelector('[data-slot="sheet-content"]')).toHaveAttribute(
       'data-side',
+      'right',
+    )
+    expect(document.querySelector('[data-testid="warehouse-map"]')).toHaveAttribute(
+      'data-panel-side',
       'right',
     )
   })

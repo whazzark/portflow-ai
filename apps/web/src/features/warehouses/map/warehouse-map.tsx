@@ -8,14 +8,54 @@ import { getFootprintBounds } from '@/features/warehouses/geometry/footprint-fra
 import { WarehousePolygons } from '@/features/warehouses/map/warehouse-polygon'
 import type { PresentedWarehouse } from '@/features/warehouses/types'
 
+const MAP_EDGE_PADDING = 56
+const DESKTOP_PANEL_MAX_WIDTH = 32 * 16
+const MOBILE_PANEL_MAX_HEIGHT = 38 * 16
+const MOBILE_PANEL_VIEWPORT_RATIO = 0.75
+
+type DetailsPanelSide = 'right' | 'bottom'
+
+function getFitPadding(
+  selected: PresentedWarehouse | undefined,
+  detailsPanelSide: DetailsPanelSide | undefined,
+  viewportHeight: number,
+) {
+  if (!selected || !detailsPanelSide) {
+    return MAP_EDGE_PADDING
+  }
+
+  const padding = {
+    top: MAP_EDGE_PADDING,
+    right: MAP_EDGE_PADDING,
+    bottom: MAP_EDGE_PADDING,
+    left: MAP_EDGE_PADDING,
+  }
+
+  if (detailsPanelSide === 'right') {
+    padding.right += DESKTOP_PANEL_MAX_WIDTH
+  } else {
+    padding.bottom += Math.min(
+      viewportHeight * MOBILE_PANEL_VIEWPORT_RATIO,
+      MOBILE_PANEL_MAX_HEIGHT,
+    )
+  }
+
+  return padding
+}
+
 function FitWarehouseBounds({
+  detailsPanelSide,
   warehouses,
   selected,
 }: {
+  detailsPanelSide?: DetailsPanelSide
   warehouses: PresentedWarehouse[]
   selected?: PresentedWarehouse
 }) {
   const { map, isLoaded } = useMap()
+  const [viewportHeight, setViewportHeight] = useState(() =>
+    typeof window === 'undefined' ? 0 : window.innerHeight,
+  )
   const bounds = useMemo(() => {
     const items = selected ? [selected] : warehouses
     const frames = items
@@ -41,6 +81,18 @@ function FitWarehouseBounds({
   }, [selected, warehouses])
 
   useEffect(() => {
+    if (detailsPanelSide !== 'bottom') {
+      return
+    }
+
+    const updateViewportHeight = () => setViewportHeight(window.innerHeight)
+    window.addEventListener('resize', updateViewportHeight)
+    updateViewportHeight()
+
+    return () => window.removeEventListener('resize', updateViewportHeight)
+  }, [detailsPanelSide])
+
+  useEffect(() => {
     if (!map || !isLoaded || !bounds) {
       return
     }
@@ -50,13 +102,17 @@ function FitWarehouseBounds({
       map.easeTo({ center: bounds.getCenter(), zoom: 13 })
       return
     }
-    map.fitBounds(bounds, { maxZoom: selected ? 16 : 13, padding: 56 })
-  }, [bounds, isLoaded, map, selected])
+    map.fitBounds(bounds, {
+      maxZoom: selected ? 16 : 13,
+      padding: getFitPadding(selected, detailsPanelSide, viewportHeight),
+    })
+  }, [bounds, detailsPanelSide, isLoaded, map, selected, viewportHeight])
 
   return null
 }
 
 export function WarehouseMap({
+  detailsPanelSide,
   warehouses,
   selected,
   onSelect,
@@ -65,6 +121,7 @@ export function WarehouseMap({
   selectedDoorId,
   onDoorSelect,
 }: {
+  detailsPanelSide?: DetailsPanelSide
   warehouses: PresentedWarehouse[]
   selected?: PresentedWarehouse
   onSelect: (warehouse: PresentedWarehouse) => void
@@ -88,7 +145,11 @@ export function WarehouseMap({
         styles={mapStyleUrls}
         zoom={warehouses.length === 1 ? 13 : 5}
       >
-        <FitWarehouseBounds warehouses={warehouses} selected={selected} />
+        <FitWarehouseBounds
+          detailsPanelSide={detailsPanelSide}
+          warehouses={warehouses}
+          selected={selected}
+        />
         <WarehousePolygons
           warehouses={warehouses}
           selectedId={selected?.id}

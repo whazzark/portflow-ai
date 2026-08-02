@@ -11,8 +11,7 @@
   by the effective door lifecycle view.
 - Selecting a different warehouse clears `doorStatus` and `doorId`, allowing the new warehouse's
   contextual default to apply.
-- A door lifecycle change clears `doorId` only when the selected door is excluded from the new
-  scope. `all` admits both states.
+- A door lifecycle change clears `doorId` when the selected door is excluded from the new scope.
 - Closing the warehouse panel clears `warehouseId`, `doorStatus`, and `doorId`.
 - Back/forward navigation and reload restore every valid warehouse and door state.
 - A malformed, missing, wrong-warehouse, stale, or filtered-out `doorId` never substitutes another
@@ -29,7 +28,7 @@ The feature introduces no `/warehouse-doors` page.
 | success | valid, with admitted doors | absent | Contextual lifecycle tab, counts, markers, and accessible door list |
 | success | valid, with admitted doors | valid `doorId` | Selected list entry plus strongly emphasized exact marker; the door list remains visible |
 | success | valid | stale, wrong-warehouse, or filtered-out `doorId` | Door selection clears; selected warehouse and lifecycle view remain |
-| success | valid, with zero admitted doors | absent | Lifecycle-specific empty message; all three door tabs remain reachable |
+| success | valid, with zero admitted doors | absent | Lifecycle-specific empty message; both door tabs remain reachable |
 | error | unresolved or absent | unresolved or absent | Existing warehouse failure feedback and retry; no partial door collection is presented as authoritative |
 | retry succeeds | re-evaluated | re-evaluated | Latest warehouses, markers, counts, empty state, and valid selection replace stale data |
 | success; basemap fails | valid | valid or absent | Map-specific feedback; embedded door list and selection remain available |

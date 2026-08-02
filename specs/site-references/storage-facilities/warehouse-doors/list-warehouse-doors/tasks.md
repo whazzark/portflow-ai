@@ -140,7 +140,7 @@ refresh behavior.
 - [X] T035 Run and resolve all focused API/web scenarios documented in `specs/site-references/storage-facilities/warehouse-doors/list-warehouse-doors/quickstart.md`
 - [X] T036 Run `pnpm check`, `pnpm typecheck`, and `pnpm test`, then resolve every feature regression across the implementation paths listed in `specs/site-references/storage-facilities/warehouse-doors/list-warehouse-doors/plan.md`
 - [ ] T037 Complete the desktop and narrow-mobile affected browser journeys, including one-snapshot loading, the door-free warehouse overview, progressive selected-warehouse overlay, compact marker density, selection emphasis, non-modal map interaction, overlapping doors, URL restoration, failures, and degraded basemap behavior, from `specs/site-references/storage-facilities/warehouse-doors/list-warehouse-doors/quickstart.md`
-- [ ] T038 Obtain a fresh read-only Codex review of the final diff and resolve or explicitly justify every confirmed finding against `specs/site-references/storage-facilities/warehouse-doors/list-warehouse-doors/spec.md` and `specs/site-references/storage-facilities/warehouse-doors/list-warehouse-doors/plan.md`
+- [X] T038 Obtain a fresh read-only Codex review of the final diff and resolve or explicitly justify every confirmed finding against `specs/site-references/storage-facilities/warehouse-doors/list-warehouse-doors/spec.md` and `specs/site-references/storage-facilities/warehouse-doors/list-warehouse-doors/plan.md`
 
 ---
 
