@@ -24,6 +24,10 @@ export interface ApiDefinition {
     index: typeof routes['transport_companies.index']
     available: typeof routes['transport_companies.available']
   }
+  trucks: {
+    index: typeof routes['trucks.index']
+    available: typeof routes['trucks.available']
+  }
   docks: {
     index: typeof routes['docks.index']
     store: typeof routes['docks.store']

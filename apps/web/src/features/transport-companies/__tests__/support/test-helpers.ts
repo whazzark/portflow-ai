@@ -14,5 +14,7 @@ export function mockTransportCompanies(companies = TRANSPORT_COMPANIES, user = A
 }
 
 export function renderTransportCompanies(initialPath = '/transport-resources') {
-  return renderApp(initialPath)
+  const path =
+    initialPath === '/transport-resources' ? '/transport-resources?resource=companies' : initialPath
+  return renderApp(path)
 }

@@ -40,6 +40,14 @@ router
 
     router
       .group(() => {
+        router.get('/', [controllers.Trucks, 'index']).as('index')
+        router.get('/available', [controllers.Trucks, 'available']).as('available')
+      })
+      .prefix('/trucks')
+      .as('trucks')
+
+    router
+      .group(() => {
         router.get('/', [controllers.Docks, 'index']).as('index')
         router.post('/', [controllers.Docks, 'store']).as('store')
         router.get('/available', [controllers.Docks, 'available']).as('available')

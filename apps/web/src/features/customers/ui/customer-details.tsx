@@ -1,9 +1,9 @@
+import { ResourceDetailField } from '@/components/resource-map/resource-details'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import type { CustomerDto } from '@/features/customers/types'
-import { DetailRow } from '@/features/customers/ui/detail-row'
 import { LifecycleActions } from '@/features/customers/ui/lifecycle-actions'
 import { formatDateTime } from '@/helpers/dates'
 
@@ -27,33 +27,30 @@ export function CustomerDetails({ canAdminister, customer, onEdit }: CustomerDet
       </SheetHeader>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
         <dl className="grid grid-cols-2 gap-x-6 gap-y-5 text-sm">
-          <DetailRow label="Created" value={formatDateTime(customer.createdAt)} />
-          <DetailRow label="Last updated" value={formatDateTime(customer.updatedAt)} />
+          <ResourceDetailField label="Created" value={formatDateTime(customer.createdAt)} />
+          <ResourceDetailField label="Last updated" value={formatDateTime(customer.updatedAt)} />
         </dl>
-        {(customer.archivedAt || customer.reactivatedAt) && (
-          <>
-            <Separator className="my-6" />
-            <section className="flex flex-col gap-3" aria-labelledby="customer-lifecycle-heading">
-              <h3 className="font-medium" id="customer-lifecycle-heading">
-                Lifecycle
-              </h3>
-              <dl className="grid gap-4 text-sm">
-                {customer.archivedAt && (
-                  <DetailRow label="Archived" value={formatDateTime(customer.archivedAt)} />
-                )}
-                {customer.archiveComment && (
-                  <DetailRow label="Archive comment" value={customer.archiveComment} />
-                )}
-                {customer.reactivatedAt && (
-                  <DetailRow label="Reactivated" value={formatDateTime(customer.reactivatedAt)} />
-                )}
-                {customer.reactivationComment && (
-                  <DetailRow label="Reactivation comment" value={customer.reactivationComment} />
-                )}
-              </dl>
-            </section>
-          </>
-        )}
+        <Separator className="my-6" />
+        <section className="flex flex-col gap-3" aria-labelledby="customer-lifecycle-heading">
+          <h3 className="font-medium" id="customer-lifecycle-heading">
+            Lifecycle
+          </h3>
+          <dl className="grid gap-4 text-sm">
+            <ResourceDetailField
+              label="Archived"
+              value={customer.archivedAt ? formatDateTime(customer.archivedAt) : null}
+            />
+            <ResourceDetailField label="Archive comment" value={customer.archiveComment} />
+            <ResourceDetailField
+              label="Reactivated"
+              value={customer.reactivatedAt ? formatDateTime(customer.reactivatedAt) : null}
+            />
+            <ResourceDetailField
+              label="Reactivation comment"
+              value={customer.reactivationComment}
+            />
+          </dl>
+        </section>
       </div>
       {canAdminister && customer.status === 'AVAILABLE' && (
         <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
