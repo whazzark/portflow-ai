@@ -319,6 +319,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'warehouse_doors.available': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/warehouse-doors/available'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['available']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['available']>>>
+    }
+  }
   'warehouses.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/warehouses'

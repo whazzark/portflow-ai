@@ -5,6 +5,9 @@ export default class LucidWarehouseRepository extends WarehouseRepository {
   list(): Promise<Warehouse[]> {
     return Warehouse.query()
       .preload('footprintPoints', (query) => query.orderBy('position', 'asc'))
+      .preload('doors', (query) =>
+        query.orderByRaw('LOWER(name) ASC').orderBy('name', 'asc').orderBy('id', 'asc'),
+      )
       .orderByRaw('LOWER(name) ASC')
       .orderBy('name', 'asc')
       .orderBy('id', 'asc')
