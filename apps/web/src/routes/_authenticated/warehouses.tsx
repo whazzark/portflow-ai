@@ -6,6 +6,8 @@ import { WarehousesPage } from '@/features/warehouses/ui/warehouses-page'
 import { WarehousesPending } from '@/features/warehouses/ui/warehouses-pending'
 
 const warehouseSearchSchema = z.object({
+  doorId: z.string().optional().catch(undefined),
+  doorStatus: z.enum(['available', 'archived']).optional().catch(undefined),
   warehouseId: z.string().optional().catch(undefined),
   search: z.string().catch(''),
   status: z.enum(['all', 'available', 'archived']).catch('available'),

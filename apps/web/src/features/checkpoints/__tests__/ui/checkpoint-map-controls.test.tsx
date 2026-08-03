@@ -20,6 +20,12 @@ function renderControls() {
   )
 }
 
+test('shows the active status filter on the map controls', () => {
+  renderControls()
+
+  expect(screen.getByText('Showing: All')).toBeInTheDocument()
+})
+
 test('supports keyboard navigation and escape in the status menu', async () => {
   const user = userEvent.setup()
   renderControls()

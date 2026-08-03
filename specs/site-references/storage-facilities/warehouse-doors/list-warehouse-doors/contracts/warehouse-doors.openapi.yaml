@@ -1,0 +1,233 @@
+openapi: 3.1.0
+info:
+  title: Portflow Warehouse Door Read Contracts
+  version: 1.1.0
+  description: Embedded consultation and selector-safe read contracts for Issue #212.
+paths:
+  /api/v1/warehouses:
+    get:
+      operationId: warehouses.index
+      summary: List warehouses with all their contained doors
+      description: >-
+        Returns one authoritative warehouse, footprint, and door snapshot. Every available and
+        archived door is nested under exactly one containing warehouse.
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Complete deterministic warehouse collection; an empty array is successful.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    maxItems: 200
+                    items:
+                      $ref: "#/components/schemas/WarehouseWithDoors"
+              examples:
+                mixedLifecycleDoors:
+                  value:
+                    data:
+                      - id: aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
+                        name: North Shed
+                        status: AVAILABLE
+                        footprint:
+                          points:
+                            - latitude: 46.1607
+                              longitude: -1.2293
+                            - latitude: 46.1609
+                              longitude: -1.2290
+                            - latitude: 46.1605
+                              longitude: -1.2289
+                        doors:
+                          - id: 018f80c0-8799-7cb0-bb14-2d2c8d206a8c
+                            name: Door 1
+                            status: AVAILABLE
+                            latitude: 46.1608
+                            longitude: -1.2292
+                          - id: 018f80c0-b59d-77fc-87ed-61da95229ba2
+                            name: Door 2
+                            status: ARCHIVED
+                            latitude: 46.1607
+                            longitude: -1.2291
+        "401":
+          description: The session is missing, invalid, expired, or belongs to a user who is no longer active; no warehouse or door data is disclosed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: The authoritative warehouse-and-door snapshot could not be loaded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/warehouse-doors/available:
+    get:
+      operationId: warehouseDoors.available
+      summary: List warehouse doors eligible for future operational selection
+      description: >-
+        Returns only doors whose status is AVAILABLE and whose containing warehouse is also
+        AVAILABLE. Future discharge selectors must use this contract instead of deriving choices
+        from the complete warehouse consultation response.
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Deterministic selector-safe collection; an empty array is successful.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    maxItems: 1000
+                    items:
+                      $ref: "#/components/schemas/AvailableWarehouseDoor"
+              examples:
+                availableDoors:
+                  value:
+                    data:
+                      - id: 018f80c0-8799-7cb0-bb14-2d2c8d206a8c
+                        warehouseId: aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
+                        name: Door 1
+                        status: AVAILABLE
+                        latitude: 46.1608
+                        longitude: -1.2292
+        "401":
+          description: The session is missing, invalid, expired, or belongs to a user who is no longer active; no door data is disclosed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Available warehouse doors could not be loaded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: adonis-session
+  schemas:
+    WarehouseWithDoors:
+      type: object
+      additionalProperties: false
+      required: [id, name, status, footprint, doors]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+        footprint:
+          $ref: "#/components/schemas/WarehouseFootprint"
+        doors:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/EmbeddedWarehouseDoor"
+    WarehouseFootprint:
+      type: object
+      additionalProperties: false
+      required: [points]
+      properties:
+        points:
+          type: array
+          minItems: 3
+          items:
+            $ref: "#/components/schemas/GeoPoint"
+    GeoPoint:
+      type: object
+      additionalProperties: false
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+    EmbeddedWarehouseDoor:
+      type: object
+      additionalProperties: false
+      required: [id, name, status, latitude, longitude]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+    AvailableWarehouseDoor:
+      type: object
+      additionalProperties: false
+      required: [id, warehouseId, name, status, latitude, longitude]
+      properties:
+        id:
+          type: string
+          format: uuid
+        warehouseId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        status:
+          type: string
+          const: AVAILABLE
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: true
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items: {}

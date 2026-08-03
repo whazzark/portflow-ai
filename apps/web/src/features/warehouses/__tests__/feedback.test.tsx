@@ -20,13 +20,25 @@ const warehouse = {
 
 describe('warehouse feedback and map semantics', () => {
   test('distinguishes lifecycle states in the legend', () => {
-    render(<WarehouseLegend />)
-    expect(screen.getByRole('region', { name: 'Warehouse legend' })).toHaveTextContent('Status')
+    const { rerender } = render(<WarehouseLegend />)
+    expect(screen.getByRole('region', { name: 'Warehouse legend' })).toHaveTextContent('Type')
+    expect(screen.getByRole('group', { name: 'Warehouse types' })).toHaveTextContent('Warehouse')
+    expect(screen.getByRole('group', { name: 'Warehouse types' })).not.toHaveTextContent(
+      'Warehouse door',
+    )
+    expect(screen.getByRole('group', { name: 'Warehouse statuses' })).toHaveTextContent('Status')
     expect(screen.getByText('Available')).toBeInTheDocument()
     expect(screen.getByText('Archived')).toBeInTheDocument()
-    expect(screen.getByTestId('warehouse-legend-status-available')).toHaveClass(
+    expect(document.querySelector('[data-warehouse-legend-status="AVAILABLE"]')).toHaveClass(
       'border-background',
       'bg-primary',
+    )
+    // biome-ignore lint/security/noSecrets: This is a static data attribute selector, not a secret.
+    expect(document.querySelector('[data-warehouse-legend-type="WAREHOUSE"]')).toBeInTheDocument()
+
+    rerender(<WarehouseLegend showDoors />)
+    expect(screen.getByRole('group', { name: 'Warehouse types' })).toHaveTextContent(
+      'Warehouse door',
     )
   })
 

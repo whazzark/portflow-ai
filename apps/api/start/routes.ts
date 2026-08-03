@@ -64,6 +64,13 @@ router
 
     router
       .group(() => {
+        router.get('/available', [controllers.WarehouseDoors, 'available']).as('available')
+      })
+      .prefix('/warehouse-doors')
+      .as('warehouse_doors')
+
+    router
+      .group(() => {
         router.get('/', [controllers.Warehouses, 'index']).as('index')
       })
       .prefix('/warehouses')

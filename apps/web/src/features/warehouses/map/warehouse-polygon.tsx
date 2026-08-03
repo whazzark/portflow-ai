@@ -6,8 +6,11 @@ import {
   getFootprintBounds,
   toPolygonCoordinates,
 } from '@/features/warehouses/geometry/footprint-frame'
+import { WarehouseMarkerSymbol } from '@/features/warehouses/map/warehouse-marker-symbol'
+import { WAREHOUSE_STATUS_COLORS } from '@/features/warehouses/map/warehouse-status-colors'
 import { WarehouseTooltip } from '@/features/warehouses/map/warehouse-tooltip'
 import type { PresentedWarehouse } from '@/features/warehouses/types'
+import { classnames } from '@/libraries/shadcn/helpers'
 
 type WarehouseProperties = {
   id: string
@@ -44,17 +47,21 @@ export function WarehousePolygons({
   warehouses,
   selectedId,
   onSelect,
+  hideTooltip = false,
 }: {
   warehouses: PresentedWarehouse[]
   selectedId?: string
   onSelect: (warehouse: PresentedWarehouse) => void
+  hideTooltip?: boolean
 }) {
   const [hovered, setHovered] = useState<HoveredWarehouse>(null)
   const [focused, setFocused] = useState<PresentedWarehouse | null>(null)
+  const tooltipWarehouse = focused ?? hovered?.warehouse
+  const tooltipBounds = tooltipWarehouse
+    ? getFootprintBounds(tooltipWarehouse.footprint.points)
+    : null
   const available = warehouses.filter((warehouse) => warehouse.status === 'AVAILABLE')
   const archived = warehouses.filter((warehouse) => warehouse.status === 'ARCHIVED')
-  const focusedBounds = focused ? getFootprintBounds(focused.footprint.points) : null
-  const tooltipWarehouse = focused ?? hovered?.warehouse
 
   const renderLayer = (items: PresentedWarehouse[], status: PresentedWarehouse['status']) => (
     <WarehousePolygonLayer
@@ -71,16 +78,11 @@ export function WarehousePolygons({
     <>
       {renderLayer(available, 'AVAILABLE')}
       {renderLayer(archived, 'ARCHIVED')}
-      {tooltipWarehouse && (
+      {tooltipWarehouse && tooltipBounds && !hideTooltip && (
         <MapPopup
-          latitude={
-            hovered?.latitude ??
-            (focusedBounds ? (focusedBounds.minLatitude + focusedBounds.maxLatitude) / 2 : 0)
-          }
-          longitude={
-            hovered?.longitude ??
-            (focusedBounds ? (focusedBounds.minLongitude + focusedBounds.maxLongitude) / 2 : 0)
-          }
+          anchor="bottom"
+          latitude={tooltipBounds.maxLatitude}
+          longitude={(tooltipBounds.minLongitude + tooltipBounds.maxLongitude) / 2}
           closeButton={false}
           closeOnClick={false}
           className="pointer-events-none text-balance rounded-md bg-foreground px-2 py-1 text-background text-xs shadow-md"
@@ -111,10 +113,7 @@ function WarehousePolygonLayer({
     type: 'FeatureCollection',
     features: items.map((item) => toFeature(item, selectedId)),
   }
-  const paint =
-    status === 'AVAILABLE'
-      ? { fill: '#2563eb', line: '#1d4ed8' }
-      : { fill: '#94a3b8', line: '#64748b' }
+  const paint = WAREHOUSE_STATUS_COLORS[status]
   return (
     <>
       <MapGeoJSON
@@ -125,10 +124,10 @@ function WarehousePolygonLayer({
           'fill-opacity': [
             'case',
             ['boolean', ['get', 'selected'], false],
-            0.48,
+            0.6,
             ['boolean', ['get', 'isSearchMatch'], true],
-            0.2,
-            0.08,
+            0.32,
+            0.18,
           ],
         }}
         id={`warehouses-${status.toLowerCase()}`}
@@ -164,6 +163,9 @@ function WarehousePolygonLayer({
         promoteId="id"
       />
       {items.map((warehouse) => {
+        if (warehouse.id === selectedId) {
+          return null
+        }
         const bounds = getFootprintBounds(warehouse.footprint.points)
         if (!bounds) {
           return null
@@ -177,13 +179,21 @@ function WarehousePolygonLayer({
             <MarkerContent>
               <button
                 aria-label={`View warehouse ${warehouse.name} (${warehouse.status === 'AVAILABLE' ? 'Available' : 'Archived'})`}
-                className="size-10 rounded-full bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className={classnames(
+                  'grid size-11 cursor-pointer place-items-center rounded-full transition-[opacity,transform,filter] duration-200 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none',
+                  warehouse.isSearchMatch ? 'scale-100 opacity-100' : 'scale-75 opacity-35',
+                )}
                 data-search-match={warehouse.isSearchMatch}
                 onBlur={() => onFocus(null)}
-                onClick={() => onSelect(warehouse)}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onSelect(warehouse)
+                }}
                 onFocus={() => onFocus(warehouse)}
                 type="button"
-              />
+              >
+                <WarehouseMarkerSymbol status={warehouse.status} />
+              </button>
             </MarkerContent>
           </MapMarker>
         )

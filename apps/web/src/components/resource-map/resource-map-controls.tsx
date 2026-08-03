@@ -1,5 +1,6 @@
 import { FilterIcon } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -43,7 +44,7 @@ export function ResourceMapControls({
 
   return (
     <div className="flex max-w-full flex-col gap-2">
-      <div className="flex max-w-full gap-2">
+      <div className="flex max-w-full flex-wrap items-center gap-2">
         <InputSearch
           className="bg-background/95 shadow-md backdrop-blur"
           fieldClassName="min-w-0 flex-1 sm:w-72"
@@ -104,6 +105,13 @@ export function ResourceMapControls({
             </DropdownMenuContent>
           )}
         </DropdownMenu>
+        <Badge
+          aria-live="polite"
+          className="h-9 bg-background/95 px-3 shadow-md backdrop-blur"
+          variant="outline"
+        >
+          Showing: {statusLabel}
+        </Badge>
       </div>
       {search && !hasMatches && (
         <div className="rounded-lg bg-background/95 px-3 py-2 text-sm shadow-md" role="status">

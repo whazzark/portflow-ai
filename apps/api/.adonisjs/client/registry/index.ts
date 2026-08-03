@@ -162,6 +162,12 @@ const routes = {
     tokens: [{"old":"/api/v1/weighing-areas/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas/:id/reactivate","type":0,"val":"weighing-areas","end":""},{"old":"/api/v1/weighing-areas/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/weighing-areas/:id/reactivate","type":0,"val":"reactivate","end":""}],
     types: placeholder as Registry['weighing_areas.reactivate']['types'],
   },
+  'warehouse_doors.available': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/warehouse-doors/available',
+    tokens: [{"old":"/api/v1/warehouse-doors/available","type":0,"val":"api","end":""},{"old":"/api/v1/warehouse-doors/available","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouse-doors/available","type":0,"val":"warehouse-doors","end":""},{"old":"/api/v1/warehouse-doors/available","type":0,"val":"available","end":""}],
+    types: placeholder as Registry['warehouse_doors.available']['types'],
+  },
   'warehouses.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/warehouses',

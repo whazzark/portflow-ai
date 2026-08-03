@@ -1,8 +1,8 @@
-import type { WarehouseDto } from '@/features/warehouses/types'
+import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
 
 export const API_BASE_URL = 'http://localhost:3333'
 
-export const WAREHOUSES: WarehouseDto[] = [
+export const WAREHOUSES: WarehouseWithDoorsDto[] = [
   {
     id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     name: 'North Shed',
@@ -14,6 +14,22 @@ export const WAREHOUSES: WarehouseDto[] = [
         { latitude: 48.85, longitude: 2.36 },
       ],
     },
+    doors: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'North Door',
+        status: 'AVAILABLE',
+        latitude: 48.855,
+        longitude: 2.345,
+      },
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        name: 'Old Door',
+        status: 'ARCHIVED',
+        latitude: 48.8552,
+        longitude: 2.3452,
+      },
+    ],
   },
   {
     id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
@@ -26,5 +42,14 @@ export const WAREHOUSES: WarehouseDto[] = [
         { latitude: 43.29, longitude: 5.38 },
       ],
     },
+    doors: [
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        name: 'Retired Door',
+        status: 'ARCHIVED',
+        latitude: 43.295,
+        longitude: 5.365,
+      },
+    ],
   },
 ]

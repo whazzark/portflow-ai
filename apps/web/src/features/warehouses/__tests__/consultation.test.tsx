@@ -8,7 +8,7 @@ import { WAREHOUSES } from './support/fixtures'
 
 describe('warehouse consultation controls', () => {
   test('exposes searchable, filterable map controls', () => {
-    render(
+    const { rerender } = render(
       <WarehouseMapControls
         hasMatches
         onSearchChange={vi.fn()}
@@ -20,6 +20,19 @@ describe('warehouse consultation controls', () => {
 
     expect(screen.getByRole('textbox', { name: 'Search warehouses' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Filter warehouses: Available' })).toBeInTheDocument()
+    expect(screen.getByText('Showing: Available')).toBeInTheDocument()
+
+    rerender(
+      <WarehouseMapControls
+        hasMatches
+        onSearchChange={vi.fn()}
+        onStatusChange={vi.fn()}
+        search=""
+        status="archived"
+      />,
+    )
+
+    expect(screen.getByText('Showing: Archived')).toBeInTheDocument()
   })
 
   test('opens the warehouse status filters', async () => {
@@ -41,7 +54,7 @@ describe('warehouse consultation controls', () => {
     expect(screen.getByRole('menuitemradio', { name: 'Available, 0 warehouses' })).toBeChecked()
   })
 
-  test('shows the complete read-only archived footprint', () => {
+  test('keeps warehouse details compact for door consultation', () => {
     render(
       <Sheet open>
         <SheetContent>
@@ -52,9 +65,9 @@ describe('warehouse consultation controls', () => {
 
     expect(screen.getByRole('heading', { name: 'Retired Shed' })).toBeInTheDocument()
     expect(
-      screen.getByText('Archived warehouses are read-only historical references.'),
-    ).toBeInTheDocument()
-    expect(screen.getByText('3 GPS boundary points')).toBeInTheDocument()
-    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+      screen.queryByText('Archived warehouses are read-only historical references.'),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('3 GPS boundary points')).not.toBeInTheDocument()
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
   })
 })

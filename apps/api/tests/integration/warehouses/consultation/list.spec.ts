@@ -1,6 +1,9 @@
 import { test } from '@japa/runner'
 import { UserFactory } from '#database/factories/user_factory'
+import { WarehouseDoorFactory } from '#database/factories/warehouse_door_factory'
 import { WarehouseFactory } from '#database/factories/warehouse_factory'
+import Warehouse from '#models/warehouse'
+import WarehouseDoor from '#models/warehouse_door'
 import WarehouseFootprintPoint from '#models/warehouse_footprint_point'
 
 async function addFootprint(
@@ -12,7 +15,12 @@ async function addFootprint(
   )
 }
 
-test.group('Warehouse consultation', () => {
+test.group('Warehouse consultation', (group) => {
+  group.each.setup(async () => {
+    await WarehouseDoor.query().delete()
+    await Warehouse.query().delete()
+  })
+
   test('rejects unauthenticated access', async ({ assert, client }) => {
     const response = await client.get('/api/v1/warehouses')
     response.assertStatus(401)
@@ -38,6 +46,15 @@ test.group('Warehouse consultation', () => {
       { latitude: 49.4924, longitude: 0.1051 },
       { latitude: 49.4913, longitude: 0.1054 },
     ])
+    const availableDoor = await WarehouseDoorFactory.merge({
+      warehouseId: available.id,
+      name: 'Door 1',
+      latitude: 49.4938,
+      longitude: 0.108,
+    }).create()
+    const archivedDoor = await WarehouseDoorFactory.apply('archived')
+      .merge({ warehouseId: available.id, name: 'Door 2', latitude: 49.4937, longitude: 0.1081 })
+      .create()
 
     const response = await client.get('/api/v1/warehouses').loginAs(user)
     response.assertStatus(200)
@@ -46,6 +63,13 @@ test.group('Warehouse consultation', () => {
       name: string
       status: string
       footprint: { points: unknown[] }
+      doors: Array<{
+        id: string
+        name: string
+        status: string
+        latitude: number
+        longitude: number
+      }>
     }>
     assert.deepEqual(
       data.map((warehouse) => warehouse.name),
@@ -56,6 +80,23 @@ test.group('Warehouse consultation', () => {
       3,
     )
     assert.equal(data.find((warehouse) => warehouse.id === archived.id)?.status, 'ARCHIVED')
+    const returnedDoors = data.find((warehouse) => warehouse.id === available.id)?.doors
+    assert.deepEqual(returnedDoors, [
+      {
+        id: availableDoor.id,
+        name: availableDoor.name,
+        status: 'AVAILABLE',
+        latitude: availableDoor.latitude,
+        longitude: availableDoor.longitude,
+      },
+      {
+        id: archivedDoor.id,
+        name: archivedDoor.name,
+        status: 'ARCHIVED',
+        latitude: archivedDoor.latitude,
+        longitude: archivedDoor.longitude,
+      },
+    ])
   })
 
   test('does not expose a warehouse with an incomplete footprint', async ({ client }) => {
