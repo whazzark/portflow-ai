@@ -90,6 +90,18 @@ const routes = {
     tokens: [{"old":"/api/v1/transport-companies/available","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/available","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/available","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/available","type":0,"val":"available","end":""}],
     types: placeholder as Registry['transport_companies.available']['types'],
   },
+  'trucks.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/trucks',
+    tokens: [{"old":"/api/v1/trucks","type":0,"val":"api","end":""},{"old":"/api/v1/trucks","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks","type":0,"val":"trucks","end":""}],
+    types: placeholder as Registry['trucks.index']['types'],
+  },
+  'trucks.available': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/trucks/available',
+    tokens: [{"old":"/api/v1/trucks/available","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/available","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/available","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/available","type":0,"val":"available","end":""}],
+    types: placeholder as Registry['trucks.available']['types'],
+  },
   'docks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/docks',

@@ -8,7 +8,6 @@ import type { WeighingAreaDto } from '@/features/weighing-areas/types'
 import { formatDateTime } from '@/helpers/dates'
 
 export function WeighingAreaDetails({ area }: { area: WeighingAreaDto }) {
-  const hasLifecycle = Boolean(area.archivedAt || area.reactivatedAt)
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ResourceDetailHeader
@@ -23,39 +22,24 @@ export function WeighingAreaDetails({ area }: { area: WeighingAreaDto }) {
           <ResourceDetailField label="Created" value={formatDateTime(area.createdAt)} />
           <ResourceDetailField label="Last updated" value={formatDateTime(area.updatedAt)} />
         </dl>
-        {hasLifecycle && (
-          <>
-            <Separator className="my-6" />
-            <section
-              aria-labelledby="weighing-area-lifecycle-heading"
-              className="flex flex-col gap-3"
-            >
-              <h3 className="font-medium" id="weighing-area-lifecycle-heading">
-                Lifecycle
-              </h3>
-              <dl className="grid gap-4 text-sm">
-                {area.archivedAt && (
-                  <ResourceDetailField label="Archived" value={formatDateTime(area.archivedAt)} />
-                )}
-                {area.archiveComment && (
-                  <ResourceDetailField label="Archive comment" value={area.archiveComment} />
-                )}
-                {area.reactivatedAt && (
-                  <ResourceDetailField
-                    label="Reactivated"
-                    value={formatDateTime(area.reactivatedAt)}
-                  />
-                )}
-                {area.reactivationComment && (
-                  <ResourceDetailField
-                    label="Reactivation comment"
-                    value={area.reactivationComment}
-                  />
-                )}
-              </dl>
-            </section>
-          </>
-        )}
+        <Separator className="my-6" />
+        <section aria-labelledby="weighing-area-lifecycle-heading" className="flex flex-col gap-3">
+          <h3 className="font-medium" id="weighing-area-lifecycle-heading">
+            Lifecycle
+          </h3>
+          <dl className="grid gap-4 text-sm">
+            <ResourceDetailField
+              label="Archived"
+              value={area.archivedAt ? formatDateTime(area.archivedAt) : null}
+            />
+            <ResourceDetailField label="Archive comment" value={area.archiveComment} />
+            <ResourceDetailField
+              label="Reactivated"
+              value={area.reactivatedAt ? formatDateTime(area.reactivatedAt) : null}
+            />
+            <ResourceDetailField label="Reactivation comment" value={area.reactivationComment} />
+          </dl>
+        </section>
       </ResourceDetailBody>
     </div>
   )

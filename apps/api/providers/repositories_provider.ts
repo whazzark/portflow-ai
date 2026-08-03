@@ -8,6 +8,8 @@ import NoDischargeSiteReferenceUsageChecker from '#site_references/shared/no_dis
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 import LucidTransportCompanyRepository from '#transport_companies/shared/repositories/lucid_transport_company_repository'
 import TransportCompanyRepository from '#transport_companies/shared/repositories/transport_company_repository'
+import LucidTruckRepository from '#trucks/shared/repositories/lucid_truck_repository'
+import TruckRepository from '#trucks/shared/repositories/truck_repository'
 import LucidUserRepository from '#users/shared/repositories/lucid_user_repository'
 import UserRepository from '#users/shared/repositories/user_repository'
 import LucidWarehouseDoorRepository from '#warehouse_doors/shared/repositories/lucid_warehouse_door_repository'
@@ -31,6 +33,10 @@ export default class RepositoriesProvider {
 
     this.app.container.bind(TransportCompanyRepository, () => {
       return this.app.container.make(LucidTransportCompanyRepository)
+    })
+
+    this.app.container.bind(TruckRepository, () => {
+      return this.app.container.make(LucidTruckRepository)
     })
 
     this.app.container.bind(DockRepository, () => {

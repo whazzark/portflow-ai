@@ -111,6 +111,39 @@ export class TransportCompanySchema extends BaseModel {
   declare updatedAt: DateTime
 }
 
+export class TruckSchema extends BaseModel {
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'capacityTonnes', 'createdAt', 'id', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'registration', 'status', 'transportCompanyId', 'updatedAt', 'vehicleModel'] as const
+  $columns = TruckSchema.$columns
+  @column()
+  declare archiveComment: string | null
+  @column.dateTime()
+  declare archivedAt: DateTime | null
+  @column()
+  declare archivedByUserId: string | null
+  @column()
+  declare capacityTonnes: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare reactivatedAt: DateTime | null
+  @column()
+  declare reactivatedByUserId: string | null
+  @column()
+  declare reactivationComment: string | null
+  @column()
+  declare registration: string
+  @column()
+  declare status: string
+  @column()
+  declare transportCompanyId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare vehicleModel: string | null
+}
+
 export class UserSchema extends BaseModel {
   static $columns = ['accessStatus', 'activatedAt', 'activatedByUserId', 'cancelledAt', 'cancelledByUserId', 'createdAt', 'deactivatedAt', 'deactivatedByUserId', 'email', 'firstName', 'id', 'invitedAt', 'invitedByUserId', 'lastName', 'password', 'reactivatedAt', 'reactivatedByUserId', 'role', 'updatedAt'] as const
   $columns = UserSchema.$columns

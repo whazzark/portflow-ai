@@ -27,15 +27,17 @@ test('restores archived details from the URL and clears a stale identity', async
 
   renderTransportCompanies(
     // biome-ignore lint/security/noSecrets: URL state fixture, not a secret
-    '/transport-resources?companyStatus=archived&transportCompanyId=00000000-0000-4000-8000-000000000003',
+    '/transport-resources?resource=companies&companyStatus=archived&transportCompanyId=00000000-0000-4000-8000-000000000003',
   )
   const details = await screen.findByRole('region', { name: 'Transport company details' })
   expect(within(details).getByText('Archive context')).toBeInTheDocument()
   expect(within(details).getByText('Provider no longer serves the site')).toBeInTheDocument()
 
   cleanup()
-  // biome-ignore lint/security/noSecrets: URL state fixture, not a secret
-  const stale = renderTransportCompanies('/transport-resources?transportCompanyId=missing')
+  const stale = renderTransportCompanies(
+    // biome-ignore lint/security/noSecrets: URL state fixture, not a secret
+    '/transport-resources?resource=companies&transportCompanyId=missing',
+  )
   await screen.findByRole('list', { name: 'Available transport companies' })
   await expect
     .poll(() => stale.router.state.location.search)

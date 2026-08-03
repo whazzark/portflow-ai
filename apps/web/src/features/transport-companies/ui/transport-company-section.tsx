@@ -4,10 +4,12 @@ import { TransportCompanyList } from '@/features/transport-companies/ui/transpor
 
 type TransportCompanySectionProps = {
   companies: TransportCompanyDto[]
-  lifecycle: 'available' | 'archived'
+  lifecycle: 'all' | 'available' | 'archived'
   search: string
   selectedId?: string
   onSelect: (id: string) => void
+  onDetails?: (id: string) => void
+  showStatus?: boolean
 }
 
 export function TransportCompanySection({
@@ -16,13 +18,19 @@ export function TransportCompanySection({
   search,
   selectedId,
   onSelect,
+  onDetails,
+  showStatus,
 }: TransportCompanySectionProps) {
   const matches = companies.filter((company) => transportCompanyMatchesSearch(company, search))
   const hasSearch = search.trim().length > 0
 
   return (
     <section
-      aria-label={`${lifecycle === 'archived' ? 'Archived' : 'Available'} transport companies`}
+      aria-label={
+        lifecycle === 'all'
+          ? 'Transport companies'
+          : `${lifecycle === 'archived' ? 'Archived' : 'Available'} transport companies`
+      }
       className="md:h-full md:min-h-0"
     >
       <TransportCompanyList
@@ -36,9 +44,11 @@ export function TransportCompanySection({
           hasSearch ? 'No matching transport companies' : `No ${lifecycle} transport companies`
         }
         lifecycle={lifecycle}
+        onDetails={onDetails}
         onSelect={onSelect}
         search={search}
         selectedId={selectedId}
+        showStatus={showStatus}
       />
     </section>
   )

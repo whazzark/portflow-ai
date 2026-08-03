@@ -1,0 +1,53 @@
+import type { TransportCompanyDto } from '@/features/transport-companies/types'
+import { truckMatchesSearch } from '@/features/trucks/helpers/truck-search'
+import type { TruckDto, TruckLifecycle } from '@/features/trucks/types'
+import { TruckList } from '@/features/trucks/ui/truck-list'
+
+type TruckSectionProps = {
+  trucks: TruckDto[]
+  lifecycle: TruckLifecycle
+  search: string
+  selectedId?: string
+  onSelect: (id: string) => void
+  companies: TransportCompanyDto[]
+}
+
+export function TruckSection({
+  trucks,
+  lifecycle,
+  search,
+  selectedId,
+  onSelect,
+  companies,
+}: TruckSectionProps) {
+  const matches = trucks.filter((truck) =>
+    truckMatchesSearch(
+      truck,
+      companies.find((company) => company.id === truck.transportCompanyId),
+      search,
+    ),
+  )
+  const hasSearch = search.trim().length > 0
+
+  return (
+    <section
+      aria-label={`${lifecycle === 'archived' ? 'Archived' : 'Available'} trucks`}
+      className="flex h-full min-h-0"
+    >
+      <TruckList
+        trucks={matches}
+        companies={companies}
+        emptyDescription={
+          hasSearch
+            ? 'Try a different registration or transport-company name.'
+            : 'No trucks exist in this lifecycle state.'
+        }
+        emptyTitle={hasSearch ? 'No matching trucks' : `No ${lifecycle} trucks`}
+        lifecycle={lifecycle}
+        onSelect={onSelect}
+        search={search}
+        selectedId={selectedId}
+      />
+    </section>
+  )
+}

@@ -30,11 +30,15 @@ export function ResourceDetailHeader({
   )
 }
 
-export function ResourceDetailField({ label, value }: { label: string; value: string }) {
+export function ResourceDetailField({ label, value }: { label: string; value?: string | null }) {
+  const isSpecified = value !== undefined && value !== null && value !== ''
+
   return (
     <div className="grid gap-1">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd>{value}</dd>
+      <dd>
+        {isSpecified ? value : <span className="text-muted-foreground italic">Not specified</span>}
+      </dd>
     </div>
   )
 }

@@ -36,12 +36,13 @@ test('opens the same collection-backed detail presentation from a marker', async
   expect(within(dialog).getByText('2.3522')).toBeInTheDocument()
 })
 
-test('omits lifecycle history when the collection record has none', async () => {
+test('shows unspecified lifecycle values when the collection record has no history', async () => {
   renderCheckpoints()
 
   fireEvent.click(await screen.findByRole('button', { name: 'View dock North Dock (Available)' }))
   const dialog = await screen.findByRole('dialog')
-  expect(within(dialog).queryByRole('heading', { name: 'Lifecycle' })).not.toBeInTheDocument()
+  expect(within(dialog).getByRole('heading', { name: 'Lifecycle' })).toBeInTheDocument()
+  expect(within(dialog).getAllByText('Not specified')).toHaveLength(4)
   expect(within(dialog).getByText('Available')).toBeInTheDocument()
 })
 

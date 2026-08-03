@@ -33,10 +33,11 @@
     "#site_references/*": "./app/site_references/*.js",
     "#shared/*": "./app/shared/*.js",
     "#transport_companies/*": "./app/transport_companies/*.js",
-    "#warehouse_doors/*": "./app/warehouse_doors/*.js",
+    "#trucks/*": "./app/trucks/*.js",
     "#start/*": "./start/*.js",
     "#users/*": "./app/users/*.js",
     "#weighing_areas/*": "./app/weighing_areas/*.js",
+    "#warehouse_doors/*": "./app/warehouse_doors/*.js",
     "#warehouses/*": "./app/warehouses/*.js"
   },
   "dependencies": {

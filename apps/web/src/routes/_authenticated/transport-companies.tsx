@@ -14,8 +14,11 @@ export const Route = createFileRoute('/_authenticated/transport-companies')({
       to: '/transport-resources',
       replace: true,
       search: {
+        resource: 'companies',
         companyStatus: search.status,
         companySearch: search.search,
+        truckStatus: 'available',
+        truckSearch: '',
         transportCompanyId: search.transportCompanyId,
       },
     })
