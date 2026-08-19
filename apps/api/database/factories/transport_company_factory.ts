@@ -16,20 +16,11 @@ export const TransportCompanyFactory = factory
   }))
   .state('archived', (company) => {
     company.status = 'ARCHIVED'
-    company.archivedAt = DateTime.now()
-    company.archivedByUserId = null
-    company.archiveComment = null
-    company.reactivatedAt = null
-    company.reactivatedByUserId = null
-    company.reactivationComment = null
+    company.archivedAt ??= DateTime.now()
   })
   .state('reactivated', (company) => {
     company.status = 'AVAILABLE'
-    company.archivedAt = DateTime.now().minus({ days: 30 })
-    company.archivedByUserId = null
-    company.archiveComment = null
-    company.reactivatedAt = DateTime.now()
-    company.reactivatedByUserId = null
-    company.reactivationComment = null
+    company.archivedAt ??= DateTime.now().minus({ days: 30 })
+    company.reactivatedAt ??= DateTime.now()
   })
   .build()

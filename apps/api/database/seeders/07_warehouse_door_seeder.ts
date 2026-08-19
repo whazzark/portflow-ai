@@ -1,11 +1,18 @@
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
+import { DateTime } from 'luxon'
+import User from '#models/user'
 import Warehouse from '#models/warehouse'
 import WarehouseDoor from '#models/warehouse_door'
+
+const LIFECYCLE_ACTOR_EMAIL = 'thomas.bernard@portflow.ai'
+const ARCHIVED_AT = DateTime.fromISO('2025-01-15T10:00:00.000Z')
+const REACTIVATED_AT = DateTime.fromISO('2025-03-15T10:00:00.000Z')
+const ARCHIVED_ONLY_AT = DateTime.fromISO('2025-04-15T10:00:00.000Z')
 
 type DemoDoor = {
   warehouse: string
   name: string
-  status?: 'AVAILABLE' | 'ARCHIVED'
+  lifecycle?: 'ARCHIVED' | 'REACTIVATED'
   latitude: number
   longitude: number
 }
@@ -20,7 +27,7 @@ const DEMO_DOORS: DemoDoor[] = [
   {
     warehouse: 'SICA Atlantique - Silos céréaliers',
     name: 'Porte Historique',
-    status: 'ARCHIVED',
+    lifecycle: 'ARCHIVED',
     latitude: 46.16002,
     longitude: -1.22845,
   },
@@ -33,7 +40,7 @@ const DEMO_DOORS: DemoDoor[] = [
   {
     warehouse: 'Ancien entrepôt Chef de Baie',
     name: 'Porte Ancienne',
-    status: 'ARCHIVED',
+    lifecycle: 'ARCHIVED',
     latitude: 46.1507,
     longitude: -1.2231,
   },
@@ -46,7 +53,7 @@ const DEMO_DOORS: DemoDoor[] = [
   {
     warehouse: 'Froid Littoral - Entrepôts frigorifiques',
     name: 'Porte Réfrigérée Ouest',
-    status: 'ARCHIVED',
+    lifecycle: 'ARCHIVED',
     latitude: 46.15415,
     longitude: -1.22015,
   },
@@ -65,6 +72,7 @@ const DEMO_DOORS: DemoDoor[] = [
   {
     warehouse: 'Atlantique Logistique - Hangar 7',
     name: 'Porte de Service',
+    lifecycle: 'REACTIVATED',
     latitude: 46.1533,
     longitude: -1.2222,
   },
@@ -77,14 +85,14 @@ const DEMO_DOORS: DemoDoor[] = [
   {
     warehouse: 'Port Atlantique - Magasin sous douane',
     name: 'Porte Quai Sud',
-    status: 'ARCHIVED',
+    lifecycle: 'ARCHIVED',
     latitude: 46.1548,
     longitude: -1.2211,
   },
   {
     warehouse: 'Ancien hangar de Chef de Baie',
     name: 'Porte condamnée',
-    status: 'ARCHIVED',
+    lifecycle: 'ARCHIVED',
     latitude: 46.15055,
     longitude: -1.22165,
   },
@@ -94,11 +102,49 @@ export default class WarehouseDoorSeeder extends BaseSeeder {
   static environment = ['development', 'test']
 
   async run() {
+    const actor = await User.query()
+      .whereRaw('LOWER(email) = ?', [LIFECYCLE_ACTOR_EMAIL])
+      .firstOrFail()
+
     for (const demoDoor of DEMO_DOORS) {
-      const warehouse = await Warehouse.query().where('name', demoDoor.warehouse).first()
+      const warehouse = await Warehouse.query()
+        .whereRaw('LOWER(name) = ?', [demoDoor.warehouse.toLowerCase()])
+        .first()
+
       if (!warehouse) {
-        continue
+        throw new Error(`Managed warehouse not found for door: ${demoDoor.warehouse}`)
       }
+
+      const lifecycle =
+        demoDoor.lifecycle === 'ARCHIVED'
+          ? {
+              status: 'ARCHIVED' as const,
+              archivedAt: ARCHIVED_ONLY_AT,
+              archivedByUserId: actor.id,
+              archiveComment: 'Door retired from unloading service',
+              reactivatedAt: null,
+              reactivatedByUserId: null,
+              reactivationComment: null,
+            }
+          : demoDoor.lifecycle === 'REACTIVATED'
+            ? {
+                status: 'AVAILABLE' as const,
+                archivedAt: ARCHIVED_AT,
+                archivedByUserId: actor.id,
+                archiveComment: 'Door suspended during access repairs',
+                reactivatedAt: REACTIVATED_AT,
+                reactivatedByUserId: actor.id,
+                reactivationComment: 'Door returned to unloading service',
+              }
+            : {
+                status: 'AVAILABLE' as const,
+                archivedAt: null,
+                archivedByUserId: null,
+                archiveComment: null,
+                reactivatedAt: null,
+                reactivatedByUserId: null,
+                reactivationComment: null,
+              }
 
       const existingDoor = await WarehouseDoor.query()
         .where('warehouseId', warehouse.id)
@@ -107,7 +153,9 @@ export default class WarehouseDoorSeeder extends BaseSeeder {
 
       if (existingDoor) {
         existingDoor.merge({
-          status: demoDoor.status ?? 'AVAILABLE',
+          warehouseId: warehouse.id,
+          name: demoDoor.name,
+          ...lifecycle,
           latitude: demoDoor.latitude,
           longitude: demoDoor.longitude,
         })
@@ -118,7 +166,7 @@ export default class WarehouseDoorSeeder extends BaseSeeder {
       await WarehouseDoor.create({
         warehouseId: warehouse.id,
         name: demoDoor.name,
-        status: demoDoor.status ?? 'AVAILABLE',
+        ...lifecycle,
         latitude: demoDoor.latitude,
         longitude: demoDoor.longitude,
       })

@@ -1,13 +1,20 @@
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
+import { DateTime } from 'luxon'
 
 import { DockFactory } from '#database/factories/dock_factory'
-import Dock, { type DockStatus } from '#models/dock'
+import Dock from '#models/dock'
+import User from '#models/user'
+
+const LIFECYCLE_ACTOR_EMAIL = 'thomas.bernard@portflow.ai'
+const ARCHIVED_AT = DateTime.fromISO('2025-01-15T10:00:00.000Z')
+const REACTIVATED_AT = DateTime.fromISO('2025-03-15T10:00:00.000Z')
+const ARCHIVED_ONLY_AT = DateTime.fromISO('2025-04-15T10:00:00.000Z')
 
 type DemoDock = {
   name: string
   latitude: number
   longitude: number
-  status?: DockStatus
+  lifecycle?: 'ARCHIVED' | 'REACTIVATED'
 }
 
 const DEMO_DOCKS: DemoDock[] = [
@@ -21,39 +28,82 @@ const DEMO_DOCKS: DemoDock[] = [
     name: 'Chef de Baie 3',
     latitude: 46.14868,
     longitude: -1.22383,
-    status: 'ARCHIVED',
+    lifecycle: 'ARCHIVED',
   },
   { name: 'Quai Lombard Nord', latitude: 46.16232, longitude: -1.22537 },
   {
     name: 'Quai Lombard Sud',
     latitude: 46.16078,
     longitude: -1.22284,
-    status: 'ARCHIVED',
+    lifecycle: 'ARCHIVED',
   },
   { name: 'Appontement pétrolier AP00', latitude: 46.15669, longitude: -1.24291 },
   { name: 'Bassin à flot 1', latitude: 46.15865, longitude: -1.2189 },
-  { name: 'Bassin à flot 2', latitude: 46.15747, longitude: -1.21678 },
+  {
+    name: 'Bassin à flot 2',
+    latitude: 46.15747,
+    longitude: -1.21678,
+    lifecycle: 'REACTIVATED',
+  },
 ]
 
 export default class DockSeeder extends BaseSeeder {
   static environment = ['development', 'test']
 
   async run() {
+    const actor = await User.query()
+      .whereRaw('LOWER(email) = ?', [LIFECYCLE_ACTOR_EMAIL])
+      .firstOrFail()
+
     for (const demoDock of DEMO_DOCKS) {
       const existingDock = await Dock.query()
         .whereRaw('LOWER(name) = ?', [demoDock.name.toLowerCase()])
         .first()
 
+      const common = {
+        name: demoDock.name,
+        latitude: demoDock.latitude,
+        longitude: demoDock.longitude,
+      }
+      const lifecycle =
+        demoDock.lifecycle === 'ARCHIVED'
+          ? {
+              status: 'ARCHIVED' as const,
+              archivedAt: ARCHIVED_ONLY_AT,
+              archivedByUserId: actor.id,
+              archiveComment: 'Dock retired from the current operating perimeter',
+              reactivatedAt: null,
+              reactivatedByUserId: null,
+              reactivationComment: null,
+            }
+          : demoDock.lifecycle === 'REACTIVATED'
+            ? {
+                status: 'AVAILABLE' as const,
+                archivedAt: ARCHIVED_AT,
+                archivedByUserId: actor.id,
+                archiveComment: 'Dock temporarily unavailable during maintenance',
+                reactivatedAt: REACTIVATED_AT,
+                reactivatedByUserId: actor.id,
+                reactivationComment: 'Dock returned to operational service',
+              }
+            : {
+                status: 'AVAILABLE' as const,
+                archivedAt: null,
+                archivedByUserId: null,
+                archiveComment: null,
+                reactivatedAt: null,
+                reactivatedByUserId: null,
+                reactivationComment: null,
+              }
+      const managed = { ...common, ...lifecycle }
+
       if (existingDock) {
+        existingDock.merge(managed)
+        await existingDock.save()
         continue
       }
 
-      if (demoDock.status === 'ARCHIVED') {
-        await DockFactory.apply('archived').merge(demoDock).create()
-        continue
-      }
-
-      await DockFactory.merge(demoDock).create()
+      await DockFactory.merge(managed).create()
     }
   }
 }

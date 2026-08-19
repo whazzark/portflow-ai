@@ -6,6 +6,8 @@
 **/.turbo
 **/dist
 **/build
+**/coverage
+**/*.log*
 **/tests
 **/.env
 **/.env.*
