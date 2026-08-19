@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-
 import app from '@adonisjs/core/services/app'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { test } from '@japa/runner'
+import { Decimal } from 'decimal.js'
 import { DateTime } from 'luxon'
 
 import { TransportCompanyFactory } from '#database/factories/transport_company_factory'
@@ -51,7 +51,10 @@ test.group('Truck consultation persistence', (group) => {
     const company = await TransportCompanyFactory.create()
 
     await assert.rejects(() =>
-      TruckFactory.merge({ capacityTonnes: '0', transportCompanyId: company.id }).create(),
+      TruckFactory.merge({
+        capacityTonnes: new Decimal('0'),
+        transportCompanyId: company.id,
+      }).create(),
     )
   })
 
@@ -59,7 +62,7 @@ test.group('Truck consultation persistence', (group) => {
     await assert.rejects(() =>
       Truck.create({
         registration: 'NO-COMPANY',
-        capacityTonnes: '1',
+        capacityTonnes: new Decimal('1'),
         transportCompanyId: randomUUID(),
         status: 'AVAILABLE',
       }),
@@ -72,7 +75,7 @@ test.group('Truck consultation persistence', (group) => {
     await assert.rejects(() =>
       Truck.create({
         registration: 'ARCHIVE-NO-DATE',
-        capacityTonnes: '1',
+        capacityTonnes: new Decimal('1'),
         transportCompanyId: company.id,
         status: 'ARCHIVED',
         archivedAt: null,

@@ -1,5 +1,6 @@
 services:
   postgres:
+    container_name: portflow-postgres
     image: postgres:17-alpine
     ports:
       - "${DB_PORT:-5433}:5432"
