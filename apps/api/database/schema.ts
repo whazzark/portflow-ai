@@ -188,8 +188,14 @@ export class UserSchema extends BaseModel {
 }
 
 export class WarehouseDoorSchema extends BaseModel {
-  static $columns = ['createdAt', 'id', 'latitude', 'longitude', 'name', 'status', 'updatedAt', 'warehouseId'] as const
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt', 'warehouseId'] as const
   $columns = WarehouseDoorSchema.$columns
+  @column()
+  declare archiveComment: string | null
+  @column.dateTime()
+  declare archivedAt: DateTime | null
+  @column()
+  declare archivedByUserId: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })
@@ -200,6 +206,12 @@ export class WarehouseDoorSchema extends BaseModel {
   declare longitude: number
   @column()
   declare name: string
+  @column.dateTime()
+  declare reactivatedAt: DateTime | null
+  @column()
+  declare reactivatedByUserId: string | null
+  @column()
+  declare reactivationComment: string | null
   @column()
   declare status: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
@@ -222,14 +234,26 @@ export class WarehouseFootprintPointSchema extends BaseModel {
 }
 
 export class WarehouseSchema extends BaseModel {
-  static $columns = ['createdAt', 'id', 'name', 'status', 'updatedAt'] as const
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt'] as const
   $columns = WarehouseSchema.$columns
+  @column()
+  declare archiveComment: string | null
+  @column.dateTime()
+  declare archivedAt: DateTime | null
+  @column()
+  declare archivedByUserId: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })
   declare id: string
   @column()
   declare name: string
+  @column.dateTime()
+  declare reactivatedAt: DateTime | null
+  @column()
+  declare reactivatedByUserId: string | null
+  @column()
+  declare reactivationComment: string | null
   @column()
   declare status: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })

@@ -64,7 +64,7 @@ test.group('Weighing areas administration', () => {
     assert.equal(areas[0].latitude, -90)
     assert.equal(areas[0].longitude, 180)
     assert.isNull(areas[0].archivedByUserId)
-    assert.isNull(areas[0].archiveComment)
+    assert.equal(areas[0].archiveComment, 'Historic')
     assert.equal(areas[1].status, 'AVAILABLE')
     assert.deepEqual(Object.keys(areas[0]).sort(), [
       'archiveComment',

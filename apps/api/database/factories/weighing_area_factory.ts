@@ -18,12 +18,12 @@ export const WeighingAreaFactory = factory
   }))
   .state('archived', (area) => {
     area.status = 'ARCHIVED'
-    area.archivedAt = DateTime.now()
-    area.archivedByUserId = null
-    area.archiveComment = null
-    area.reactivatedAt = null
-    area.reactivatedByUserId = null
-    area.reactivationComment = null
+    area.archivedAt ??= DateTime.now()
+  })
+  .state('reactivated', (area) => {
+    area.status = 'AVAILABLE'
+    area.archivedAt ??= DateTime.now().minus({ days: 30 })
+    area.reactivatedAt ??= DateTime.now()
   })
   .state('boundaryCoordinates', (area) => {
     area.latitude = -90
