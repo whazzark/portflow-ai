@@ -17,20 +17,11 @@ export const CustomerFactory = factory
   }))
   .state('archived', (customer) => {
     customer.status = 'ARCHIVED'
-    customer.archivedAt = DateTime.now()
-    customer.archivedByUserId = null
-    customer.archiveComment = null
-    customer.reactivatedAt = null
-    customer.reactivatedByUserId = null
-    customer.reactivationComment = null
+    customer.archivedAt ??= DateTime.now()
   })
   .state('reactivated', (customer) => {
     customer.status = 'AVAILABLE'
-    customer.archivedAt = null
-    customer.archivedByUserId = null
-    customer.archiveComment = null
-    customer.reactivatedAt = DateTime.now()
-    customer.reactivatedByUserId = null
-    customer.reactivationComment = null
+    customer.archivedAt ??= DateTime.now().minus({ days: 30 })
+    customer.reactivatedAt ??= DateTime.now()
   })
   .build()

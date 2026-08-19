@@ -4,6 +4,7 @@ import { test } from '@japa/runner'
 import { WarehouseDoorFactory } from '#database/factories/warehouse_door_factory'
 import { WarehouseFactory } from '#database/factories/warehouse_factory'
 import ListAvailableWarehouseDoorsUseCase from '#warehouse_doors/available/list_available_warehouse_doors_use_case'
+import LucidWarehouseDoorRepository from '#warehouse_doors/shared/repositories/lucid_warehouse_door_repository'
 import WarehouseDoorRepository from '#warehouse_doors/shared/repositories/warehouse_door_repository'
 
 test.group('ListAvailableWarehouseDoorsUseCase', (group) => {
@@ -32,6 +33,28 @@ test.group('ListAvailableWarehouseDoorsUseCase', (group) => {
     const result = await (await app.container.make(ListAvailableWarehouseDoorsUseCase)).handle()
 
     assert.isEmpty(result)
+  })
+
+  test('excludes available doors when their containing warehouse is archived', async ({
+    assert,
+  }) => {
+    const availableWarehouse = await WarehouseFactory.create()
+    const archivedWarehouse = await WarehouseFactory.apply('archived').create()
+    const admitted = await WarehouseDoorFactory.merge({
+      warehouseId: availableWarehouse.id,
+    }).create()
+    await WarehouseDoorFactory.merge({ warehouseId: archivedWarehouse.id }).create()
+
+    const result = await new LucidWarehouseDoorRepository().listAvailable()
+
+    assert.include(
+      result.map((door) => door.id),
+      admitted.id,
+    )
+    assert.notInclude(
+      result.map((door) => door.warehouseId),
+      archivedWarehouse.id,
+    )
   })
 
   test('propagates repository failures to the authoritative request boundary', async ({

@@ -18,20 +18,11 @@ export const DockFactory = factory
   }))
   .state('archived', (dock) => {
     dock.status = 'ARCHIVED'
-    dock.archivedAt = DateTime.now()
-    dock.archivedByUserId = null
-    dock.archiveComment = null
-    dock.reactivatedAt = null
-    dock.reactivatedByUserId = null
-    dock.reactivationComment = null
+    dock.archivedAt ??= DateTime.now()
   })
   .state('reactivated', (dock) => {
     dock.status = 'AVAILABLE'
-    dock.archivedAt = null
-    dock.archivedByUserId = null
-    dock.archiveComment = null
-    dock.reactivatedAt = DateTime.now()
-    dock.reactivatedByUserId = null
-    dock.reactivationComment = null
+    dock.archivedAt ??= DateTime.now().minus({ days: 30 })
+    dock.reactivatedAt ??= DateTime.now()
   })
   .build()

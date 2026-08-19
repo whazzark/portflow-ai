@@ -3,6 +3,10 @@ import { DateTime } from 'luxon'
 
 import { CustomerFactory } from '#database/factories/customer_factory'
 import Customer from '#models/customer'
+import User from '#models/user'
+
+const LIFECYCLE_ACTOR_EMAIL = 'thomas.bernard@portflow.ai'
+const DATASET_REFERENCE_DATE = DateTime.fromISO('2025-06-01T10:00:00.000Z')
 
 type CustomerLifecycle =
   | {
@@ -99,52 +103,67 @@ export default class CustomerSeeder extends BaseSeeder {
   static environment = ['development', 'test']
 
   async run() {
-    const now = DateTime.now()
+    const actor = await User.query()
+      .whereRaw('LOWER(email) = ?', [LIFECYCLE_ACTOR_EMAIL])
+      .firstOrFail()
+    const now = DATASET_REFERENCE_DATE
 
     for (const [index, demoCustomer] of DEMO_CUSTOMERS.entries()) {
       const existingCustomer = await Customer.query()
         .whereRaw('LOWER(code) = ?', [demoCustomer.code.toLowerCase()])
         .first()
 
-      if (existingCustomer) {
-        continue
-      }
-
       const createdAt = now.minus({ days: 120 + index * 17 })
-      const customer = {
+      const common = {
         code: demoCustomer.code,
         companyName: demoCustomer.companyName,
+      }
+      const occurredAt = demoCustomer.lifecycle
+        ? now.minus({ days: demoCustomer.lifecycle.occurredDaysAgo })
+        : null
+      const lifecycle =
+        demoCustomer.lifecycle?.kind === 'ARCHIVED'
+          ? {
+              status: 'ARCHIVED' as const,
+              archivedAt: occurredAt,
+              archivedByUserId: actor.id,
+              archiveComment: demoCustomer.lifecycle.comment,
+              reactivatedAt: null,
+              reactivatedByUserId: null,
+              reactivationComment: null,
+            }
+          : demoCustomer.lifecycle?.kind === 'REACTIVATED'
+            ? {
+                status: 'AVAILABLE' as const,
+                archivedAt: occurredAt?.minus({ days: 60 }) ?? null,
+                archivedByUserId: actor.id,
+                archiveComment: 'Suspension historique du compte avant reprise des opérations',
+                reactivatedAt: occurredAt,
+                reactivatedByUserId: actor.id,
+                reactivationComment: demoCustomer.lifecycle.comment,
+              }
+            : {
+                status: 'AVAILABLE' as const,
+                archivedAt: null,
+                archivedByUserId: null,
+                archiveComment: null,
+                reactivatedAt: null,
+                reactivatedByUserId: null,
+                reactivationComment: null,
+              }
+
+      if (existingCustomer) {
+        existingCustomer.merge({ ...common, ...lifecycle })
+        await existingCustomer.save()
+        continue
+      }
+
+      await CustomerFactory.merge({
+        ...common,
+        ...lifecycle,
         createdAt,
-        updatedAt: now.minus({ days: 3 + ((index * 13) % 90) }),
-      }
-
-      if (!demoCustomer.lifecycle) {
-        await CustomerFactory.merge(customer).create()
-        continue
-      }
-
-      const occurredAt = now.minus({ days: demoCustomer.lifecycle.occurredDaysAgo })
-
-      if (demoCustomer.lifecycle.kind === 'ARCHIVED') {
-        await CustomerFactory.apply('archived')
-          .merge({
-            ...customer,
-            archivedAt: occurredAt,
-            archiveComment: demoCustomer.lifecycle.comment,
-            updatedAt: occurredAt,
-          })
-          .create()
-        continue
-      }
-
-      await CustomerFactory.apply('reactivated')
-        .merge({
-          ...customer,
-          reactivatedAt: occurredAt,
-          reactivationComment: demoCustomer.lifecycle.comment,
-          updatedAt: occurredAt,
-        })
-        .create()
+        updatedAt: occurredAt ?? now.minus({ days: 3 + ((index * 13) % 90) }),
+      }).create()
     }
   }
 }
