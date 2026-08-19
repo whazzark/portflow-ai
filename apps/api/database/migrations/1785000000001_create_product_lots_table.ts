@@ -25,6 +25,7 @@ export default class extends BaseSchema {
       table.check('LENGTH(TRIM(product_name)) > 0')
       table.check('expected_quantity_tonnes > 0')
       table.index(['discharge_id', 'customer_id'])
+      table.index(['customer_id', 'discharge_id'], 'product_lots_customer_id_discharge_id_index')
     })
 
     this.defer(async (db) => {

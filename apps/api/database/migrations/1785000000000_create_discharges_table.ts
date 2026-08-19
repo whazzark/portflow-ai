@@ -13,6 +13,7 @@ export default class extends BaseSchema {
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').notNullable()
       table.check('LENGTH(TRIM(vessel_name)) > 0')
+      table.index(['dock_id', 'status'], 'discharges_dock_id_status_index')
     })
   }
 

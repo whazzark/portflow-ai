@@ -3,15 +3,8 @@ import { test } from '@japa/runner'
 
 import { CustomerFactory } from '#database/factories/customer_factory'
 import { UserFactory } from '#database/factories/user_factory'
-import SiteReferenceUsageChecker, {
-  type SiteReferenceUsageInput,
-} from '#site_references/shared/site_reference_usage_checker'
-
-class FirstReferenceUsedChecker extends SiteReferenceUsageChecker {
-  findUsedByPlannedOrActiveDischarge(input: SiteReferenceUsageInput) {
-    return Promise.resolve(new Set(input.referenceIds.slice(0, 1)))
-  }
-}
+import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
+import { createPersistedUsageScenario } from '../../../../support/persisted_discharge_usage.js'
 
 test.group('POST /api/v1/customers/archive', (group) => {
   group.each.teardown(() => app.container.restore(SiteReferenceUsageChecker))
@@ -118,24 +111,25 @@ test.group('POST /api/v1/customers/archive', (group) => {
     )
   })
 
-  test('preserves request order across in-use, missing, and already archived blockers', async ({
+  test('preserves request order across persisted in-use, missing, and already archived blockers', async ({
     assert,
     client,
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
-    const used = await CustomerFactory.create()
+    const { customer: used } = await createPersistedUsageScenario({ status: 'ACTIVE' })
+    const available = await CustomerFactory.create()
     const archived = await CustomerFactory.apply('archived').create()
     const missingId = '00000000-0000-4000-8000-000000000000'
-    app.container.swap(SiteReferenceUsageChecker, () =>
-      app.container.make(FirstReferenceUsedChecker),
-    )
-
     const response = await client
       .post('/api/v1/customers/archive')
       .loginAs(admin)
-      .json({ ids: [used.id, missingId, archived.id] })
+      .json({ ids: [used.id, missingId, archived.id, available.id] })
 
     response.assertStatus(200)
+    assert.deepEqual(
+      response.body().data.updatedCustomers.map((customer: { id: string }) => customer.id),
+      [available.id],
+    )
     assert.deepEqual(
       response
         .body()
@@ -149,6 +143,8 @@ test.group('POST /api/v1/customers/archive', (group) => {
         [archived.id, 'ALREADY_ARCHIVED'],
       ],
     )
+    await used.refresh()
+    assert.equal(used.status, 'AVAILABLE')
   })
 
   test('rejects non-admin users', async ({ assert, client }) => {
