@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-
-import { beforeCreate, belongsTo } from '@adonisjs/lucid/orm'
+import { beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
+import { Decimal } from 'decimal.js'
 import { DateTime } from 'luxon'
 
 import { TruckSchema } from '#database/schema'
@@ -21,6 +21,13 @@ export default class Truck extends TruckSchema {
   declare reactivatedAt: DateTime | null
   declare reactivatedByUserId: string | null
   declare reactivationComment: string | null
+
+  @column({
+    consume: (value) => new Decimal(value),
+    prepare: (value: Decimal.Value) => new Decimal(value).toString(),
+  })
+  // @ts-expect-error Lucid generated schema exposes decimal columns as strings.
+  declare capacityTonnes: Decimal
 
   @belongsTo(() => TransportCompany)
   declare transportCompany: BelongsTo<typeof TransportCompany>

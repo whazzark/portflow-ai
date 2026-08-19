@@ -6,6 +6,7 @@ import { CustomerFactory } from '#database/factories/customer_factory'
 import { TransportCompanyFactory } from '#database/factories/transport_company_factory'
 import { WarehouseDoorFactory } from '#database/factories/warehouse_door_factory'
 import { WarehouseFactory } from '#database/factories/warehouse_factory'
+import { FIXTURE_LIFECYCLE_ACTOR_EMAIL, MANAGED_FIXTURE_EXEMPLARS } from '#database/fixtures/index'
 import Customer from '#models/customer'
 import Dock from '#models/dock'
 import TransportCompany from '#models/transport_company'
@@ -17,13 +18,9 @@ import WarehouseFootprintPoint from '#models/warehouse_footprint_point'
 import WeighingArea from '#models/weighing_area'
 import UserSeeder from '../../../database/seeders/01_user_seeder.ts'
 import CustomerSeeder from '../../../database/seeders/02_customer_seeder.ts'
+import TransportCompanySeeder from '../../../database/seeders/03_transport_company_seeder.ts'
 import WarehouseDoorSeeder from '../../../database/seeders/07_warehouse_door_seeder.ts'
-import TruckSeeder from '../../../database/seeders/08_truck_seeder.ts'
-import {
-  DEMO_LIFECYCLE_ACTOR_EMAIL,
-  isPointInsideOrOnPolygon,
-  MANAGED_REFERENCE_EXEMPLARS,
-} from '../../fixtures/site_reference_seeders.ts'
+import { isPointInsideOrOnPolygon } from '../../support/geometry.ts'
 
 type LifecycleRecord = {
   status: 'AVAILABLE' | 'ARCHIVED'
@@ -48,7 +45,7 @@ test.group('Managed site-reference seeders', (group) => {
     assert.isBelow(performance.now() - startedAt, 60_000)
 
     const actor = await User.query()
-      .whereRaw('LOWER(email) = ?', [DEMO_LIFECYCLE_ACTOR_EMAIL])
+      .whereRaw('LOWER(email) = ?', [FIXTURE_LIFECYCLE_ACTOR_EMAIL])
       .firstOrFail()
     const customers = await Customer.all()
     const docks = await Dock.all()
@@ -108,11 +105,11 @@ test.group('Managed site-reference seeders', (group) => {
     }
 
     const archivedWarehouse = warehouses.find(
-      (warehouse) => warehouse.name === MANAGED_REFERENCE_EXEMPLARS.warehouses.archived,
+      (warehouse) => warehouse.name === MANAGED_FIXTURE_EXEMPLARS.warehouses.archived,
     )
     const reactivatedDoor = await WarehouseDoor.query()
       .whereRaw('LOWER(name) = ?', [
-        MANAGED_REFERENCE_EXEMPLARS.warehouseDoors.reactivated.name.toLowerCase(),
+        MANAGED_FIXTURE_EXEMPLARS.warehouseDoors.reactivated.name.toLowerCase(),
       ])
       .firstOrFail()
 
@@ -173,39 +170,35 @@ test.group('Managed site-reference seeders', (group) => {
     await testUtils.db().seed()
 
     const customer = await Customer.query()
-      .whereRaw('LOWER(code) = ?', [MANAGED_REFERENCE_EXEMPLARS.customers.available.toLowerCase()])
+      .whereRaw('LOWER(code) = ?', [MANAGED_FIXTURE_EXEMPLARS.customers.available.toLowerCase()])
       .firstOrFail()
     const reactivatedCustomer = await Customer.query()
-      .whereRaw('LOWER(code) = ?', [
-        MANAGED_REFERENCE_EXEMPLARS.customers.reactivated.toLowerCase(),
-      ])
+      .whereRaw('LOWER(code) = ?', [MANAGED_FIXTURE_EXEMPLARS.customers.reactivated.toLowerCase()])
       .firstOrFail()
     const company = await TransportCompany.query()
       .whereRaw('LOWER(name) = ?', [
-        MANAGED_REFERENCE_EXEMPLARS.transportCompanies.available.toLowerCase(),
+        MANAGED_FIXTURE_EXEMPLARS.transportCompanies.available.toLowerCase(),
       ])
       .firstOrFail()
     const dock = await Dock.query()
-      .whereRaw('LOWER(name) = ?', [MANAGED_REFERENCE_EXEMPLARS.docks.available.toLowerCase()])
+      .whereRaw('LOWER(name) = ?', [MANAGED_FIXTURE_EXEMPLARS.docks.available.toLowerCase()])
       .firstOrFail()
     const weighingArea = await WeighingArea.query()
       .whereRaw('LOWER(name) = ?', [
-        MANAGED_REFERENCE_EXEMPLARS.weighingAreas.reactivated.toLowerCase(),
+        MANAGED_FIXTURE_EXEMPLARS.weighingAreas.reactivated.toLowerCase(),
       ])
       .firstOrFail()
     const warehouse = await Warehouse.query()
-      .whereRaw('LOWER(name) = ?', [
-        MANAGED_REFERENCE_EXEMPLARS.warehouses.reactivated.toLowerCase(),
-      ])
+      .whereRaw('LOWER(name) = ?', [MANAGED_FIXTURE_EXEMPLARS.warehouses.reactivated.toLowerCase()])
       .firstOrFail()
     const door = await WarehouseDoor.query()
       .where('warehouseId', warehouse.id)
       .whereRaw('LOWER(name) = ?', [
-        MANAGED_REFERENCE_EXEMPLARS.warehouseDoors.reactivated.name.toLowerCase(),
+        MANAGED_FIXTURE_EXEMPLARS.warehouseDoors.reactivated.name.toLowerCase(),
       ])
       .firstOrFail()
     const truck = await Truck.query()
-      .whereILike('registration', MANAGED_REFERENCE_EXEMPLARS.trucks.reactivated)
+      .whereILike('registration', MANAGED_FIXTURE_EXEMPLARS.trucks.reactivated)
       .firstOrFail()
     const originalIdentity = {
       customerId: customer.id,
@@ -284,18 +277,18 @@ test.group('Managed site-reference seeders', (group) => {
     const restoredTruck = await Truck.findOrFail(originalIdentity.truckId)
     const restoredReactivatedCustomer = await Customer.findOrFail(reactivatedCustomer.id)
 
-    assert.equal(restoredCustomer.code, MANAGED_REFERENCE_EXEMPLARS.customers.available)
+    assert.equal(restoredCustomer.code, MANAGED_FIXTURE_EXEMPLARS.customers.available)
     assert.equal(restoredCustomer.companyName, 'Atlantique Céréales')
-    assert.equal(restoredCompany.name, MANAGED_REFERENCE_EXEMPLARS.transportCompanies.available)
-    assert.equal(restoredDock.name, MANAGED_REFERENCE_EXEMPLARS.docks.available)
+    assert.equal(restoredCompany.name, MANAGED_FIXTURE_EXEMPLARS.transportCompanies.available)
+    assert.equal(restoredDock.name, MANAGED_FIXTURE_EXEMPLARS.docks.available)
     assert.equal(restoredDock.latitude, 46.16088)
-    assert.equal(restoredArea.name, MANAGED_REFERENCE_EXEMPLARS.weighingAreas.reactivated)
+    assert.equal(restoredArea.name, MANAGED_FIXTURE_EXEMPLARS.weighingAreas.reactivated)
     assert.equal(restoredArea.longitude, -1.231)
-    assert.equal(restoredWarehouse.name, MANAGED_REFERENCE_EXEMPLARS.warehouses.reactivated)
-    assert.equal(restoredDoor.name, MANAGED_REFERENCE_EXEMPLARS.warehouseDoors.reactivated.name)
+    assert.equal(restoredWarehouse.name, MANAGED_FIXTURE_EXEMPLARS.warehouses.reactivated)
+    assert.equal(restoredDoor.name, MANAGED_FIXTURE_EXEMPLARS.warehouseDoors.reactivated.name)
     assert.equal(restoredDoor.warehouseId, restoredWarehouse.id)
     assert.equal(restoredDoor.longitude, -1.2222)
-    assert.equal(restoredTruck.registration, MANAGED_REFERENCE_EXEMPLARS.trucks.reactivated)
+    assert.equal(restoredTruck.registration, MANAGED_FIXTURE_EXEMPLARS.trucks.reactivated)
     assert.equal(restoredTruck.transportCompanyId, originalIdentity.truckCompanyId)
     assert.equal(restoredReactivatedCustomer.archivedAt?.toMillis(), originalIdentity.archivedAt)
     assert.equal(
@@ -328,24 +321,29 @@ test.group('Managed site-reference seeders', (group) => {
   test('fails explicitly when a declared door parent is missing', async ({ assert }) => {
     await testUtils.db().seed()
     const warehouse = await Warehouse.query()
-      .whereRaw('LOWER(name) = ?', [MANAGED_REFERENCE_EXEMPLARS.warehouses.available.toLowerCase()])
+      .whereRaw('LOWER(name) = ?', [MANAGED_FIXTURE_EXEMPLARS.warehouses.available.toLowerCase()])
       .firstOrFail()
     await WarehouseDoor.query().where('warehouseId', warehouse.id).delete()
     await warehouse.delete()
 
     await assert.rejects(
       () => new WarehouseDoorSeeder(db.connection()).run(),
-      /managed warehouse.*not found/i,
+      /fixture warehouse.*not found/i,
     )
   })
 
-  test('fails explicitly when a managed provider name is ambiguous', async ({ assert }) => {
+  test('requires a fresh database when a fixture business key has another UUID', async ({
+    assert,
+  }) => {
     await testUtils.db().seed()
     await TransportCompanyFactory.merge({
-      name: MANAGED_REFERENCE_EXEMPLARS.transportCompanies.available.toLowerCase(),
+      name: MANAGED_FIXTURE_EXEMPLARS.transportCompanies.available.toLowerCase(),
     }).create()
 
-    await assert.rejects(() => new TruckSeeder(db.connection()).run(), /ambiguous/i)
+    await assert.rejects(
+      () => new TransportCompanySeeder(db.connection()).run(),
+      /fixture UUID conflict.*migration:fresh/i,
+    )
   })
 
   test('resumes a partial initialization without duplicating accepted records', async ({
@@ -357,7 +355,7 @@ test.group('Managed site-reference seeders', (group) => {
     await testUtils.db().seed()
 
     const matchingCustomers = await Customer.query().whereRaw('LOWER(code) = ?', [
-      MANAGED_REFERENCE_EXEMPLARS.customers.available.toLowerCase(),
+      MANAGED_FIXTURE_EXEMPLARS.customers.available.toLowerCase(),
     ])
     assert.lengthOf(matchingCustomers, 1)
     assert.isNotEmpty(await Truck.all())

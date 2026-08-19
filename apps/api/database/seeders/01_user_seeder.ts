@@ -1,52 +1,31 @@
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
-
 import { UserFactory } from '#database/factories/user_factory'
-import User, { type UserRole } from '#models/user'
-
-const DEMO_USERS: Array<{
-  firstName: string
-  lastName: string
-  email: string
-  role: UserRole
-}> = [
-  {
-    firstName: 'Claire',
-    lastName: 'Martin',
-    email: 'claire.martin@portflow.ai',
-    role: 'ORGANIZATION_ADMIN',
-  },
-  {
-    firstName: 'Thomas',
-    lastName: 'Bernard',
-    email: 'thomas.bernard@portflow.ai',
-    role: 'OPERATIONS_ADMIN',
-  },
-  {
-    firstName: 'Sophie',
-    lastName: 'Dubois',
-    email: 'sophie.dubois@portflow.ai',
-    role: 'OPERATIONS_LEAD',
-  },
-  {
-    firstName: 'Lucas',
-    lastName: 'Moreau',
-    email: 'lucas.moreau@portflow.ai',
-    role: 'OBSERVER',
-  },
-]
+import { USER_FIXTURES } from '#database/fixtures/users'
+import User from '#models/user'
 
 export default class UserSeeder extends BaseSeeder {
   static environment = ['development', 'test']
 
   async run() {
-    for (const demoUser of DEMO_USERS) {
-      const existingUser = await User.query().whereRaw('LOWER(email) = ?', [demoUser.email]).first()
-
-      if (existingUser) {
-        continue
+    for (const fixture of USER_FIXTURES) {
+      const byId = await User.find(fixture.id)
+      const byEmail = await User.query()
+        .whereRaw('LOWER(email) = ?', [fixture.attributes.email.toLowerCase()])
+        .first()
+      if (byEmail && byEmail.id !== fixture.id) {
+        throw new Error(
+          `Fixture UUID conflict for user: ${fixture.attributes.email}. Run migration:fresh.`,
+        )
       }
-
-      await UserFactory.apply('active').merge(demoUser).create()
+      const candidate = await UserFactory.apply(fixture.state)
+        .merge({ id: fixture.id, ...fixture.attributes })
+        .make()
+      if (byId) {
+        byId.merge(candidate.$attributes)
+        await byId.save()
+      } else {
+        await candidate.save()
+      }
     }
   }
 }

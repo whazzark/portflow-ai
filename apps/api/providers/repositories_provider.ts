@@ -4,7 +4,7 @@ import CustomerRepository from '#customers/shared/repositories/customer_reposito
 import LucidCustomerRepository from '#customers/shared/repositories/lucid_customer_repository'
 import DockRepository from '#docks/shared/repositories/dock_repository'
 import LucidDockRepository from '#docks/shared/repositories/lucid_dock_repository'
-import NoDischargeSiteReferenceUsageChecker from '#site_references/shared/no_discharge_site_reference_usage_checker'
+import PersistedSiteReferenceUsageChecker from '#site_references/shared/persisted_site_reference_usage_checker'
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 import LucidTransportCompanyRepository from '#transport_companies/shared/repositories/lucid_transport_company_repository'
 import TransportCompanyRepository from '#transport_companies/shared/repositories/transport_company_repository'
@@ -18,6 +18,8 @@ import LucidWarehouseRepository from '#warehouses/shared/repositories/lucid_ware
 import WarehouseRepository from '#warehouses/shared/repositories/warehouse_repository'
 import LucidWeighingAreaRepository from '#weighing_areas/shared/repositories/lucid_weighing_area_repository'
 import WeighingAreaRepository from '#weighing_areas/shared/repositories/weighing_area_repository'
+import DischargeUsageRepository from '../app/discharges/shared/repositories/discharge_usage_repository.js'
+import LucidDischargeUsageRepository from '../app/discharges/shared/repositories/lucid_discharge_usage_repository.js'
 
 export default class RepositoriesProvider {
   constructor(protected app: ApplicationService) {}
@@ -56,7 +58,11 @@ export default class RepositoriesProvider {
     })
 
     this.app.container.bind(SiteReferenceUsageChecker, () => {
-      return this.app.container.make(NoDischargeSiteReferenceUsageChecker)
+      return this.app.container.make(PersistedSiteReferenceUsageChecker)
+    })
+
+    this.app.container.bind(DischargeUsageRepository, () => {
+      return this.app.container.make(LucidDischargeUsageRepository)
     })
   }
 }

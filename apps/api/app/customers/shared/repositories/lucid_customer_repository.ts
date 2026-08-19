@@ -191,6 +191,7 @@ export default class LucidCustomerRepository extends CustomerRepository {
       const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
         referenceType: 'CUSTOMER',
         referenceIds: command.ids,
+        client: trx,
       })
       const blockers = findBulkBlockers(command.ids, customersById, 'AVAILABLE', usedIds)
 
