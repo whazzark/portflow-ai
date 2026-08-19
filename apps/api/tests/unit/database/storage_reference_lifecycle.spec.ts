@@ -5,16 +5,16 @@ import { DateTime } from 'luxon'
 import { UserFactory } from '#database/factories/user_factory'
 import { WarehouseDoorFactory } from '#database/factories/warehouse_door_factory'
 import { WarehouseFactory } from '#database/factories/warehouse_factory'
+import { FIXTURE_LIFECYCLE_TIMESTAMPS } from '#database/fixtures/index'
 import Warehouse from '#models/warehouse'
 import WarehouseDoor from '#models/warehouse_door'
-import { DEMO_LIFECYCLE_TIMESTAMPS } from '../../fixtures/site_reference_seeders.ts'
 
 test.group('Storage reference lifecycle persistence', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
 
   test('persists and reloads archived warehouse lifecycle facts and actor', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
-    const archivedAt = DateTime.fromISO(DEMO_LIFECYCLE_TIMESTAMPS.archivedOnlyAt)
+    const archivedAt = DateTime.fromISO(FIXTURE_LIFECYCLE_TIMESTAMPS.archivedOnlyAt)
     const warehouse = await WarehouseFactory.apply('archived')
       .merge({
         archivedAt,
@@ -35,8 +35,8 @@ test.group('Storage reference lifecycle persistence', (group) => {
   test('persists reactivated door history without changing containment', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const warehouse = await WarehouseFactory.create()
-    const archivedAt = DateTime.fromISO(DEMO_LIFECYCLE_TIMESTAMPS.archivedAt)
-    const reactivatedAt = DateTime.fromISO(DEMO_LIFECYCLE_TIMESTAMPS.reactivatedAt)
+    const archivedAt = DateTime.fromISO(FIXTURE_LIFECYCLE_TIMESTAMPS.archivedAt)
+    const reactivatedAt = DateTime.fromISO(FIXTURE_LIFECYCLE_TIMESTAMPS.reactivatedAt)
     const door = await WarehouseDoorFactory.apply('reactivated')
       .merge({
         warehouseId: warehouse.id,
@@ -66,7 +66,7 @@ test.group('Storage reference lifecycle persistence', (group) => {
     assert,
   }) => {
     const actor = await UserFactory.apply('active').create()
-    const archivedAt = DateTime.fromISO(DEMO_LIFECYCLE_TIMESTAMPS.archivedOnlyAt)
+    const archivedAt = DateTime.fromISO(FIXTURE_LIFECYCLE_TIMESTAMPS.archivedOnlyAt)
     const warehouse = await WarehouseFactory.apply('archived')
       .merge({
         archivedAt,

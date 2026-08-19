@@ -1,4 +1,5 @@
 import factory from '@adonisjs/lucid/factories'
+import { Decimal } from 'decimal.js'
 import { DateTime } from 'luxon'
 
 import { TransportCompanyFactory } from '#database/factories/transport_company_factory'
@@ -8,7 +9,7 @@ export const TruckFactory = factory
   .define(Truck, ({ faker }) => ({
     registration: faker.vehicle.vrm(),
     vehicleModel: faker.helpers.maybe(() => faker.vehicle.model()) ?? null,
-    capacityTonnes: String(faker.number.float({ fractionDigits: 3, max: 50, min: 1 })),
+    capacityTonnes: new Decimal(String(faker.number.float({ fractionDigits: 3, max: 50, min: 1 }))),
     transportCompanyId: '',
     status: 'AVAILABLE' as const,
     archivedAt: null,

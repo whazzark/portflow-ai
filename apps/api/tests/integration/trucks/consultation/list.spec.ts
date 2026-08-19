@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import { Decimal } from 'decimal.js'
 import { DateTime } from 'luxon'
 
 import { TransportCompanyFactory } from '#database/factories/transport_company_factory'
@@ -107,7 +108,7 @@ test.group('Truck consultation HTTP contracts', (group) => {
       .merge({
         registration: 'alpha-100',
         vehicleModel: 'Volvo FMX',
-        capacityTonnes: '32.5',
+        capacityTonnes: new Decimal('32.5'),
         transportCompanyId: company.id,
         archivedAt,
         archivedByUserId: actor.id,

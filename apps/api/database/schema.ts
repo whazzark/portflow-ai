@@ -36,6 +36,54 @@ export class CustomerSchema extends BaseModel {
   declare updatedAt: DateTime
 }
 
+export class DischargeTruckAssignmentSchema extends BaseModel {
+  static $columns = ['createdAt', 'dischargeId', 'id', 'registrationSnapshot', 'releasedAt', 'reservedAt', 'transportCompanyId', 'transportCompanyNameSnapshot', 'truckId', 'updatedAt'] as const
+  $columns = DischargeTruckAssignmentSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare dischargeId: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare registrationSnapshot: string
+  @column.dateTime()
+  declare releasedAt: DateTime | null
+  @column.dateTime()
+  declare reservedAt: DateTime
+  @column()
+  declare transportCompanyId: string | null
+  @column()
+  declare transportCompanyNameSnapshot: string
+  @column()
+  declare truckId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class DischargeSchema extends BaseModel {
+  static $columns = ['createdAt', 'dockId', 'expectedStartAt', 'id', 'status', 'updatedAt', 'vesselComment', 'vesselImo', 'vesselName'] as const
+  $columns = DischargeSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare dockId: string
+  @column.dateTime()
+  declare expectedStartAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare vesselComment: string | null
+  @column()
+  declare vesselImo: string | null
+  @column()
+  declare vesselName: string
+}
+
 export class DockSchema extends BaseModel {
   static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt'] as const
   $columns = DockSchema.$columns
@@ -67,6 +115,27 @@ export class DockSchema extends BaseModel {
   declare updatedAt: DateTime
 }
 
+export class ProductLotSchema extends BaseModel {
+  static $columns = ['createdAt', 'customerId', 'description', 'dischargeId', 'expectedQuantityTonnes', 'id', 'productName', 'updatedAt'] as const
+  $columns = ProductLotSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare customerId: string
+  @column()
+  declare description: string | null
+  @column()
+  declare dischargeId: string
+  @column()
+  declare expectedQuantityTonnes: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare productName: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class RememberMeTokenSchema extends BaseModel {
   static $columns = ['createdAt', 'expiresAt', 'hash', 'id', 'tokenableId', 'updatedAt'] as const
   $columns = RememberMeTokenSchema.$columns
@@ -80,6 +149,86 @@ export class RememberMeTokenSchema extends BaseModel {
   declare id: number
   @column()
   declare tokenableId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class ShiftTruckSchema extends BaseModel {
+  static $columns = ['createdAt', 'effectiveFrom', 'effectiveTo', 'id', 'shiftId', 'truckId', 'updatedAt'] as const
+  $columns = ShiftTruckSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare effectiveFrom: DateTime
+  @column.dateTime()
+  declare effectiveTo: DateTime | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare shiftId: string
+  @column()
+  declare truckId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class ShiftWarehouseDoorSchema extends BaseModel {
+  static $columns = ['createdAt', 'effectiveFrom', 'effectiveTo', 'id', 'shiftId', 'updatedAt', 'warehouseDoorId'] as const
+  $columns = ShiftWarehouseDoorSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare effectiveFrom: DateTime
+  @column.dateTime()
+  declare effectiveTo: DateTime | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare shiftId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare warehouseDoorId: string
+}
+
+export class ShiftWeighingAreaSchema extends BaseModel {
+  static $columns = ['createdAt', 'effectiveFrom', 'effectiveTo', 'id', 'shiftId', 'updatedAt', 'weighingAreaId'] as const
+  $columns = ShiftWeighingAreaSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare effectiveFrom: DateTime
+  @column.dateTime()
+  declare effectiveTo: DateTime | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare shiftId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare weighingAreaId: string
+}
+
+export class ShiftSchema extends BaseModel {
+  static $columns = ['createdAt', 'dischargeId', 'id', 'plannedEndAt', 'plannedStartAt', 'responsibleUserId', 'sequence', 'status', 'updatedAt'] as const
+  $columns = ShiftSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare dischargeId: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare plannedEndAt: DateTime
+  @column.dateTime()
+  declare plannedStartAt: DateTime
+  @column()
+  declare responsibleUserId: string
+  @column()
+  declare sequence: number
+  @column()
+  declare status: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 }
@@ -185,6 +334,27 @@ export class UserSchema extends BaseModel {
   declare role: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+}
+
+export class WarehouseDoorProductLotAssignmentSchema extends BaseModel {
+  static $columns = ['createdAt', 'dischargeId', 'effectiveFrom', 'effectiveTo', 'id', 'productLotId', 'updatedAt', 'warehouseDoorId'] as const
+  $columns = WarehouseDoorProductLotAssignmentSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare dischargeId: string
+  @column.dateTime()
+  declare effectiveFrom: DateTime
+  @column.dateTime()
+  declare effectiveTo: DateTime | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare productLotId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare warehouseDoorId: string
 }
 
 export class WarehouseDoorSchema extends BaseModel {
