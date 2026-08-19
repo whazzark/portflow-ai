@@ -321,7 +321,7 @@ test.group('Managed site-reference seeders', (group) => {
   test('fails explicitly when a declared door parent is missing', async ({ assert }) => {
     await testUtils.db().seed()
     const warehouse = await Warehouse.query()
-      .whereRaw('LOWER(name) = ?', [MANAGED_FIXTURE_EXEMPLARS.warehouses.available.toLowerCase()])
+      .whereRaw('LOWER(name) = ?', [MANAGED_FIXTURE_EXEMPLARS.warehouses.archived.toLowerCase()])
       .firstOrFail()
     await WarehouseDoor.query().where('warehouseId', warehouse.id).delete()
     await warehouse.delete()
