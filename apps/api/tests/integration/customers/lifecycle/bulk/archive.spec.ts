@@ -4,7 +4,7 @@ import { test } from '@japa/runner'
 import { CustomerFactory } from '#database/factories/customer_factory'
 import { UserFactory } from '#database/factories/user_factory'
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
-import { createPersistedUsageScenario } from '../../../../support/persisted_discharge_usage.js'
+import { createPersistedCustomerUsageScenario } from '../../../../support/persisted_customer_usage.js'
 
 test.group('POST /api/v1/customers/archive', (group) => {
   group.each.teardown(() => app.container.restore(SiteReferenceUsageChecker))
@@ -116,7 +116,7 @@ test.group('POST /api/v1/customers/archive', (group) => {
     client,
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
-    const { customer: used } = await createPersistedUsageScenario({ status: 'ACTIVE' })
+    const { customer: used } = await createPersistedCustomerUsageScenario({ status: 'ACTIVE' })
     const available = await CustomerFactory.create()
     const archived = await CustomerFactory.apply('archived').create()
     const missingId = '00000000-0000-4000-8000-000000000000'

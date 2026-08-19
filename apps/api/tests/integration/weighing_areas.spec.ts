@@ -2,7 +2,7 @@ import { test } from '@japa/runner'
 
 import { UserFactory } from '#database/factories/user_factory'
 import { WeighingAreaFactory } from '#database/factories/weighing_area_factory'
-import { createPersistedUsageScenario } from '../support/persisted_discharge_usage.js'
+import { createPersistedWeighingAreaUsageScenario } from '../support/persisted_weighing_area_usage.js'
 
 test.group('Weighing areas administration', () => {
   test('protects the complete collection and allows both administrator roles', async ({
@@ -164,7 +164,7 @@ test.group('Weighing areas administration', () => {
     client,
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
-    const { weighingArea } = await createPersistedUsageScenario({ status: 'ACTIVE' })
+    const { weighingArea } = await createPersistedWeighingAreaUsageScenario({ status: 'ACTIVE' })
     const response = await client
       .post(`/api/v1/weighing-areas/${weighingArea.id}/archive`)
       .loginAs(admin)
@@ -181,7 +181,7 @@ test.group('Weighing areas administration', () => {
 
   test('allows archival when the membership has ended', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
-    const { weighingArea } = await createPersistedUsageScenario({
+    const { weighingArea } = await createPersistedWeighingAreaUsageScenario({
       status: 'ACTIVE',
       weighingAreaEnded: true,
     })

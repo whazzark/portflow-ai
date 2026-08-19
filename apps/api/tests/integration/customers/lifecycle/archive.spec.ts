@@ -4,7 +4,7 @@ import { test } from '@japa/runner'
 import { CustomerFactory } from '#database/factories/customer_factory'
 import { UserFactory } from '#database/factories/user_factory'
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
-import { createPersistedUsageScenario } from '../../../support/persisted_discharge_usage.js'
+import { createPersistedCustomerUsageScenario } from '../../../support/persisted_customer_usage.js'
 
 test.group('POST /api/v1/customers/:id/archive', (group) => {
   group.each.teardown(() => app.container.restore(SiteReferenceUsageChecker))
@@ -59,7 +59,7 @@ test.group('POST /api/v1/customers/:id/archive', (group) => {
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     for (const status of ['PLANNED', 'ACTIVE'] as const) {
-      const { customer } = await createPersistedUsageScenario({ status })
+      const { customer } = await createPersistedCustomerUsageScenario({ status })
       const response = await client
         .post(`/api/v1/customers/${customer.id}/archive`)
         .loginAs(admin)
@@ -80,7 +80,7 @@ test.group('POST /api/v1/customers/:id/archive', (group) => {
     client,
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
-    const { customer } = await createPersistedUsageScenario({ status: 'CLOSED' })
+    const { customer } = await createPersistedCustomerUsageScenario({ status: 'CLOSED' })
     const response = await client
       .post(`/api/v1/customers/${customer.id}/archive`)
       .loginAs(admin)

@@ -2,7 +2,7 @@ import { test } from '@japa/runner'
 
 import { DockFactory } from '#database/factories/dock_factory'
 import { UserFactory } from '#database/factories/user_factory'
-import { createPersistedUsageScenario } from '../support/persisted_discharge_usage.js'
+import { createPersistedDockUsageScenario } from '../support/persisted_dock_usage.js'
 
 test.group('Docks administration', () => {
   test('rejects unauthenticated and unauthorized dock creation', async ({ assert, client }) => {
@@ -249,7 +249,7 @@ test.group('Docks administration', () => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
 
     for (const status of ['PLANNED', 'ACTIVE'] as const) {
-      const { dock } = await createPersistedUsageScenario({ status })
+      const { dock } = await createPersistedDockUsageScenario({ status })
       const response = await client.post(`/api/v1/docks/${dock.id}/archive`).loginAs(admin).json({})
 
       response.assertStatus(409)
@@ -267,7 +267,7 @@ test.group('Docks administration', () => {
     client,
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
-    const { dock } = await createPersistedUsageScenario({ status: 'CLOSED' })
+    const { dock } = await createPersistedDockUsageScenario({ status: 'CLOSED' })
     const response = await client.post(`/api/v1/docks/${dock.id}/archive`).loginAs(admin).json({})
 
     response.assertStatus(200)
