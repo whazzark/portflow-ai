@@ -3,8 +3,8 @@ import { test } from '@japa/runner'
 
 import { CustomerFactory } from '#database/factories/customer_factory'
 import { UserFactory } from '#database/factories/user_factory'
-import PlannedOrActiveUsageChecker from '#site_references/shared/planned_or_active_usage_checker'
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
+import { createPersistedCustomerUsageScenario } from '../../../support/persisted_customer_usage.js'
 
 test.group('POST /api/v1/customers/:id/archive', (group) => {
   group.each.teardown(() => app.container.restore(SiteReferenceUsageChecker))
@@ -53,18 +53,40 @@ test.group('POST /api/v1/customers/:id/archive', (group) => {
     assert.equal(customer.status, 'AVAILABLE')
   })
 
-  test('rejects archival when the customer is in use', async ({ assert, client }) => {
+  test('rejects archival when the customer is used by a planned or active discharge', async ({
+    assert,
+    client,
+  }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
-    const customer = await CustomerFactory.create()
-    app.container.swap(SiteReferenceUsageChecker, () =>
-      app.container.make(PlannedOrActiveUsageChecker),
-    )
+    for (const status of ['PLANNED', 'ACTIVE'] as const) {
+      const { customer } = await createPersistedCustomerUsageScenario({ status })
+      const response = await client
+        .post(`/api/v1/customers/${customer.id}/archive`)
+        .loginAs(admin)
+        .json({})
+
+      response.assertStatus(409)
+      assert.equal(response.body().error.code, 'E_CUSTOMER_IN_USE')
+      await customer.refresh()
+      assert.equal(customer.status, 'AVAILABLE')
+      assert.isNull(customer.archivedAt)
+      assert.isNull(customer.archivedByUserId)
+      assert.isNull(customer.archiveComment)
+    }
+  })
+
+  test('allows archival when only a closed discharge references the customer', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const { customer } = await createPersistedCustomerUsageScenario({ status: 'CLOSED' })
     const response = await client
       .post(`/api/v1/customers/${customer.id}/archive`)
       .loginAs(admin)
       .json({})
 
-    response.assertStatus(409)
-    assert.equal(response.body().error.code, 'E_CUSTOMER_IN_USE')
+    response.assertStatus(200)
+    assert.equal(response.body().data.status, 'ARCHIVED')
   })
 })
