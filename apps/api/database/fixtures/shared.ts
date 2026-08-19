@@ -1,9 +1,9 @@
 import { DateTime } from 'luxon'
 
-export const FIXTURE_REFERENCE_DATE = DateTime.fromISO('2025-06-01T10:00:00.000Z')
-export const FIXTURE_ARCHIVED_AT = DateTime.fromISO('2025-01-15T10:00:00.000Z')
-export const FIXTURE_REACTIVATED_AT = DateTime.fromISO('2025-03-15T10:00:00.000Z')
-export const FIXTURE_ARCHIVED_ONLY_AT = DateTime.fromISO('2025-04-15T10:00:00.000Z')
+export const FIXTURE_REFERENCE_DATE = DateTime.fromISO('2025-01-01T10:00:00.000Z')
+export const FIXTURE_ARCHIVED_AT = DateTime.fromISO('2024-10-15T10:00:00.000Z')
+export const FIXTURE_REACTIVATED_AT = DateTime.fromISO('2024-12-15T10:00:00.000Z')
+export const FIXTURE_ARCHIVED_ONLY_AT = DateTime.fromISO('2024-11-15T10:00:00.000Z')
 
 export type LifecycleFactoryState = 'available' | 'archived' | 'reactivated'
 

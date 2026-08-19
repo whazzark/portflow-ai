@@ -9,9 +9,9 @@ import { WEIGHING_AREA_FIXTURE_EXEMPLARS } from './weighing_areas.js'
 
 export const FIXTURE_LIFECYCLE_ACTOR_EMAIL = USER_FIXTURE_EXEMPLARS.lifecycleActor.attributes.email
 export const FIXTURE_LIFECYCLE_TIMESTAMPS = {
-  archivedAt: '2025-01-15T10:00:00.000Z',
-  reactivatedAt: '2025-03-15T10:00:00.000Z',
-  archivedOnlyAt: '2025-04-15T10:00:00.000Z',
+  archivedAt: '2024-10-15T10:00:00.000Z',
+  reactivatedAt: '2024-12-15T10:00:00.000Z',
+  archivedOnlyAt: '2024-11-15T10:00:00.000Z',
 } as const
 
 export const MANAGED_FIXTURE_EXEMPLARS = {
