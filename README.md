@@ -134,7 +134,7 @@ APP_KEY=your-app-key
 NODE_ENV=development
 
 DB_HOST=127.0.0.1
-DB_PORT=5432
+DB_PORT=5433
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_DATABASE=portflow
@@ -156,10 +156,7 @@ Par défaut :
 - le conteneur expose PostgreSQL sur `${DB_PORT:-5433}` côté hôte ;
 - PostgreSQL écoute sur `5432` dans le conteneur.
 
-Point important : le `docker-compose` expose `5433` par défaut sur la machine hôte, tandis que `apps/api/.env.example` utilise `5432`. Il faut donc soit :
-
-- définir `DB_PORT=5433` dans `apps/api/.env`, soit
-- lancer Docker avec `DB_PORT=5432` dans l'environnement de la commande.
+L'API lancée sur l'hôte doit utiliser `DB_PORT=5433`. Si l'API est lancée dans Docker avec le profile `prod`, elle doit utiliser `DB_HOST=postgres` et `DB_PORT=5432`, correspondant au port interne du conteneur.
 
 ## Lancer la stack avec les images de production
 
