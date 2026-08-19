@@ -1,12 +1,19 @@
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
+import { DateTime } from 'luxon'
 
 import { WarehouseFactory } from '#database/factories/warehouse_factory'
-import Warehouse, { type WarehouseStatus } from '#models/warehouse'
+import User from '#models/user'
+import Warehouse from '#models/warehouse'
 import WarehouseFootprintPoint from '#models/warehouse_footprint_point'
+
+const LIFECYCLE_ACTOR_EMAIL = 'thomas.bernard@portflow.ai'
+const ARCHIVED_AT = DateTime.fromISO('2025-01-15T10:00:00.000Z')
+const REACTIVATED_AT = DateTime.fromISO('2025-03-15T10:00:00.000Z')
+const ARCHIVED_ONLY_AT = DateTime.fromISO('2025-04-15T10:00:00.000Z')
 
 type DemoWarehouse = {
   name: string
-  status?: WarehouseStatus
+  lifecycle?: 'ARCHIVED' | 'REACTIVATED'
   footprint: Array<{ latitude: number; longitude: number }>
 }
 
@@ -54,7 +61,7 @@ const DEMO_WAREHOUSES: DemoWarehouse[] = [
   },
   {
     name: 'Ancien entrepôt Chef de Baie',
-    status: 'ARCHIVED',
+    lifecycle: 'ARCHIVED',
     footprint: [
       { latitude: 46.150477, longitude: -1.223374 },
       { latitude: 46.150616, longitude: -1.222687 },
@@ -66,7 +73,7 @@ const DEMO_WAREHOUSES: DemoWarehouse[] = [
   },
   {
     name: 'Ancien dépôt pétrolier',
-    status: 'ARCHIVED',
+    lifecycle: 'ARCHIVED',
     footprint: [
       { latitude: 46.1513461, longitude: -1.229668 },
       { latitude: 46.1515376, longitude: -1.2293636 },
@@ -78,6 +85,7 @@ const DEMO_WAREHOUSES: DemoWarehouse[] = [
   },
   {
     name: 'Atlantique Logistique - Hangar 7',
+    lifecycle: 'REACTIVATED',
     footprint: [
       { latitude: 46.1539637, longitude: -1.2212914 },
       { latitude: 46.1533187, longitude: -1.2225188 },
@@ -96,7 +104,7 @@ const DEMO_WAREHOUSES: DemoWarehouse[] = [
   },
   {
     name: 'Ancien hangar de Chef de Baie',
-    status: 'ARCHIVED',
+    lifecycle: 'ARCHIVED',
     footprint: [
       { latitude: 46.150564, longitude: -1.221884 },
       { latitude: 46.150439, longitude: -1.221807 },
@@ -110,19 +118,52 @@ export default class WarehouseSeeder extends BaseSeeder {
   static environment = ['development', 'test']
 
   async run() {
+    const actor = await User.query()
+      .whereRaw('LOWER(email) = ?', [LIFECYCLE_ACTOR_EMAIL])
+      .firstOrFail()
+
     for (const demoWarehouse of DEMO_WAREHOUSES) {
       const existingWarehouse = await Warehouse.query()
         .whereRaw('LOWER(name) = ?', [demoWarehouse.name.toLowerCase()])
         .first()
 
+      const lifecycle =
+        demoWarehouse.lifecycle === 'ARCHIVED'
+          ? {
+              status: 'ARCHIVED' as const,
+              archivedAt: ARCHIVED_ONLY_AT,
+              archivedByUserId: actor.id,
+              archiveComment: 'Warehouse retired from the current storage perimeter',
+              reactivatedAt: null,
+              reactivatedByUserId: null,
+              reactivationComment: null,
+            }
+          : demoWarehouse.lifecycle === 'REACTIVATED'
+            ? {
+                status: 'AVAILABLE' as const,
+                archivedAt: ARCHIVED_AT,
+                archivedByUserId: actor.id,
+                archiveComment: 'Warehouse suspended during structural maintenance',
+                reactivatedAt: REACTIVATED_AT,
+                reactivatedByUserId: actor.id,
+                reactivationComment: 'Warehouse returned to operational storage service',
+              }
+            : {
+                status: 'AVAILABLE' as const,
+                archivedAt: null,
+                archivedByUserId: null,
+                archiveComment: null,
+                reactivatedAt: null,
+                reactivatedByUserId: null,
+                reactivationComment: null,
+              }
+
       const warehouse =
         existingWarehouse ??
-        (demoWarehouse.status === 'ARCHIVED'
-          ? await WarehouseFactory.apply('archived').merge({ name: demoWarehouse.name }).create()
-          : await WarehouseFactory.merge({ name: demoWarehouse.name }).create())
+        (await WarehouseFactory.merge({ name: demoWarehouse.name, ...lifecycle }).create())
 
-      if (existingWarehouse && existingWarehouse.status !== (demoWarehouse.status ?? 'AVAILABLE')) {
-        existingWarehouse.status = demoWarehouse.status ?? 'AVAILABLE'
+      if (existingWarehouse) {
+        existingWarehouse.merge({ name: demoWarehouse.name, ...lifecycle })
         await existingWarehouse.save()
       }
 

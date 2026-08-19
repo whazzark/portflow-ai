@@ -16,6 +16,14 @@ coverage/
 
 # OS
 .DS_Store
+Thumbs.db
+
+# Local editor and temporary files
+.vscode/
+.idea/
+*.log
+*.tmp
+*.swp
 
 # Tooling
 tmp/
