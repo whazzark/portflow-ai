@@ -112,6 +112,7 @@ Créer le fichier :
 
 ```bash
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 ```
 
 Variables principales :
@@ -122,6 +123,10 @@ Variables principales :
 - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE` : connexion PostgreSQL ;
 - `SESSION_DRIVER` : driver de session ;
 - `WEB_ORIGIN` : origine du frontend autorisée.
+
+Le frontend utilise `http://localhost:3333` comme API locale par défaut et écoute sur
+`http://localhost:3000`. Ces valeurs peuvent être surchargées dans `apps/web/.env` avec
+`VITE_API_BASE_URL` et dans `apps/api/.env` avec `WEB_ORIGIN`.
 
 Exemple de configuration locale :
 
