@@ -2,6 +2,7 @@ import { test } from '@japa/runner'
 
 import { UserFactory } from '#database/factories/user_factory'
 import { WeighingAreaFactory } from '#database/factories/weighing_area_factory'
+import { createPersistedWeighingAreaUsageScenario } from '../support/persisted_weighing_area_usage.js'
 
 test.group('Weighing areas administration', () => {
   test('protects the complete collection and allows both administrator roles', async ({
@@ -156,6 +157,41 @@ test.group('Weighing areas administration', () => {
     reactivated.assertStatus(200)
     assert.equal(reactivated.body().data.id, areaId)
     assert.equal(reactivated.body().data.status, 'AVAILABLE')
+  })
+
+  test('rejects archival when a persisted current shift uses the area', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const { weighingArea } = await createPersistedWeighingAreaUsageScenario({ status: 'ACTIVE' })
+    const response = await client
+      .post(`/api/v1/weighing-areas/${weighingArea.id}/archive`)
+      .loginAs(admin)
+      .json({})
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_WEIGHING_AREA_IN_USE')
+    await weighingArea.refresh()
+    assert.equal(weighingArea.status, 'AVAILABLE')
+    assert.isNull(weighingArea.archivedAt)
+    assert.isNull(weighingArea.archivedByUserId)
+    assert.isNull(weighingArea.archiveComment)
+  })
+
+  test('allows archival when the membership has ended', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const { weighingArea } = await createPersistedWeighingAreaUsageScenario({
+      status: 'ACTIVE',
+      weighingAreaEnded: true,
+    })
+    const response = await client
+      .post(`/api/v1/weighing-areas/${weighingArea.id}/archive`)
+      .loginAs(admin)
+      .json({})
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.status, 'ARCHIVED')
   })
 
   test('rejects whitespace-only names during update with the shared validation envelope', async ({

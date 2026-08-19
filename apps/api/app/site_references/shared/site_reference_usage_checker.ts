@@ -1,6 +1,12 @@
 import type { QueryClientContract } from '@adonisjs/lucid/types/database'
 
-export const SITE_REFERENCE_TYPES = ['CUSTOMER', 'DOCK', 'WEIGHING_AREA', 'WAREHOUSE_DOOR'] as const
+export const SITE_REFERENCE_TYPES = [
+  'CUSTOMER',
+  'DOCK',
+  'WEIGHING_AREA',
+  'WAREHOUSE_DOOR',
+  'TRUCK',
+] as const
 export type SiteReferenceType = (typeof SITE_REFERENCE_TYPES)[number]
 
 export type SiteReferenceUsageInput = {

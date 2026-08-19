@@ -2,6 +2,7 @@ import { test } from '@japa/runner'
 
 import { DockFactory } from '#database/factories/dock_factory'
 import { UserFactory } from '#database/factories/user_factory'
+import { createPersistedDockUsageScenario } from '../support/persisted_dock_usage.js'
 
 test.group('Docks administration', () => {
   test('rejects unauthenticated and unauthorized dock creation', async ({ assert, client }) => {
@@ -239,6 +240,38 @@ test.group('Docks administration', () => {
     assert.equal(response.body().data.status, 'ARCHIVED')
     assert.equal(response.body().data.archiveComment, 'Retired')
     assert.equal(response.body().data.archivedByUserId, admin.id)
+  })
+
+  test('rejects archival when a persisted planned or active discharge uses the dock', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+
+    for (const status of ['PLANNED', 'ACTIVE'] as const) {
+      const { dock } = await createPersistedDockUsageScenario({ status })
+      const response = await client.post(`/api/v1/docks/${dock.id}/archive`).loginAs(admin).json({})
+
+      response.assertStatus(409)
+      assert.equal(response.body().error.code, 'E_DOCK_IN_USE')
+      await dock.refresh()
+      assert.equal(dock.status, 'AVAILABLE')
+      assert.isNull(dock.archivedAt)
+      assert.isNull(dock.archivedByUserId)
+      assert.isNull(dock.archiveComment)
+    }
+  })
+
+  test('allows archival when only a closed discharge references the dock', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const { dock } = await createPersistedDockUsageScenario({ status: 'CLOSED' })
+    const response = await client.post(`/api/v1/docks/${dock.id}/archive`).loginAs(admin).json({})
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.status, 'ARCHIVED')
   })
 
   test('rejects unauthenticated and unauthorized dock reactivation', async ({ assert, client }) => {
