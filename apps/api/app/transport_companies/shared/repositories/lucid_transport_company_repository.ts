@@ -8,21 +8,6 @@ import TransportCompanyRepository, {
   type UpdateTransportCompanyCommand,
 } from './transport_company_repository.ts'
 
-const duplicateKind = (error: unknown): TransportCompanyWriteResult | null => {
-  const candidate = error as { constraint?: string; message?: string }
-  const message = String(candidate.message ?? '')
-  const constraint = String(candidate.constraint ?? '')
-
-  if (
-    constraint.includes('transport_companies_name_unique') ||
-    message.includes('transport_companies_name_unique')
-  ) {
-    return { kind: 'DUPLICATE_NAME' }
-  }
-
-  return null
-}
-
 export default class LucidTransportCompanyRepository extends TransportCompanyRepository {
   list(): Promise<TransportCompany[]> {
     return TransportCompany.query()
@@ -63,21 +48,27 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
           return { kind: 'ARCHIVED' }
         }
 
+        // The row is AVAILABLE now but the UPDATE above matched no rows: it was reactivated
+        // concurrently between the UPDATE and this refetch. Treat it like the caller's original
+        // read was stale rather than reporting a misleading success.
         return { kind: 'NOT_FOUND' }
       }
 
-      const company = await TransportCompany.find(command.id)
+      const company = await TransportCompany.query()
+        .where('id', command.id)
+        .preload('archivedBy')
+        .preload('reactivatedBy')
+        .first()
       if (!company) {
         return { kind: 'NOT_FOUND' }
       }
 
       return { kind: 'UPDATED', company }
     } catch (error) {
+      // The only unique constraint that an UPDATE on this table can violate is the name index:
+      // the WHERE clause targets an existing id, so the primary key can't collide.
       if (isUniqueViolation(error)) {
-        const duplicate = duplicateKind(error)
-        if (duplicate) {
-          return duplicate
-        }
+        return { kind: 'DUPLICATE_NAME' }
       }
 
       throw error
