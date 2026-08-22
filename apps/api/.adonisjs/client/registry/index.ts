@@ -90,6 +90,12 @@ const routes = {
     tokens: [{"old":"/api/v1/transport-companies/available","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/available","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/available","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/available","type":0,"val":"available","end":""}],
     types: placeholder as Registry['transport_companies.available']['types'],
   },
+  'transport_companies.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/transport-companies/:id',
+    tokens: [{"old":"/api/v1/transport-companies/:id","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/:id","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['transport_companies.update']['types'],
+  },
   'trucks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/trucks',
