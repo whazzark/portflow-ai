@@ -45,22 +45,72 @@ function MockMarker({
   )
 }
 
+type MockLatLng = { latitude: number; longitude: number }
+
+type MockPlacement = {
+  armed: boolean
+  pending: MockLatLng | null
+  onPlace: (point: MockLatLng) => void
+  onMove: (point: MockLatLng) => void
+}
+
+type MockCreateAction = {
+  key: string
+  label: string
+  onSelect: () => void
+}
+
 export function CheckpointMap({
   checkpoints,
   onSelect,
+  placement,
+  createActions = [],
 }: {
   checkpoints: PresentedCheckpoint[]
   onSelect: (checkpoint: PresentedCheckpoint) => void
+  placement?: MockPlacement
+  createActions?: MockCreateAction[]
 }) {
+  const isArmed = placement?.armed ?? false
+
   return (
     <section aria-label="Checkpoint map">
+      {createActions.map((action) => (
+        <button key={action.key} onClick={action.onSelect} type="button">
+          {action.label}
+        </button>
+      ))}
       {checkpoints.map((checkpoint) => (
         <MockMarker
           checkpoint={checkpoint}
           key={`${checkpoint.kind}:${checkpoint.id}`}
-          onSelect={onSelect}
+          onSelect={isArmed ? () => {} : onSelect}
         />
       ))}
+      {isArmed && (
+        <button
+          onClick={() => placement?.onPlace({ latitude: 10.5, longitude: 20.5 })}
+          type="button"
+        >
+          Simulate map click to place dock
+        </button>
+      )}
+      {placement?.pending && (
+        <>
+          <div data-testid="pending-dock-marker">
+            Pending dock at {placement.pending.latitude}, {placement.pending.longitude}
+          </div>
+          <button
+            onClick={() => {
+              const current = placement.pending as MockLatLng
+              placement.onMove({ latitude: current.latitude + 1, longitude: current.longitude + 1 })
+            }}
+            type="button"
+          >
+            Simulate dragging pending marker
+          </button>
+        </>
+      )}
     </section>
   )
 }

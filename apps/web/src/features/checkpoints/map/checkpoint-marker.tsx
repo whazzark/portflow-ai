@@ -119,10 +119,13 @@ export function CheckpointMarker({
   checkpoint,
   offset,
   onSelect,
+  muted = false,
 }: {
   checkpoint: PresentedCheckpoint
   offset?: [number, number]
   onSelect: (checkpoint: PresentedCheckpoint) => void
+  /** Dims the marker further, e.g. while dock placement mode is armed, to keep focus on the pending marker. */
+  muted?: boolean
 }) {
   const kindLabel = CHECKPOINT_KIND_LABELS[checkpoint.kind]
   const statusLabel = CHECKPOINT_STATUS_LABELS[checkpoint.status]
@@ -134,7 +137,11 @@ export function CheckpointMarker({
           aria-label={`View ${kindLabel.toLowerCase()} ${checkpoint.name} (${statusLabel})`}
           className={classnames(
             'grid size-11 cursor-pointer place-items-center rounded-full transition-[opacity,transform,filter] duration-200 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none',
-            checkpoint.isSearchMatch ? 'scale-110 opacity-100' : 'scale-75 opacity-35',
+            muted
+              ? 'scale-75 opacity-50'
+              : checkpoint.isSearchMatch
+                ? 'scale-110 opacity-100'
+                : 'scale-75 opacity-35',
           )}
           data-checkpoint-kind={checkpoint.kind}
           data-search-match={checkpoint.isSearchMatch}
