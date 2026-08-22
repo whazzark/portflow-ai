@@ -8,7 +8,7 @@
 |---|---|---|---|
 | #217 | List Transport Companies | backlog | pending selection |
 | #218 | Create a Transport Company | backlog | pending selection |
-| #219 | Update a Transport Company | backlog | pending selection |
+| #219 | Update a Transport Company | in-progress | `./update-a-transport-company/` |
 | #220 | Archive a Transport Company | backlog | pending selection |
 | #221 | Reactivate a Transport Company | backlog | pending selection |
 
