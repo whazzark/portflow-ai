@@ -8,7 +8,9 @@ type TransportCompanySectionProps = {
   search: string
   selectedId?: string
   onSelect: (id: string) => void
-  onDetails?: (id: string) => void
+  onView?: (id: string) => void
+  onEdit?: (id: string) => void
+  canAdminister?: boolean
   showStatus?: boolean
 }
 
@@ -18,7 +20,9 @@ export function TransportCompanySection({
   search,
   selectedId,
   onSelect,
-  onDetails,
+  onView,
+  onEdit,
+  canAdminister,
   showStatus,
 }: TransportCompanySectionProps) {
   const matches = companies.filter((company) => transportCompanyMatchesSearch(company, search))
@@ -43,9 +47,11 @@ export function TransportCompanySection({
         emptyTitle={
           hasSearch ? 'No matching transport companies' : `No ${lifecycle} transport companies`
         }
+        canAdminister={canAdminister}
         lifecycle={lifecycle}
-        onDetails={onDetails}
+        onEdit={onEdit}
         onSelect={onSelect}
+        onView={onView}
         search={search}
         selectedId={selectedId}
         showStatus={showStatus}

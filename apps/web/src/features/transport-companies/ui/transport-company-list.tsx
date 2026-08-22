@@ -1,6 +1,12 @@
-import { InfoIcon } from 'lucide-react'
+import { EllipsisVerticalIcon } from 'lucide-react'
 import { HighlightedText } from '@/components/highlighted-text'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
 import { classnames } from '@/libraries/shadcn/helpers'
@@ -13,7 +19,9 @@ type TransportCompanyListProps = {
   emptyTitle: string
   emptyDescription: string
   onSelect: (id: string) => void
-  onDetails?: (id: string) => void
+  onView?: (id: string) => void
+  onEdit?: (id: string) => void
+  canAdminister?: boolean
   showStatus?: boolean
 }
 
@@ -25,7 +33,9 @@ export function TransportCompanyList({
   emptyTitle,
   emptyDescription,
   onSelect,
-  onDetails,
+  onView,
+  onEdit,
+  canAdminister = false,
   showStatus = false,
 }: TransportCompanyListProps) {
   const ordered = [...companies].sort((left, right) => {
@@ -76,18 +86,31 @@ export function TransportCompanyList({
                       {company.id}
                     </span>
                   </button>
-                  {onDetails && (
-                    <Button
-                      aria-label={`View ${company.name} details`}
-                      className="mr-1 shrink-0"
-                      onClick={() => onDetails(company.id)}
-                      size="icon-sm"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <InfoIcon />
-                      <span className="sr-only">View details</span>
-                    </Button>
+                  {onView && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            aria-label={`Actions for ${company.name}`}
+                            className="mr-1 shrink-0"
+                            size="icon-sm"
+                            type="button"
+                            variant="ghost"
+                          />
+                        }
+                      >
+                        <EllipsisVerticalIcon />
+                        <span className="sr-only">Actions</span>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onView(company.id)}>View</DropdownMenuItem>
+                        {canAdminister && onEdit && company.status === 'AVAILABLE' && (
+                          <DropdownMenuItem onClick={() => onEdit(company.id)}>
+                            Edit
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 </div>
               </li>

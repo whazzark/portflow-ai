@@ -11,6 +11,13 @@ export const ACTIVE_USER = {
   accessStatus: 'ACTIVE',
 }
 
+export const ADMIN_USER = {
+  ...ACTIVE_USER,
+  id: 'user-2',
+  role: 'OPERATIONS_ADMIN',
+  email: 'admin@portflow.test',
+}
+
 export const TRANSPORT_COMPANIES: TransportCompanyDto[] = [
   {
     id: '00000000-0000-4000-8000-000000000001',

@@ -1,13 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { SearchIcon } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
+import { isAdministrator } from '@/features/auth/policies/permissions'
+import { useTransportCompanyMutations } from '@/features/transport-companies/mutations/use-transport-company-mutations'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
+import { EditTransportCompanyPanel } from '@/features/transport-companies/ui/edit-transport-company-panel'
 import { TransportCompaniesError } from '@/features/transport-companies/ui/transport-companies-error'
 import { TransportCompanyDetails } from '@/features/transport-companies/ui/transport-company-details'
 import { TransportCompanySection } from '@/features/transport-companies/ui/transport-company-section'
@@ -16,13 +23,40 @@ import { TrucksPage } from '@/features/trucks/ui/trucks-page'
 const transportResourcesRoute = getRouteApi('/_authenticated/transport-resources')
 
 export function TransportResourcesWorkspace() {
-  const { companySearch, companyDetailsId, transportCompanyId } =
+  const { companySearch, companyStatus, companyDetailsId, companyDetailsMode, transportCompanyId } =
     transportResourcesRoute.useSearch()
   const navigate = transportResourcesRoute.useNavigate()
+  const user = useAuthenticatedUser()
+  const canAdminister = isAdministrator(user)
+  const mutations = useTransportCompanyMutations()
   const companiesQuery = useQuery(transportCompanyQueries.all())
   const companies = companiesQuery.data?.data ?? []
   const selectedCompany = companies.find((company) => company.id === transportCompanyId)
   const companyDetails = companies.find((company) => company.id === companyDetailsId)
+
+  // Whether editing is allowed is decided once, when an edit session starts for a given company,
+  // rather than re-derived from live query data on every render. Re-deriving it live would silently
+  // discard an in-progress edit if a background refetch changes that company's status.
+  const [editSession, setEditSession] = useState<{ id: string; editable: boolean } | null>(null)
+
+  useEffect(() => {
+    if (companyDetailsMode !== 'edit' || !companyDetails) {
+      if (editSession) {
+        setEditSession(null)
+      }
+      return
+    }
+    if (!editSession || editSession.id !== companyDetails.id) {
+      setEditSession({ id: companyDetails.id, editable: companyDetails.status === 'AVAILABLE' })
+    }
+  }, [companyDetails, companyDetailsMode, editSession])
+
+  const isEditingDetails =
+    companyDetailsMode === 'edit' &&
+    canAdminister &&
+    editSession !== null &&
+    editSession.id === companyDetailsId &&
+    editSession.editable
 
   useEffect(() => {
     if (transportCompanyId && companiesQuery.data && !selectedCompany) {
@@ -37,7 +71,11 @@ export function TransportResourcesWorkspace() {
     if (companyDetailsId && companiesQuery.data && !companyDetails) {
       void navigate({
         replace: true,
-        search: (previous) => ({ ...previous, companyDetailsId: undefined }),
+        search: (previous) => ({
+          ...previous,
+          companyDetailsId: undefined,
+          companyDetailsMode: 'view',
+        }),
       })
     }
   }, [companiesQuery.data, companyDetails, companyDetailsId, navigate])
@@ -47,8 +85,17 @@ export function TransportResourcesWorkspace() {
   }
 
   if (!companiesQuery.data) {
-    return null
+    return (
+      <main aria-label="Loading transport companies" className="flex min-h-0 flex-1 flex-col gap-4">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="min-h-56 w-full flex-1" />
+      </main>
+    )
   }
+
+  const available = companies.filter((company) => company.status === 'AVAILABLE')
+  const archived = companies.filter((company) => company.status === 'ARCHIVED')
+  const selectedCompanies = companyStatus === 'available' ? available : archived
 
   const toggleCompany = (id: string) => {
     void navigate({
@@ -60,9 +107,15 @@ export function TransportResourcesWorkspace() {
     })
   }
 
-  const openCompanyDetails = (id: string) => {
+  const viewCompanyDetails = (id: string) => {
     void navigate({
-      search: (previous) => ({ ...previous, companyDetailsId: id }),
+      search: (previous) => ({ ...previous, companyDetailsId: id, companyDetailsMode: 'view' }),
+    })
+  }
+
+  const editCompanyDetails = (id: string) => {
+    void navigate({
+      search: (previous) => ({ ...previous, companyDetailsId: id, companyDetailsMode: 'edit' }),
     })
   }
 
@@ -98,15 +151,62 @@ export function TransportResourcesWorkspace() {
               </div>
             </Field>
           </div>
-          <TransportCompanySection
-            companies={companies}
-            lifecycle="all"
-            onDetails={openCompanyDetails}
-            onSelect={toggleCompany}
-            search={companySearch}
-            selectedId={transportCompanyId}
-            showStatus={true}
-          />
+
+          <Tabs
+            className="min-h-0 flex-1 gap-0"
+            onValueChange={(value) => {
+              if (value === 'available' || value === 'archived') {
+                void navigate({
+                  search: (previous) => ({
+                    ...previous,
+                    companyStatus: value,
+                    transportCompanyId: undefined,
+                    truckId: undefined,
+                  }),
+                })
+              }
+            }}
+            value={companyStatus}
+          >
+            <TabsList aria-label="Transport company status" className="mx-3 mt-3" variant="line">
+              <TabsTrigger value="available">
+                Available{' '}
+                <span className="text-muted-foreground tabular-nums">({available.length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="archived">
+                Archived{' '}
+                <span className="text-muted-foreground tabular-nums">({archived.length})</span>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent className="min-h-0" value="available">
+              {companyStatus === 'available' && (
+                <TransportCompanySection
+                  canAdminister={canAdminister}
+                  companies={selectedCompanies}
+                  lifecycle="available"
+                  onEdit={editCompanyDetails}
+                  onSelect={toggleCompany}
+                  onView={viewCompanyDetails}
+                  search={companySearch}
+                  selectedId={transportCompanyId}
+                />
+              )}
+            </TabsContent>
+            <TabsContent className="min-h-0" value="archived">
+              {companyStatus === 'archived' && (
+                <TransportCompanySection
+                  canAdminister={canAdminister}
+                  companies={selectedCompanies}
+                  lifecycle="archived"
+                  onEdit={editCompanyDetails}
+                  onSelect={toggleCompany}
+                  onView={viewCompanyDetails}
+                  search={companySearch}
+                  selectedId={transportCompanyId}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
@@ -115,13 +215,52 @@ export function TransportResourcesWorkspace() {
       <Sheet
         onOpenChange={(open) => {
           if (!open) {
-            void navigate({ search: (previous) => ({ ...previous, companyDetailsId: undefined }) })
+            void navigate({
+              search: (previous) => ({
+                ...previous,
+                companyDetailsId: undefined,
+                companyDetailsMode: 'view',
+              }),
+            })
           }
         }}
         open={Boolean(companyDetails)}
       >
         <SheetContent aria-label="Transport company details" className="overflow-y-auto">
-          {companyDetails && <TransportCompanyDetails company={companyDetails} />}
+          {companyDetails && isEditingDetails ? (
+            <EditTransportCompanyPanel
+              company={companyDetails}
+              onCancel={() =>
+                void navigate({
+                  search: (previous) => ({ ...previous, companyDetailsMode: 'view' }),
+                })
+              }
+              onSuccess={() => {
+                toast.success('Transport company updated')
+                void navigate({
+                  search: (previous) => ({ ...previous, companyDetailsMode: 'view' }),
+                })
+              }}
+              onUpdate={async (value) => {
+                const result = await mutations.update.mutateAsync({
+                  params: { id: companyDetails.id },
+                  body: value,
+                })
+
+                return result.data
+              }}
+            />
+          ) : companyDetails ? (
+            <TransportCompanyDetails
+              canAdminister={canAdminister}
+              company={companyDetails}
+              onEdit={() =>
+                void navigate({
+                  search: (previous) => ({ ...previous, companyDetailsMode: 'edit' }),
+                })
+              }
+            />
+          ) : null}
         </SheetContent>
       </Sheet>
     </div>

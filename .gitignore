@@ -2,11 +2,6 @@
 node_modules/
 .pnpm-store/
 
-# Build outputs
-build/
-dist/
-coverage/
-
 # Environment
 .env
 .env.*
@@ -14,16 +9,13 @@ coverage/
 !.env.docker.example
 !.env.test
 
-# OS
-.DS_Store
-Thumbs.db
+# Build outputs
+build/
+dist/
+coverage/
 
-# Local editor and temporary files
-.vscode/
-.idea/
-*.log
-*.tmp
-*.swp
+# Generated
+apps/web/src/routeTree.gen.ts
 
 # Tooling
 tmp/
@@ -42,5 +34,16 @@ tmp/
 .specify/migration-backup/
 .specify/feature.json
 
-# Generated
-apps/web/src/routeTree.gen.ts
+# Testing artifacts
+.playwright-mcp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local editor and temporary files
+.vscode/
+.idea/
+*.log
+*.tmp
+*.swp

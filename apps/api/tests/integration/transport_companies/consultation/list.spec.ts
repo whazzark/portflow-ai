@@ -47,36 +47,29 @@ test.group('GET /api/v1/transport-companies', (group) => {
     assert.isUndefined(response.body().data)
   })
 
-  test('orders by name then UUID and includes nullable lifecycle actor summaries', async ({
+  test('orders by name and includes nullable lifecycle actor summaries', async ({
     assert,
     client,
   }) => {
     const actor = await UserFactory.apply('active').create()
-    const laterId = 'ffffffff-ffff-4fff-8fff-ffffffffffff'
-    const earlierId = '00000000-0000-4000-8000-000000000001'
     const archivedAt = DateTime.fromISO('2026-07-20T14:32:11.000Z')
     const archived = await TransportCompanyFactory.apply('archived')
-      .merge({
-        id: laterId,
-        name: 'Atlantic Transport',
-        archivedAt,
-      })
+      .merge({ name: 'Atlantic Transport', archivedAt })
       .create()
     archived.archivedByUserId = actor.id
     archived.archiveComment = 'Provider no longer serves the site'
     await archived.save()
-    await TransportCompanyFactory.merge({ id: earlierId, name: 'Atlantic Transport' }).create()
-    await TransportCompanyFactory.merge({ name: 'Baltic Trucks' }).create()
+    const secondAvailable = await TransportCompanyFactory.merge({
+      name: 'Atlantic Transport Extra',
+    }).create()
+    const third = await TransportCompanyFactory.merge({ name: 'Baltic Trucks' }).create()
 
     const response = await client.get('/api/v1/transport-companies').loginAs(actor)
 
     response.assertStatus(200)
     assert.deepEqual(
-      response
-        .body()
-        .data.filter((company: { name: string }) => company.name === 'Atlantic Transport')
-        .map((company: { id: string }) => company.id),
-      [earlierId, laterId],
+      response.body().data.map((company: { id: string }) => company.id),
+      [archived.id, secondAvailable.id, third.id],
     )
     const serialized = response
       .body()

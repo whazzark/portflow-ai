@@ -1,17 +1,18 @@
-import { act, screen } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
+import { mockTrucks } from '@/features/trucks/__tests__/support/test-helpers'
 import { server } from '@/test/msw/server'
-import { ACTIVE_USER, API_BASE_URL, TRANSPORT_COMPANIES } from '../support/fixtures'
+import { API_BASE_URL, TRANSPORT_COMPANIES } from '../support/fixtures'
 import { renderTransportCompanies } from '../support/test-helpers'
 
 test('retries a failed request and replaces it with the recovered authoritative collection', async () => {
   const user = userEvent.setup()
   let requests = 0
+  mockTrucks()
   server.use(
-    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })),
     http.get(`${API_BASE_URL}/api/v1/transport-companies`, () => {
       requests += 1
       return requests === 1
@@ -27,15 +28,16 @@ test('retries a failed request and replaces it with the recovered authoritative 
   expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load transport companies')
   await user.click(screen.getByRole('button', { name: 'Try again' }))
 
-  expect(await screen.findByText('Atlantic Transport')).toBeInTheDocument()
+  const companies = await screen.findByRole('list', { name: 'Available transport companies' })
+  expect(within(companies).getByText('Atlantic Transport')).toBeInTheDocument()
   expect(requests).toBeGreaterThanOrEqual(2)
 })
 
 test('surfaces a failed refresh instead of silently keeping stale companies', async () => {
   const user = userEvent.setup()
   let shouldFail = false
+  mockTrucks()
   server.use(
-    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })),
     http.get(`${API_BASE_URL}/api/v1/transport-companies`, () =>
       shouldFail
         ? HttpResponse.json(
@@ -47,7 +49,8 @@ test('surfaces a failed refresh instead of silently keeping stale companies', as
   )
 
   const { router } = renderTransportCompanies()
-  expect(await screen.findByText('Atlantic Transport')).toBeInTheDocument()
+  const companies = await screen.findByRole('list', { name: 'Available transport companies' })
+  expect(within(companies).getByText('Atlantic Transport')).toBeInTheDocument()
 
   shouldFail = true
   await act(() =>
@@ -57,9 +60,12 @@ test('surfaces a failed refresh instead of silently keeping stale companies', as
   )
 
   expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load transport companies')
-  expect(screen.queryByText('Atlantic Transport')).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('list', { name: 'Available transport companies' }),
+  ).not.toBeInTheDocument()
 
   shouldFail = false
   await user.click(screen.getByRole('button', { name: 'Try again' }))
-  expect(await screen.findByText('Atlantic Transport')).toBeInTheDocument()
+  const recovered = await screen.findByRole('list', { name: 'Available transport companies' })
+  expect(within(recovered).getByText('Atlantic Transport')).toBeInTheDocument()
 })

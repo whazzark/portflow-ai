@@ -175,6 +175,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['available']>>>
     }
   }
+  'transport_companies.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/transport-companies/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').updateTransportCompanyValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').updateTransportCompanyValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'trucks.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/trucks'

@@ -34,6 +34,7 @@ router
       .group(() => {
         router.get('/', [controllers.TransportCompanies, 'index']).as('index')
         router.get('/available', [controllers.TransportCompanies, 'available']).as('available')
+        router.patch('/:id', [controllers.TransportCompanies, 'update']).as('update')
       })
       .prefix('/transport-companies')
       .as('transport_companies')

@@ -11,4 +11,8 @@ export default class TransportCompanyPolicy extends BasePolicy {
   listAvailable(user: User): AuthorizerResponse {
     return user.accessStatus === 'ACTIVE'
   }
+
+  update(user: User): AuthorizerResponse {
+    return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
+  }
 }
