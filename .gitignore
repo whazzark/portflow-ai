@@ -28,7 +28,11 @@ Thumbs.db
 # Tooling
 tmp/
 .turbo/
-.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/speckit-*/
+!.claude/skills/speckit-*/**
 .agents/*
 !.agents/skills/
 .agents/skills/*
