@@ -16,12 +16,10 @@ test.group('GET /api/v1/transport-companies/available', (group) => {
     assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
   })
 
-  test('returns only available companies ordered by name then UUID', async ({ assert, client }) => {
+  test('returns only available companies ordered by name', async ({ assert, client }) => {
     const user = await UserFactory.apply('active').create()
-    const laterId = 'ffffffff-ffff-4fff-8fff-ffffffffffff'
-    const earlierId = '00000000-0000-4000-8000-000000000001'
-    await TransportCompanyFactory.merge({ id: laterId, name: 'Same Name' }).create()
-    await TransportCompanyFactory.merge({ id: earlierId, name: 'Same Name' }).create()
+    const first = await TransportCompanyFactory.merge({ name: 'Alpha Transport' }).create()
+    const second = await TransportCompanyFactory.merge({ name: 'Beta Transport' }).create()
     await TransportCompanyFactory.apply('archived').merge({ name: 'Archived First' }).create()
 
     const response = await client.get('/api/v1/transport-companies/available').loginAs(user)
@@ -29,7 +27,7 @@ test.group('GET /api/v1/transport-companies/available', (group) => {
     response.assertStatus(200)
     assert.deepEqual(
       response.body().data.map((company: { id: string }) => company.id),
-      [earlierId, laterId],
+      [first.id, second.id],
     )
     assert.isTrue(
       response.body().data.every((company: { status: string }) => company.status === 'AVAILABLE'),

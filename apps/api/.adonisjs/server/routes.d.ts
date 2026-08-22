@@ -18,6 +18,7 @@ export type ScannedRoutes = {
     'customers.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'transport_companies.index': { paramsTuple?: []; params?: {} }
     'transport_companies.available': { paramsTuple?: []; params?: {} }
+    'transport_companies.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'trucks.index': { paramsTuple?: []; params?: {} }
     'trucks.available': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
@@ -84,6 +85,7 @@ export type ScannedRoutes = {
   }
   PATCH: {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'transport_companies.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighing_areas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }

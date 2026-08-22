@@ -12,8 +12,9 @@ test('opens company details without changing the truck filter', async () => {
   mockTrucks()
 
   renderApp('/transport-resources')
-  const companies = await screen.findByRole('list', { name: 'Transport companies' })
-  await user.click(within(companies).getByRole('button', { name: /View Bêta Logistique details/ }))
+  const companies = await screen.findByRole('list', { name: 'Available transport companies' })
+  await user.click(within(companies).getByRole('button', { name: 'Actions for Bêta Logistique' }))
+  await user.click(await screen.findByRole('menuitem', { name: 'View' }))
 
   const details = await screen.findByRole('region', { name: 'Transport company details' })
   expect(within(details).getByText('Latest reactivation context')).toBeInTheDocument()
@@ -26,7 +27,7 @@ test('opens and closes truck details while preserving the selected company', asy
   mockTrucks()
 
   const { router } = renderApp('/transport-resources')
-  const companies = await screen.findByRole('list', { name: 'Transport companies' })
+  const companies = await screen.findByRole('list', { name: 'Available transport companies' })
   await user.click(
     within(companies).getByRole('button', {
       name: /Bêta Logistique, 00000000-0000-4000-8000-000000000002/,
