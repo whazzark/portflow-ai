@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { SearchIcon } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -33,8 +33,30 @@ export function TransportResourcesWorkspace() {
   const companies = companiesQuery.data?.data ?? []
   const selectedCompany = companies.find((company) => company.id === transportCompanyId)
   const companyDetails = companies.find((company) => company.id === companyDetailsId)
+
+  // Whether editing is allowed is decided once, when an edit session starts for a given company,
+  // rather than re-derived from live query data on every render. Re-deriving it live would silently
+  // discard an in-progress edit if a background refetch changes that company's status.
+  const [editSession, setEditSession] = useState<{ id: string; editable: boolean } | null>(null)
+
+  useEffect(() => {
+    if (companyDetailsMode !== 'edit' || !companyDetails) {
+      if (editSession) {
+        setEditSession(null)
+      }
+      return
+    }
+    if (!editSession || editSession.id !== companyDetails.id) {
+      setEditSession({ id: companyDetails.id, editable: companyDetails.status === 'AVAILABLE' })
+    }
+  }, [companyDetails, companyDetailsMode, editSession])
+
   const isEditingDetails =
-    companyDetailsMode === 'edit' && canAdminister && companyDetails?.status === 'AVAILABLE'
+    companyDetailsMode === 'edit' &&
+    canAdminister &&
+    editSession !== null &&
+    editSession.id === companyDetailsId &&
+    editSession.editable
 
   useEffect(() => {
     if (transportCompanyId && companiesQuery.data && !selectedCompany) {

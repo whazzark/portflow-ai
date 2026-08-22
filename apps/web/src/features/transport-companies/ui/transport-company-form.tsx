@@ -27,7 +27,7 @@ export function TransportCompanyForm({ company, onUpdate, onSuccess }: Transport
     },
     onSubmit: async ({ formApi, value }) => {
       try {
-        const result = await onUpdate(value)
+        const result = await onUpdate({ ...value, name: value.name.trim() })
 
         onSuccess(result)
       } catch (error) {

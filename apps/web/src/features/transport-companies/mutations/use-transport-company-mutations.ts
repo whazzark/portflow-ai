@@ -6,14 +6,16 @@ export function useTransportCompanyMutations() {
   const queryClient = useQueryClient()
 
   const invalidateTransportCompanies = async () => {
-    await queryClient.invalidateQueries({
-      exact: true,
-      queryKey: transportCompanyQueries.all().queryKey,
-    })
-    await queryClient.invalidateQueries({
-      exact: true,
-      queryKey: transportCompanyQueries.available().queryKey,
-    })
+    await Promise.all([
+      queryClient.invalidateQueries({
+        exact: true,
+        queryKey: transportCompanyQueries.all().queryKey,
+      }),
+      queryClient.invalidateQueries({
+        exact: true,
+        queryKey: transportCompanyQueries.available().queryKey,
+      }),
+    ])
   }
 
   const update = useMutation(
