@@ -16,11 +16,10 @@ test('starts with all permitted trucks and toggles a company filter by clicking 
   mockTrucks()
 
   const { router } = renderApp('/transport-resources')
-  const companies = await screen.findByRole('list', { name: 'Transport companies' })
+  const companies = await screen.findByRole('list', { name: 'Available transport companies' })
   const trucks = await screen.findByRole('list', { name: 'Available trucks' })
 
   expect(within(companies).getByText('Atlantic Transport')).toBeInTheDocument()
-  expect(within(companies).getByText('Coastal Haulage')).toBeInTheDocument()
   expect(within(trucks).getByText('AA-101-PF')).toBeInTheDocument()
   expect(within(trucks).getByText('BB-202-PF')).toBeInTheDocument()
   expect(router.state.location.search).not.toHaveProperty('transportCompanyId')
@@ -52,16 +51,21 @@ test('scopes lifecycle counts and searches to the selected company for administr
   mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
 
   renderApp('/transport-resources')
-  const companies = await screen.findByRole('list', { name: 'Transport companies' })
+  const companyTabs = await screen.findByRole('tablist', { name: 'Transport company status' })
+  await user.click(within(companyTabs).getByRole('tab', { name: /Archived/ }))
+  const archivedCompanies = await screen.findByRole('list', {
+    name: 'Archived transport companies',
+  })
   await user.click(
-    within(companies).getByRole('button', {
+    within(archivedCompanies).getByRole('button', {
       name: /Coastal Haulage, 00000000-0000-4000-8000-000000000003/,
     }),
   )
 
-  expect(await screen.findByRole('tab', { name: /Available \(0\)/ })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Archived \(1\)/ })).toBeInTheDocument()
-  await user.click(screen.getByRole('tab', { name: /Archived \(1\)/ }))
+  const truckTabs = await screen.findByRole('tablist', { name: 'Truck status' })
+  expect(within(truckTabs).getByRole('tab', { name: /Available \(0\)/ })).toBeInTheDocument()
+  expect(within(truckTabs).getByRole('tab', { name: /Archived \(1\)/ })).toBeInTheDocument()
+  await user.click(within(truckTabs).getByRole('tab', { name: /Archived \(1\)/ }))
   expect(await screen.findByText('CC-303-PF')).toBeInTheDocument()
 
   await user.type(screen.getByRole('textbox', { name: 'Search trucks' }), '303')
@@ -79,7 +83,7 @@ test('does not expose archived companies trucks to non-administrators', async ()
   renderApp('/transport-resources')
   await screen.findByRole('list', { name: 'Available trucks' })
 
-  expect(screen.getByText('Coastal Haulage')).toBeInTheDocument()
   expect(screen.queryByText('CC-303-PF')).not.toBeInTheDocument()
-  expect(screen.queryByRole('tab', { name: /Archived/ })).not.toBeInTheDocument()
+  const truckTabs = screen.getByRole('tablist', { name: 'Truck status' })
+  expect(within(truckTabs).queryByRole('tab', { name: /Archived/ })).not.toBeInTheDocument()
 })

@@ -10,7 +10,9 @@ test('opens the integrated company-and-truck workspace by default', async () => 
   mockTrucks()
 
   const { router } = renderApp('/transport-resources')
-  expect(await screen.findByRole('list', { name: 'Transport companies' })).toBeInTheDocument()
+  expect(
+    await screen.findByRole('list', { name: 'Available transport companies' }),
+  ).toBeInTheDocument()
   expect(await screen.findByRole('list', { name: 'Available trucks' })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({ resource: 'workspace' })
 })
