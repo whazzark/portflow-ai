@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { SearchIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -15,9 +15,10 @@ import { isAdministrator } from '@/features/auth/policies/permissions'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
 import { useTruckMutations } from '@/features/trucks/mutations/use-truck-mutations'
 import { truckQueries } from '@/features/trucks/queries/truck-queries'
-import type { TruckDto } from '@/features/trucks/types'
+import type { BulkTruckLifecycleBlocker, TruckDto } from '@/features/trucks/types'
 import { CreateTruckPanel } from '@/features/trucks/ui/create-truck-panel'
 import { EditTruckPanel } from '@/features/trucks/ui/edit-truck-panel'
+import { TruckBulkLifecycleActions } from '@/features/trucks/ui/truck-bulk-lifecycle-actions'
 import { TruckDetails } from '@/features/trucks/ui/truck-details'
 import { TruckOverview } from '@/features/trucks/ui/truck-overview'
 import { TruckSection } from '@/features/trucks/ui/truck-section'
@@ -90,6 +91,36 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
     editSession !== null &&
     editSession.id === truckId &&
     editSession.editable
+
+  const [selectedTruckIds, setSelectedTruckIds] = useState<Set<string>>(new Set())
+  const [blockedTrucks, setBlockedTrucks] = useState<BulkTruckLifecycleBlocker[]>([])
+  // Selection is offered only in the available tab (this slice archives, it does not
+  // reactivate), so leaving that tab, changing the company filter, or a background refresh
+  // that drops a truck from the available scope prunes it from the selection too — and,
+  // unlike customers (whose bulk toolbar spans both tabs), it also hides the floating toolbar,
+  // since there is no archived-tab bulk action for a pruned truck to fall back into.
+  const visibleSelectedTruckIds = useMemo(() => {
+    if (truckStatus !== 'available') {
+      return new Set<string>()
+    }
+
+    const visibleIds = new Set(
+      scopedTrucks.filter((truck) => truck.status === 'AVAILABLE').map((truck) => truck.id),
+    )
+
+    return new Set([...selectedTruckIds].filter((id) => visibleIds.has(id)))
+  }, [scopedTrucks, selectedTruckIds, truckStatus])
+  const visibleSelectedTruckIdList = useMemo(
+    () => [...visibleSelectedTruckIds],
+    [visibleSelectedTruckIds],
+  )
+  const lifecycleActionIds = useMemo(
+    () =>
+      blockedTrucks.length > 0
+        ? blockedTrucks.map((blocked) => blocked.id)
+        : visibleSelectedTruckIdList,
+    [blockedTrucks, visibleSelectedTruckIdList],
+  )
 
   useEffect(() => {
     if (!administrator && truckStatus === 'archived') {
@@ -220,8 +251,14 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
               <TruckSection
                 lifecycle="available"
                 onSelect={toggleTruck}
+                onSelectionChange={(ids) => {
+                  setSelectedTruckIds(new Set(ids))
+                  setBlockedTrucks([])
+                }}
                 search={truckSearch}
+                selectable={administrator}
                 selectedId={truckId}
+                selectedIds={visibleSelectedTruckIds}
                 trucks={selectedTrucks}
                 companies={companies}
               />
@@ -277,6 +314,7 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
 
   const truckDetails = selected && (
     <TruckDetails
+      administrator={administrator}
       canAdminister={administrator}
       company={companies.find((company) => company.id === selected.transportCompanyId)}
       onEdit={startEditingTruck}
@@ -307,9 +345,24 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
     />
   )
 
+  const bulkLifecycleActions = administrator && (
+    <TruckBulkLifecycleActions
+      blockedTrucks={blockedTrucks}
+      onClear={() => {
+        setSelectedTruckIds(new Set())
+        setBlockedTrucks([])
+      }}
+      onSuccess={(result) => {
+        setSelectedTruckIds(new Set())
+        setBlockedTrucks(result.blockedTrucks)
+      }}
+      selectedIds={lifecycleActionIds}
+    />
+  )
+
   if (embedded) {
     return (
-      <>
+      <div className="relative">
         {directory}
         {createSheet}
         <Sheet
@@ -326,12 +379,13 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
             {isEditingTruck ? editTruckPanel : truckDetails}
           </SheetContent>
         </Sheet>
-      </>
+        {bulkLifecycleActions}
+      </div>
     )
   }
 
   return (
-    <div className="grid min-h-0 flex-1 gap-4 lg:h-full lg:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)] lg:overflow-hidden">
+    <div className="relative grid min-h-0 flex-1 gap-4 lg:h-full lg:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)] lg:overflow-hidden">
       {directory}
       {createSheet}
       <Card className="min-h-[24rem] gap-0 py-0 lg:min-h-0">
@@ -354,6 +408,7 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
       >
         <SheetContent className="overflow-hidden sm:max-w-lg">{editTruckPanel}</SheetContent>
       </Sheet>
+      {bulkLifecycleActions}
     </div>
   )
 }

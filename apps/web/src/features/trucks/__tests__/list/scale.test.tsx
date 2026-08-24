@@ -25,6 +25,9 @@ const scaleTrucks: TruckDto[] = Array.from({ length: 1_000 }, (_, index) => {
 
 const availableScaleTrucks = scaleTrucks.filter((truck) => truck.status === 'AVAILABLE')
 
+// Administrators now also render a selection checkbox per available row (up to 750 in this
+// dataset), which pushes jsdom rendering past the default 5s budget; extend it rather than
+// weaken the 1,000-truck assertions.
 test('keeps 1,000-truck endpoint selection, lifecycle counts, and local search bounded', async () => {
   const user = userEvent.setup()
   let completeRequests = 0
@@ -81,4 +84,4 @@ test('keeps 1,000-truck endpoint selection, lifecycle counts, and local search b
   expect(screen.queryByRole('tab', { name: /Archived/ })).not.toBeInTheDocument()
   expect(completeRequests).toBe(0)
   expect(availableRequests).toBeGreaterThan(0)
-})
+}, 30_000)
