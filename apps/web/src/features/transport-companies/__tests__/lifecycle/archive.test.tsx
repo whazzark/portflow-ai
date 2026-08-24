@@ -76,7 +76,7 @@ test('archiving moves the company to the Archived tab with its lifecycle context
   renderTransportCompanies()
   await screen.findByRole('list', { name: 'Available transport companies' })
   expect(
-    within(await companyTabs()).getByRole('tab', { name: /Available \(2\)/, hidden: true }),
+    within(await companyTabs()).getByRole('tab', { name: /Available \(3\)/, hidden: true }),
   ).toBeInTheDocument()
 
   await openDetailsFor('Atlantic Transport')
@@ -97,7 +97,7 @@ test('archiving moves the company to the Archived tab with its lifecycle context
     }),
   ).toBeInTheDocument()
   expect(
-    within(tabs).getByRole('tab', { name: /Available \(1\)/, hidden: true }),
+    within(tabs).getByRole('tab', { name: /Available \(2\)/, hidden: true }),
   ).toBeInTheDocument()
 
   const details = await screen.findByRole('heading', { name: 'Atlantic Transport' })
@@ -127,6 +127,6 @@ test('a truck-conflict refusal is shown in the dialog and the company stays avai
   ).toBeInTheDocument()
   expect(screen.getByRole('alertdialog')).toBeInTheDocument()
   expect(
-    within(await companyTabs()).getByRole('tab', { name: /Available \(2\)/, hidden: true }),
+    within(await companyTabs()).getByRole('tab', { name: /Available \(3\)/, hidden: true }),
   ).toBeInTheDocument()
 })
