@@ -1,8 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useEffect, useMemo } from 'react'
+import { AnchorIcon } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { countResources } from '@/components/resource-map/resource-map-search'
 import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
+import { Button } from '@/components/ui/button'
+import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
+import { isAdministrator } from '@/features/auth/policies/permissions'
 import { presentCheckpoints } from '@/features/checkpoints/checkpoint-search'
 import {
   parseCheckpointSelection,
@@ -23,15 +28,32 @@ import {
   type SelectedCheckpoint,
 } from '@/features/checkpoints/ui/checkpoint-sheet'
 import { toDockCheckpoint } from '@/features/docks/dock-checkpoint-adapter'
+import { useDockMutations } from '@/features/docks/mutations/use-dock-mutations'
 import { dockQueries } from '@/features/docks/queries/dock-queries'
+import type { DockDto } from '@/features/docks/types'
+import { CreateDockPanel } from '@/features/docks/ui/create-dock-panel'
+import type { PendingDockPlacement } from '@/features/docks/ui/dock-form'
 import { weighingAreaQueries } from '@/features/weighing-areas/queries/weighing-area-queries'
 import { toWeighingAreaCheckpoint } from '@/features/weighing-areas/weighing-area-checkpoint-adapter'
 
 const checkpointsRoute = getRouteApi('/_authenticated/checkpoints')
 
 export function CheckpointsPage() {
-  const { checkpoint: checkpointParam, kinds, search, status } = checkpointsRoute.useSearch()
+  const {
+    checkpoint: checkpointParam,
+    create,
+    kinds,
+    search,
+    status,
+  } = checkpointsRoute.useSearch()
   const navigate = checkpointsRoute.useNavigate()
+  const user = useAuthenticatedUser()
+  const canCreateDock = isAdministrator(user)
+  const isCreatingDock = canCreateDock && create === 'dock'
+  const [pendingDockPlacement, setPendingDockPlacement] = useState<PendingDockPlacement | null>(
+    null,
+  )
+  const dockMutations = useDockMutations()
   const docksQuery = useQuery(dockQueries.list())
   const weighingAreasQuery = useQuery(weighingAreaQueries.list())
   const docks = docksQuery.data?.data ?? []
@@ -69,6 +91,12 @@ export function CheckpointsPage() {
       : selection?.kind === 'WEIGHING_AREA' && selectedWeighingArea
         ? { resource: selectedWeighingArea, selection: { ...selection, kind: 'WEIGHING_AREA' } }
         : undefined
+
+  useEffect(() => {
+    if (!isCreatingDock) {
+      setPendingDockPlacement(null)
+    }
+  }, [isCreatingDock])
 
   useEffect(() => {
     const sourceLoaded =
@@ -140,6 +168,60 @@ export function CheckpointsPage() {
       }),
     })
   }
+  const startCreatingDock = () => {
+    void navigate({
+      search: (previous) => ({ ...previous, create: 'dock' }),
+    })
+  }
+  const cancelCreatingDock = () => {
+    setPendingDockPlacement(null)
+    void navigate({
+      replace: true,
+      search: (previous) => ({ ...previous, create: undefined }),
+    })
+  }
+  const createDock = async (value: { name: string; latitude: number; longitude: number }) => {
+    const result = await dockMutations.create.mutateAsync({ body: value })
+
+    return result.data
+  }
+  const handleDockCreated = (dock: DockDto) => {
+    setPendingDockPlacement(null)
+    toast.success('Dock created')
+    void navigate({
+      replace: true,
+      search: (previous) => ({
+        ...previous,
+        checkpoint: serializeCheckpointSelection({ kind: 'DOCK', id: dock.id }),
+        create: undefined,
+        // A brand new dock is AVAILABLE, so widen any filter that would hide it: otherwise it
+        // never reaches `checkpoints`, and the selection effect above would drop the selection
+        // again — leaving the administrator with a success toast and nothing to show for it.
+        kinds: previous.kinds === 'weighing-area' ? undefined : previous.kinds,
+        status: previous.status === 'archived' ? 'available' : previous.status,
+      }),
+    })
+  }
+
+  const dockCreateActions = canCreateDock
+    ? [
+        {
+          key: 'DOCK',
+          label: 'New dock',
+          icon: <AnchorIcon aria-hidden="true" className="size-4" />,
+          onSelect: startCreatingDock,
+        },
+      ]
+    : []
+
+  const createPanel = isCreatingDock ? (
+    <CreateDockPanel
+      onCreate={createDock}
+      onPendingChange={setPendingDockPlacement}
+      onSuccess={handleDockCreated}
+      pending={pendingDockPlacement}
+    />
+  ) : null
 
   const weighingAreaMessage = layerVisibility.WEIGHING_AREA
     ? weighingAreasQuery.isPending
@@ -193,11 +275,30 @@ export function CheckpointsPage() {
         legend={
           <CheckpointLegend kinds={CHECKPOINT_KINDS.filter((kind) => layerVisibility[kind])} />
         }
+        mapUnavailableActions={dockCreateActions.map((action) => (
+          <Button key={action.key} onClick={action.onSelect} size="sm" variant="outline">
+            {action.icon}
+            {action.label}
+          </Button>
+        ))}
         map={(onMapError) => (
           <CheckpointMap
             checkpoints={checkpoints}
+            createActions={dockCreateActions}
             onError={onMapError}
             onSelect={selectCheckpoint}
+            placement={
+              isCreatingDock
+                ? {
+                    armed: true,
+                    pending: pendingDockPlacement,
+                    onPlace: setPendingDockPlacement,
+                    onMove: setPendingDockPlacement,
+                    label: 'New dock',
+                    icon: <AnchorIcon aria-hidden="true" className="size-3.5" />,
+                  }
+                : undefined
+            }
             selected={selectedCheckpoint}
           />
         )}
@@ -208,7 +309,13 @@ export function CheckpointsPage() {
       />
       <CheckpointSheet
         checkpoint={selectedResource}
+        createPanel={createPanel}
+        mode={isCreatingDock ? 'create' : 'view'}
         onClose={() => {
+          if (isCreatingDock) {
+            cancelCreatingDock()
+            return
+          }
           void navigate({
             replace: true,
             search: (previous) => ({ ...previous, checkpoint: undefined }),

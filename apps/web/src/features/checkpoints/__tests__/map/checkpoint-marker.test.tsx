@@ -1,10 +1,33 @@
 import { render, screen, within } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { expect, test, vi } from 'vitest'
 import {
   CheckpointLegend,
+  CheckpointMarker,
   CheckpointMarkerSymbol,
   CheckpointMarkerTooltipContent,
 } from '@/features/checkpoints/map/checkpoint-marker'
+import type { PresentedCheckpoint } from '@/features/checkpoints/types'
+
+vi.mock('@/components/ui/map', () => ({
+  MapMarker: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  MarkerContent: ({ children, className }: { children?: React.ReactNode; className?: string }) => (
+    <div className={className} data-testid="marker-content">
+      {children}
+    </div>
+  ),
+  MarkerTooltip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+}))
+
+const NORTH_DOCK: PresentedCheckpoint = {
+  id: 'dock-1',
+  kind: 'DOCK',
+  latitude: 1,
+  longitude: 2,
+  name: 'North Dock',
+  status: 'AVAILABLE',
+  isSearchMatch: true,
+}
 
 test('uses a solid marker for available docks and a dashed archived marker with a badge', () => {
   const { container, rerender } = render(<CheckpointMarkerSymbol kind="DOCK" status="AVAILABLE" />)
@@ -106,6 +129,28 @@ test('uses a shared neutral treatment for archived checkpoint markers', () => {
     )
   }
   expect(container.querySelectorAll('[data-archive-badge]')).toHaveLength(2)
+})
+
+test('keeps an unmuted marker selectable', async () => {
+  const user = userEvent.setup()
+  const onSelect = vi.fn()
+  render(<CheckpointMarker checkpoint={NORTH_DOCK} onSelect={onSelect} />)
+
+  const marker = screen.getByRole('button', { name: 'View dock North Dock (Available)' })
+  expect(marker).toBeEnabled()
+
+  await user.click(marker)
+
+  expect(onSelect).toHaveBeenCalledWith(NORTH_DOCK)
+})
+
+test('makes a muted marker non-interactive so placement clicks fall through to the map', () => {
+  render(<CheckpointMarker checkpoint={NORTH_DOCK} muted onSelect={vi.fn()} />)
+
+  // Disabled rather than a silent no-op handler: the marker must not stay a focus stop that
+  // does nothing, and it must not swallow the click that is meant to place the pending marker.
+  expect(screen.getByRole('button', { name: 'View dock North Dock (Available)' })).toBeDisabled()
+  expect(screen.getByTestId('marker-content')).toHaveClass('pointer-events-none')
 })
 
 test('limits the type group to the provided checkpoint kinds', () => {

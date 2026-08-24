@@ -2,11 +2,18 @@ import factory from '@adonisjs/lucid/factories'
 import { DateTime } from 'luxon'
 import WarehouseDoor from '#models/warehouse_door'
 
+/**
+ * Door names are unique per warehouse, so the default name has to be a sequence: drawing from a
+ * small random range made sibling doors of the same warehouse collide every so often. Starts past
+ * the hand-written "Door 1"/"Door 2" names that some specs merge in.
+ */
+let nextDoorNumber = 100
+
 export const WarehouseDoorFactory = factory
   .define(WarehouseDoor, ({ faker }) => ({
     // Persisted scenarios must merge the containing warehouse id explicitly.
     warehouseId: faker.string.uuid(),
-    name: `Door ${faker.number.int({ min: 1, max: 99 })}`,
+    name: `Door ${nextDoorNumber++}`,
     latitude: 46.1608,
     longitude: -1.2292,
     status: 'AVAILABLE' as const,

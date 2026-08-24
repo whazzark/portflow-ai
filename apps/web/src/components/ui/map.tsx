@@ -789,6 +789,8 @@ type MapControlsProps = {
   className?: string
   /** Callback with user coordinates when located */
   onLocate?: (coords: { longitude: number; latitude: number }) => void
+  /** Extra controls stacked above the built-in groups (e.g. a resource-create button). */
+  children?: React.ReactNode
 }
 
 const positionClasses = {
@@ -844,6 +846,7 @@ function MapControls({
   showFullscreen = false,
   className,
   onLocate,
+  children,
 }: MapControlsProps) {
   const { map } = useMap()
   const [waitingForLocation, setWaitingForLocation] = useState(false)
@@ -901,6 +904,7 @@ function MapControls({
     <div
       className={cn('absolute z-10 flex flex-col gap-1.5', positionClasses[position], className)}
     >
+      {children}
       {showZoom && (
         <ControlGroup>
           <ControlButton onClick={handleZoomIn} label="Zoom in">
@@ -2105,6 +2109,8 @@ export type {
   MarkerTooltipProps,
 }
 export {
+  ControlButton,
+  ControlGroup,
   Map,
   MapArc,
   MapClusterLayer,

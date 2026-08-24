@@ -11,6 +11,7 @@ export function ResourceMapWorkspace({
   sourceMessage,
   sourceError = false,
   onRetrySource,
+  mapUnavailableActions,
 }: {
   resourceLabel: string
   map: (onMapError: () => void) => ReactNode
@@ -20,6 +21,12 @@ export function ResourceMapWorkspace({
   sourceMessage?: string
   sourceError?: boolean
   onRetrySource?: () => void
+  /**
+   * Actions that normally live in the map's own control cluster. Rendered next to the
+   * "map unavailable" notice so they stay reachable in an environment with no basemap
+   * configured, where the map — and the cluster with it — never renders at all.
+   */
+  mapUnavailableActions?: ReactNode
 }) {
   const [hasMapError, setHasMapError] = useState(false)
   const singularResourceLabel = resourceLabel.replace(/s$/, '')
@@ -32,12 +39,17 @@ export function ResourceMapWorkspace({
       {hasConfiguredMapStyles || hasMapError ? (
         map(() => setHasMapError(true))
       ) : (
-        <div
-          aria-label={`${singularResourceLabel} map unavailable`}
-          className="grid h-full place-items-center bg-muted/30 p-6 text-center text-muted-foreground text-sm"
-          role="status"
-        >
-          The map background is currently unavailable.
+        <div className="grid h-full place-items-center bg-muted/30 p-6">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <p
+              aria-label={`${singularResourceLabel} map unavailable`}
+              className="text-muted-foreground text-sm"
+              role="status"
+            >
+              The map background is currently unavailable.
+            </p>
+            {mapUnavailableActions}
+          </div>
         </div>
       )}
       <div className="absolute top-4 left-4 z-10 max-w-[calc(100%-2rem)] md:top-6 md:left-6 md:max-w-[calc(100%-3rem)]">
