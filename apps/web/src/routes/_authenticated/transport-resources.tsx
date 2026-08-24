@@ -19,6 +19,7 @@ const transportResourcesSearchSchema = z
     truckStatus: z.enum(['available', 'archived']).catch('available'),
     truckSearch: z.string().catch(''),
     truckId: z.string().optional().catch(undefined),
+    truckMode: z.enum(['view', 'edit']).catch('view'),
   })
   // Creating a company and detailing one are mutually exclusive states. Clearing the id here means
   // the two can never contradict each other, so no consumer has to decide which one wins.

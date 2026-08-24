@@ -44,19 +44,23 @@ export type CreateTruckValue = {
   transportCompanyId: string
 }
 
+export type UpdateTruckValue = CreateTruckValue
+
 type TruckFormProps = {
+  truck?: TruckDto
   companies: Array<Pick<TransportCompanyDto, 'id' | 'name'>>
   onCreate: (value: CreateTruckValue) => Promise<TruckDto>
+  onUpdate: (value: UpdateTruckValue) => Promise<TruckDto>
   onSuccess: (truck: TruckDto) => void
 }
 
-export function TruckForm({ companies, onCreate, onSuccess }: TruckFormProps) {
+export function TruckForm({ truck, companies, onCreate, onUpdate, onSuccess }: TruckFormProps) {
   const form = useAppForm({
     defaultValues: {
-      registration: '',
-      vehicleModel: '',
-      capacityTonnes: '',
-      transportCompanyId: '',
+      registration: truck?.registration ?? '',
+      vehicleModel: truck?.vehicleModel ?? '',
+      capacityTonnes: truck ? String(truck.capacityTonnes) : '',
+      transportCompanyId: truck?.transportCompanyId ?? '',
     },
     validators: {
       onBlur: truckSchema,
@@ -65,19 +69,22 @@ export function TruckForm({ companies, onCreate, onSuccess }: TruckFormProps) {
     onSubmit: async ({ formApi, value }) => {
       try {
         const trimmedVehicleModel = value.vehicleModel.trim()
-        const created = await onCreate({
+        const submitted = {
           registration: value.registration.trim(),
           vehicleModel: trimmedVehicleModel ? trimmedVehicleModel : null,
           capacityTonnes: Number(value.capacityTonnes),
           transportCompanyId: value.transportCompanyId,
-        })
+        }
+        const result = truck ? await onUpdate(submitted) : await onCreate(submitted)
 
-        onSuccess(created)
+        onSuccess(result)
       } catch (error) {
         if (!applyValidationError(formApi, error)) {
           const apiError = parseApiError(error)
 
-          toast.error('Unable to create truck', { description: apiError.message })
+          toast.error(truck ? 'Unable to update truck' : 'Unable to create truck', {
+            description: apiError.message,
+          })
         }
       }
     },
@@ -125,7 +132,9 @@ export function TruckForm({ companies, onCreate, onSuccess }: TruckFormProps) {
           </form.AppField>
         </FieldGroup>
         <form.FormError />
-        <form.SubmitButton pendingLabel="Saving…">Create truck</form.SubmitButton>
+        <form.SubmitButton pendingLabel="Saving…">
+          {truck ? 'Save changes' : 'Create truck'}
+        </form.SubmitButton>
       </form.Form>
     </form.AppForm>
   )

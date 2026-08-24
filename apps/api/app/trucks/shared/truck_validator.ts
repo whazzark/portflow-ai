@@ -34,12 +34,29 @@ const maxDecimalPlaces = vine.createRule((value: unknown, options: { max: number
   }
 })
 
-export const createTruckValidator = vine.create({
-  registration: vine.string().use(nonBlank()).minLength(1).maxLength(255),
-  vehicleModel: vine.string().use(nonBlank()).minLength(1).maxLength(255).nullable().optional(),
-  capacityTonnes: vine
+const registrationField = () => vine.string().use(nonBlank()).minLength(1).maxLength(255)
+const vehicleModelField = () => vine.string().use(nonBlank()).minLength(1).maxLength(255)
+const capacityTonnesField = () =>
+  vine
     .number()
     .range([MIN_CAPACITY_TONNES, MAX_CAPACITY_TONNES])
-    .use(maxDecimalPlaces({ max: 3 })),
-  transportCompanyId: vine.string().uuid(),
+    .use(maxDecimalPlaces({ max: 3 }))
+const transportCompanyIdField = () => vine.string().uuid()
+
+export const createTruckValidator = vine.create({
+  registration: registrationField(),
+  vehicleModel: vehicleModelField().nullable().optional(),
+  capacityTonnes: capacityTonnesField(),
+  transportCompanyId: transportCompanyIdField(),
+})
+
+/**
+ * `vehicleModel` is nullable but not optional: an omitted key must fail validation rather than
+ * silently clearing the stored value, so clearing it always requires an explicit `null`.
+ */
+export const updateTruckValidator = vine.create({
+  registration: registrationField(),
+  vehicleModel: vehicleModelField().nullable(),
+  capacityTonnes: capacityTonnesField(),
+  transportCompanyId: transportCompanyIdField(),
 })

@@ -23,6 +23,7 @@ export type ScannedRoutes = {
     'trucks.index': { paramsTuple?: []; params?: {} }
     'trucks.available': { paramsTuple?: []; params?: {} }
     'trucks.store': { paramsTuple?: []; params?: {} }
+    'trucks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.store': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
@@ -90,6 +91,7 @@ export type ScannedRoutes = {
   PATCH: {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'transport_companies.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'trucks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighing_areas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }

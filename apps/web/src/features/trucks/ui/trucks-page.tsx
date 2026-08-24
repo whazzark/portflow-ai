@@ -17,6 +17,7 @@ import { useTruckMutations } from '@/features/trucks/mutations/use-truck-mutatio
 import { truckQueries } from '@/features/trucks/queries/truck-queries'
 import type { TruckDto } from '@/features/trucks/types'
 import { CreateTruckPanel } from '@/features/trucks/ui/create-truck-panel'
+import { EditTruckPanel } from '@/features/trucks/ui/edit-truck-panel'
 import { TruckDetails } from '@/features/trucks/ui/truck-details'
 import { TruckOverview } from '@/features/trucks/ui/truck-overview'
 import { TruckSection } from '@/features/trucks/ui/truck-section'
@@ -31,7 +32,7 @@ type TrucksPageProps = {
 export function TrucksPage({ embedded = false }: TrucksPageProps) {
   const user = useAuthenticatedUser()
   const administrator = isAdministrator(user)
-  const { transportCompanyId, truckStatus, truckSearch, truckId } =
+  const { transportCompanyId, truckStatus, truckSearch, truckId, truckMode } =
     transportResourcesRoute.useSearch()
   const navigate = transportResourcesRoute.useNavigate()
   const trucksQuery = useQuery(administrator ? truckQueries.all() : truckQueries.available())
@@ -52,6 +53,43 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
     availableCompanies && transportCompanyId
       ? availableCompanies.filter((company) => company.id === transportCompanyId)
       : availableCompanies
+  // Editable companies always include the truck's own current company, even if it has since
+  // been archived, so the pre-filled selection is never dropped from the picker.
+  const editableCompanies =
+    availableCompanies && selected
+      ? availableCompanies.some((company) => company.id === selected.transportCompanyId)
+        ? availableCompanies
+        : [
+            ...availableCompanies,
+            ...companies
+              .filter((company) => company.id === selected.transportCompanyId)
+              .map((company) => ({ id: company.id, name: company.name })),
+          ]
+      : availableCompanies
+
+  // Whether editing is allowed is decided once, when an edit session starts for a given truck,
+  // rather than re-derived from live query data on every render. Re-deriving it live would silently
+  // discard an in-progress edit if a background refetch changes that truck's status.
+  const [editSession, setEditSession] = useState<{ id: string; editable: boolean } | null>(null)
+
+  useEffect(() => {
+    if (truckMode !== 'edit' || !selected) {
+      if (editSession) {
+        setEditSession(null)
+      }
+      return
+    }
+    if (!editSession || editSession.id !== selected.id) {
+      setEditSession({ id: selected.id, editable: selected.status === 'AVAILABLE' })
+    }
+  }, [editSession, selected, truckMode])
+
+  const isEditingTruck =
+    truckMode === 'edit' &&
+    administrator &&
+    editSession !== null &&
+    editSession.id === truckId &&
+    editSession.editable
 
   useEffect(() => {
     if (!administrator && truckStatus === 'archived') {
@@ -230,6 +268,45 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
     </Sheet>
   )
 
+  const startEditingTruck = () => {
+    void navigate({ search: (previous) => ({ ...previous, truckMode: 'edit' }) })
+  }
+  const stopEditingTruck = () => {
+    void navigate({ search: (previous) => ({ ...previous, truckMode: 'view' }) })
+  }
+
+  const truckDetails = selected && (
+    <TruckDetails
+      canAdminister={administrator}
+      company={companies.find((company) => company.id === selected.transportCompanyId)}
+      onEdit={startEditingTruck}
+      truck={selected}
+    />
+  )
+
+  const editTruckPanel = selected && (
+    <EditTruckPanel
+      key={selected.id}
+      companies={editableCompanies}
+      companiesError={availableCompaniesQuery.isError}
+      onCancel={stopEditingTruck}
+      onRetryCompanies={() => void availableCompaniesQuery.refetch()}
+      onSuccess={() => {
+        toast.success('Truck updated')
+        stopEditingTruck()
+      }}
+      onUpdate={async (value) => {
+        const result = await truckMutations.update.mutateAsync({
+          params: { id: selected.id },
+          body: value,
+        })
+
+        return result.data
+      }}
+      truck={selected}
+    />
+  )
+
   if (embedded) {
     return (
       <>
@@ -238,18 +315,15 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
         <Sheet
           onOpenChange={(open) => {
             if (!open) {
-              void navigate({ search: (previous) => ({ ...previous, truckId: undefined }) })
+              void navigate({
+                search: (previous) => ({ ...previous, truckId: undefined, truckMode: 'view' }),
+              })
             }
           }}
           open={Boolean(selected)}
         >
           <SheetContent aria-label="Truck details" className="overflow-y-auto">
-            {selected && (
-              <TruckDetails
-                company={companies.find((company) => company.id === selected.transportCompanyId)}
-                truck={selected}
-              />
-            )}
+            {isEditingTruck ? editTruckPanel : truckDetails}
           </SheetContent>
         </Sheet>
       </>
@@ -262,10 +336,7 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
       {createSheet}
       <Card className="min-h-[24rem] gap-0 py-0 lg:min-h-0">
         {selected ? (
-          <TruckDetails
-            company={companies.find((company) => company.id === selected.transportCompanyId)}
-            truck={selected}
-          />
+          truckDetails
         ) : (
           <TruckOverview
             archivedCount={administrator ? archived.length : undefined}
@@ -273,6 +344,16 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
           />
         )}
       </Card>
+      <Sheet
+        onOpenChange={(open) => {
+          if (!open) {
+            stopEditingTruck()
+          }
+        }}
+        open={Boolean(isEditingTruck)}
+      >
+        <SheetContent className="overflow-hidden sm:max-w-lg">{editTruckPanel}</SheetContent>
+      </Sheet>
     </div>
   )
 }

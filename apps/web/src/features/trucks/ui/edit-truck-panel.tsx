@@ -1,59 +1,68 @@
+import { ArrowLeftIcon } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
 import type { TruckDto } from '@/features/trucks/types'
-import { type CreateTruckValue, TruckForm } from '@/features/trucks/ui/truck-form'
+import { TruckForm, type UpdateTruckValue } from '@/features/trucks/ui/truck-form'
 
-type CreateTruckPanelProps = {
+type EditTruckPanelProps = {
+  truck: TruckDto
   companies: Array<Pick<TransportCompanyDto, 'id' | 'name'>> | undefined
   companiesError: boolean
   onRetryCompanies: () => void
-  onCreate: (value: CreateTruckValue) => Promise<TruckDto>
+  onCancel: () => void
+  onUpdate: (value: UpdateTruckValue) => Promise<TruckDto>
   onSuccess: (truck: TruckDto) => void
 }
 
-export function CreateTruckPanel({
+export function EditTruckPanel({
+  truck,
   companies,
   companiesError,
   onRetryCompanies,
-  onCreate,
+  onCancel,
+  onUpdate,
   onSuccess,
-}: CreateTruckPanelProps) {
+}: EditTruckPanelProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <SheetHeader>
-        <SheetTitle>Create truck</SheetTitle>
-        <SheetDescription>
-          Register a truck for one of the site's transport companies.
-        </SheetDescription>
+        <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
+          <ArrowLeftIcon aria-hidden="true" />
+          Back to truck details
+        </Button>
+        <SheetTitle>Edit truck</SheetTitle>
+        <SheetDescription>Update {truck.registration}'s information and provider.</SheetDescription>
       </SheetHeader>
       <div className="px-4">
-        <CreateTruckContent
+        <EditTruckContent
           companies={companies}
           companiesError={companiesError}
-          onCreate={onCreate}
           onRetryCompanies={onRetryCompanies}
           onSuccess={onSuccess}
+          onUpdate={onUpdate}
+          truck={truck}
         />
       </div>
     </div>
   )
 }
 
-function CreateTruckContent({
+function EditTruckContent({
+  truck,
   companies,
   companiesError,
   onRetryCompanies,
-  onCreate,
+  onUpdate,
   onSuccess,
-}: CreateTruckPanelProps) {
+}: Omit<EditTruckPanelProps, 'onCancel'>) {
   if (companiesError) {
     return (
       <Alert variant="destructive">
         <AlertTitle>Unable to load transport companies</AlertTitle>
         <AlertDescription className="flex flex-col gap-3">
-          <span>A truck cannot be created until the company list is available. Try again.</span>
+          <span>A truck cannot be updated until the company list is available. Try again.</span>
           <Button onClick={onRetryCompanies} variant="outline">
             Try again
           </Button>
@@ -66,25 +75,15 @@ function CreateTruckContent({
     return <p className="text-muted-foreground text-sm">Loading transport companies…</p>
   }
 
-  if (companies.length === 0) {
-    return (
-      <Alert>
-        <AlertTitle>No available transport company</AlertTitle>
-        <AlertDescription>
-          A truck can only be created for an available transport company. Reactivate one first.
-        </AlertDescription>
-      </Alert>
-    )
-  }
-
   return (
     <TruckForm
       companies={companies}
-      onCreate={onCreate}
-      onSuccess={onSuccess}
-      onUpdate={() => {
-        throw new Error('Update is not available while creating')
+      onCreate={() => {
+        throw new Error('Create is not available while editing')
       }}
+      onSuccess={onSuccess}
+      onUpdate={onUpdate}
+      truck={truck}
     />
   )
 }

@@ -9,12 +9,34 @@ export type CreateTruckCommand = {
   transportCompanyId: string
 }
 
+export type UpdateTruckCommand = {
+  id: string
+  registration: string
+  vehicleModel: string | null
+  capacityTonnes: Decimal.Value
+  transportCompanyId: string
+  /**
+   * The truck's transport company as read by the caller when it decided whether this update is a
+   * reassignment and, if so, validated it. The write is conditioned on this still being the
+   * stored value, so a reassignment (or lock/availability decision) made against a value another
+   * request has since changed is reported as `TRANSPORT_COMPANY_CHANGED` rather than silently
+   * applied or silently overwritten.
+   */
+  expectedTransportCompanyId: string
+}
+
 export type TruckWriteResult =
   | { kind: 'CREATED'; truck: Truck }
+  | { kind: 'UPDATED'; truck: Truck }
   | { kind: 'DUPLICATE_REGISTRATION' }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'ARCHIVED' }
+  | { kind: 'TRANSPORT_COMPANY_CHANGED' }
 
 export default abstract class TruckRepository {
   abstract list(): Promise<Truck[]>
   abstract listAvailable(): Promise<Truck[]>
+  abstract findById(id: string): Promise<Truck | null>
   abstract create(command: CreateTruckCommand): Promise<TruckWriteResult>
+  abstract updateAvailable(command: UpdateTruckCommand): Promise<TruckWriteResult>
 }
