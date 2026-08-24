@@ -20,6 +20,7 @@ import {
   ArchivedWeighingAreaReadOnlyException,
   DuplicateWeighingAreaNameException,
   WeighingAreaInUseException,
+  WeighingAreaNotFoundException,
 } from '#weighing_areas/shared/weighing_area_exceptions'
 import UpdateWeighingAreaUseCase from '#weighing_areas/update/update_weighing_area_use_case'
 
@@ -121,6 +122,31 @@ test.group('Weighing area use cases', (group) => {
     await assert.rejects(
       () => useCase.handle({ name: ' SCALE B ', latitude: 1, longitude: 1 }),
       DuplicateWeighingAreaNameException,
+    )
+  })
+
+  test('rejects a duplicate name on the update path', async ({ assert }) => {
+    const area = await WeighingAreaFactory.merge({ name: 'North Scale' }).create()
+    await WeighingAreaFactory.merge({ name: 'South Scale' }).create()
+
+    await assert.rejects(
+      () =>
+        app.container
+          .make(UpdateWeighingAreaUseCase)
+          .then((useCase) => useCase.handle({ id: area.id, name: ' SOUTH SCALE ' })),
+      DuplicateWeighingAreaNameException,
+    )
+  })
+
+  test('rejects update attempts for a missing weighing area', async ({ assert }) => {
+    const missingAreaId = '00000000-0000-4000-8000-000000000000'
+
+    await assert.rejects(
+      () =>
+        app.container
+          .make(UpdateWeighingAreaUseCase)
+          .then((useCase) => useCase.handle({ id: missingAreaId, name: 'Missing Scale' })),
+      WeighingAreaNotFoundException,
     )
   })
 

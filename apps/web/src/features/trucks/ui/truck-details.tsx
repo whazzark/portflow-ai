@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
 import type { TruckDto } from '@/features/trucks/types'
+import { TruckLifecycleActions } from '@/features/trucks/ui/truck-lifecycle-actions'
 import { formatFullName } from '@/features/users/helpers/name'
 import { formatDateTime } from '@/helpers/dates'
 
@@ -12,11 +13,13 @@ function formatCapacity(capacityTonnes: number) {
 }
 
 export function TruckDetails({
+  administrator = false,
   truck,
   company,
   canAdminister,
   onEdit,
 }: {
+  administrator?: boolean
   truck: TruckDto
   company?: TransportCompanyDto
   canAdminister: boolean
@@ -76,9 +79,10 @@ export function TruckDetails({
           </dl>
         </section>
       </div>
-      {canAdminister && !isArchived && (
-        <footer className="shrink-0 border-t bg-popover px-5 py-4 md:px-6">
-          <Button onClick={onEdit}>Edit truck</Button>
+      {(canAdminister || administrator) && !isArchived && (
+        <footer className="flex shrink-0 items-center justify-between gap-2 border-t bg-popover px-5 py-4 md:px-6">
+          {canAdminister && <Button onClick={onEdit}>Edit truck</Button>}
+          {administrator && <TruckLifecycleActions truck={truck} />}
         </footer>
       )}
     </section>

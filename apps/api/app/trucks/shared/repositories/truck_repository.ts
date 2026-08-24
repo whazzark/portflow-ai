@@ -1,7 +1,9 @@
 import type { QueryClientContract } from '@adonisjs/lucid/types/database'
 import type { Decimal } from 'decimal.js'
+import type { DateTime } from 'luxon'
 
 import type Truck from '#models/truck'
+import type { BulkTruckLifecycleBlocker } from '#trucks/shared/truck_lifecycle_blockers'
 
 export type CreateTruckCommand = {
   registration: string
@@ -40,6 +42,31 @@ export type FindCompanyIdsWithAvailableTrucksInput = {
   client?: QueryClientContract
 }
 
+export type ArchiveTruckCommand = {
+  id: string
+  archivedAt: DateTime
+  archivedByUserId: string
+  archiveComment: string | null
+}
+
+export type ArchiveTruckResult =
+  | { kind: 'ARCHIVED'; truck: Truck }
+  | { kind: 'ALREADY_ARCHIVED' }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'IN_USE' }
+
+export type ArchiveTrucksCommand = {
+  ids: string[]
+  archivedAt: DateTime
+  archivedByUserId: string
+  archiveComment: string | null
+}
+
+export type BulkTruckLifecycleResult = {
+  updatedTrucks: Truck[]
+  blockedTrucks: BulkTruckLifecycleBlocker[]
+}
+
 export default abstract class TruckRepository {
   abstract list(): Promise<Truck[]>
   abstract listAvailable(): Promise<Truck[]>
@@ -49,4 +76,6 @@ export default abstract class TruckRepository {
   abstract findCompanyIdsWithAvailableTrucks(
     input: FindCompanyIdsWithAvailableTrucksInput,
   ): Promise<Set<string>>
+  abstract archiveAvailable(command: ArchiveTruckCommand): Promise<ArchiveTruckResult>
+  abstract archiveAvailableMany(command: ArchiveTrucksCommand): Promise<BulkTruckLifecycleResult>
 }

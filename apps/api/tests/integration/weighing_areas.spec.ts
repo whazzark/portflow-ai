@@ -243,6 +243,195 @@ test.group('Weighing areas administration', () => {
     assert.equal(response.body().error.details[0].rule, 'required')
   })
 
+  test('rejects an empty update body with the shared validation envelope', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.create()
+    const response = await client.patch(`/api/v1/weighing-areas/${area.id}`).loginAs(admin).json({})
+
+    response.assertStatus(422)
+    assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+    assert.equal(response.body().error.details[0].field, 'name')
+    assert.equal(response.body().error.details[0].rule, 'required')
+  })
+
+  test('trims a submitted name on update, matching creation', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.merge({ name: 'Old Scale' }).create()
+    const response = await client
+      .patch(`/api/v1/weighing-areas/${area.id}`)
+      .loginAs(admin)
+      .json({ name: '  Trimmed Scale  ' })
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.name, 'Trimmed Scale')
+  })
+
+  test('rejects duplicate weighing-area names during updates, including case, whitespace, and archived areas', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const existingAvailable = await WeighingAreaFactory.merge({ name: 'Existing Scale' }).create()
+    const existingArchived = await WeighingAreaFactory.apply('archived')
+      .merge({ name: 'Archived Name' })
+      .create()
+    const area = await WeighingAreaFactory.merge({ name: 'Duplicate Target' }).create()
+
+    const exactResponse = await client
+      .patch(`/api/v1/weighing-areas/${area.id}`)
+      .loginAs(admin)
+      .json({ name: existingAvailable.name })
+    const caseAndWhitespaceResponse = await client
+      .patch(`/api/v1/weighing-areas/${area.id}`)
+      .loginAs(admin)
+      .json({ name: `  ${existingAvailable.name.toUpperCase()}  ` })
+    const archivedNameResponse = await client
+      .patch(`/api/v1/weighing-areas/${area.id}`)
+      .loginAs(admin)
+      .json({ name: existingArchived.name })
+
+    for (const response of [exactResponse, caseAndWhitespaceResponse, archivedNameResponse]) {
+      response.assertStatus(409)
+      assert.equal(response.body().error.code, 'E_WEIGHING_AREA_NAME_CONFLICT')
+    }
+
+    const listResponse = await client.get('/api/v1/weighing-areas').loginAs(admin)
+    const stored = listResponse.body().data.find((entry: { id: string }) => entry.id === area.id)
+    assert.equal(stored.name, 'Duplicate Target')
+  })
+
+  test('accepts resubmitting a weighing area own current name, exactly or with different casing, without conflict', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.merge({ name: 'Self Name Scale' }).create()
+
+    const exactResponse = await client
+      .patch(`/api/v1/weighing-areas/${area.id}`)
+      .loginAs(admin)
+      .json({ name: area.name, latitude: area.latitude, longitude: area.longitude })
+
+    exactResponse.assertStatus(200)
+    assert.equal(exactResponse.body().data.name, area.name)
+
+    const differentCaseResponse = await client
+      .patch(`/api/v1/weighing-areas/${area.id}`)
+      .loginAs(admin)
+      .json({ name: area.name.toUpperCase() })
+
+    differentCaseResponse.assertStatus(200)
+    assert.equal(differentCaseResponse.body().data.name, area.name.toUpperCase())
+  })
+
+  test('rejects out-of-range coordinates during updates and accepts the exact boundary values', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const outOfRangeArea = await WeighingAreaFactory.create()
+
+    const outOfRangeLatitude = await client
+      .patch(`/api/v1/weighing-areas/${outOfRangeArea.id}`)
+      .loginAs(admin)
+      .json({ latitude: 91 })
+    const outOfRangeLongitude = await client
+      .patch(`/api/v1/weighing-areas/${outOfRangeArea.id}`)
+      .loginAs(admin)
+      .json({ longitude: -181 })
+
+    for (const [response, field] of [
+      [outOfRangeLatitude, 'latitude'],
+      [outOfRangeLongitude, 'longitude'],
+    ] as const) {
+      response.assertStatus(422)
+      assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+      assert.equal(response.body().error.details[0].field, field)
+      // The `required` rule is already covered by the empty-update test above; this asserts the
+      // *range* rule is actually exercised over HTTP, which was previously untested.
+      assert.notEqual(response.body().error.details[0].rule, 'required')
+    }
+
+    for (const coordinates of [
+      { latitude: 90 },
+      { latitude: -90 },
+      { longitude: 180 },
+      { longitude: -180 },
+    ]) {
+      const boundaryArea = await WeighingAreaFactory.create()
+      const response = await client
+        .patch(`/api/v1/weighing-areas/${boundaryArea.id}`)
+        .loginAs(admin)
+        .json(coordinates)
+
+      response.assertStatus(200)
+    }
+  })
+
+  test('rejects unauthenticated and unauthorized weighing-area updates', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const area = await WeighingAreaFactory.create()
+    const unauthenticatedResponse = await client
+      .patch(`/api/v1/weighing-areas/${area.id}`)
+      .json({ name: 'Updated' })
+    const unauthorizedResponse = await client
+      .patch(`/api/v1/weighing-areas/${area.id}`)
+      .loginAs(observer)
+      .json({ name: 'Updated' })
+
+    unauthenticatedResponse.assertStatus(401)
+    assert.equal(unauthenticatedResponse.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    unauthorizedResponse.assertStatus(403)
+    assert.equal(unauthorizedResponse.body().error.code, 'E_AUTHORIZATION_FAILURE')
+
+    const listResponse = await client.get('/api/v1/weighing-areas').loginAs(admin)
+    const stored = listResponse.body().data.find((entry: { id: string }) => entry.id === area.id)
+    assert.equal(stored.name, area.name)
+  })
+
+  test('rejects updates to an archived weighing area as read-only and leaves it unchanged', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.apply('archived')
+      .merge({ name: 'Archived Update Target' })
+      .create()
+
+    const response = await client
+      .patch(`/api/v1/weighing-areas/${area.id}`)
+      .loginAs(admin)
+      .json({ name: 'Attempted Rename' })
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_WEIGHING_AREA_ARCHIVED')
+
+    const listResponse = await client.get('/api/v1/weighing-areas').loginAs(admin)
+    const stored = listResponse.body().data.find((entry: { id: string }) => entry.id === area.id)
+    assert.equal(stored.name, 'Archived Update Target')
+    assert.equal(stored.status, 'ARCHIVED')
+  })
+
+  test('rejects updates to a weighing area that does not exist', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const missingAreaId = '00000000-0000-4000-8000-000000000000'
+
+    const response = await client
+      .patch(`/api/v1/weighing-areas/${missingAreaId}`)
+      .loginAs(admin)
+      .json({ name: 'Ghost Scale' })
+
+    response.assertStatus(404)
+    assert.equal(response.body().error.code, 'E_WEIGHING_AREA_NOT_FOUND')
+  })
+
   test('exposes archived history but excludes it from available selections', async ({
     assert,
     client,

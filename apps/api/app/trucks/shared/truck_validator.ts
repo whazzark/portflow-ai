@@ -1,6 +1,6 @@
 import vine from '@vinejs/vine'
 
-import { nonBlank } from '#shared/validators/lifecycle_validator'
+import { lifecycleComment, lifecycleIds, nonBlank } from '#shared/validators/lifecycle_validator'
 
 /**
  * `trucks.capacity_tonnes` is a NUMERIC(12, 3) column guarded by a `capacity_tonnes > 0` check,
@@ -59,4 +59,13 @@ export const updateTruckValidator = vine.create({
   vehicleModel: vehicleModelField().nullable(),
   capacityTonnes: capacityTonnesField(),
   transportCompanyId: transportCompanyIdField(),
+})
+
+export const archiveTruckValidator = vine.create({
+  comment: lifecycleComment(),
+})
+
+export const archiveTrucksValidator = vine.create({
+  ids: lifecycleIds(),
+  comment: lifecycleComment(),
 })
