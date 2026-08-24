@@ -53,6 +53,16 @@ test('uses ascending UUID order to keep equal names stable', async () => {
     .map((name) => name.closest('li'))
 
   expect(atlanticItems).toHaveLength(2)
-  expect(atlanticItems[0]).toHaveTextContent('00000000-0000-4000-8000-000000000000')
-  expect(atlanticItems[1]).toHaveTextContent('00000000-0000-4000-8000-000000000001')
+  // The id is no longer shown as text (the row now shows contact details instead), so the two
+  // otherwise-identical rows are distinguished by their accessible name, which still carries it.
+  expect(
+    within(atlanticItems[0] as HTMLElement).getByRole('button', {
+      name: 'Atlantic Transport, 00000000-0000-4000-8000-000000000000',
+    }),
+  ).toBeInTheDocument()
+  expect(
+    within(atlanticItems[1] as HTMLElement).getByRole('button', {
+      name: 'Atlantic Transport, 00000000-0000-4000-8000-000000000001',
+    }),
+  ).toBeInTheDocument()
 })

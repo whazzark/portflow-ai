@@ -85,9 +85,10 @@ test('selects and deselects every visible company with the select-all checkbox',
 
   fireEvent.click(selectAll)
 
-  expect(screen.getByText('2 selected')).toBeInTheDocument()
+  expect(screen.getByText('3 selected')).toBeInTheDocument()
   expect(screen.getByRole('checkbox', { name: 'Select Atlantic Transport' })).toBeChecked()
   expect(screen.getByRole('checkbox', { name: 'Select Bêta Logistique' })).toBeChecked()
+  expect(screen.getByRole('checkbox', { name: 'Select Nordic Haulers' })).toBeChecked()
   expect(
     screen.getByRole('checkbox', { name: 'Select all visible transport companies' }),
   ).toBeChecked()
@@ -97,6 +98,7 @@ test('selects and deselects every visible company with the select-all checkbox',
   expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
   expect(screen.getByRole('checkbox', { name: 'Select Atlantic Transport' })).not.toBeChecked()
   expect(screen.getByRole('checkbox', { name: 'Select Bêta Logistique' })).not.toBeChecked()
+  expect(screen.getByRole('checkbox', { name: 'Select Nordic Haulers' })).not.toBeChecked()
 })
 
 test('select-all only affects companies currently matching the search', async () => {
@@ -160,7 +162,8 @@ test('archives a fully eligible selection and removes them from the Available ta
 
   expect(await screen.findByText('2 transport companies archived')).toBeInTheDocument()
   expect(
-    within(await companyTabs()).getByRole('tab', { name: /Available \(0\)/ }),
+    // Nordic Haulers was never selected, so it stays on the Available tab.
+    within(await companyTabs()).getByRole('tab', { name: /Available \(1\)/ }),
   ).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
 })
@@ -213,7 +216,7 @@ test('reports plainly that nothing changed when every company is blocked', async
 
   expect(await screen.findByText('0 transport companies archived; 2 unchanged')).toBeInTheDocument()
   expect(
-    within(await companyTabs()).getByRole('tab', { name: /Available \(2\)/ }),
+    within(await companyTabs()).getByRole('tab', { name: /Available \(3\)/ }),
   ).toBeInTheDocument()
 })
 

@@ -8,6 +8,8 @@ export default class TransportCompanyTransformer extends BaseTransformer<Transpo
     const company = this.pick(this.resource, [
       'id',
       'name',
+      'contactPhone',
+      'contactEmail',
       'status',
       'archivedAt',
       // biome-ignore lint/security/noSecrets: identifier field, not a secret

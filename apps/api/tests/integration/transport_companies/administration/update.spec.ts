@@ -4,12 +4,17 @@ import { TransportCompanyFactory } from '#database/factories/transport_company_f
 import { TruckFactory } from '#database/factories/truck_factory'
 import { UserFactory } from '#database/factories/user_factory'
 
+const VALID_CONTACT = {
+  contactPhone: '+33 1 23 45 67 89',
+  contactEmail: 'contact@example.test',
+}
+
 test.group('PATCH /api/v1/transport-companies/:id', () => {
   test('rejects unauthenticated updates', async ({ assert, client }) => {
     const company = await TransportCompanyFactory.create()
     const response = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
-      .json({ name: 'Updated' })
+      .json({ name: 'Updated', ...VALID_CONTACT })
 
     response.assertStatus(401)
     assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
@@ -21,13 +26,13 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
     const response = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(observer)
-      .json({ name: 'Updated' })
+      .json({ name: 'Updated', ...VALID_CONTACT })
 
     response.assertStatus(403)
     assert.equal(response.body().error.code, 'E_AUTHORIZATION_FAILURE')
   })
 
-  test('renames an available company while preserving identity and lifecycle context', async ({
+  test('renames an available company while preserving identity, lifecycle context, and contact details', async ({
     assert,
     client,
   }) => {
@@ -36,7 +41,11 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
     const response = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: 'Atlantique Transport Routier' })
+      .json({
+        name: 'Atlantique Transport Routier',
+        contactPhone: company.contactPhone,
+        contactEmail: company.contactEmail,
+      })
 
     response.assertStatus(200)
     const data = response.body().data
@@ -48,6 +57,8 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
       Math.floor(company.reactivatedAt?.toSeconds() ?? 0),
     )
     assert.equal(data.reactivationComment, company.reactivationComment)
+    assert.equal(data.contactPhone, company.contactPhone)
+    assert.equal(data.contactEmail, company.contactEmail)
   })
 
   test('accepts either administration role', async ({ assert, client }) => {
@@ -56,7 +67,7 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
     const response = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: 'Renamed By Org Admin' })
+      .json({ name: 'Renamed By Org Admin', ...VALID_CONTACT })
 
     response.assertStatus(200)
     assert.equal(response.body().data.name, 'Renamed By Org Admin')
@@ -71,7 +82,7 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
     const trimmed = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: '  Estuaire Vrac  ' })
+      .json({ name: '  Estuaire Vrac  ', ...VALID_CONTACT })
 
     trimmed.assertStatus(200)
     assert.equal(trimmed.body().data.name, 'Estuaire Vrac')
@@ -79,7 +90,7 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
     const resubmitted = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: 'Estuaire Vrac' })
+      .json({ name: 'Estuaire Vrac', ...VALID_CONTACT })
 
     resubmitted.assertStatus(200)
     assert.equal(resubmitted.body().data.name, 'Estuaire Vrac')
@@ -99,15 +110,15 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
     const blank = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: '   ' })
+      .json({ name: '   ', ...VALID_CONTACT })
     const tooLong = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: 'A'.repeat(256) })
+      .json({ name: 'A'.repeat(256), ...VALID_CONTACT })
     const maxLength = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: 'A'.repeat(255) })
+      .json({ name: 'A'.repeat(255), ...VALID_CONTACT })
 
     empty.assertStatus(422)
     blank.assertStatus(422)
@@ -133,7 +144,7 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
     const response = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: '  noroît logistique  ' })
+      .json({ name: '  noroît logistique  ', ...VALID_CONTACT })
 
     response.assertStatus(409)
     assert.equal(response.body().error.code, 'E_TRANSPORT_COMPANY_NAME_CONFLICT')
@@ -153,7 +164,7 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
     const response = await client
       .patch(`/api/v1/transport-companies/${archived.id}`)
       .loginAs(admin)
-      .json({ name: 'New name' })
+      .json({ name: 'New name', ...VALID_CONTACT })
 
     response.assertStatus(409)
     assert.equal(response.body().error.code, 'E_TRANSPORT_COMPANY_ARCHIVED')
@@ -164,7 +175,7 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
     const response = await client
       .patch('/api/v1/transport-companies/00000000-0000-4000-8000-000000000000')
       .loginAs(admin)
-      .json({ name: 'New name' })
+      .json({ name: 'New name', ...VALID_CONTACT })
 
     response.assertStatus(404)
     assert.equal(response.body().error.code, 'E_TRANSPORT_COMPANY_NOT_FOUND')
@@ -189,7 +200,7 @@ test.group('PATCH /api/v1/transport-companies/:id', () => {
     const response = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: 'Renamed With Trucks' })
+      .json({ name: 'Renamed With Trucks', ...VALID_CONTACT })
 
     response.assertStatus(200)
     await truck.refresh()

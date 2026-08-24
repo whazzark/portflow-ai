@@ -4,6 +4,13 @@ import { TransportCompanyFactory } from '#database/factories/transport_company_f
 import { TruckFactory } from '#database/factories/truck_factory'
 import { UserFactory } from '#database/factories/user_factory'
 
+// An update now carries the contact details alongside the name, so the payload below stays valid
+// and the refusal under test is the archived read-only rule, not a validation error.
+const VALID_CONTACT = {
+  contactPhone: '+33 1 23 45 67 89',
+  contactEmail: 'contact@example.test',
+}
+
 test.group('POST /api/v1/transport-companies/:id/archive', () => {
   test('rejects unauthenticated archival', async ({ assert, client }) => {
     const company = await TransportCompanyFactory.create()
@@ -215,7 +222,7 @@ test.group('POST /api/v1/transport-companies/:id/archive', () => {
     const updateResponse = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: 'Attempted rename' })
+      .json({ name: 'Attempted rename', ...VALID_CONTACT })
     updateResponse.assertStatus(409)
     assert.equal(updateResponse.body().error.code, 'E_TRANSPORT_COMPANY_ARCHIVED')
 

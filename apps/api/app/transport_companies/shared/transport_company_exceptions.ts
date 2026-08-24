@@ -29,3 +29,15 @@ export class TransportCompanyHasAvailableTrucksException extends Exception {
   static code = 'E_TRANSPORT_COMPANY_HAS_AVAILABLE_TRUCKS'
   static message = 'Transport company still provides available trucks'
 }
+
+export class InvalidTransportCompanyContactPhoneException extends Exception {
+  static status = 422
+  static code = 'E_TRANSPORT_COMPANY_CONTACT_PHONE_INVALID'
+  static message = 'Transport company contact phone number is invalid'
+}
+
+export class InvalidTransportCompanyContactEmailException extends Exception {
+  static status = 422
+  static code = 'E_TRANSPORT_COMPANY_CONTACT_EMAIL_INVALID'
+  static message = 'Transport company contact email address is invalid'
+}

@@ -2,12 +2,15 @@ import { ArrowLeftIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
-import { TransportCompanyForm } from '@/features/transport-companies/ui/transport-company-form'
+import {
+  TransportCompanyForm,
+  type TransportCompanyFormValue,
+} from '@/features/transport-companies/ui/transport-company-form'
 
 type EditTransportCompanyPanelProps = {
   company: TransportCompanyDto
   onCancel: () => void
-  onUpdate: (value: { name: string }) => Promise<TransportCompanyDto>
+  onUpdate: (value: TransportCompanyFormValue) => Promise<TransportCompanyDto>
   onSuccess: (company: TransportCompanyDto) => void
 }
 
@@ -25,7 +28,7 @@ export function EditTransportCompanyPanel({
           Back to company details
         </Button>
         <SheetTitle>Edit transport company</SheetTitle>
-        <SheetDescription>Update the current company name for {company.name}.</SheetDescription>
+        <SheetDescription>Update the name and contact details for {company.name}.</SheetDescription>
       </SheetHeader>
       <div className="px-4">
         <TransportCompanyForm
