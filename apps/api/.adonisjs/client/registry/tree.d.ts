@@ -21,6 +21,7 @@ export interface ApiDefinition {
     reactivate: typeof routes['customers.reactivate']
   }
   transportCompanies: {
+    store: typeof routes['transport_companies.store']
     index: typeof routes['transport_companies.index']
     available: typeof routes['transport_companies.available']
     update: typeof routes['transport_companies.update']

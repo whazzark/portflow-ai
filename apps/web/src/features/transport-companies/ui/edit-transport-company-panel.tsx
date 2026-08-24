@@ -28,7 +28,14 @@ export function EditTransportCompanyPanel({
         <SheetDescription>Update the current company name for {company.name}.</SheetDescription>
       </SheetHeader>
       <div className="px-4">
-        <TransportCompanyForm company={company} onSuccess={onSuccess} onUpdate={onUpdate} />
+        <TransportCompanyForm
+          company={company}
+          onCreate={() => {
+            throw new Error('Creation is not available while editing')
+          }}
+          onSuccess={onSuccess}
+          onUpdate={onUpdate}
+        />
       </div>
     </div>
   )

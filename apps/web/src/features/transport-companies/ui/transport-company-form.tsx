@@ -11,32 +11,41 @@ const transportCompanySchema = z.object({
 })
 
 type TransportCompanyFormProps = {
-  company: TransportCompanyDto
+  company?: TransportCompanyDto
+  onCreate: (value: { name: string }) => Promise<TransportCompanyDto>
   onUpdate: (value: { name: string }) => Promise<TransportCompanyDto>
   onSuccess: (company: TransportCompanyDto) => void
 }
 
-export function TransportCompanyForm({ company, onUpdate, onSuccess }: TransportCompanyFormProps) {
+export function TransportCompanyForm({
+  company,
+  onCreate,
+  onUpdate,
+  onSuccess,
+}: TransportCompanyFormProps) {
   const form = useAppForm({
     defaultValues: {
-      name: company.name,
+      name: company?.name ?? '',
     },
     validators: {
       onBlur: transportCompanySchema,
       onSubmit: transportCompanySchema,
     },
     onSubmit: async ({ formApi, value }) => {
+      const submitted = { ...value, name: value.name.trim() }
+
       try {
-        const result = await onUpdate({ ...value, name: value.name.trim() })
+        const result = company ? await onUpdate(submitted) : await onCreate(submitted)
 
         onSuccess(result)
       } catch (error) {
         if (!applyValidationError(formApi, error)) {
           const apiError = parseApiError(error)
 
-          toast.error('Unable to update transport company', {
-            description: apiError.message,
-          })
+          toast.error(
+            company ? 'Unable to update transport company' : 'Unable to create transport company',
+            { description: apiError.message },
+          )
         }
       }
     },
@@ -58,7 +67,9 @@ export function TransportCompanyForm({ company, onUpdate, onSuccess }: Transport
           </form.AppField>
         </FieldGroup>
         <form.FormError />
-        <form.SubmitButton pendingLabel="Saving…">Save changes</form.SubmitButton>
+        <form.SubmitButton pendingLabel="Saving…">
+          {company ? 'Save changes' : 'Create transport company'}
+        </form.SubmitButton>
       </form.Form>
     </form.AppForm>
   )

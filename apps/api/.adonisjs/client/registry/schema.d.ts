@@ -151,6 +151,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/customers_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'transport_companies.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/transport-companies'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').createTransportCompanyValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').createTransportCompanyValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'transport_companies.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/transport-companies'

@@ -55,3 +55,60 @@ test('does not open the edit form for an archived company requesting companyDeta
   expect(await screen.findByRole('heading', { name: 'Coastal Haulage' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Edit transport company' })).not.toBeInTheDocument()
 })
+
+test('offers no creation affordance to a non-administrator', async () => {
+  mockTrucks()
+  mockTransportCompanies(TRANSPORT_COMPANIES, ACTIVE_USER)
+
+  renderTransportCompanies()
+  await screen.findByRole('list', { name: 'Available transport companies' })
+
+  expect(screen.queryByRole('button', { name: 'Create transport company' })).not.toBeInTheDocument()
+})
+
+test('offers no creation affordance in the empty state to a non-administrator', async () => {
+  mockTrucks()
+  mockTransportCompanies([], ACTIVE_USER)
+
+  renderTransportCompanies()
+  expect(await screen.findByText('No available transport companies')).toBeInTheDocument()
+
+  expect(
+    screen.queryByRole('button', { name: 'Create a transport company' }),
+  ).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create transport company' })).not.toBeInTheDocument()
+})
+
+test('does not open the create form for a non-administrator requesting companyDetailsMode=create directly', async () => {
+  mockTrucks()
+  mockTransportCompanies(TRANSPORT_COMPANIES, ACTIVE_USER)
+
+  // biome-ignore lint/security/noSecrets: route search string, not a secret
+  renderTransportCompanies('/transport-resources?companyDetailsMode=create')
+
+  await screen.findByRole('list', { name: 'Available transport companies' })
+  expect(
+    screen.queryByRole('heading', { name: 'Create transport company' }),
+  ).not.toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+
+test('offers both creation affordances to an administrator', async () => {
+  mockTrucks()
+  mockTransportCompanies(TRANSPORT_COMPANIES, ADMIN_USER)
+
+  renderTransportCompanies()
+  await screen.findByRole('list', { name: 'Available transport companies' })
+
+  expect(screen.getByRole('button', { name: 'Create transport company' })).toBeInTheDocument()
+})
+
+test('offers the empty-state creation affordance to an administrator', async () => {
+  mockTrucks()
+  mockTransportCompanies([], ADMIN_USER)
+
+  renderTransportCompanies()
+  expect(await screen.findByText('No available transport companies')).toBeInTheDocument()
+
+  expect(screen.getByRole('button', { name: 'Create a transport company' })).toBeInTheDocument()
+})

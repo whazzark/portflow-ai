@@ -8,17 +8,23 @@ import { TrucksError } from '@/features/trucks/ui/trucks-error'
 import { TrucksPending } from '@/features/trucks/ui/trucks-pending'
 import { ensureSessionUser } from '@/libraries/tuyau/session'
 
-const transportResourcesSearchSchema = z.object({
-  resource: z.enum(['trucks', 'workspace']).catch('workspace'),
-  companyStatus: z.enum(['available', 'archived']).catch('available'),
-  companySearch: z.string().catch(''),
-  transportCompanyId: z.string().optional().catch(undefined),
-  companyDetailsId: z.string().optional().catch(undefined),
-  companyDetailsMode: z.enum(['view', 'edit']).catch('view'),
-  truckStatus: z.enum(['available', 'archived']).catch('available'),
-  truckSearch: z.string().catch(''),
-  truckId: z.string().optional().catch(undefined),
-})
+const transportResourcesSearchSchema = z
+  .object({
+    resource: z.enum(['trucks', 'workspace']).catch('workspace'),
+    companyStatus: z.enum(['available', 'archived']).catch('available'),
+    companySearch: z.string().catch(''),
+    transportCompanyId: z.string().optional().catch(undefined),
+    companyDetailsId: z.string().optional().catch(undefined),
+    companyDetailsMode: z.enum(['view', 'edit', 'create']).catch('view'),
+    truckStatus: z.enum(['available', 'archived']).catch('available'),
+    truckSearch: z.string().catch(''),
+    truckId: z.string().optional().catch(undefined),
+  })
+  // Creating a company and detailing one are mutually exclusive states. Clearing the id here means
+  // the two can never contradict each other, so no consumer has to decide which one wins.
+  .transform((search) =>
+    search.companyDetailsMode === 'create' ? { ...search, companyDetailsId: undefined } : search,
+  )
 
 export const Route = createFileRoute('/_authenticated/transport-resources')({
   staticData: { breadcrumb: 'Transport resources' },

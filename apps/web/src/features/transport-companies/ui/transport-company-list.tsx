@@ -7,7 +7,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
 import { classnames } from '@/libraries/shadcn/helpers'
 
@@ -21,6 +27,7 @@ type TransportCompanyListProps = {
   onSelect: (id: string) => void
   onView?: (id: string) => void
   onEdit?: (id: string) => void
+  onCreate?: () => void
   canAdminister?: boolean
   showStatus?: boolean
 }
@@ -35,6 +42,7 @@ export function TransportCompanyList({
   onSelect,
   onView,
   onEdit,
+  onCreate,
   canAdminister = false,
   showStatus = false,
 }: TransportCompanyListProps) {
@@ -123,6 +131,13 @@ export function TransportCompanyList({
             <EmptyTitle>{emptyTitle}</EmptyTitle>
             <EmptyDescription>{emptyDescription}</EmptyDescription>
           </EmptyHeader>
+          {canAdminister && onCreate && (
+            <EmptyContent>
+              <Button onClick={onCreate} size="sm">
+                Create a transport company
+              </Button>
+            </EmptyContent>
+          )}
         </Empty>
       )}
     </div>
