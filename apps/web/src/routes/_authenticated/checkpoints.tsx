@@ -7,7 +7,7 @@ import { dockQueries } from '@/features/docks/queries/dock-queries'
 
 const checkpointSearchSchema = z.object({
   checkpoint: z.string().optional().catch(undefined),
-  create: z.enum(['dock']).optional().catch(undefined),
+  create: z.enum(['dock', 'weighing-area']).optional().catch(undefined),
   kinds: z.enum(['dock', 'weighing-area']).optional().catch(undefined),
   search: z.string().catch(''),
   status: z.enum(['all', 'available', 'archived']).catch('available'),
