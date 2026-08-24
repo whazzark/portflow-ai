@@ -44,3 +44,8 @@ export const archiveDocksValidator = vine.create({
   ids: lifecycleIds(),
   comment: lifecycleComment(),
 })
+
+export const reactivateDocksValidator = vine.create({
+  ids: lifecycleIds(),
+  comment: lifecycleComment(),
+})

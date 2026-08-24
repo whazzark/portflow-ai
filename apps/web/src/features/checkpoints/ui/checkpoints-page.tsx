@@ -25,7 +25,7 @@ import {
   checkpointKindFilterFromVisibility,
   checkpointLayerVisibilityFromFilter,
 } from '@/features/checkpoints/types'
-import { BulkArchiveDocksActions } from '@/features/checkpoints/ui/bulk-archive-docks-actions'
+import { BulkDockLifecycleActions } from '@/features/checkpoints/ui/bulk-dock-lifecycle-actions'
 import { CheckpointMapControls } from '@/features/checkpoints/ui/checkpoint-map-controls'
 import {
   CheckpointSheet,
@@ -109,6 +109,40 @@ export function CheckpointsPage() {
     (checkpoint) => !layerVisibility || layerVisibility[checkpoint.kind],
   )
   const checkpoints = presentCheckpoints(checkpointCollection, status, search, layerVisibility)
+  // The status of any currently checked dock fixes what a selection is for — Available means an
+  // archive is in progress, Archived means a reactivation is — since the selection is homogeneous
+  // by construction (see checkableDockIds below). Undefined while nothing is checked, so any dock
+  // may still start either kind of selection.
+  const selectionIntent: 'ARCHIVE' | 'REACTIVATE' | undefined = useMemo(() => {
+    if (checkedDockIds.size === 0) {
+      return undefined
+    }
+    const [firstCheckedId] = checkedDockIds
+    const firstCheckedDock = docks.find((dock) => dock.id === firstCheckedId)
+    return firstCheckedDock?.status === 'ARCHIVED' ? 'REACTIVATE' : 'ARCHIVE'
+  }, [checkedDockIds, docks])
+  // Every dock select mode may check right now, whether or not it is currently active — the map
+  // also uses this to gate shift-click, which can enter select mode directly. With nothing checked
+  // yet, any dock is checkable; once the selection's intent is fixed, only docks matching it are.
+  const checkableDockIds = useMemo(
+    () =>
+      new Set(
+        checkpoints
+          .filter((checkpoint) => {
+            if (checkpoint.kind !== 'DOCK') {
+              return false
+            }
+            if (!selectionIntent) {
+              return true
+            }
+            return (
+              checkpoint.status === (selectionIntent === 'REACTIVATE' ? 'ARCHIVED' : 'AVAILABLE')
+            )
+          })
+          .map((checkpoint) => checkpoint.id),
+      ),
+    [checkpoints, selectionIntent],
+  )
   const selection = parseCheckpointSelection(checkpointParam)
   const selectedCheckpoint = selection
     ? checkpoints.find(
@@ -183,9 +217,12 @@ export function CheckpointsPage() {
     }
   }, [isSelectingDocks])
 
-  // Ctrl/Cmd+A selects every currently visible, eligible dock, entering select mode on the fly
-  // just like a shift-click — the administrator never has to reach for the map control first.
-  // Ignored while typing in a field, so the browser's native "select all text" keeps working there.
+  // Ctrl/Cmd+A selects every currently visible dock matching the selection's intent, entering
+  // select mode on the fly just like a shift-click — the administrator never has to reach for the
+  // map control first. With nothing checked yet, the intent falls back to the status filter
+  // (Archived shows archived docks, anything else shows available ones), so Ctrl+A always grabs
+  // the docks the administrator is actually looking at. Ignored while typing in a field, so the
+  // browser's native "select all text" keeps working there.
   useEffect(() => {
     if (!canManageCheckpoints) {
       return
@@ -203,14 +240,22 @@ export function CheckpointsPage() {
       if (isEditableTarget) {
         return
       }
-      const availableDockIds = checkpoints
-        .filter((checkpoint) => checkpoint.kind === 'DOCK' && checkpoint.status === 'AVAILABLE')
+      const targetStatus =
+        selectionIntent === 'REACTIVATE'
+          ? 'ARCHIVED'
+          : selectionIntent === 'ARCHIVE'
+            ? 'AVAILABLE'
+            : status === 'archived'
+              ? 'ARCHIVED'
+              : 'AVAILABLE'
+      const matchingDockIds = checkpoints
+        .filter((checkpoint) => checkpoint.kind === 'DOCK' && checkpoint.status === targetStatus)
         .map((checkpoint) => checkpoint.id)
-      if (availableDockIds.length === 0) {
+      if (matchingDockIds.length === 0) {
         return
       }
       event.preventDefault()
-      setCheckedDockIds(new Set(availableDockIds))
+      setCheckedDockIds(new Set(matchingDockIds))
       void navigate({
         search: (previous) => ({
           ...previous,
@@ -223,7 +268,24 @@ export function CheckpointsPage() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [canManageCheckpoints, checkpoints, navigate])
+  }, [canManageCheckpoints, checkpoints, navigate, selectionIntent, status])
+
+  // Escape clears an in-progress dock selection without leaving select mode — the keyboard
+  // counterpart of the bulk action bar's "Clear selection" button, so a second Escape (with
+  // nothing left checked) is free to fall through to whatever else Escape already does (e.g.
+  // closing a menu), rather than this handler swallowing every Escape press.
+  useEffect(() => {
+    if (!isSelectingDocks || checkedDockIds.size === 0) {
+      return
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setCheckedDockIds(new Set())
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSelectingDocks, checkedDockIds.size])
 
   useEffect(() => {
     const sourceLoaded =
@@ -386,8 +448,7 @@ export function CheckpointsPage() {
     })
   }
   const toggleDockChecked = (id: string) => {
-    const dock = docks.find((candidate) => candidate.id === id)
-    if (dock?.status !== 'AVAILABLE') {
+    if (!checkableDockIds.has(id)) {
       return
     }
     setCheckedDockIds((current) => {
@@ -458,6 +519,12 @@ export function CheckpointsPage() {
           .map((blocked) => blocked.id),
       ),
     )
+  }
+  // Unlike archiving's IN_USE, neither reactivation blocker (NOT_FOUND, ALREADY_AVAILABLE)
+  // becomes eligible on a retry, so the whole selection is cleared rather than keeping any
+  // blocked dock checked (research D7).
+  const handleBulkReactivateSuccess = () => {
+    setCheckedDockIds(new Set())
   }
 
   // Hidden while any checkpoint is being edited or a bulk selection is in progress: starting a
@@ -605,6 +672,7 @@ export function CheckpointsPage() {
         map={(onMapError) => (
           <CheckpointMap
             canSelectDocks={canManageCheckpoints && layerVisibility.DOCK}
+            checkableDockIds={canManageCheckpoints ? checkableDockIds : undefined}
             checkedIds={isSelectingDocks ? checkedDockIds : undefined}
             checkpoints={mapCheckpoints}
             createActions={createActions}
@@ -644,9 +712,14 @@ export function CheckpointsPage() {
         sourceMessage={showWeighingAreaMessage ? weighingAreaMessage : undefined}
       />
       {canManageCheckpoints && (
-        <BulkArchiveDocksActions
+        <BulkDockLifecycleActions
+          intent={selectionIntent ?? 'ARCHIVE'}
           onClear={() => setCheckedDockIds(new Set())}
-          onSuccess={handleBulkArchiveSuccess}
+          onSuccess={
+            selectionIntent === 'REACTIVATE'
+              ? handleBulkReactivateSuccess
+              : handleBulkArchiveSuccess
+          }
           selectedIds={[...checkedDockIds]}
         />
       )}

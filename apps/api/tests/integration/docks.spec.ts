@@ -462,7 +462,14 @@ test.group('Docks administration', () => {
 
   test('reactivates the same dock identity with lifecycle metadata', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
-    const dock = await DockFactory.apply('archived').merge({ name: 'Returning Dock' }).create()
+    const archivedBy = await UserFactory.apply('active').create()
+    const dock = await DockFactory.apply('archived')
+      .merge({
+        name: 'Returning Dock',
+        archivedByUserId: archivedBy.id,
+        archiveComment: 'Quay closed for resurfacing',
+      })
+      .create()
     const response = await client
       .post(`/api/v1/docks/${dock.id}/reactivate`)
       .loginAs(admin)
@@ -473,5 +480,69 @@ test.group('Docks administration', () => {
     assert.equal(response.body().data.status, 'AVAILABLE')
     assert.equal(response.body().data.reactivationComment, 'Returning')
     assert.equal(response.body().data.reactivatedByUserId, admin.id)
+    assert.isNotNull(response.body().data.reactivatedAt)
+    assert.equal(response.body().data.name, 'Returning Dock')
+    assert.equal(response.body().data.archivedByUserId, archivedBy.id)
+    assert.equal(response.body().data.archiveComment, 'Quay closed for resurfacing')
+    assert.isNotNull(response.body().data.archivedAt)
+  })
+
+  test('reactivates a dock leaving no reactivation comment when given whitespace only', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const dock = await DockFactory.apply('archived').create()
+    const response = await client
+      .post(`/api/v1/docks/${dock.id}/reactivate`)
+      .loginAs(admin)
+      .json({ comment: '   ' })
+
+    response.assertStatus(200)
+    assert.isNull(response.body().data.reactivationComment)
+  })
+
+  test('rejects reactivation by a user whose access is not active', async ({ assert, client }) => {
+    const suspended = await UserFactory.apply('deactivated')
+      .merge({ role: 'OPERATIONS_ADMIN' })
+      .create()
+    const dock = await DockFactory.apply('archived').create()
+    const response = await client
+      .post(`/api/v1/docks/${dock.id}/reactivate`)
+      .loginAs(suspended)
+      .json({})
+
+    response.assertStatus(401)
+    assert.equal(response.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    await dock.refresh()
+    assert.equal(dock.status, 'ARCHIVED')
+    assert.isNull(dock.reactivatedAt)
+  })
+
+  test('rejects reactivating a dock that does not exist', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const missingDockId = '00000000-0000-4000-8000-000000000000'
+    const response = await client
+      .post(`/api/v1/docks/${missingDockId}/reactivate`)
+      .loginAs(admin)
+      .json({})
+
+    response.assertStatus(404)
+    assert.equal(response.body().error.code, 'E_DOCK_NOT_FOUND')
+  })
+
+  test('rejects reactivating a dock that is already available', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const dock = await DockFactory.create()
+    const response = await client
+      .post(`/api/v1/docks/${dock.id}/reactivate`)
+      .loginAs(admin)
+      .json({})
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_DOCK_ALREADY_AVAILABLE')
+    await dock.refresh()
+    assert.isNull(dock.reactivatedAt)
+    assert.isNull(dock.reactivatedByUserId)
   })
 })

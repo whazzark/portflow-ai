@@ -112,6 +112,7 @@ export function CheckpointMap({
   createActions = [],
   selectMode,
   checkedIds,
+  checkableDockIds,
   onToggleChecked,
   canSelectDocks = false,
   onToggleSelectMode,
@@ -126,11 +127,15 @@ export function CheckpointMap({
   /** When `'docks'`, dock markers become checkable instead of opening the details sheet. */
   selectMode?: 'docks'
   checkedIds?: Set<string>
+  /** Dock ids eligible to become checked, whether or not select mode is currently active — also
+   * gates shift-click, which can enter select mode directly from any checkable dock marker. The
+   * caller (checkpoints-page.tsx) owns the eligibility rule; the map only renders it. */
+  checkableDockIds?: Set<string>
   onToggleChecked?: (id: string) => void
   /** Whether the map-control toggle for entering dock select mode is offered at all. */
   canSelectDocks?: boolean
   onToggleSelectMode?: () => void
-  /** Shift-clicking an available dock marker enters/adds to select mode directly, regardless of the current mode. */
+  /** Shift-clicking a checkable dock marker enters/adds to select mode directly, regardless of the current mode. */
   onShiftSelectDock?: (id: string) => void
 }) {
   const initialCenter = useMemo<[number, number]>(() => {
@@ -143,6 +148,11 @@ export function CheckpointMap({
 
   return (
     <MapCanvas
+      // MapLibre's built-in Shift+drag box-zoom is not a feature this map offers, and its
+      // interaction handler swallows the click that follows a Shift+mousedown (via its internal
+      // suppressClick — see BoxZoomHandler) even when the mousedown lands on a marker rather than
+      // the canvas. That silently breaks shift-click-to-select below, so box-zoom stays disabled.
+      boxZoom={false}
       center={initialCenter}
       className={isArmed ? 'h-full cursor-crosshair' : 'h-full'}
       onMapError={onError}
@@ -151,8 +161,9 @@ export function CheckpointMap({
     >
       <FitCheckpointBounds checkpoints={checkpoints} selected={selected} />
       {checkpoints.map((checkpoint) => {
-        const isAvailableDock = checkpoint.kind === 'DOCK' && checkpoint.status === 'AVAILABLE'
-        const isSelectableDock = selectMode === 'docks' && isAvailableDock
+        const isCheckableDock =
+          checkpoint.kind === 'DOCK' && (checkableDockIds?.has(checkpoint.id) ?? false)
+        const isSelectableDock = selectMode === 'docks' && isCheckableDock
 
         return (
           <CheckpointMarker
@@ -162,7 +173,7 @@ export function CheckpointMap({
             muted={isArmed}
             offset={getCheckpointMarkerOffset(checkpoint, checkpoints)}
             onSelect={(selectedCheckpoint, event) => {
-              if (isAvailableDock && event.shiftKey && onShiftSelectDock) {
+              if (isCheckableDock && event.shiftKey && onShiftSelectDock) {
                 onShiftSelectDock(checkpoint.id)
                 return
               }

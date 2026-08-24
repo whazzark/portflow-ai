@@ -39,6 +39,13 @@ export type ArchiveDocksCommand = {
   archiveComment: string | null
 }
 
+export type ReactivateDocksCommand = {
+  ids: string[]
+  reactivatedAt: DateTime
+  reactivatedByUserId: string
+  reactivationComment: string | null
+}
+
 export type BulkDockLifecycleResult = {
   updatedDocks: Dock[]
   blockedDocks: BulkDockLifecycleBlocker[]
@@ -70,4 +77,5 @@ export default abstract class DockRepository {
   abstract archiveAvailable(command: ArchiveDockCommand): Promise<ArchiveDockResult>
   abstract reactivateArchived(command: ReactivateDockCommand): Promise<ReactivateDockResult>
   abstract archiveAvailableMany(command: ArchiveDocksCommand): Promise<BulkDockLifecycleResult>
+  abstract reactivateArchivedMany(command: ReactivateDocksCommand): Promise<BulkDockLifecycleResult>
 }
