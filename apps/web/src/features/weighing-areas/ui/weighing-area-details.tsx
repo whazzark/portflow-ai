@@ -3,11 +3,21 @@ import {
   ResourceDetailField,
   ResourceDetailHeader,
 } from '@/components/resource-map/resource-details'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { SheetFooter } from '@/components/ui/sheet'
 import type { WeighingAreaDto } from '@/features/weighing-areas/types'
 import { formatDateTime } from '@/helpers/dates'
 
-export function WeighingAreaDetails({ area }: { area: WeighingAreaDto }) {
+export function WeighingAreaDetails({
+  canEdit,
+  area,
+  onEdit,
+}: {
+  canEdit: boolean
+  area: WeighingAreaDto
+  onEdit: () => void
+}) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ResourceDetailHeader
@@ -41,6 +51,11 @@ export function WeighingAreaDetails({ area }: { area: WeighingAreaDto }) {
           </dl>
         </section>
       </ResourceDetailBody>
+      {canEdit && area.status === 'AVAILABLE' && (
+        <SheetFooter className="shrink-0 border-t bg-popover">
+          <Button onClick={onEdit}>Edit weighing area</Button>
+        </SheetFooter>
+      )}
     </div>
   )
 }

@@ -30,10 +30,14 @@ export function CreateWeighingAreaPanel({
       </SheetHeader>
       <div className="px-4">
         <WeighingAreaForm
-          onCreate={onCreate}
+          errorTitle="Unable to create weighing area"
+          initialValues={null}
           onPendingChange={onPendingChange}
+          onSubmit={onCreate}
           onSuccess={onSuccess}
           pending={pending}
+          pendingLabel="Creating…"
+          submitLabel="Create weighing area"
         />
       </div>
     </div>

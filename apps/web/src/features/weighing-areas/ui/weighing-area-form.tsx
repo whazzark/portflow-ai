@@ -19,28 +19,40 @@ const nameSchema = z.object({
 })
 
 export function WeighingAreaForm({
+  initialValues = null,
   pending,
   onPendingChange,
-  onCreate,
+  onSubmit,
   onSuccess,
+  onNotFound,
+  submitLabel,
+  pendingLabel,
+  errorTitle,
 }: {
+  initialValues?: { name: string; latitude: number; longitude: number } | null
   pending: PendingWeighingAreaPlacement | null
   onPendingChange: (point: PendingWeighingAreaPlacement) => void
-  onCreate: (value: {
+  onSubmit: (value: {
     name: string
     latitude: number
     longitude: number
   }) => Promise<WeighingAreaDto>
   onSuccess: (area: WeighingAreaDto) => void
+  /** Update-only: called when the server reports the weighing area no longer exists. */
+  onNotFound?: () => void
+  submitLabel: string
+  pendingLabel: string
+  errorTitle: string
 }) {
+  const isEditing = initialValues !== null
   const coordinateFields = useCoordinateFields(pending, onPendingChange)
   const hasCoordinateError = Boolean(
     coordinateFields.latitude.error || coordinateFields.longitude.error,
   )
-  const canSubmit = Boolean(pending) && !hasCoordinateError
+  const canSubmit = (isEditing || Boolean(pending)) && !hasCoordinateError
 
   const form = useAppForm({
-    defaultValues: { name: '' },
+    defaultValues: { name: initialValues?.name ?? '' },
     validators: {
       onBlur: nameSchema,
       onSubmit: nameSchema,
@@ -51,7 +63,7 @@ export function WeighingAreaForm({
       }
 
       try {
-        const result = await onCreate({
+        const result = await onSubmit({
           name: value.name.trim(),
           latitude: pending.latitude,
           longitude: pending.longitude,
@@ -66,8 +78,18 @@ export function WeighingAreaForm({
             formApi.setErrorMap({
               onSubmit: { fields: { name: apiError.message }, form: '' },
             })
+          } else if (apiError.code === 'E_WEIGHING_AREA_ARCHIVED') {
+            formApi.setErrorMap({
+              onSubmit: {
+                fields: {},
+                form: `${apiError.message}. Reactivate the weighing area before editing it.`,
+              },
+            })
+          } else if (apiError.code === 'E_WEIGHING_AREA_NOT_FOUND' && onNotFound) {
+            toast.error(errorTitle, { description: apiError.message })
+            onNotFound()
           } else {
-            toast.error('Unable to create weighing area', { description: apiError.message })
+            toast.error(errorTitle, { description: apiError.message })
           }
         }
       }
@@ -82,15 +104,18 @@ export function WeighingAreaForm({
             {(field) => (
               <field.TextField
                 autoComplete="off"
+                autoFocus={isEditing}
                 label="Weighing area name"
                 placeholder="North Scale"
                 required={true}
               />
             )}
           </form.AppField>
-          <FieldDescription role="status">
-            Click the map to place the new weighing area, or enter its coordinates directly.
-          </FieldDescription>
+          {!isEditing && (
+            <FieldDescription role="status">
+              Click the map to place the new weighing area, or enter its coordinates directly.
+            </FieldDescription>
+          )}
           <CoordinateField
             axis="latitude"
             error={coordinateFields.latitude.error}
@@ -105,7 +130,7 @@ export function WeighingAreaForm({
             onChange={coordinateFields.longitude.onChange}
             text={coordinateFields.longitude.text}
           />
-          {!pending && (
+          {!isEditing && !pending && (
             <FieldDescription role="status">
               A location must be placed before this weighing area can be created.
             </FieldDescription>
@@ -115,7 +140,7 @@ export function WeighingAreaForm({
         <form.Subscribe selector={(state) => state.isSubmitting}>
           {(isSubmitting) => (
             <Button disabled={isSubmitting || !canSubmit} type="submit">
-              {isSubmitting ? 'Creating…' : 'Create weighing area'}
+              {isSubmitting ? pendingLabel : submitLabel}
             </Button>
           )}
         </form.Subscribe>
