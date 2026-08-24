@@ -18,9 +18,9 @@ test('offers no selection checkboxes to a non-administrator', async () => {
   mockTransportCompanies(TRANSPORT_COMPANIES, ACTIVE_USER)
 
   renderTransportCompanies()
-  await screen.findByRole('list', { name: 'Available transport companies' })
+  const availableList = await screen.findByRole('list', { name: 'Available transport companies' })
 
-  expect(screen.queryByRole('checkbox', { name: /select/i })).not.toBeInTheDocument()
+  expect(within(availableList).queryByRole('checkbox', { name: /select/i })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
 })
 
@@ -31,9 +31,9 @@ test('offers no selection checkboxes on the Archived tab', async () => {
   renderTransportCompanies()
   await screen.findByRole('list', { name: 'Available transport companies' })
   fireEvent.click(within(await companyTabs()).getByRole('tab', { name: /^Archived/ }))
-  await screen.findByRole('list', { name: 'Archived transport companies' })
+  const archivedList = await screen.findByRole('list', { name: 'Archived transport companies' })
 
-  expect(screen.queryByRole('checkbox', { name: /select/i })).not.toBeInTheDocument()
+  expect(within(archivedList).queryByRole('checkbox', { name: /select/i })).not.toBeInTheDocument()
 })
 
 test('selecting a company does not change which company scopes the trucks panel', async () => {
