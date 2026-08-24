@@ -45,6 +45,10 @@ export default class CreateTruckUseCase {
       throw new DuplicateTruckRegistrationException()
     }
 
+    if (result.kind !== 'CREATED') {
+      throw new Error(`Unexpected truck creation result: ${result.kind}`)
+    }
+
     return result.truck
   }
 }

@@ -6,7 +6,8 @@ import CreateTruckUseCase from '#trucks/create/create_truck_use_case'
 import ListTrucksUseCase from '#trucks/list/list_trucks_use_case'
 import TruckPolicy from '#trucks/shared/truck_policy'
 import TruckTransformer from '#trucks/shared/truck_transformer'
-import { createTruckValidator } from '#trucks/shared/truck_validator'
+import { createTruckValidator, updateTruckValidator } from '#trucks/shared/truck_validator'
+import UpdateTruckUseCase from '#trucks/update/update_truck_use_case'
 
 @inject()
 export default class TrucksController {
@@ -14,6 +15,7 @@ export default class TrucksController {
     private listTrucksUseCase: ListTrucksUseCase,
     private listAvailableTrucksUseCase: ListAvailableTrucksUseCase,
     private createTruckUseCase: CreateTruckUseCase,
+    private updateTruckUseCase: UpdateTruckUseCase,
   ) {}
 
   async store({ bouncer, request, response, serialize }: HttpContext) {
@@ -29,6 +31,22 @@ export default class TrucksController {
     })
 
     response.status(201)
+
+    return serialize(TruckTransformer.transform(truck))
+  }
+
+  async update({ bouncer, params, request, serialize }: HttpContext) {
+    await bouncer.with(TruckPolicy).authorize('update')
+
+    const payload = await request.validateUsing(updateTruckValidator)
+
+    const truck = await this.updateTruckUseCase.handle({
+      id: params.id,
+      registration: payload.registration,
+      vehicleModel: payload.vehicleModel,
+      capacityTonnes: payload.capacityTonnes,
+      transportCompanyId: payload.transportCompanyId,
+    })
 
     return serialize(TruckTransformer.transform(truck))
   }

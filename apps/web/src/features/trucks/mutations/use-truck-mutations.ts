@@ -23,8 +23,15 @@ export function useTruckMutations() {
     }),
   )
 
+  const update = useMutation(
+    tuyauQuery.trucks.update.mutationOptions({
+      onSuccess: () => invalidateTrucks(),
+    }),
+  )
+
   return {
     create,
+    update,
     refreshTrucks: invalidateTrucks,
   }
 }

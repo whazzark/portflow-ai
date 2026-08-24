@@ -15,4 +15,8 @@ export default class TruckPolicy extends BasePolicy {
   create(user: User): AuthorizerResponse {
     return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
   }
+
+  update(user: User): AuthorizerResponse {
+    return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
+  }
 }

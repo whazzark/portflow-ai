@@ -8,7 +8,7 @@
 |---|---|---|---|
 | #222 | List Trucks | backlog | pending selection |
 | #223 | Create a Truck | backlog | pending selection |
-| #224 | Update a Truck | backlog | pending selection |
+| #224 | Update a Truck | in-progress | `./update-a-truck/` |
 | #225 | Archive a Truck | backlog | pending selection |
 | #226 | Reactivate a Truck | backlog | pending selection |
 

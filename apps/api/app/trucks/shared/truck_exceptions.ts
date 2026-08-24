@@ -11,3 +11,22 @@ export class InvalidTransportCompanyException extends Exception {
   static code = 'E_TRUCK_TRANSPORT_COMPANY_INVALID'
   static message = 'Transport company must exist and be available'
 }
+
+export class TruckNotFoundException extends Exception {
+  static status = 404
+  static code = 'E_TRUCK_NOT_FOUND'
+  static message = 'Truck not found'
+}
+
+export class ArchivedTruckReadOnlyException extends Exception {
+  static status = 409
+  static code = 'E_TRUCK_ARCHIVED'
+  static message = 'Archived trucks are read-only'
+}
+
+export class TruckTransportCompanyLockedException extends Exception {
+  static status = 409
+  static code = 'E_TRUCK_TRANSPORT_COMPANY_LOCKED'
+  static message =
+    'Truck transport company cannot change while the truck is assigned to a planned or active discharge'
+}

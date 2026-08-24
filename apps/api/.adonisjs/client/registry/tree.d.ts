@@ -30,6 +30,7 @@ export interface ApiDefinition {
     index: typeof routes['trucks.index']
     available: typeof routes['trucks.available']
     store: typeof routes['trucks.store']
+    update: typeof routes['trucks.update']
   }
   docks: {
     index: typeof routes['docks.index']
