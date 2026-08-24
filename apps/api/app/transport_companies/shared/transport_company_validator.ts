@@ -3,7 +3,7 @@ import {
   lifecycleComment,
   lifecycleIds,
   nonBlank,
-} from '#site_references/shared/site_reference_validator'
+} from '#shared/validators/lifecycle_validator'
 
 export const createTransportCompanyValidator = vine.create({
   name: vine.string().use(nonBlank()).minLength(1).maxLength(255),

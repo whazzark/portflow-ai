@@ -1,3 +1,4 @@
+import app from '@adonisjs/core/services/app'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { test } from '@japa/runner'
 
@@ -20,7 +21,7 @@ test.group('LucidTruckRepository.findCompanyIdsWithAvailableTrucks', (group) => 
 
     const withNoTruck = await TransportCompanyFactory.create()
 
-    const repository = new LucidTruckRepository()
+    const repository = await app.container.make(LucidTruckRepository)
     const result = await repository.findCompanyIdsWithAvailableTrucks({
       transportCompanyIds: [withAvailable.id, withOnlyArchived.id, withNoTruck.id],
     })
@@ -32,7 +33,7 @@ test.group('LucidTruckRepository.findCompanyIdsWithAvailableTrucks', (group) => 
   })
 
   test('omits an unknown company id from the result', async ({ assert }) => {
-    const repository = new LucidTruckRepository()
+    const repository = await app.container.make(LucidTruckRepository)
     const result = await repository.findCompanyIdsWithAvailableTrucks({
       transportCompanyIds: ['00000000-0000-4000-8000-000000000000'],
     })
@@ -41,7 +42,7 @@ test.group('LucidTruckRepository.findCompanyIdsWithAvailableTrucks', (group) => 
   })
 
   test('returns an empty set for an empty request without querying', async ({ assert }) => {
-    const repository = new LucidTruckRepository()
+    const repository = await app.container.make(LucidTruckRepository)
     const result = await repository.findCompanyIdsWithAvailableTrucks({
       transportCompanyIds: [],
     })

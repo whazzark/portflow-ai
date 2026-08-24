@@ -126,22 +126,16 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
     }
   }
 
-  async archiveAvailable(
-    command: ArchiveTransportCompanyCommand,
-  ): Promise<ArchiveTransportCompanyResult> {
-    const [affectedRows] = await TransportCompany.query()
-      .where('id', command.id)
-      .where('status', 'AVAILABLE')
-      .update({
-        status: 'ARCHIVED',
-        archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
-        archivedByUserId: command.archivedByUserId,
-        archiveComment: command.archiveComment,
-        updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
-      })
-
-    if (affectedRows === 0) {
-      const company = await TransportCompany.find(command.id)
+  archiveAvailable(command: ArchiveTransportCompanyCommand): Promise<ArchiveTransportCompanyResult> {
+    return TransportCompany.transaction(async (trx) => {
+      // Locking the row before checking trucks closes the race the two-step check-then-write used
+      // to have: truck creation (LucidTruckRepository#create) locks this same company row before
+      // inserting an AVAILABLE truck, so whichever of the two transactions runs first is fully
+      // committed before the other observes the company's state.
+      const company = await TransportCompany.query({ client: trx })
+        .where('id', command.id)
+        .forUpdate()
+        .first()
 
       if (!company) {
         return { kind: 'NOT_FOUND' }
@@ -150,22 +144,35 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
         return { kind: 'ALREADY_ARCHIVED' }
       }
 
-      // The row is AVAILABLE now but the UPDATE above matched no rows: it was archived and then
-      // reactivated concurrently between the UPDATE and this refetch. Treat it like the caller's
-      // original read was stale rather than reporting a misleading success.
-      return { kind: 'NOT_FOUND' }
-    }
+      const idsWithAvailableTrucks = await this.truckRepository.findCompanyIdsWithAvailableTrucks({
+        transportCompanyIds: [command.id],
+        client: trx,
+      })
+      if (idsWithAvailableTrucks.has(command.id)) {
+        return { kind: 'HAS_AVAILABLE_TRUCKS' }
+      }
 
-    const company = await TransportCompany.query()
-      .where('id', command.id)
-      .preload('archivedBy')
-      .preload('reactivatedBy')
-      .first()
-    if (!company) {
-      return { kind: 'NOT_FOUND' }
-    }
+      await TransportCompany.query({ client: trx })
+        .where('id', command.id)
+        .update({
+          status: 'ARCHIVED',
+          archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
+          archivedByUserId: command.archivedByUserId,
+          archiveComment: command.archiveComment,
+          updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
+        })
 
-    return { kind: 'ARCHIVED', company }
+      const archived = await TransportCompany.query({ client: trx })
+        .where('id', command.id)
+        .preload('archivedBy')
+        .preload('reactivatedBy')
+        .first()
+      if (!archived) {
+        return { kind: 'NOT_FOUND' }
+      }
+
+      return { kind: 'ARCHIVED', company: archived }
+    })
   }
 
   archiveAvailableMany(

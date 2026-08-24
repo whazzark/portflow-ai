@@ -1,7 +1,6 @@
 import { inject } from '@adonisjs/core'
 
 import { assertValidSiteReferenceName } from '#site_references/shared/normalize_site_reference'
-import TransportCompanyRepository from '#transport_companies/shared/repositories/transport_company_repository'
 import TruckRepository from '#trucks/shared/repositories/truck_repository'
 import {
   DuplicateTruckRegistrationException,
@@ -17,22 +16,12 @@ export type CreateTruckInput = {
 
 @inject()
 export default class CreateTruckUseCase {
-  constructor(
-    private truckRepository: TruckRepository,
-    private transportCompanyRepository: TransportCompanyRepository,
-  ) {}
+  constructor(private truckRepository: TruckRepository) {}
 
   async handle(input: CreateTruckInput) {
     const registration = assertValidSiteReferenceName(input.registration)
     const vehicleModel =
       input.vehicleModel === null ? null : assertValidSiteReferenceName(input.vehicleModel)
-
-    const transportCompany = await this.transportCompanyRepository.findById(
-      input.transportCompanyId,
-    )
-    if (transportCompany?.status !== 'AVAILABLE') {
-      throw new InvalidTransportCompanyException()
-    }
 
     const result = await this.truckRepository.create({
       registration,
@@ -43,6 +32,9 @@ export default class CreateTruckUseCase {
 
     if (result.kind === 'DUPLICATE_REGISTRATION') {
       throw new DuplicateTruckRegistrationException()
+    }
+    if (result.kind === 'INVALID_TRANSPORT_COMPANY') {
+      throw new InvalidTransportCompanyException()
     }
 
     if (result.kind !== 'CREATED') {

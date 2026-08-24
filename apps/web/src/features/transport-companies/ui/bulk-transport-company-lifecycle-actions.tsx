@@ -37,10 +37,8 @@ export function BulkTransportCompanyLifecycleActions({
 
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const submit = async () => {
-    setIsSubmitting(true)
     try {
       const result = await mutations.archiveMany.mutateAsync({
         body: { ids: selectedIds, comment: comment || null },
@@ -69,8 +67,6 @@ export function BulkTransportCompanyLifecycleActions({
       toast.error('Unable to archive transport companies', {
         description: parseApiError(cause).message,
       })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -127,7 +123,7 @@ export function BulkTransportCompanyLifecycleActions({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isSubmitting}
+              disabled={mutations.archiveMany.isPending}
               onClick={(event) => {
                 event.preventDefault()
                 void submit()

@@ -7,7 +7,6 @@ import {
   TransportCompanyHasAvailableTrucksException,
   TransportCompanyNotFoundException,
 } from '#transport_companies/shared/transport_company_exceptions'
-import TruckRepository from '#trucks/shared/repositories/truck_repository'
 
 export type ArchiveTransportCompanyInput = {
   id: string
@@ -18,29 +17,9 @@ export type ArchiveTransportCompanyInput = {
 
 @inject()
 export default class ArchiveTransportCompanyUseCase {
-  constructor(
-    private transportCompanyRepository: TransportCompanyRepository,
-    private truckRepository: TruckRepository,
-  ) {}
+  constructor(private transportCompanyRepository: TransportCompanyRepository) {}
 
   async handle(input: ArchiveTransportCompanyInput) {
-    const company = await this.transportCompanyRepository.findById(input.id)
-
-    if (!company) {
-      throw new TransportCompanyNotFoundException()
-    }
-    if (company.status === 'ARCHIVED') {
-      throw new TransportCompanyAlreadyArchivedException()
-    }
-
-    const idsWithAvailableTrucks = await this.truckRepository.findCompanyIdsWithAvailableTrucks({
-      transportCompanyIds: [input.id],
-    })
-
-    if (idsWithAvailableTrucks.has(input.id)) {
-      throw new TransportCompanyHasAvailableTrucksException()
-    }
-
     const result = await this.transportCompanyRepository.archiveAvailable({
       id: input.id,
       archivedAt: input.archivedAt,
@@ -53,6 +32,9 @@ export default class ArchiveTransportCompanyUseCase {
     }
     if (result.kind === 'ALREADY_ARCHIVED') {
       throw new TransportCompanyAlreadyArchivedException()
+    }
+    if (result.kind === 'HAS_AVAILABLE_TRUCKS') {
+      throw new TransportCompanyHasAvailableTrucksException()
     }
     return result.company
   }

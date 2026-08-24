@@ -34,6 +34,7 @@ export type ArchiveTransportCompanyResult =
   | { kind: 'ARCHIVED'; company: TransportCompany }
   | { kind: 'NOT_FOUND' }
   | { kind: 'ALREADY_ARCHIVED' }
+  | { kind: 'HAS_AVAILABLE_TRUCKS' }
 
 export type ArchiveTransportCompaniesCommand = {
   ids: string[]

@@ -33,6 +33,7 @@ export type TruckWriteResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'ARCHIVED' }
   | { kind: 'TRANSPORT_COMPANY_CHANGED' }
+  | { kind: 'INVALID_TRANSPORT_COMPANY' }
 
 export type FindCompanyIdsWithAvailableTrucksInput = {
   transportCompanyIds: readonly string[]
