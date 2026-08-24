@@ -159,6 +159,38 @@ test.group('Weighing areas administration', () => {
     assert.equal(reactivated.body().data.status, 'AVAILABLE')
   })
 
+  test('rejects a duplicate name during creation with a 409 conflict, matching case-insensitively against available and archived areas', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    await WeighingAreaFactory.merge({ name: 'Conflict Scale Alpha' }).create()
+    await WeighingAreaFactory.apply('archived').merge({ name: 'Conflict Scale Beta' }).create()
+
+    const conflictsWithAvailable = await client
+      .post('/api/v1/weighing-areas')
+      .loginAs(admin)
+      .json({ name: '  conflict scale alpha  ', latitude: 1, longitude: 1 })
+
+    conflictsWithAvailable.assertStatus(409)
+    assert.equal(conflictsWithAvailable.body().error.code, 'E_WEIGHING_AREA_NAME_CONFLICT')
+
+    const conflictsWithArchived = await client
+      .post('/api/v1/weighing-areas')
+      .loginAs(admin)
+      .json({ name: ' CONFLICT SCALE BETA ', latitude: 1, longitude: 1 })
+
+    conflictsWithArchived.assertStatus(409)
+    assert.equal(conflictsWithArchived.body().error.code, 'E_WEIGHING_AREA_NAME_CONFLICT')
+
+    const listed = await client.get('/api/v1/weighing-areas').loginAs(admin)
+    assert.equal(
+      listed.body().data.filter((area: { name: string }) => area.name === 'Conflict Scale Alpha')
+        .length,
+      1,
+    )
+  })
+
   test('rejects archival when a persisted current shift uses the area', async ({
     assert,
     client,
