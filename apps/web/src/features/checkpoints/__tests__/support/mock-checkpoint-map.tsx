@@ -55,6 +55,7 @@ type MockPlacement = {
   pending: MockLatLng | null
   onPlace: (point: MockLatLng) => void
   onMove: (point: MockLatLng) => void
+  label?: string
 }
 
 type MockCreateAction = {
@@ -102,7 +103,8 @@ export function CheckpointMap({
       {placement?.pending && (
         <>
           <div data-testid="pending-checkpoint-marker">
-            Pending checkpoint at {placement.pending.latitude}, {placement.pending.longitude}
+            {placement.label ?? 'Pending checkpoint'} at {placement.pending.latitude},{' '}
+            {placement.pending.longitude}
           </div>
           <button
             onClick={() => {
