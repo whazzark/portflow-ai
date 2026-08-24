@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SheetFooter } from '@/components/ui/sheet'
 import type { DockDto } from '@/features/docks/types'
+import { DockLifecycleActions } from '@/features/docks/ui/dock-lifecycle-actions'
 import { formatDateTime } from '@/helpers/dates'
 
 export function DockDetails({
@@ -52,8 +53,9 @@ export function DockDetails({
         </section>
       </ResourceDetailBody>
       {canEdit && dock.status === 'AVAILABLE' && (
-        <SheetFooter className="shrink-0 border-t bg-popover">
+        <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
           <Button onClick={onEdit}>Edit dock</Button>
+          <DockLifecycleActions dock={dock} />
         </SheetFooter>
       )}
     </div>

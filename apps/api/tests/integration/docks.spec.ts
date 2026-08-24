@@ -380,6 +380,37 @@ test.group('Docks administration', () => {
     assert.equal(response.body().data.archivedByUserId, admin.id)
   })
 
+  test('archives a dock without a comment', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const dock = await DockFactory.create()
+    const response = await client.post(`/api/v1/docks/${dock.id}/archive`).loginAs(admin).json({})
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.status, 'ARCHIVED')
+    assert.isNull(response.body().data.archiveComment)
+  })
+
+  test('rejects archiving a dock that is already archived', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const dock = await DockFactory.apply('archived').create()
+    const response = await client.post(`/api/v1/docks/${dock.id}/archive`).loginAs(admin).json({})
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_DOCK_ALREADY_ARCHIVED')
+  })
+
+  test('rejects archiving a dock that does not exist', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const missingDockId = '00000000-0000-4000-8000-000000000000'
+    const response = await client
+      .post(`/api/v1/docks/${missingDockId}/archive`)
+      .loginAs(admin)
+      .json({})
+
+    response.assertStatus(404)
+    assert.equal(response.body().error.code, 'E_DOCK_NOT_FOUND')
+  })
+
   test('rejects archival when a persisted planned or active discharge uses the dock', async ({
     assert,
     client,

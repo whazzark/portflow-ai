@@ -141,7 +141,7 @@ test('keeps an unmuted marker selectable', async () => {
 
   await user.click(marker)
 
-  expect(onSelect).toHaveBeenCalledWith(NORTH_DOCK)
+  expect(onSelect).toHaveBeenCalledWith(NORTH_DOCK, expect.anything())
 })
 
 test('makes a muted marker non-interactive so placement clicks fall through to the map', () => {

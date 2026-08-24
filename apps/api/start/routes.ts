@@ -60,6 +60,7 @@ router
         router.post('/', [controllers.Docks, 'store']).as('store')
         router.get('/available', [controllers.Docks, 'available']).as('available')
         router.patch('/:id', [controllers.Docks, 'update']).as('update')
+        router.post('/archive', [controllers.Docks, 'archiveMany']).as('archive_many')
         router.post('/:id/archive', [controllers.Docks, 'archive']).as('archive')
         router.post('/:id/reactivate', [controllers.Docks, 'reactivate']).as('reactivate')
       })

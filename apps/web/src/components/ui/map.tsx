@@ -813,21 +813,27 @@ function ControlButton({
   label,
   children,
   disabled = false,
+  active = false,
 }: {
   onClick: () => void
   label: string
   children: React.ReactNode
   disabled?: boolean
+  /** Renders the button in a pressed/toggled-on state, e.g. an active map mode. */
+  active?: boolean
 }) {
   return (
     <button
       onClick={onClick}
       aria-label={label}
+      aria-pressed={active || undefined}
       type="button"
       className={cn(
         'flex size-8 items-center justify-center transition-colors',
         'first:rounded-t-md last:rounded-b-md',
-        'hover:bg-accent dark:hover:bg-accent/40',
+        active
+          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+          : 'hover:bg-accent dark:hover:bg-accent/40',
         'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
         'disabled:pointer-events-none disabled:opacity-50',
       )}

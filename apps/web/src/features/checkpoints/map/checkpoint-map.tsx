@@ -1,3 +1,4 @@
+import { SquareDashedMousePointer } from 'lucide-react'
 import { LngLatBounds } from 'maplibre-gl'
 import { type ReactNode, useEffect, useMemo } from 'react'
 import {
@@ -9,7 +10,13 @@ import {
   PendingPlacementMarker,
   useResourceMapPlacement,
 } from '@/components/resource-map/resource-map-placement'
-import { Map as MapCanvas, MapControls, useMap } from '@/components/ui/map'
+import {
+  ControlButton,
+  ControlGroup,
+  Map as MapCanvas,
+  MapControls,
+  useMap,
+} from '@/components/ui/map'
 import { mapStyleUrls } from '@/config/map'
 import { CheckpointMarker } from '@/features/checkpoints/map/checkpoint-marker'
 import { getCheckpointMarkerOffset } from '@/features/checkpoints/map/checkpoint-marker-offset'
@@ -103,6 +110,12 @@ export function CheckpointMap({
   onSelect,
   placement,
   createActions = [],
+  selectMode,
+  checkedIds,
+  onToggleChecked,
+  canSelectDocks = false,
+  onToggleSelectMode,
+  onShiftSelectDock,
 }: {
   checkpoints: PresentedCheckpoint[]
   selected?: PresentedCheckpoint
@@ -110,6 +123,15 @@ export function CheckpointMap({
   onSelect: (checkpoint: PresentedCheckpoint) => void
   placement?: CheckpointMapPlacement
   createActions?: ResourceMapCreateAction[]
+  /** When `'docks'`, dock markers become checkable instead of opening the details sheet. */
+  selectMode?: 'docks'
+  checkedIds?: Set<string>
+  onToggleChecked?: (id: string) => void
+  /** Whether the map-control toggle for entering dock select mode is offered at all. */
+  canSelectDocks?: boolean
+  onToggleSelectMode?: () => void
+  /** Shift-clicking an available dock marker enters/adds to select mode directly, regardless of the current mode. */
+  onShiftSelectDock?: (id: string) => void
 }) {
   const initialCenter = useMemo<[number, number]>(() => {
     const firstCheckpoint = checkpoints[0]
@@ -128,15 +150,31 @@ export function CheckpointMap({
       zoom={checkpoints.length === 1 ? 13 : 5}
     >
       <FitCheckpointBounds checkpoints={checkpoints} selected={selected} />
-      {checkpoints.map((checkpoint) => (
-        <CheckpointMarker
-          checkpoint={checkpoint}
-          key={`${checkpoint.kind}:${checkpoint.id}`}
-          muted={isArmed}
-          offset={getCheckpointMarkerOffset(checkpoint, checkpoints)}
-          onSelect={onSelect}
-        />
-      ))}
+      {checkpoints.map((checkpoint) => {
+        const isAvailableDock = checkpoint.kind === 'DOCK' && checkpoint.status === 'AVAILABLE'
+        const isSelectableDock = selectMode === 'docks' && isAvailableDock
+
+        return (
+          <CheckpointMarker
+            checked={isSelectableDock ? (checkedIds?.has(checkpoint.id) ?? false) : undefined}
+            checkpoint={checkpoint}
+            key={`${checkpoint.kind}:${checkpoint.id}`}
+            muted={isArmed}
+            offset={getCheckpointMarkerOffset(checkpoint, checkpoints)}
+            onSelect={(selectedCheckpoint, event) => {
+              if (isAvailableDock && event.shiftKey && onShiftSelectDock) {
+                onShiftSelectDock(checkpoint.id)
+                return
+              }
+              if (isSelectableDock) {
+                onToggleChecked?.(checkpoint.id)
+                return
+              }
+              onSelect(selectedCheckpoint)
+            }}
+          />
+        )
+      })}
       {placement && <CheckpointPlacementLayer placement={placement} />}
       {/* While placement is armed the create sheet covers the map's right edge, and the default
           bottom-right cluster with it. Move the controls to the free middle-left strip — between
@@ -147,6 +185,17 @@ export function CheckpointMap({
         position={isArmed ? 'bottom-left' : 'bottom-right'}
         showZoom
       >
+        {canSelectDocks && onToggleSelectMode && (
+          <ControlGroup>
+            <ControlButton
+              active={selectMode === 'docks'}
+              label={selectMode === 'docks' ? 'Stop selecting docks' : 'Select docks'}
+              onClick={onToggleSelectMode}
+            >
+              <SquareDashedMousePointer aria-hidden="true" className="size-4" />
+            </ControlButton>
+          </ControlGroup>
+        )}
         <ResourceMapCreateControl actions={createActions} />
       </MapControls>
     </MapCanvas>

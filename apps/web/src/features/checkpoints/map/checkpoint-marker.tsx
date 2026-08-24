@@ -1,4 +1,5 @@
 import { AnchorIcon, ArchiveIcon, ScaleIcon } from 'lucide-react'
+import type { MouseEvent } from 'react'
 import {
   ResourceLegend,
   ResourceLegendStatusSymbol,
@@ -120,27 +121,41 @@ export function CheckpointMarker({
   offset,
   onSelect,
   muted = false,
+  checked,
 }: {
   checkpoint: PresentedCheckpoint
   offset?: [number, number]
-  onSelect: (checkpoint: PresentedCheckpoint) => void
+  onSelect: (checkpoint: PresentedCheckpoint, event: MouseEvent<HTMLButtonElement>) => void
   /**
    * Dims the marker and makes it non-interactive, e.g. while dock placement mode is armed: the
    * marker keeps its place on the map but stops being selectable, unfocusable rather than a
    * focus stop that silently does nothing, and lets clicks fall through to the map underneath.
    */
   muted?: boolean
+  /**
+   * When defined, the marker renders as a checkable item (bulk select mode) instead of a plain
+   * details trigger: `onSelect` is still the click handler, but the caller decides what a click
+   * means (toggle a selection) rather than opening the details sheet.
+   */
+  checked?: boolean
 }) {
   const kindLabel = CHECKPOINT_KIND_LABELS[checkpoint.kind]
   const statusLabel = CHECKPOINT_STATUS_LABELS[checkpoint.status]
+  const isSelecting = checked !== undefined
 
   return (
     <MapMarker latitude={checkpoint.latitude} longitude={checkpoint.longitude} offset={offset}>
       <MarkerContent className={muted ? 'pointer-events-none' : undefined}>
         <button
-          aria-label={`View ${kindLabel.toLowerCase()} ${checkpoint.name} (${statusLabel})`}
+          aria-label={
+            isSelecting
+              ? `${checked ? 'Deselect' : 'Select'} ${kindLabel.toLowerCase()} ${checkpoint.name}`
+              : `View ${kindLabel.toLowerCase()} ${checkpoint.name} (${statusLabel})`
+          }
+          aria-pressed={isSelecting ? checked : undefined}
           className={classnames(
             'grid size-11 place-items-center rounded-full transition-[opacity,transform,filter] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none',
+            checked && 'ring-2 ring-primary ring-offset-2',
             muted
               ? 'scale-75 opacity-50'
               : classnames(
@@ -148,11 +163,12 @@ export function CheckpointMarker({
                   checkpoint.isSearchMatch ? 'scale-110 opacity-100' : 'scale-75 opacity-35',
                 ),
           )}
+          data-checked={isSelecting ? checked : undefined}
           data-checkpoint-kind={checkpoint.kind}
           data-search-match={checkpoint.isSearchMatch}
           data-status={checkpoint.status}
           disabled={muted}
-          onClick={() => onSelect(checkpoint)}
+          onClick={(event) => onSelect(checkpoint, event)}
           title={`${checkpoint.name} — ${kindLabel} — ${statusLabel}`}
           type="button"
         >
