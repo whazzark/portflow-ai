@@ -30,7 +30,16 @@ vi.mock('@/components/ui/map', () => ({
       {children}
     </div>
   ),
-  MarkerContent: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  // Mirrors the real component: only this subtree is portalled into the marker element, so
+  // anything that must stay anchored to the marker has to render inside it.
+  MarkerContent: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="marker-content">{children}</div>
+  ),
+  MarkerLabel: ({ children, position }: { children?: React.ReactNode; position?: string }) => (
+    <div data-position={position} data-testid="marker-label">
+      {children}
+    </div>
+  ),
 }))
 
 function ArmedProbe({
@@ -95,6 +104,21 @@ describe('PendingPlacementMarker', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'drag' }))
     expect(onMove).toHaveBeenCalledWith({ latitude: 2, longitude: 3 })
+  })
+
+  it('renders its label inside the portalled marker content so it stays anchored to the marker', () => {
+    render(
+      <PendingPlacementMarker
+        label="New dock"
+        onMove={vi.fn()}
+        position={{ latitude: 1, longitude: 2 }}
+      />,
+    )
+
+    const label = screen.getByTestId('marker-label')
+    expect(label).toHaveTextContent('New dock')
+    expect(label).toHaveAttribute('data-position', 'bottom')
+    expect(screen.getByTestId('marker-content')).toContainElement(label)
   })
 
   it('stays anchored to its geographic position when it changes (e.g. after a map pan)', () => {

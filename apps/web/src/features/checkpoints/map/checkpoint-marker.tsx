@@ -124,7 +124,11 @@ export function CheckpointMarker({
   checkpoint: PresentedCheckpoint
   offset?: [number, number]
   onSelect: (checkpoint: PresentedCheckpoint) => void
-  /** Dims the marker further, e.g. while dock placement mode is armed, to keep focus on the pending marker. */
+  /**
+   * Dims the marker and makes it non-interactive, e.g. while dock placement mode is armed: the
+   * marker keeps its place on the map but stops being selectable, unfocusable rather than a
+   * focus stop that silently does nothing, and lets clicks fall through to the map underneath.
+   */
   muted?: boolean
 }) {
   const kindLabel = CHECKPOINT_KIND_LABELS[checkpoint.kind]
@@ -132,20 +136,22 @@ export function CheckpointMarker({
 
   return (
     <MapMarker latitude={checkpoint.latitude} longitude={checkpoint.longitude} offset={offset}>
-      <MarkerContent>
+      <MarkerContent className={muted ? 'pointer-events-none' : undefined}>
         <button
           aria-label={`View ${kindLabel.toLowerCase()} ${checkpoint.name} (${statusLabel})`}
           className={classnames(
-            'grid size-11 cursor-pointer place-items-center rounded-full transition-[opacity,transform,filter] duration-200 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none',
+            'grid size-11 place-items-center rounded-full transition-[opacity,transform,filter] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none',
             muted
               ? 'scale-75 opacity-50'
-              : checkpoint.isSearchMatch
-                ? 'scale-110 opacity-100'
-                : 'scale-75 opacity-35',
+              : classnames(
+                  'cursor-pointer hover:brightness-110',
+                  checkpoint.isSearchMatch ? 'scale-110 opacity-100' : 'scale-75 opacity-35',
+                ),
           )}
           data-checkpoint-kind={checkpoint.kind}
           data-search-match={checkpoint.isSearchMatch}
           data-status={checkpoint.status}
+          disabled={muted}
           onClick={() => onSelect(checkpoint)}
           title={`${checkpoint.name} — ${kindLabel} — ${statusLabel}`}
           type="button"

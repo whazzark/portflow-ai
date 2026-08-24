@@ -66,6 +66,50 @@ test('places, names, and creates a dock, then shows it as the selected read-only
   ).toBeInTheDocument()
 })
 
+test('reveals the new dock even when the active filters would hide it', async () => {
+  const user = userEvent.setup()
+  const created: DockDto = {
+    id: 'created-dock-3',
+    name: 'Filtered Dock',
+    latitude: 10.5,
+    longitude: 20.5,
+    status: 'AVAILABLE',
+    archivedAt: null,
+    archivedByUserId: null,
+    archiveComment: null,
+    reactivatedAt: null,
+    reactivatedByUserId: null,
+    reactivationComment: null,
+    createdAt: '2026-08-22T00:00:00.000Z',
+    updatedAt: '2026-08-22T00:00:00.000Z',
+  }
+  let currentDocks = DOCKS
+
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/docks`, () => {
+      currentDocks = [...currentDocks, created]
+      return HttpResponse.json({ data: created }, { status: 201 })
+    }),
+    http.get(`${API_BASE_URL}/api/v1/docks`, () => HttpResponse.json({ data: currentDocks })),
+  )
+
+  // Both filters would exclude a brand new dock: it is AVAILABLE, and it is a dock.
+  const hidingFilters = new URLSearchParams({ status: 'archived', kinds: 'weighing-area' })
+  const { router } = renderCheckpoints(`/checkpoints?${hidingFilters}`)
+
+  await user.click(await screen.findByRole('button', { name: 'New dock' }))
+  await user.click(screen.getByRole('button', { name: 'Simulate map click to place dock' }))
+  await user.type(screen.getByRole('textbox', { name: 'Dock name' }), created.name)
+  await user.click(screen.getByRole('button', { name: 'Create dock' }))
+
+  expect(await screen.findByRole('heading', { name: created.name })).toBeInTheDocument()
+  expect(router.state.location.search).toMatchObject({
+    checkpoint: `dock:${created.id}`,
+    status: 'available',
+  })
+  expect((router.state.location.search as { kinds?: string }).kinds).toBeUndefined()
+})
+
 test('creates a dock by typing coordinates directly, without any map click (keyboard-only path)', async () => {
   const user = userEvent.setup()
   const created: DockDto = {

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { countResources } from '@/components/resource-map/resource-map-search'
 import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
+import { Button } from '@/components/ui/button'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { presentCheckpoints } from '@/features/checkpoints/checkpoint-search'
@@ -193,9 +194,25 @@ export function CheckpointsPage() {
         ...previous,
         checkpoint: serializeCheckpointSelection({ kind: 'DOCK', id: dock.id }),
         create: undefined,
+        // A brand new dock is AVAILABLE, so widen any filter that would hide it: otherwise it
+        // never reaches `checkpoints`, and the selection effect above would drop the selection
+        // again — leaving the administrator with a success toast and nothing to show for it.
+        kinds: previous.kinds === 'weighing-area' ? undefined : previous.kinds,
+        status: previous.status === 'archived' ? 'available' : previous.status,
       }),
     })
   }
+
+  const dockCreateActions = canCreateDock
+    ? [
+        {
+          key: 'DOCK',
+          label: 'New dock',
+          icon: <AnchorIcon aria-hidden="true" className="size-4" />,
+          onSelect: startCreatingDock,
+        },
+      ]
+    : []
 
   const createPanel = isCreatingDock ? (
     <CreateDockPanel
@@ -258,21 +275,16 @@ export function CheckpointsPage() {
         legend={
           <CheckpointLegend kinds={CHECKPOINT_KINDS.filter((kind) => layerVisibility[kind])} />
         }
+        mapUnavailableActions={dockCreateActions.map((action) => (
+          <Button key={action.key} onClick={action.onSelect} size="sm" variant="outline">
+            {action.icon}
+            {action.label}
+          </Button>
+        ))}
         map={(onMapError) => (
           <CheckpointMap
             checkpoints={checkpoints}
-            createActions={
-              canCreateDock
-                ? [
-                    {
-                      key: 'DOCK',
-                      label: 'New dock',
-                      icon: <AnchorIcon aria-hidden="true" className="size-4" />,
-                      onSelect: startCreatingDock,
-                    },
-                  ]
-                : []
-            }
+            createActions={dockCreateActions}
             onError={onMapError}
             onSelect={selectCheckpoint}
             placement={

@@ -134,11 +134,19 @@ export function CheckpointMap({
           key={`${checkpoint.kind}:${checkpoint.id}`}
           muted={isArmed}
           offset={getCheckpointMarkerOffset(checkpoint, checkpoints)}
-          onSelect={isArmed ? () => {} : onSelect}
+          onSelect={onSelect}
         />
       ))}
       {placement && <CheckpointPlacementLayer placement={placement} />}
-      <MapControls showZoom>
+      {/* While placement is armed the create sheet covers the map's right edge, and the default
+          bottom-right cluster with it. Move the controls to the free middle-left strip — between
+          the filter panel (top-left) and the legend (bottom-left) — so the map stays zoomable
+          while the admin refines the placement. */}
+      <MapControls
+        className={isArmed ? 'top-1/2 bottom-auto -translate-y-1/2' : undefined}
+        position={isArmed ? 'bottom-left' : 'bottom-right'}
+        showZoom
+      >
         <ResourceMapCreateControl actions={createActions} />
       </MapControls>
     </MapCanvas>

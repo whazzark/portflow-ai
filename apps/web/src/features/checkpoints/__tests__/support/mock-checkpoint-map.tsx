@@ -7,9 +7,11 @@ import {
 
 function MockMarker({
   checkpoint,
+  muted = false,
   onSelect,
 }: {
   checkpoint: PresentedCheckpoint
+  muted?: boolean
   onSelect: (checkpoint: PresentedCheckpoint) => void
 }) {
   const [showsTooltip, setShowsTooltip] = useState(false)
@@ -21,6 +23,7 @@ function MockMarker({
         data-checkpoint-kind={checkpoint.kind}
         data-search-match={checkpoint.isSearchMatch}
         data-status={checkpoint.status}
+        disabled={muted}
         onBlur={() => setShowsTooltip(false)}
         onClick={() => onSelect(checkpoint)}
         onFocus={() => setShowsTooltip(true)}
@@ -84,7 +87,8 @@ export function CheckpointMap({
         <MockMarker
           checkpoint={checkpoint}
           key={`${checkpoint.kind}:${checkpoint.id}`}
-          onSelect={isArmed ? () => {} : onSelect}
+          muted={isArmed}
+          onSelect={onSelect}
         />
       ))}
       {isArmed && (

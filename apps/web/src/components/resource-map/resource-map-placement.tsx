@@ -70,6 +70,9 @@ export function PendingPlacementMarker({
       longitude={position.longitude}
       onDragEnd={(lngLat) => onMove({ latitude: lngLat.lat, longitude: lngLat.lng })}
     >
+      {/* The label lives inside `MarkerContent` because only that subtree is portalled into the
+          marker element — rendered as a sibling it would position itself against the map container
+          instead of the marker. */}
       <MarkerContent>
         <span aria-hidden="true" className="relative grid place-items-center">
           <span
@@ -78,15 +81,15 @@ export function PendingPlacementMarker({
           />
           {children ?? <DefaultPendingPlacementMarkerIcon />}
         </span>
+        {label && (
+          <MarkerLabel
+            className="rounded bg-background/95 px-1.5 py-0.5 font-semibold shadow-sm"
+            position="bottom"
+          >
+            {label}
+          </MarkerLabel>
+        )}
       </MarkerContent>
-      {label && (
-        <MarkerLabel
-          className="rounded bg-background/95 px-1.5 py-0.5 font-semibold shadow-sm"
-          position="bottom"
-        >
-          {label}
-        </MarkerLabel>
-      )}
     </MapMarker>
   )
 }
