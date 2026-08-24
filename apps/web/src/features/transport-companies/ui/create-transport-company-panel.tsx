@@ -1,9 +1,12 @@
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
-import { TransportCompanyForm } from '@/features/transport-companies/ui/transport-company-form'
+import {
+  TransportCompanyForm,
+  type TransportCompanyFormValue,
+} from '@/features/transport-companies/ui/transport-company-form'
 
 type CreateTransportCompanyPanelProps = {
-  onCreate: (value: { name: string }) => Promise<TransportCompanyDto>
+  onCreate: (value: TransportCompanyFormValue) => Promise<TransportCompanyDto>
   onSuccess: (company: TransportCompanyDto) => void
 }
 
@@ -16,7 +19,7 @@ export function CreateTransportCompanyPanel({
       <SheetHeader>
         <SheetTitle>Create transport company</SheetTitle>
         <SheetDescription>
-          Add a reusable transport company reference for the site.
+          Add a reusable transport company reference for the site, with how to reach it.
         </SheetDescription>
       </SheetHeader>
       <div className="px-4">

@@ -21,6 +21,15 @@ function openCreateForm() {
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
 }
 
+function fillContactFields(phone = '+33 2 40 12 34 56', email = 'dispatch@example.test') {
+  fireEvent.change(screen.getByRole('textbox', { name: 'Contact phone' }), {
+    target: { value: phone },
+  })
+  fireEvent.change(screen.getByRole('textbox', { name: 'Contact email' }), {
+    target: { value: email },
+  })
+}
+
 // The embedded truck panel renders its own Available/Archived tabs, so company counts must be
 // read from the company tablist rather than from the whole document.
 function companyTab(name: string) {
@@ -47,6 +56,7 @@ test('lets an administrator create a company and lands on its details', async ()
   fireEvent.change(screen.getByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Atlantique Transport Routier' },
   })
+  fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
 
   expect(
@@ -55,6 +65,8 @@ test('lets an administrator create a company and lands on its details', async ()
   expect(
     screen.queryByRole('heading', { name: 'Create transport company' }),
   ).not.toBeInTheDocument()
+  expect(screen.getByText('+33 2 40 12 34 56')).toBeInTheDocument()
+  expect(screen.getByText('dispatch@example.test')).toBeInTheDocument()
   expect(state.attempts).toBe(1)
 })
 
@@ -65,12 +77,13 @@ test('shows the created company in the available directory without a manual refr
 
   renderTransportCompanies()
   await screen.findByRole('list', { name: 'Available transport companies' })
-  expect(companyTab('Available (2)')).toBeInTheDocument()
+  expect(companyTab('Available (3)')).toBeInTheDocument()
 
   openCreateForm()
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Baie Douarnenez Transports' },
   })
+  fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
 
   // The open sheet marks the rest of the page inert, so the directory can only be read once it
@@ -81,7 +94,7 @@ test('shows the created company in the available directory without a manual refr
   fireEvent.click(screen.getByRole('button', { name: 'Close' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 
-  await waitFor(() => expect(companyTab('Available (3)')).toBeInTheDocument())
+  await waitFor(() => expect(companyTab('Available (4)')).toBeInTheDocument())
   expect(
     within(screen.getByRole('list', { name: 'Available transport companies' })).getByText(
       'Baie Douarnenez Transports',
@@ -101,6 +114,8 @@ test('restores the create form from the URL after a reload', async () => {
     await screen.findByRole('heading', { name: 'Create transport company' }),
   ).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Company name' })).toHaveValue('')
+  expect(screen.getByRole('textbox', { name: 'Contact phone' })).toHaveValue('')
+  expect(screen.getByRole('textbox', { name: 'Contact email' })).toHaveValue('')
 })
 
 test('offers creation from the empty available collection', async () => {
@@ -115,6 +130,7 @@ test('offers creation from the empty available collection', async () => {
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Première Société' },
   })
+  fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
 
   expect(await screen.findByRole('heading', { name: 'Première Société' })).toBeInTheDocument()
@@ -139,7 +155,7 @@ test('creates nothing when the administrator cancels', async () => {
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   expect(state.attempts).toBe(0)
-  expect(companyTab('Available (2)')).toBeInTheDocument()
+  expect(companyTab('Available (3)')).toBeInTheDocument()
 })
 
 test('creates a company whose name the server trims', async () => {
@@ -153,6 +169,7 @@ test('creates a company whose name the server trims', async () => {
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: '  Grand OUEST Camions  ' },
   })
+  fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
 
   expect(await screen.findByRole('heading', { name: 'Grand OUEST Camions' })).toBeInTheDocument()
@@ -173,6 +190,7 @@ test('attaches a validation refusal to the name field and keeps the form open', 
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Something' },
   })
+  fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
 
   expect(await screen.findByText('The name field must not be blank')).toBeInTheDocument()
@@ -193,6 +211,7 @@ test('shows a distinct toast for a duplicate name conflict', async () => {
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Atlantic Transport' },
   })
+  fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
 
   expect(await screen.findByText('Unable to create transport company')).toBeInTheDocument()
@@ -234,6 +253,7 @@ test('allows correcting and resubmitting after a refusal, creating exactly one c
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Atlantic Transport' },
   })
+  fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
   expect(await screen.findByText('Unable to create transport company')).toBeInTheDocument()
 
@@ -258,9 +278,28 @@ test('refuses a blank name before reaching the server', async () => {
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: '   ' },
   })
+  fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
 
   expect(await screen.findByText('Company name is required.')).toBeInTheDocument()
+  expect(state.attempts).toBe(0)
+})
+
+test('refuses a submission missing either contact field before reaching the server', async () => {
+  mockTrucks()
+  mockTransportCompanies(TRANSPORT_COMPANIES, ADMIN_USER)
+  const state = mockTransportCompanyCreation()
+
+  renderTransportCompanies()
+  await screen.findByRole('list', { name: 'Available transport companies' })
+  openCreateForm()
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
+    target: { value: 'Rade Lorient Fret' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
+
+  expect(await screen.findByText('Contact phone is required.')).toBeInTheDocument()
+  expect(await screen.findByText('Contact email is required.')).toBeInTheDocument()
   expect(state.attempts).toBe(0)
 })
 
@@ -275,6 +314,7 @@ test('shows the created company as a selectable provider owning no truck', async
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Sans Camion Transports' },
   })
+  fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
   await screen.findByRole('heading', { name: 'Sans Camion Transports' })
   fireEvent.click(screen.getByRole('button', { name: 'Close' }))

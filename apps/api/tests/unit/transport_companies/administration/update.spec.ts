@@ -12,6 +12,11 @@ import {
 } from '#transport_companies/shared/transport_company_exceptions'
 import UpdateTransportCompanyUseCase from '#transport_companies/update/update_transport_company_use_case'
 
+const VALID_CONTACT = {
+  contactPhone: '+33 1 23 45 67 89',
+  contactEmail: 'contact@example.test',
+}
+
 test.group('UpdateTransportCompanyUseCase', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
   group.each.teardown(() => app.container.restore(TransportCompanyRepository))
@@ -22,7 +27,12 @@ test.group('UpdateTransportCompanyUseCase', (group) => {
     const company = await TransportCompanyFactory.apply('reactivated').create()
     const useCase = await app.container.make(UpdateTransportCompanyUseCase)
 
-    const updated = await useCase.handle({ id: company.id, name: 'Atlantique Transport Routier' })
+    const updated = await useCase.handle({
+      id: company.id,
+      name: 'Atlantique Transport Routier',
+      contactPhone: company.contactPhone as string,
+      contactEmail: company.contactEmail as string,
+    })
 
     assert.equal(updated.id, company.id)
     assert.equal(updated.name, 'Atlantique Transport Routier')
@@ -37,6 +47,8 @@ test.group('UpdateTransportCompanyUseCase', (group) => {
     )
     assert.equal(updated.reactivatedByUserId, company.reactivatedByUserId)
     assert.equal(updated.reactivationComment, company.reactivationComment)
+    assert.equal(updated.contactPhone, company.contactPhone)
+    assert.equal(updated.contactEmail, company.contactEmail)
     assert.isTrue(updated.updatedAt.isValid)
     assert.isTrue(updated.updatedAt.toSeconds() >= company.updatedAt.toSeconds())
   })
@@ -45,7 +57,11 @@ test.group('UpdateTransportCompanyUseCase', (group) => {
     const company = await TransportCompanyFactory.merge({ name: 'Armor Fret Services' }).create()
     const useCase = await app.container.make(UpdateTransportCompanyUseCase)
 
-    const updated = await useCase.handle({ id: company.id, name: 'Armor Fret Services' })
+    const updated = await useCase.handle({
+      id: company.id,
+      name: 'Armor Fret Services',
+      ...VALID_CONTACT,
+    })
 
     assert.equal(updated.id, company.id)
     assert.equal(updated.name, 'Armor Fret Services')
@@ -55,7 +71,11 @@ test.group('UpdateTransportCompanyUseCase', (group) => {
     const company = await TransportCompanyFactory.create()
     const useCase = await app.container.make(UpdateTransportCompanyUseCase)
 
-    const updated = await useCase.handle({ id: company.id, name: '  Grand Ouest Camions  ' })
+    const updated = await useCase.handle({
+      id: company.id,
+      name: '  Grand Ouest Camions  ',
+      ...VALID_CONTACT,
+    })
 
     assert.equal(updated.name, 'Grand Ouest Camions')
   })
@@ -65,7 +85,7 @@ test.group('UpdateTransportCompanyUseCase', (group) => {
     const useCase = await app.container.make(UpdateTransportCompanyUseCase)
 
     await assert.rejects(
-      () => useCase.handle({ id: company.id, name: '   ' }),
+      () => useCase.handle({ id: company.id, name: '   ', ...VALID_CONTACT }),
       InvalidSiteReferenceNameException,
     )
   })
@@ -78,7 +98,7 @@ test.group('UpdateTransportCompanyUseCase', (group) => {
     const useCase = await app.container.make(UpdateTransportCompanyUseCase)
 
     await assert.rejects(
-      () => useCase.handle({ id: company.id, name: '  loire vrac transport  ' }),
+      () => useCase.handle({ id: company.id, name: '  loire vrac transport  ', ...VALID_CONTACT }),
       DuplicateTransportCompanyNameException,
     )
   })
@@ -88,7 +108,7 @@ test.group('UpdateTransportCompanyUseCase', (group) => {
     const useCase = await app.container.make(UpdateTransportCompanyUseCase)
 
     await assert.rejects(
-      () => useCase.handle({ id: archived.id, name: 'New name' }),
+      () => useCase.handle({ id: archived.id, name: 'New name', ...VALID_CONTACT }),
       ArchivedTransportCompanyReadOnlyException,
     )
   })
@@ -97,7 +117,12 @@ test.group('UpdateTransportCompanyUseCase', (group) => {
     const useCase = await app.container.make(UpdateTransportCompanyUseCase)
 
     await assert.rejects(
-      () => useCase.handle({ id: '00000000-0000-4000-8000-000000000000', name: 'New name' }),
+      () =>
+        useCase.handle({
+          id: '00000000-0000-4000-8000-000000000000',
+          name: 'New name',
+          ...VALID_CONTACT,
+        }),
       TransportCompanyNotFoundException,
     )
   })

@@ -1,6 +1,10 @@
 import { inject } from '@adonisjs/core'
 
 import { assertValidSiteReferenceName } from '#site_references/shared/normalize_site_reference'
+import {
+  assertValidContactEmail,
+  assertValidContactPhone,
+} from '#transport_companies/shared/normalize_transport_company_contact'
 import TransportCompanyRepository from '#transport_companies/shared/repositories/transport_company_repository'
 import {
   ArchivedTransportCompanyReadOnlyException,
@@ -11,6 +15,8 @@ import {
 export type UpdateTransportCompanyInput = {
   id: string
   name: string
+  contactPhone: string
+  contactEmail: string
 }
 
 @inject()
@@ -21,6 +27,8 @@ export default class UpdateTransportCompanyUseCase {
     const result = await this.transportCompanyRepository.updateAvailable({
       id: input.id,
       name: assertValidSiteReferenceName(input.name),
+      contactPhone: assertValidContactPhone(input.contactPhone),
+      contactEmail: assertValidContactEmail(input.contactEmail),
     })
 
     if (result.kind === 'NOT_FOUND') {

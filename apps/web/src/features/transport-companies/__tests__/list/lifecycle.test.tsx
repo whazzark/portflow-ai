@@ -15,7 +15,7 @@ test('shows available companies by default with unfiltered lifecycle counts', as
 
   expect(within(available).getByText('Atlantic Transport')).toBeInTheDocument()
   expect(within(available).queryByText('Coastal Haulage')).not.toBeInTheDocument()
-  expect(within(companyTabs).getByRole('tab', { name: /Available \(2\)/ })).toHaveAttribute(
+  expect(within(companyTabs).getByRole('tab', { name: /Available \(3\)/ })).toHaveAttribute(
     'aria-selected',
     'true',
   )

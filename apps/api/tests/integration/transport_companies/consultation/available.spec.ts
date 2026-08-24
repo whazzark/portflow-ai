@@ -34,6 +34,32 @@ test.group('GET /api/v1/transport-companies/available', (group) => {
     )
   })
 
+  test('exposes contact details on available companies, populated or null', async ({
+    assert,
+    client,
+  }) => {
+    const user = await UserFactory.apply('active').create()
+    const withContact = await TransportCompanyFactory.merge({
+      name: 'Alpha Transport',
+      contactPhone: '+33 2 40 12 34 56',
+      contactEmail: 'dispatch@alpha-transport.test',
+    }).create()
+    const withoutContact = await TransportCompanyFactory.apply('withoutContact')
+      .merge({ name: 'Beta Transport' })
+      .create()
+
+    const response = await client.get('/api/v1/transport-companies/available').loginAs(user)
+
+    response.assertStatus(200)
+    const data = response.body().data
+    const migrated = data.find((company: { id: string }) => company.id === withContact.id)
+    const legacy = data.find((company: { id: string }) => company.id === withoutContact.id)
+    assert.equal(migrated.contactPhone, '+33 2 40 12 34 56')
+    assert.equal(migrated.contactEmail, 'dispatch@alpha-transport.test')
+    assert.isNull(legacy.contactPhone)
+    assert.isNull(legacy.contactEmail)
+  })
+
   test('returns an empty collection when no company is available', async ({ assert, client }) => {
     const user = await UserFactory.apply('active').create()
     await TransportCompanyFactory.apply('archived').create()

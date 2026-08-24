@@ -6,11 +6,15 @@ export type { BulkTransportCompanyLifecycleBlocker } from '#transport_companies/
 
 export type CreateTransportCompanyCommand = {
   name: string
+  contactPhone: string
+  contactEmail: string
 }
 
 export type UpdateTransportCompanyCommand = {
   id: string
   name: string
+  contactPhone: string
+  contactEmail: string
 }
 
 export type TransportCompanyWriteResult =

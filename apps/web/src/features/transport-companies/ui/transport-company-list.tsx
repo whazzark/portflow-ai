@@ -117,10 +117,12 @@ export function TransportCompanyList({
                     <span className="block truncate font-medium">
                       <HighlightedText search={search} value={company.name} />
                     </span>
-                    <span className="mt-1 block truncate font-mono text-[0.7rem] text-muted-foreground">
+                    <span className="mt-1 block truncate text-[0.7rem] text-muted-foreground">
                       {showStatus &&
                         `${company.status === 'ARCHIVED' ? 'Archived' : 'Available'} · `}
-                      {company.id}
+                      {company.contactPhone && company.contactEmail
+                        ? `${company.contactPhone} · ${company.contactEmail}`
+                        : 'No contact details recorded'}
                     </span>
                   </button>
                   {onView && (

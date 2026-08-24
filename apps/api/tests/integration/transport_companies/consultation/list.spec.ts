@@ -80,6 +80,32 @@ test.group('GET /api/v1/transport-companies', (group) => {
     })
   })
 
+  test('exposes contact details to an active observer, populated or null', async ({
+    assert,
+    client,
+  }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const withContact = await TransportCompanyFactory.merge({
+      name: 'Atlantique Transport Routier',
+      contactPhone: '+33 2 40 12 34 56',
+      contactEmail: 'dispatch@atlantique-transport.test',
+    }).create()
+    const withoutContact = await TransportCompanyFactory.apply('withoutContact')
+      .merge({ name: 'Noroît Logistique' })
+      .create()
+
+    const response = await client.get('/api/v1/transport-companies').loginAs(observer)
+
+    response.assertStatus(200)
+    const data = response.body().data
+    const migrated = data.find((company: { id: string }) => company.id === withContact.id)
+    const legacy = data.find((company: { id: string }) => company.id === withoutContact.id)
+    assert.equal(migrated.contactPhone, '+33 2 40 12 34 56')
+    assert.equal(migrated.contactEmail, 'dispatch@atlantique-transport.test')
+    assert.isNull(legacy.contactPhone)
+    assert.isNull(legacy.contactEmail)
+  })
+
   test('returns an empty collection and reflects authoritative state on a later request', async ({
     assert,
     client,

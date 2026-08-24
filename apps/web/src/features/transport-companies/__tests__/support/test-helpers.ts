@@ -27,9 +27,18 @@ export function mockTransportCompanyCreation(initial: TransportCompanyDto[] = TR
       HttpResponse.json({ data: state.companies }),
     ),
     http.post(`${API_BASE_URL}/api/v1/transport-companies`, async ({ request }) => {
-      const body = (await request.json()) as { name: string }
+      const body = (await request.json()) as {
+        name: string
+        contactPhone: string
+        contactEmail: string
+      }
       state.attempts += 1
-      const created = createdTransportCompany(body.name.trim(), `created-${state.attempts}`)
+      const created = createdTransportCompany(
+        body.name.trim(),
+        `created-${state.attempts}`,
+        body.contactPhone.trim(),
+        body.contactEmail.trim(),
+      )
       state.companies = [...state.companies, created]
 
       return HttpResponse.json({ data: created }, { status: 201 })

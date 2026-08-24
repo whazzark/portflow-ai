@@ -44,6 +44,23 @@ export function TransportCompanyDetails({
         </dl>
         <Separator className="my-6" />
         <section
+          aria-labelledby="transport-company-contact-heading"
+          className="flex flex-col gap-3"
+        >
+          <h3 className="font-medium" id="transport-company-contact-heading">
+            Contact
+          </h3>
+          {company.contactPhone && company.contactEmail ? (
+            <dl className="grid gap-5 text-sm sm:grid-cols-2">
+              <ResourceDetailField label="Contact phone" value={company.contactPhone} />
+              <ResourceDetailField label="Contact email" value={company.contactEmail} />
+            </dl>
+          ) : (
+            <p className="text-muted-foreground text-sm">No contact details recorded</p>
+          )}
+        </section>
+        <Separator className="my-6" />
+        <section
           aria-labelledby="transport-company-lifecycle-heading"
           className="flex flex-col gap-3"
         >

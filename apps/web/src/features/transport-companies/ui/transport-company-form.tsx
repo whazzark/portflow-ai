@@ -8,12 +8,20 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 
 const transportCompanySchema = z.object({
   name: z.string().trim().min(1, 'Company name is required.').max(255),
+  contactPhone: z.string().trim().min(1, 'Contact phone is required.').max(32),
+  contactEmail: z.string().trim().min(1, 'Contact email is required.').email().max(255),
 })
+
+export type TransportCompanyFormValue = {
+  name: string
+  contactPhone: string
+  contactEmail: string
+}
 
 type TransportCompanyFormProps = {
   company?: TransportCompanyDto
-  onCreate: (value: { name: string }) => Promise<TransportCompanyDto>
-  onUpdate: (value: { name: string }) => Promise<TransportCompanyDto>
+  onCreate: (value: TransportCompanyFormValue) => Promise<TransportCompanyDto>
+  onUpdate: (value: TransportCompanyFormValue) => Promise<TransportCompanyDto>
   onSuccess: (company: TransportCompanyDto) => void
 }
 
@@ -26,13 +34,20 @@ export function TransportCompanyForm({
   const form = useAppForm({
     defaultValues: {
       name: company?.name ?? '',
+      contactPhone: company?.contactPhone ?? '',
+      contactEmail: company?.contactEmail ?? '',
     },
     validators: {
       onBlur: transportCompanySchema,
       onSubmit: transportCompanySchema,
     },
     onSubmit: async ({ formApi, value }) => {
-      const submitted = { ...value, name: value.name.trim() }
+      const submitted = {
+        ...value,
+        name: value.name.trim(),
+        contactPhone: value.contactPhone.trim(),
+        contactEmail: value.contactEmail.trim(),
+      }
 
       try {
         const result = company ? await onUpdate(submitted) : await onCreate(submitted)
@@ -62,6 +77,28 @@ export function TransportCompanyForm({
                 label="Company name"
                 placeholder="Atlantic Transport"
                 required={true}
+              />
+            )}
+          </form.AppField>
+          <form.AppField name="contactPhone">
+            {(field) => (
+              <field.TextField
+                autoComplete="tel"
+                label="Contact phone"
+                placeholder="+33 2 40 12 34 56"
+                required={true}
+                type="tel"
+              />
+            )}
+          </form.AppField>
+          <form.AppField name="contactEmail">
+            {(field) => (
+              <field.TextField
+                autoComplete="email"
+                label="Contact email"
+                placeholder="dispatch@example.com"
+                required={true}
+                type="email"
               />
             )}
           </form.AppField>

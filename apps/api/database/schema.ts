@@ -234,7 +234,7 @@ export class ShiftSchema extends BaseModel {
 }
 
 export class TransportCompanySchema extends BaseModel {
-  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt'] as const
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'contactEmail', 'contactPhone', 'createdAt', 'id', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt'] as const
   $columns = TransportCompanySchema.$columns
   @column()
   declare archiveComment: string | null
@@ -242,6 +242,10 @@ export class TransportCompanySchema extends BaseModel {
   declare archivedAt: DateTime | null
   @column()
   declare archivedByUserId: string | null
+  @column()
+  declare contactEmail: string | null
+  @column()
+  declare contactPhone: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })
