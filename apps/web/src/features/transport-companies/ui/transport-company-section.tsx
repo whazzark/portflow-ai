@@ -13,6 +13,9 @@ type TransportCompanySectionProps = {
   onCreate?: () => void
   canAdminister?: boolean
   showStatus?: boolean
+  selectedIds?: Set<string>
+  onToggleSelection?: (id: string) => void
+  onToggleVisible?: (ids: string[], select: boolean) => void
 }
 
 export function TransportCompanySection({
@@ -26,6 +29,9 @@ export function TransportCompanySection({
   onCreate,
   canAdminister,
   showStatus,
+  selectedIds,
+  onToggleSelection,
+  onToggleVisible,
 }: TransportCompanySectionProps) {
   const matches = companies.filter((company) => transportCompanyMatchesSearch(company, search))
   const hasSearch = search.trim().length > 0
@@ -54,9 +60,12 @@ export function TransportCompanySection({
         onCreate={hasSearch ? undefined : onCreate}
         onEdit={onEdit}
         onSelect={onSelect}
+        onToggleSelection={onToggleSelection}
+        onToggleVisible={onToggleVisible}
         onView={onView}
         search={search}
         selectedId={selectedId}
+        selectedIds={selectedIds}
         showStatus={showStatus}
       />
     </section>

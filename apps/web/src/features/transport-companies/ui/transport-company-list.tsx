@@ -1,6 +1,7 @@
 import { EllipsisVerticalIcon } from 'lucide-react'
 import { HighlightedText } from '@/components/highlighted-text'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,9 @@ type TransportCompanyListProps = {
   onCreate?: () => void
   canAdminister?: boolean
   showStatus?: boolean
+  selectedIds?: Set<string>
+  onToggleSelection?: (id: string) => void
+  onToggleVisible?: (ids: string[], select: boolean) => void
 }
 
 export function TransportCompanyList({
@@ -45,6 +49,9 @@ export function TransportCompanyList({
   onCreate,
   canAdminister = false,
   showStatus = false,
+  selectedIds,
+  onToggleSelection,
+  onToggleVisible,
 }: TransportCompanyListProps) {
   const ordered = [...companies].sort((left, right) => {
     const byName = left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
@@ -55,9 +62,23 @@ export function TransportCompanyList({
 
     return byName
   })
+  const visibleIds = ordered.map((company) => company.id)
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds?.has(id))
+  const someVisibleSelected = visibleIds.some((id) => selectedIds?.has(id))
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {onToggleVisible && ordered.length > 0 && (
+        <div className="flex items-center gap-2 border-b py-2 pr-3 pl-5">
+          <Checkbox
+            aria-label="Select all visible transport companies"
+            checked={allVisibleSelected}
+            indeterminate={someVisibleSelected && !allVisibleSelected}
+            onCheckedChange={(checked) => onToggleVisible(visibleIds, checked === true)}
+          />
+          <span className="text-muted-foreground text-sm">Select all</span>
+        </div>
+      )}
       {ordered.length > 0 ? (
         <ul
           aria-label={
@@ -78,6 +99,14 @@ export function TransportCompanyList({
                     selected && 'border-border bg-muted hover:bg-muted',
                   )}
                 >
+                  {onToggleSelection && (
+                    <Checkbox
+                      aria-label={`Select ${company.name}`}
+                      checked={selectedIds?.has(company.id) ?? false}
+                      className="ml-3"
+                      onCheckedChange={() => onToggleSelection(company.id)}
+                    />
+                  )}
                   <button
                     aria-label={`${company.name}, ${company.id}`}
                     aria-current={selected ? 'true' : undefined}

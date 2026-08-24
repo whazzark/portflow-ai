@@ -3,18 +3,21 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
+import { TransportCompanyLifecycleActions } from '@/features/transport-companies/ui/transport-company-lifecycle-actions'
 import { formatFullName } from '@/features/users/helpers/name'
 import { formatDateTime } from '@/helpers/dates'
 
 type TransportCompanyDetailsProps = {
   canAdminister: boolean
   company: TransportCompanyDto
+  onArchiveSuccess?: () => void
   onEdit: () => void
 }
 
 export function TransportCompanyDetails({
   canAdminister,
   company,
+  onArchiveSuccess,
   onEdit,
 }: TransportCompanyDetailsProps) {
   const isArchived = company.status === 'ARCHIVED'
@@ -61,8 +64,9 @@ export function TransportCompanyDetails({
         </section>
       </div>
       {canAdminister && !isArchived && (
-        <footer className="shrink-0 border-t bg-popover px-5 py-4 md:px-6">
+        <footer className="flex shrink-0 gap-2 border-t bg-popover px-5 py-4 md:px-6">
           <Button onClick={onEdit}>Edit company</Button>
+          <TransportCompanyLifecycleActions company={company} onSuccess={onArchiveSuccess} />
         </footer>
       )}
     </section>

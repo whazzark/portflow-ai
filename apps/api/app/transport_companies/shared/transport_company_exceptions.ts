@@ -17,3 +17,15 @@ export class ArchivedTransportCompanyReadOnlyException extends Exception {
   static code = 'E_TRANSPORT_COMPANY_ARCHIVED'
   static message = 'Archived transport companies are read-only'
 }
+
+export class TransportCompanyAlreadyArchivedException extends Exception {
+  static status = 409
+  static code = 'E_TRANSPORT_COMPANY_ALREADY_ARCHIVED'
+  static message = 'Transport company is already archived'
+}
+
+export class TransportCompanyHasAvailableTrucksException extends Exception {
+  static status = 409
+  static code = 'E_TRANSPORT_COMPANY_HAS_AVAILABLE_TRUCKS'
+  static message = 'Transport company still provides available trucks'
+}

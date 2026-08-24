@@ -28,8 +28,16 @@ export function useTransportCompanyMutations() {
       onSuccess: () => invalidateTransportCompanies(),
     }),
   )
+  const archive = useMutation(
+    tuyauQuery.transportCompanies.archive.mutationOptions({
+      onSuccess: () => invalidateTransportCompanies(),
+    }),
+  )
+  const archiveMany = useMutation(tuyauQuery.transportCompanies.archiveMany.mutationOptions())
 
   return {
+    archive,
+    archiveMany,
     create,
     refreshTransportCompanies: invalidateTransportCompanies,
     update,

@@ -9,7 +9,7 @@ export const nonBlank = vine.createRule(
   { name: 'nonBlank' },
 )
 
-export const distinctUuids = vine.createRule(
+const distinctUuids = vine.createRule(
   (value, _options, field) => {
     if (!Array.isArray(value)) {
       return
@@ -24,6 +24,5 @@ export const distinctUuids = vine.createRule(
 )
 
 export const lifecycleComment = () => vine.string().trim().maxLength(1000).nullable().optional()
-
 export const lifecycleIds = () =>
   vine.array(vine.string().uuid().toLowerCase()).minLength(1).use(distinctUuids())

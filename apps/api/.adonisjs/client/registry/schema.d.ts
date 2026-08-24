@@ -199,6 +199,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'transport_companies.archive_many': {
+    methods: ["POST"]
+    pattern: '/api/v1/transport-companies/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').archiveTransportCompaniesValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').archiveTransportCompaniesValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['archiveMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['archiveMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'transport_companies.archive': {
+    methods: ["POST"]
+    pattern: '/api/v1/transport-companies/:id/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').archiveTransportCompanyValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').archiveTransportCompanyValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['archive']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'trucks.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/trucks'

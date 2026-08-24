@@ -102,6 +102,18 @@ const routes = {
     tokens: [{"old":"/api/v1/transport-companies/:id","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/:id","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['transport_companies.update']['types'],
   },
+  'transport_companies.archive_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/transport-companies/archive',
+    tokens: [{"old":"/api/v1/transport-companies/archive","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/archive","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['transport_companies.archive_many']['types'],
+  },
+  'transport_companies.archive': {
+    methods: ["POST"],
+    pattern: '/api/v1/transport-companies/:id/archive',
+    tokens: [{"old":"/api/v1/transport-companies/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/:id/archive","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/transport-companies/:id/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['transport_companies.archive']['types'],
+  },
   'trucks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/trucks',

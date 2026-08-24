@@ -1,9 +1,5 @@
 import vine from '@vinejs/vine'
-import {
-  lifecycleComment,
-  lifecycleIds,
-  nonBlank,
-} from '#site_references/shared/site_reference_validator'
+import { lifecycleComment, lifecycleIds, nonBlank } from '#shared/validators/lifecycle_validator'
 
 export const createCustomerValidator = vine.create({
   code: vine.string().use(nonBlank()).minLength(1).maxLength(255),

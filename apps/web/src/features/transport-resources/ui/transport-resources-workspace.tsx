@@ -15,6 +15,7 @@ import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { useTransportCompanyMutations } from '@/features/transport-companies/mutations/use-transport-company-mutations'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
+import { BulkTransportCompanyLifecycleActions } from '@/features/transport-companies/ui/bulk-transport-company-lifecycle-actions'
 import { CreateTransportCompanyPanel } from '@/features/transport-companies/ui/create-transport-company-panel'
 import { EditTransportCompanyPanel } from '@/features/transport-companies/ui/edit-transport-company-panel'
 import { TransportCompaniesError } from '@/features/transport-companies/ui/transport-companies-error'
@@ -40,6 +41,11 @@ export function TransportResourcesWorkspace() {
   // rather than re-derived from live query data on every render. Re-deriving it live would silently
   // discard an in-progress edit if a background refetch changes that company's status.
   const [editSession, setEditSession] = useState<{ id: string; editable: boolean } | null>(null)
+
+  // Multi-selection is a distinct concept from `transportCompanyId`, which scopes the embedded
+  // trucks panel: a row's checkbox joins this selection, a row's body still scopes the trucks
+  // panel, and neither clears the other.
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (companyDetailsMode !== 'edit' || !companyDetails) {
@@ -103,6 +109,36 @@ export function TransportResourcesWorkspace() {
   const archived = companies.filter((company) => company.status === 'ARCHIVED')
   const selectedCompanies = companyStatus === 'available' ? available : archived
 
+  const toggleCompanySelection = (id: string) => {
+    setSelectedCompanyIds((previous) => {
+      const next = new Set(previous)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const toggleVisibleCompanySelection = (ids: string[], select: boolean) => {
+    setSelectedCompanyIds((previous) => {
+      const next = new Set(previous)
+      for (const id of ids) {
+        if (select) {
+          next.add(id)
+        } else {
+          next.delete(id)
+        }
+      }
+      return next
+    })
+  }
+
+  const clearCompanySelection = () => {
+    setSelectedCompanyIds(new Set())
+  }
+
   const toggleCompany = (id: string) => {
     void navigate({
       search: (previous) => ({
@@ -149,7 +185,7 @@ export function TransportResourcesWorkspace() {
     <div className="grid min-h-0 flex-1 gap-4 lg:h-full lg:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)] lg:overflow-hidden">
       <Card
         aria-label="Transport company directory"
-        className="min-h-[28rem] gap-0 py-0 lg:min-h-0"
+        className="relative min-h-[28rem] gap-0 py-0 lg:min-h-0"
       >
         <CardContent className="flex min-h-0 flex-1 flex-col px-0">
           <div className="border-b p-3">
@@ -188,6 +224,7 @@ export function TransportResourcesWorkspace() {
             className="min-h-0 flex-1 gap-0"
             onValueChange={(value) => {
               if (value === 'available' || value === 'archived') {
+                clearCompanySelection()
                 void navigate({
                   search: (previous) => ({
                     ...previous,
@@ -219,9 +256,12 @@ export function TransportResourcesWorkspace() {
                   onCreate={startCompanyCreation}
                   onEdit={editCompanyDetails}
                   onSelect={toggleCompany}
+                  onToggleSelection={canAdminister ? toggleCompanySelection : undefined}
+                  onToggleVisible={canAdminister ? toggleVisibleCompanySelection : undefined}
                   onView={viewCompanyDetails}
                   search={companySearch}
                   selectedId={transportCompanyId}
+                  selectedIds={canAdminister ? selectedCompanyIds : undefined}
                 />
               )}
             </TabsContent>
@@ -241,6 +281,15 @@ export function TransportResourcesWorkspace() {
             </TabsContent>
           </Tabs>
         </CardContent>
+        {canAdminister && companyStatus === 'available' && (
+          <BulkTransportCompanyLifecycleActions
+            onClear={clearCompanySelection}
+            onSuccess={(result) => {
+              setSelectedCompanyIds(new Set(result.blockedCompanies.map((blocked) => blocked.id)))
+            }}
+            selectedIds={[...selectedCompanyIds]}
+          />
+        )}
       </Card>
 
       <TrucksPage embedded={true} />
@@ -309,6 +358,16 @@ export function TransportResourcesWorkspace() {
             <TransportCompanyDetails
               canAdminister={canAdminister}
               company={companyDetails}
+              onArchiveSuccess={() =>
+                void navigate({
+                  search: (previous) => ({
+                    ...previous,
+                    companyStatus: 'archived',
+                    transportCompanyId: undefined,
+                    truckId: undefined,
+                  }),
+                })
+              }
               onEdit={() =>
                 void navigate({
                   search: (previous) => ({ ...previous, companyDetailsMode: 'edit' }),
