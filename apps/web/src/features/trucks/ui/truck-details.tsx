@@ -1,5 +1,6 @@
 import { ResourceDetailField } from '@/components/resource-map/resource-details'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
 import type { TruckDto } from '@/features/trucks/types'
@@ -13,9 +14,13 @@ function formatCapacity(capacityTonnes: number) {
 export function TruckDetails({
   truck,
   company,
+  canAdminister,
+  onEdit,
 }: {
   truck: TruckDto
   company?: TransportCompanyDto
+  canAdminister: boolean
+  onEdit: () => void
 }) {
   const isArchived = truck.status === 'ARCHIVED'
   const lifecycleTime = isArchived ? truck.archivedAt : truck.reactivatedAt
@@ -71,6 +76,11 @@ export function TruckDetails({
           </dl>
         </section>
       </div>
+      {canAdminister && !isArchived && (
+        <footer className="shrink-0 border-t bg-popover px-5 py-4 md:px-6">
+          <Button onClick={onEdit}>Edit truck</Button>
+        </footer>
+      )}
     </section>
   )
 }

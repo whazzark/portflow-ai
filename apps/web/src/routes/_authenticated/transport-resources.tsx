@@ -18,6 +18,7 @@ const transportResourcesSearchSchema = z.object({
   truckStatus: z.enum(['available', 'archived']).catch('available'),
   truckSearch: z.string().catch(''),
   truckId: z.string().optional().catch(undefined),
+  truckMode: z.enum(['view', 'edit']).catch('view'),
 })
 
 export const Route = createFileRoute('/_authenticated/transport-resources')({

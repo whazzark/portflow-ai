@@ -44,6 +44,7 @@ router
         router.get('/', [controllers.Trucks, 'index']).as('index')
         router.get('/available', [controllers.Trucks, 'available']).as('available')
         router.post('/', [controllers.Trucks, 'store']).as('store')
+        router.patch('/:id', [controllers.Trucks, 'update']).as('update')
       })
       .prefix('/trucks')
       .as('trucks')
