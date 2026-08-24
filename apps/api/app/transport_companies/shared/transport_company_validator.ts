@@ -1,6 +1,6 @@
 import vine from '@vinejs/vine'
-import { lifecycleComment, lifecycleIds, nonBlank } from '#shared/validators/lifecycle_validator'
 import { phoneNumber } from '#shared/validators/contact_validator'
+import { lifecycleComment, lifecycleIds, nonBlank } from '#shared/validators/lifecycle_validator'
 
 // The phone and email fields are trimmed before their format rules run, unlike `name`: their
 // rules (`phoneNumber`, `.email()`) are whitespace-sensitive, so a value entered with surrounding
