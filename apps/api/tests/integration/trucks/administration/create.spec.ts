@@ -3,8 +3,13 @@ import { test } from '@japa/runner'
 import { TransportCompanyFactory } from '#database/factories/transport_company_factory'
 import { TruckFactory } from '#database/factories/truck_factory'
 import { UserFactory } from '#database/factories/user_factory'
+import Truck from '#models/truck'
 
-test.group('POST /api/v1/trucks', () => {
+test.group('POST /api/v1/trucks', (group) => {
+  group.each.setup(async () => {
+    await Truck.query().delete()
+  })
+
   test('rejects unauthenticated creation', async ({ assert, client }) => {
     const company = await TransportCompanyFactory.create()
 
@@ -128,6 +133,44 @@ test.group('POST /api/v1/trucks', () => {
     negative.assertStatus(422)
     imprecise.assertStatus(422)
     assert.equal(zero.body().error.code, 'E_VALIDATION_ERROR')
+  })
+
+  test('rejects a capacity outside the storable range instead of failing on the database', async ({
+    assert,
+    client,
+  }) => {
+    const company = await TransportCompanyFactory.create()
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+
+    const tooLarge = await client.post('/api/v1/trucks').loginAs(admin).json({
+      registration: 'OVERFLOW-CAP-01',
+      capacityTonnes: 1_000_000_000,
+      transportCompanyId: company.id,
+    })
+    const tooSmall = await client.post('/api/v1/trucks').loginAs(admin).json({
+      registration: 'TINY-CAP-01',
+      capacityTonnes: 1e-7,
+      transportCompanyId: company.id,
+    })
+
+    tooLarge.assertStatus(422)
+    tooSmall.assertStatus(422)
+    assert.equal(tooLarge.body().error.code, 'E_VALIDATION_ERROR')
+    assert.equal(tooSmall.body().error.code, 'E_VALIDATION_ERROR')
+  })
+
+  test('accepts the largest storable capacity', async ({ assert, client }) => {
+    const company = await TransportCompanyFactory.create()
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+
+    const response = await client.post('/api/v1/trucks').loginAs(admin).json({
+      registration: 'MAX-CAP-01',
+      capacityTonnes: 999_999_999.999,
+      transportCompanyId: company.id,
+    })
+
+    response.assertStatus(201)
+    assert.equal(response.body().data.capacityTonnes, 999_999_999.999)
   })
 
   test('rejects an archived or missing transport company', async ({ assert, client }) => {

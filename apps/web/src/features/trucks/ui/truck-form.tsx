@@ -8,6 +8,12 @@ import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
+/** Mirrors the API bounds for the NUMERIC(12, 3) `trucks.capacity_tonnes` column. */
+const MIN_CAPACITY_TONNES = 0.001
+const MAX_CAPACITY_TONNES = 999_999_999.999
+/** Plain decimal notation only: exponent forms such as `1e-7` would slip past the checks below. */
+const CAPACITY_PATTERN = /^\d*\.?\d+$/
+
 const truckSchema = z.object({
   registration: z.string().trim().min(1, 'Registration is required.').max(255),
   vehicleModel: z.string().trim().max(255),
@@ -15,8 +21,11 @@ const truckSchema = z.object({
     .string()
     .trim()
     .min(1, 'Capacity is required.')
-    .refine((value) => Number.isFinite(Number(value)) && Number(value) > 0, {
+    .refine((value) => CAPACITY_PATTERN.test(value) && Number(value) >= MIN_CAPACITY_TONNES, {
       message: 'Capacity must be a positive number of tonnes.',
+    })
+    .refine((value) => !CAPACITY_PATTERN.test(value) || Number(value) <= MAX_CAPACITY_TONNES, {
+      message: `Capacity must not exceed ${MAX_CAPACITY_TONNES} tonnes.`,
     })
     .refine(
       (value) => {

@@ -38,7 +38,7 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
   const companiesQuery = useQuery(transportCompanyQueries.all())
   const availableCompaniesQuery = useQuery(transportCompanyQueries.available())
   const companies = companiesQuery.data?.data ?? []
-  const availableCompanies = availableCompaniesQuery.data?.data ?? []
+  const availableCompanies = availableCompaniesQuery.data?.data
   const trucks = (trucksQuery.data?.data ?? []) as TruckDto[]
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const truckMutations = useTruckMutations()
@@ -46,6 +46,12 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
     ? trucks.filter((truck) => truck.transportCompanyId === transportCompanyId)
     : trucks
   const selected = scopedTrucks.find((truck) => truck.id === truckId)
+  // A scoped directory only lists one company's trucks, so creating for another one would
+  // succeed while leaving nothing visible here.
+  const creatableCompanies =
+    availableCompanies && transportCompanyId
+      ? availableCompanies.filter((company) => company.id === transportCompanyId)
+      : availableCompanies
 
   useEffect(() => {
     if (!administrator && truckStatus === 'archived') {
@@ -206,7 +212,9 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
     <Sheet onOpenChange={setIsCreateOpen} open={isCreateOpen}>
       <SheetContent className="overflow-hidden sm:max-w-lg">
         <CreateTruckPanel
-          companies={availableCompanies}
+          companies={creatableCompanies}
+          companiesError={availableCompaniesQuery.isError}
+          onRetryCompanies={() => void availableCompaniesQuery.refetch()}
           onCreate={async (value) => {
             const result = await truckMutations.create.mutateAsync({ body: value })
 

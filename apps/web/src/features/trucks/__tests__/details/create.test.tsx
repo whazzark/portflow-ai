@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 
+import { TRANSPORT_COMPANIES } from '@/features/transport-companies/__tests__/support/fixtures'
 import type { TruckDto } from '@/features/trucks/types'
 import { server } from '@/test/msw/server'
 import {
@@ -119,6 +120,76 @@ test('rejects a blank registration and a non-positive capacity without submittin
 
   expect(await screen.findByText('Registration is required.')).toBeInTheDocument()
   expect(screen.getByText('Capacity must be a positive number of tonnes.')).toBeInTheDocument()
+})
+
+test('rejects a capacity the database could not store without submitting', async () => {
+  let posted = 0
+
+  mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/trucks`, () => {
+      posted += 1
+      return HttpResponse.json({ data: TRUCKS[0] }, { status: 201 })
+    }),
+  )
+
+  renderTrucks()
+  fireEvent.click(await screen.findByRole('button', { name: 'Create truck' }))
+
+  const capacity = await screen.findByRole('textbox', { name: 'Capacity (tonnes)' })
+  fireEvent.change(capacity, { target: { value: '1000000000' } })
+  fireEvent.blur(capacity)
+  expect(
+    await screen.findByText('Capacity must not exceed 999999999.999 tonnes.'),
+  ).toBeInTheDocument()
+
+  fireEvent.change(capacity, { target: { value: '1e-7' } })
+  fireEvent.blur(capacity)
+  expect(
+    await screen.findByText('Capacity must be a positive number of tonnes.'),
+  ).toBeInTheDocument()
+  expect(posted).toBe(0)
+})
+
+test('surfaces a failed transport-company list instead of an unusable picker', async () => {
+  mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/transport-companies/available`, () =>
+      HttpResponse.json(
+        { error: { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' } },
+        { status: 500 },
+      ),
+    ),
+  )
+
+  renderTrucks()
+  fireEvent.click(await screen.findByRole('button', { name: 'Create truck' }))
+
+  expect(await screen.findByText('Unable to load transport companies')).toBeInTheDocument()
+  expect(screen.queryByRole('combobox', { name: 'Transport company' })).not.toBeInTheDocument()
+})
+
+test('offers only the scoped company when the directory is filtered to one company', async () => {
+  mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
+
+  const [atlantic] = TRANSPORT_COMPANIES
+  renderTrucks(`/transport-resources?resource=trucks&transportCompanyId=${atlantic.id}`)
+  fireEvent.click(await screen.findByRole('button', { name: 'Create truck' }))
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Transport company' }))
+
+  expect(await screen.findByRole('option', { name: 'Atlantic Transport' })).toBeInTheDocument()
+  expect(screen.queryByRole('option', { name: 'Bêta Logistique' })).not.toBeInTheDocument()
+})
+
+test('explains why no truck can be created when the scoped company is archived', async () => {
+  mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
+
+  const archived = TRANSPORT_COMPANIES.find((company) => company.status === 'ARCHIVED')
+  renderTrucks(`/transport-resources?resource=trucks&transportCompanyId=${archived?.id}`)
+  fireEvent.click(await screen.findByRole('button', { name: 'Create truck' }))
+
+  expect(await screen.findByText('No available transport company')).toBeInTheDocument()
+  expect(screen.queryByRole('combobox', { name: 'Transport company' })).not.toBeInTheDocument()
 })
 
 test('surfaces a duplicate-registration conflict from the API without closing the panel', async () => {
