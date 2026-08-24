@@ -8,6 +8,7 @@ import { DockForm, type PendingDockPlacement } from '@/features/docks/ui/dock-fo
 export function EditDockPanel({
   dock,
   draft,
+  origin,
   onDraftChange,
   onRestorePosition,
   onCancel,
@@ -17,6 +18,8 @@ export function EditDockPanel({
 }: {
   dock: DockDto
   draft: PendingDockPlacement
+  /** Where the dock stood when this edit session started — not its live, refetchable position. */
+  origin: PendingDockPlacement
   onDraftChange: (point: PendingDockPlacement) => void
   onRestorePosition: () => void
   onCancel: () => void
@@ -24,7 +27,8 @@ export function EditDockPanel({
   onUpdate: (value: { name: string; latitude: number; longitude: number }) => Promise<DockDto>
   onSuccess: (dock: DockDto) => void
 }) {
-  const positionModified = draft.latitude !== dock.latitude || draft.longitude !== dock.longitude
+  const positionModified =
+    draft.latitude !== origin.latitude || draft.longitude !== origin.longitude
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">

@@ -82,10 +82,17 @@ export function CheckpointsPage() {
   // A creation flow wins if both params are somehow present, so two draft markers can never coexist.
   const isEditModeRequested = edit === 'dock' && creationKind === null
   const [pendingPlacement, setPendingPlacement] = useState<LatLng | null>(null)
-  // Whether editing is allowed is decided once, when an edit session starts for a given dock,
-  // rather than re-derived from live query data on every render. Re-deriving it live would
-  // silently discard an in-progress edit if a background refetch changes that dock's status.
-  const [editSession, setEditSession] = useState<{ id: string; editable: boolean } | null>(null)
+  // Whether editing is allowed, and where the dock stood when editing started, are both decided
+  // once — when an edit session starts for a given dock — rather than re-derived from live query
+  // data on every render. Re-deriving `editable` live would silently discard an in-progress edit
+  // if a background refetch changed that dock's status; re-deriving `origin` live would let
+  // another administrator's concurrent move masquerade as this administrator's unsaved change,
+  // and would make "Restore original position" restore that other move instead.
+  const [editSession, setEditSession] = useState<{
+    id: string
+    editable: boolean
+    origin: LatLng
+  } | null>(null)
   const [draftDockPlacement, setDraftDockPlacement] = useState<LatLng | null>(null)
   const dockMutations = useDockMutations()
   const weighingAreaMutations = useWeighingAreaMutations()
@@ -153,8 +160,13 @@ export function CheckpointsPage() {
       return
     }
     if (!editSession || editSession.id !== selectedDock.id) {
-      setEditSession({ id: selectedDock.id, editable: selectedDock.status === 'AVAILABLE' })
-      setDraftDockPlacement({ latitude: selectedDock.latitude, longitude: selectedDock.longitude })
+      const origin = { latitude: selectedDock.latitude, longitude: selectedDock.longitude }
+      setEditSession({
+        id: selectedDock.id,
+        editable: selectedDock.status === 'AVAILABLE',
+        origin,
+      })
+      setDraftDockPlacement(origin)
     }
   }, [editSession, isEditModeRequested, selectedDock])
 
@@ -166,9 +178,11 @@ export function CheckpointsPage() {
           ? docksQuery.data
           : weighingAreasQuery.data
     if (sourceLoaded && checkpointParam && !selectedResource) {
+      // `edit` is scoped to the selection it was opened for, so it has to go with it. Leaving it
+      // behind would arm edit mode for whichever dock is selected next.
       void navigate({
         replace: true,
-        search: (previous) => ({ ...previous, checkpoint: undefined }),
+        search: (previous) => ({ ...previous, checkpoint: undefined, edit: undefined }),
       })
     }
   }, [
@@ -207,6 +221,7 @@ export function CheckpointsPage() {
       search: (previous) => ({
         ...previous,
         checkpoint: keepsSelection ? previous.checkpoint : undefined,
+        edit: keepsSelection ? previous.edit : undefined,
         status: nextStatus,
       }),
     })
@@ -291,8 +306,8 @@ export function CheckpointsPage() {
     })
   }
   const restoreDockPosition = () => {
-    if (selectedDock) {
-      setDraftDockPlacement({ latitude: selectedDock.latitude, longitude: selectedDock.longitude })
+    if (editSession) {
+      setDraftDockPlacement(editSession.origin)
     }
   }
   const updateDock = async (
@@ -319,14 +334,19 @@ export function CheckpointsPage() {
     })
   }
 
-  const createActions = canManageCheckpoints
-    ? CHECKPOINT_KINDS.map((kind) => ({
-        key: kind,
-        label: CREATE_LABEL_BY_KIND[kind],
-        icon: <CheckpointKindIcon kind={kind} />,
-        onSelect: () => startCreating(kind),
-      }))
-    : []
+  // Hidden while a dock is being edited: starting a creation from there would tear down the edit
+  // session, silently throwing away the name and position the administrator is working on. Two
+  // creation flows may still replace one another — switching between them is deliberate, and
+  // `startCreating` discards the abandoned placement (spec FR-016, FR-017).
+  const createActions =
+    canManageCheckpoints && !isEditingDock
+      ? CHECKPOINT_KINDS.map((kind) => ({
+          key: kind,
+          label: CREATE_LABEL_BY_KIND[kind],
+          icon: <CheckpointKindIcon kind={kind} />,
+          onSelect: () => startCreating(kind),
+        }))
+      : []
 
   const createPanel =
     creationKind === 'DOCK' ? (
@@ -346,7 +366,7 @@ export function CheckpointsPage() {
     ) : null
 
   const editPanel =
-    isEditingDock && selectedDock && draftDockPlacement ? (
+    isEditingDock && selectedDock && draftDockPlacement && editSession ? (
       <EditDockPanel
         dock={selectedDock}
         draft={draftDockPlacement}
@@ -356,6 +376,7 @@ export function CheckpointsPage() {
         onRestorePosition={restoreDockPosition}
         onSuccess={handleDockUpdated}
         onUpdate={(value) => updateDock(selectedDock.id, value)}
+        origin={editSession.origin}
       />
     ) : null
 
@@ -480,7 +501,7 @@ export function CheckpointsPage() {
           }
           void navigate({
             replace: true,
-            search: (previous) => ({ ...previous, checkpoint: undefined }),
+            search: (previous) => ({ ...previous, checkpoint: undefined, edit: undefined }),
           })
         }}
         onEditDock={startEditingDock}
