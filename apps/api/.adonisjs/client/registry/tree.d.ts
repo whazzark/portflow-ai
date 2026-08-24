@@ -31,6 +31,8 @@ export interface ApiDefinition {
     available: typeof routes['trucks.available']
     store: typeof routes['trucks.store']
     update: typeof routes['trucks.update']
+    archiveMany: typeof routes['trucks.archive_many']
+    archive: typeof routes['trucks.archive']
   }
   docks: {
     index: typeof routes['docks.index']
