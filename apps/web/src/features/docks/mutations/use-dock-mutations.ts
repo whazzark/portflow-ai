@@ -22,8 +22,16 @@ export function useDockMutations() {
       onSuccess: () => invalidateDocks(),
     }),
   )
+  const archive = useMutation(
+    tuyauQuery.docks.archive.mutationOptions({
+      onSuccess: () => invalidateDocks(),
+    }),
+  )
+  const archiveMany = useMutation(tuyauQuery.docks.archiveMany.mutationOptions())
 
   return {
+    archive,
+    archiveMany,
     create,
     refreshDocks: invalidateDocks,
     update,
