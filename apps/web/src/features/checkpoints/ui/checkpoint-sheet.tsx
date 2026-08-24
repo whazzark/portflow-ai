@@ -22,28 +22,38 @@ export function CheckpointSheet({
   mode = 'view',
   onClose,
   createPanel = null,
+  editPanel = null,
+  canEditDock,
+  onEditDock,
 }: {
   checkpoint: SelectedCheckpoint
-  /** `'edit'` is intentionally not modeled yet — see issue #199. */
-  mode?: 'view' | 'create'
+  mode?: 'view' | 'create' | 'edit'
   onClose: () => void
   createPanel?: ReactNode
+  editPanel?: ReactNode
+  canEditDock: boolean
+  onEditDock: () => void
 }) {
   const isCreating = mode === 'create'
+  const isEditing = mode === 'edit'
 
   return (
     <Sheet
-      disablePointerDismissal={isCreating}
-      modal={!isCreating}
+      disablePointerDismissal={isCreating || isEditing}
+      modal={!isCreating && !isEditing}
       onOpenChange={(open) => !open && onClose()}
-      open={isCreating || Boolean(checkpoint)}
+      open={isCreating || isEditing || Boolean(checkpoint)}
     >
-      <SheetContent className="overflow-hidden sm:max-w-lg" showOverlay={!isCreating}>
+      <SheetContent className="overflow-hidden sm:max-w-lg" showOverlay={!isCreating && !isEditing}>
         {isCreating ? (
           createPanel
+        ) : isEditing ? (
+          editPanel
         ) : (
           <>
-            {checkpoint?.selection.kind === 'DOCK' && <DockDetails dock={checkpoint.resource} />}
+            {checkpoint?.selection.kind === 'DOCK' && (
+              <DockDetails canEdit={canEditDock} dock={checkpoint.resource} onEdit={onEditDock} />
+            )}
             {checkpoint?.selection.kind === 'WEIGHING_AREA' && (
               <WeighingAreaDetails area={checkpoint.resource} />
             )}
