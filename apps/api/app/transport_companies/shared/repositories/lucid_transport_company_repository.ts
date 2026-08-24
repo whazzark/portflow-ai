@@ -126,7 +126,9 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
     }
   }
 
-  archiveAvailable(command: ArchiveTransportCompanyCommand): Promise<ArchiveTransportCompanyResult> {
+  archiveAvailable(
+    command: ArchiveTransportCompanyCommand,
+  ): Promise<ArchiveTransportCompanyResult> {
     return TransportCompany.transaction(async (trx) => {
       // Locking the row before checking trucks closes the race the two-step check-then-write used
       // to have: truck creation (LucidTruckRepository#create) locks this same company row before
