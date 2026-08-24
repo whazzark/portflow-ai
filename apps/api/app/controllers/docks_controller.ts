@@ -3,6 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 
 import ArchiveDockUseCase from '#docks/archive/archive_dock_use_case'
+import ArchiveDocksUseCase from '#docks/archive/archive_docks_use_case'
 import ListAvailableDocksUseCase from '#docks/available/list_available_docks_use_case'
 import CreateDockUseCase from '#docks/create/create_dock_use_case'
 import ListDocksUseCase from '#docks/list/list_docks_use_case'
@@ -10,6 +11,7 @@ import ReactivateDockUseCase from '#docks/reactivate/reactivate_dock_use_case'
 import DockPolicy from '#docks/shared/dock_policy'
 import DockTransformer from '#docks/shared/dock_transformer'
 import {
+  archiveDocksValidator,
   archiveDockValidator,
   createDockValidator,
   reactivateDockValidator,
@@ -26,6 +28,7 @@ export default class DocksController {
     private updateDockUseCase: UpdateDockUseCase,
     private archiveDockUseCase: ArchiveDockUseCase,
     private reactivateDockUseCase: ReactivateDockUseCase,
+    private archiveDocksUseCase: ArchiveDocksUseCase,
   ) {}
 
   async index({ bouncer, serialize }: HttpContext) {
@@ -81,6 +84,25 @@ export default class DocksController {
     })
 
     return serialize(DockTransformer.transform(dock))
+  }
+
+  async archiveMany({ auth, bouncer, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(DockPolicy).authorize('archive')
+
+    const payload = await request.validateUsing(archiveDocksValidator)
+    const result = await this.archiveDocksUseCase.handle({
+      ids: payload.ids,
+      archivedByUserId: user.id,
+      archivedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize({
+      updatedDocks: DockTransformer.transform(result.updatedDocks),
+      blockedDocks: result.blockedDocks,
+    })
   }
 
   async reactivate({ auth, bouncer, params, request, serialize }: HttpContext) {

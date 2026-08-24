@@ -1,6 +1,9 @@
 import type { DateTime } from 'luxon'
 
+import type { BulkDockLifecycleBlocker } from '#docks/shared/dock_lifecycle_blockers'
 import type Dock from '#models/dock'
+
+export type { BulkDockLifecycleBlocker } from '#docks/shared/dock_lifecycle_blockers'
 
 export type CreateDockCommand = {
   name: string
@@ -29,6 +32,18 @@ export type ReactivateDockCommand = {
   reactivationComment: string | null
 }
 
+export type ArchiveDocksCommand = {
+  ids: string[]
+  archivedAt: DateTime
+  archivedByUserId: string
+  archiveComment: string | null
+}
+
+export type BulkDockLifecycleResult = {
+  updatedDocks: Dock[]
+  blockedDocks: BulkDockLifecycleBlocker[]
+}
+
 export type DockWriteResult =
   | { kind: 'CREATED'; dock: Dock }
   | { kind: 'UPDATED'; dock: Dock }
@@ -54,4 +69,5 @@ export default abstract class DockRepository {
   abstract updateAvailable(command: UpdateDockCommand): Promise<DockWriteResult>
   abstract archiveAvailable(command: ArchiveDockCommand): Promise<ArchiveDockResult>
   abstract reactivateArchived(command: ReactivateDockCommand): Promise<ReactivateDockResult>
+  abstract archiveAvailableMany(command: ArchiveDocksCommand): Promise<BulkDockLifecycleResult>
 }

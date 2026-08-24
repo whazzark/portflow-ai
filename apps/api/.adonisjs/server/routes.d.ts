@@ -32,6 +32,7 @@ export type ScannedRoutes = {
     'docks.store': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'docks.archive_many': { paramsTuple?: []; params?: {} }
     'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighing_areas.index': { paramsTuple?: []; params?: {} }
@@ -90,6 +91,7 @@ export type ScannedRoutes = {
     'trucks.archive_many': { paramsTuple?: []; params?: {} }
     'trucks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.store': { paramsTuple?: []; params?: {} }
+    'docks.archive_many': { paramsTuple?: []; params?: {} }
     'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighing_areas.store': { paramsTuple?: []; params?: {} }

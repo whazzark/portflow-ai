@@ -343,6 +343,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'docks.archive_many': {
+    methods: ["POST"]
+    pattern: '/api/v1/docks/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#docks/shared/dock_validator').archiveDocksValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#docks/shared/dock_validator').archiveDocksValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['archiveMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['archiveMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'docks.archive': {
     methods: ["POST"]
     pattern: '/api/v1/docks/:id/archive'

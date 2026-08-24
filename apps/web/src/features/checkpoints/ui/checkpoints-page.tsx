@@ -25,6 +25,7 @@ import {
   checkpointKindFilterFromVisibility,
   checkpointLayerVisibilityFromFilter,
 } from '@/features/checkpoints/types'
+import { BulkArchiveDocksActions } from '@/features/checkpoints/ui/bulk-archive-docks-actions'
 import { CheckpointMapControls } from '@/features/checkpoints/ui/checkpoint-map-controls'
 import {
   CheckpointSheet,
@@ -39,7 +40,7 @@ import {
 import { toDockCheckpoint } from '@/features/docks/dock-checkpoint-adapter'
 import { useDockMutations } from '@/features/docks/mutations/use-dock-mutations'
 import { dockQueries } from '@/features/docks/queries/dock-queries'
-import type { DockDto } from '@/features/docks/types'
+import type { BulkDockLifecycleResult, DockDto } from '@/features/docks/types'
 import { useWeighingAreaMutations } from '@/features/weighing-areas/mutations/use-weighing-area-mutations'
 import { weighingAreaQueries } from '@/features/weighing-areas/queries/weighing-area-queries'
 import type { WeighingAreaDto } from '@/features/weighing-areas/types'
@@ -66,6 +67,7 @@ export function CheckpointsPage() {
     edit,
     kinds,
     search,
+    selecting,
     status,
   } = checkpointsRoute.useSearch()
   const navigate = checkpointsRoute.useNavigate()
@@ -89,6 +91,8 @@ export function CheckpointsPage() {
           ? 'WEIGHING_AREA'
           : null
   const [pendingPlacement, setPendingPlacement] = useState<LatLng | null>(null)
+  const isSelectingDocks = canManageCheckpoints && selecting === 'docks'
+  const [checkedDockIds, setCheckedDockIds] = useState<Set<string>>(new Set())
   const dockMutations = useDockMutations()
   const weighingAreaMutations = useWeighingAreaMutations()
   const docksQuery = useQuery(dockQueries.list())
@@ -174,6 +178,54 @@ export function CheckpointsPage() {
   }, [creationKind])
 
   useEffect(() => {
+    if (!isSelectingDocks) {
+      setCheckedDockIds(new Set())
+    }
+  }, [isSelectingDocks])
+
+  // Ctrl/Cmd+A selects every currently visible, eligible dock, entering select mode on the fly
+  // just like a shift-click — the administrator never has to reach for the map control first.
+  // Ignored while typing in a field, so the browser's native "select all text" keeps working there.
+  useEffect(() => {
+    if (!canManageCheckpoints) {
+      return
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isSelectAllShortcut =
+        (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a'
+      if (!isSelectAllShortcut) {
+        return
+      }
+      const target = event.target as HTMLElement | null
+      const isEditableTarget =
+        target !== null &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      if (isEditableTarget) {
+        return
+      }
+      const availableDockIds = checkpoints
+        .filter((checkpoint) => checkpoint.kind === 'DOCK' && checkpoint.status === 'AVAILABLE')
+        .map((checkpoint) => checkpoint.id)
+      if (availableDockIds.length === 0) {
+        return
+      }
+      event.preventDefault()
+      setCheckedDockIds(new Set(availableDockIds))
+      void navigate({
+        search: (previous) => ({
+          ...previous,
+          checkpoint: undefined,
+          create: undefined,
+          edit: undefined,
+          selecting: 'docks',
+        }),
+      })
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [canManageCheckpoints, checkpoints, navigate])
+
+  useEffect(() => {
     const sourceLoaded =
       selection === undefined
         ? docksQuery.data
@@ -204,12 +256,14 @@ export function CheckpointsPage() {
 
   const hasMatches = checkpoints.some((checkpoint) => checkpoint.isSearchMatch)
   const updateSearch = (nextSearch: string) => {
+    setCheckedDockIds(new Set())
     void navigate({
       replace: true,
       search: (previous) => ({ ...previous, search: nextSearch }),
     })
   }
   const updateStatus = (nextStatus: typeof status) => {
+    setCheckedDockIds(new Set())
     const selectedCheckpointInCollection = selection
       ? checkpointCollection.find(
           (checkpoint) => checkpoint.kind === selection.kind && checkpoint.id === selection.id,
@@ -230,6 +284,7 @@ export function CheckpointsPage() {
     })
   }
   const updateLayerVisibility = (nextVisibility: CheckpointLayerVisibility) => {
+    setCheckedDockIds(new Set())
     void navigate({
       search: (previous) => ({
         ...previous,
@@ -251,7 +306,11 @@ export function CheckpointsPage() {
     // after the newly mounted panel has painted a pending marker at the abandoned position.
     setPendingPlacement(null)
     void navigate({
-      search: (previous) => ({ ...previous, create: CHECKPOINT_PARAM_BY_KIND[kind] }),
+      search: (previous) => ({
+        ...previous,
+        create: CHECKPOINT_PARAM_BY_KIND[kind],
+        selecting: undefined,
+      }),
     })
   }
   const cancelCreating = () => {
@@ -304,8 +363,52 @@ export function CheckpointsPage() {
       search: (previous) => ({
         ...previous,
         edit: CHECKPOINT_PARAM_BY_KIND[selection.kind],
+        selecting: undefined,
       }),
     })
+  }
+  const startSelectingDocks = (initialDockId?: string) => {
+    setCheckedDockIds(initialDockId ? new Set([initialDockId]) : new Set())
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        checkpoint: undefined,
+        create: undefined,
+        edit: undefined,
+        selecting: 'docks',
+      }),
+    })
+  }
+  const stopSelectingDocks = () => {
+    void navigate({
+      replace: true,
+      search: (previous) => ({ ...previous, selecting: undefined }),
+    })
+  }
+  const toggleDockChecked = (id: string) => {
+    const dock = docks.find((candidate) => candidate.id === id)
+    if (dock?.status !== 'AVAILABLE') {
+      return
+    }
+    setCheckedDockIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+  // Shift-clicking an available dock marker enters select mode on the fly and checks that dock,
+  // without needing the map control first. Once already selecting, it just toggles like a plain
+  // click — shift adds no further meaning there.
+  const handleShiftSelectDock = (id: string) => {
+    if (isSelectingDocks) {
+      toggleDockChecked(id)
+      return
+    }
+    startSelectingDocks(id)
   }
   const cancelEditing = () => {
     clearEditSession()
@@ -347,13 +450,22 @@ export function CheckpointsPage() {
       search: (previous) => ({ ...previous, checkpoint: undefined, edit: undefined }),
     })
   }
+  const handleBulkArchiveSuccess = (result: BulkDockLifecycleResult) => {
+    setCheckedDockIds(
+      new Set(
+        result.blockedDocks
+          .filter((blocked) => blocked.reason === 'IN_USE')
+          .map((blocked) => blocked.id),
+      ),
+    )
+  }
 
-  // Hidden while any checkpoint is being edited: starting a creation from there would tear down
-  // the edit session, silently throwing away the name and position the administrator is working
-  // on. Two creation flows may still replace one another — switching between them is deliberate,
-  // and `startCreating` discards the abandoned placement (spec FR-016, FR-017).
+  // Hidden while any checkpoint is being edited or a bulk selection is in progress: starting a
+  // creation from there would tear down the edit session or an in-progress selection. Two
+  // creation flows may still replace one another — switching between them is deliberate, and
+  // `startCreating` discards the abandoned placement (spec FR-016, FR-017).
   const createActions =
-    canManageCheckpoints && !isEditing
+    canManageCheckpoints && !isEditing && !isSelectingDocks
       ? CHECKPOINT_KINDS.map((kind) => ({
           key: kind,
           label: CREATE_LABEL_BY_KIND[kind],
@@ -492,10 +604,16 @@ export function CheckpointsPage() {
         ))}
         map={(onMapError) => (
           <CheckpointMap
+            canSelectDocks={canManageCheckpoints && layerVisibility.DOCK}
+            checkedIds={isSelectingDocks ? checkedDockIds : undefined}
             checkpoints={mapCheckpoints}
             createActions={createActions}
             onError={onMapError}
             onSelect={selectCheckpoint}
+            onShiftSelectDock={canManageCheckpoints ? handleShiftSelectDock : undefined}
+            onToggleChecked={isSelectingDocks ? toggleDockChecked : undefined}
+            onToggleSelectMode={isSelectingDocks ? stopSelectingDocks : () => startSelectingDocks()}
+            selectMode={isSelectingDocks ? 'docks' : undefined}
             placement={
               creationKind
                 ? {
@@ -525,6 +643,13 @@ export function CheckpointsPage() {
         sourceError={layerVisibility.WEIGHING_AREA && weighingAreasQuery.isError}
         sourceMessage={showWeighingAreaMessage ? weighingAreaMessage : undefined}
       />
+      {canManageCheckpoints && (
+        <BulkArchiveDocksActions
+          onClear={() => setCheckedDockIds(new Set())}
+          onSuccess={handleBulkArchiveSuccess}
+          selectedIds={[...checkedDockIds]}
+        />
+      )}
       <CheckpointSheet
         canEditCheckpoint={canManageCheckpoints}
         checkpoint={selectedResource}

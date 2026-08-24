@@ -174,6 +174,12 @@ const routes = {
     tokens: [{"old":"/api/v1/docks/:id","type":0,"val":"api","end":""},{"old":"/api/v1/docks/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/docks/:id","type":0,"val":"docks","end":""},{"old":"/api/v1/docks/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['docks.update']['types'],
   },
+  'docks.archive_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/docks/archive',
+    tokens: [{"old":"/api/v1/docks/archive","type":0,"val":"api","end":""},{"old":"/api/v1/docks/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/docks/archive","type":0,"val":"docks","end":""},{"old":"/api/v1/docks/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['docks.archive_many']['types'],
+  },
   'docks.archive': {
     methods: ["POST"],
     pattern: '/api/v1/docks/:id/archive',

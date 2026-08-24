@@ -1,5 +1,5 @@
 import vine from '@vinejs/vine'
-import { nonBlank } from '#shared/validators/lifecycle_validator'
+import { lifecycleComment, lifecycleIds, nonBlank } from '#shared/validators/lifecycle_validator'
 
 export const createDockValidator = vine.create({
   name: vine.string().use(nonBlank()).minLength(1).maxLength(255),
@@ -38,4 +38,9 @@ export const archiveDockValidator = vine.create({
 
 export const reactivateDockValidator = vine.create({
   comment: vine.string().nullable().optional(),
+})
+
+export const archiveDocksValidator = vine.create({
+  ids: lifecycleIds(),
+  comment: lifecycleComment(),
 })
