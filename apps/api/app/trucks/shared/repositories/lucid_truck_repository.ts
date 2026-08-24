@@ -1,8 +1,43 @@
-import Truck from '#models/truck'
+import { Decimal } from 'decimal.js'
 
-import TruckRepository from './truck_repository.ts'
+import Truck from '#models/truck'
+import isUniqueViolation from '#shared/database/is_unique_violation'
+
+import TruckRepository, {
+  type CreateTruckCommand,
+  type TruckWriteResult,
+} from './truck_repository.ts'
 
 export default class LucidTruckRepository extends TruckRepository {
+  async create(command: CreateTruckCommand): Promise<TruckWriteResult> {
+    try {
+      const truck = await Truck.create({
+        ...command,
+        capacityTonnes: new Decimal(command.capacityTonnes),
+        status: 'AVAILABLE',
+        archivedAt: null,
+        archivedByUserId: null,
+        archiveComment: null,
+        reactivatedAt: null,
+        reactivatedByUserId: null,
+        reactivationComment: null,
+      })
+
+      return { kind: 'CREATED', truck }
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        const candidate = error as { constraint?: string; message?: string }
+        const marker = `${candidate.constraint ?? ''} ${candidate.message ?? ''}`
+
+        if (marker.includes('trucks_registration_unique')) {
+          return { kind: 'DUPLICATE_REGISTRATION' }
+        }
+      }
+
+      throw error
+    }
+  }
+
   list(): Promise<Truck[]> {
     return (
       Truck.query()

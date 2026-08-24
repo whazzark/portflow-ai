@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { SearchIcon } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -11,8 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
+import { useTruckMutations } from '@/features/trucks/mutations/use-truck-mutations'
 import { truckQueries } from '@/features/trucks/queries/truck-queries'
 import type { TruckDto } from '@/features/trucks/types'
+import { CreateTruckPanel } from '@/features/trucks/ui/create-truck-panel'
 import { TruckDetails } from '@/features/trucks/ui/truck-details'
 import { TruckOverview } from '@/features/trucks/ui/truck-overview'
 import { TruckSection } from '@/features/trucks/ui/truck-section'
@@ -32,12 +36,22 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
   const navigate = transportResourcesRoute.useNavigate()
   const trucksQuery = useQuery(administrator ? truckQueries.all() : truckQueries.available())
   const companiesQuery = useQuery(transportCompanyQueries.all())
+  const availableCompaniesQuery = useQuery(transportCompanyQueries.available())
   const companies = companiesQuery.data?.data ?? []
+  const availableCompanies = availableCompaniesQuery.data?.data
   const trucks = (trucksQuery.data?.data ?? []) as TruckDto[]
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const truckMutations = useTruckMutations()
   const scopedTrucks = transportCompanyId
     ? trucks.filter((truck) => truck.transportCompanyId === transportCompanyId)
     : trucks
   const selected = scopedTrucks.find((truck) => truck.id === truckId)
+  // A scoped directory only lists one company's trucks, so creating for another one would
+  // succeed while leaving nothing visible here.
+  const creatableCompanies =
+    availableCompanies && transportCompanyId
+      ? availableCompanies.filter((company) => company.id === transportCompanyId)
+      : availableCompanies
 
   useEffect(() => {
     if (!administrator && truckStatus === 'archived') {
@@ -92,6 +106,9 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
       }),
     })
   }
+  const selectTruck = (id: string) => {
+    void navigate({ search: (previous) => ({ ...previous, truckId: id }) })
+  }
 
   const directory = (
     <Card
@@ -103,8 +120,8 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
       }
     >
       <CardContent className="flex min-h-0 flex-1 flex-col px-0">
-        <div className="border-b p-3">
-          <Field>
+        <div className="flex items-center gap-2 border-b p-3">
+          <Field className="flex-1">
             <FieldLabel className="sr-only" htmlFor="truck-search">
               Search trucks
             </FieldLabel>
@@ -127,6 +144,11 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
               />
             </div>
           </Field>
+          {administrator && (
+            <Button onClick={() => setIsCreateOpen(true)} type="button">
+              Create truck
+            </Button>
+          )}
         </div>
         <Tabs
           className="min-h-0 flex-1 gap-0"
@@ -186,10 +208,33 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
     </Card>
   )
 
+  const createSheet = (
+    <Sheet onOpenChange={setIsCreateOpen} open={isCreateOpen}>
+      <SheetContent className="overflow-hidden sm:max-w-lg">
+        <CreateTruckPanel
+          companies={creatableCompanies}
+          companiesError={availableCompaniesQuery.isError}
+          onRetryCompanies={() => void availableCompaniesQuery.refetch()}
+          onCreate={async (value) => {
+            const result = await truckMutations.create.mutateAsync({ body: value })
+
+            return result.data
+          }}
+          onSuccess={(created) => {
+            toast.success('Truck created')
+            setIsCreateOpen(false)
+            selectTruck(created.id)
+          }}
+        />
+      </SheetContent>
+    </Sheet>
+  )
+
   if (embedded) {
     return (
       <>
         {directory}
+        {createSheet}
         <Sheet
           onOpenChange={(open) => {
             if (!open) {
@@ -214,6 +259,7 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
   return (
     <div className="grid min-h-0 flex-1 gap-4 lg:h-full lg:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)] lg:overflow-hidden">
       {directory}
+      {createSheet}
       <Card className="min-h-[24rem] gap-0 py-0 lg:min-h-0">
         {selected ? (
           <TruckDetails

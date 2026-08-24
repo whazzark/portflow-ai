@@ -13,7 +13,6 @@ test('opens exact available details and toggles the selection closed', async () 
   await user.click(await screen.findByRole('button', { name: /AA-101-PF, Atlantic Transport/ }))
   const details = await screen.findByRole('region', { name: 'Truck details' })
 
-  expect(within(details).getByText('00000000-0000-4000-8000-000000000101')).toBeInTheDocument()
   expect(within(details).getByText('Volvo FMX')).toBeInTheDocument()
   expect(within(details).getByText('32.5 t')).toBeInTheDocument()
   expect(within(details).getByText('Atlantic Transport')).toBeInTheDocument()

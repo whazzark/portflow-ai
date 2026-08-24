@@ -34,7 +34,7 @@ test('shows distinct archived rows and independent company status to administrat
   expect(screen.getByText('Archived company')).toBeInTheDocument()
   expect(
     screen.queryByRole('button', {
-      name: /^(create|edit|archive|reactivate|delete|assign|import|sync)/i,
+      name: /^(edit|archive|reactivate|delete|assign|import|sync)/i,
     }),
   ).not.toBeInTheDocument()
 })

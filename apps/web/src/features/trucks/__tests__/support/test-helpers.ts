@@ -30,6 +30,11 @@ export function mockTrucks({
     http.get(`${API_BASE_URL}/api/v1/transport-companies`, () =>
       HttpResponse.json({ data: companies }),
     ),
+    http.get(`${API_BASE_URL}/api/v1/transport-companies/available`, () =>
+      HttpResponse.json({
+        data: companies.filter((company) => company.status === 'AVAILABLE'),
+      }),
+    ),
     http.get(`${API_BASE_URL}/api/v1/trucks`, () => {
       onCompleteRequest?.()
       return HttpResponse.json({ data: complete })

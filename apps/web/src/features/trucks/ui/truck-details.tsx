@@ -35,7 +35,6 @@ export function TruckDetails({
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 md:px-6">
         <dl className="grid gap-5 text-sm sm:grid-cols-2">
-          <ResourceDetailField label="Stable identity" value={truck.id} />
           <ResourceDetailField label="Registration" value={truck.registration} />
           <ResourceDetailField label="Vehicle model" value={truck.vehicleModel} />
           <ResourceDetailField label="Capacity" value={formatCapacity(truck.capacityTonnes)} />

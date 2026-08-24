@@ -38,6 +38,26 @@ test.each([ACTIVE_OBSERVER, ACTIVE_OPERATIONS_LEAD])(
   },
 )
 
+test.each([ACTIVE_OBSERVER, ACTIVE_OPERATIONS_LEAD])(
+  'hides the create-truck control for $role',
+  async (user) => {
+    mockTrucks({ user })
+
+    renderTrucks()
+
+    await screen.findByRole('list', { name: 'Available trucks' })
+    expect(screen.queryByRole('button', { name: 'Create truck' })).not.toBeInTheDocument()
+  },
+)
+
+test.each([ACTIVE_OPERATIONS_ADMIN])('shows the create-truck control for $role', async (user) => {
+  mockTrucks({ user })
+
+  renderTrucks()
+
+  expect(await screen.findByRole('button', { name: 'Create truck' })).toBeInTheDocument()
+})
+
 test('uses the complete endpoint and exposes archived consultation to administrators', async () => {
   let completeRequests = 0
   let availableRequests = 0
