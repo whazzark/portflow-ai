@@ -78,7 +78,14 @@ export function useCoordinateFields(
   // parses to 20) round-trips through `commit` -> `onPendingChange` -> this effect and gets
   // canonicalized back to "20", making it impossible to type a decimal or a trailing zero.
   useEffect(() => {
+    // A discarded placement clears the fields too: switching creation kind drops the pending
+    // point, and without this the freshly mounted form would keep the abandoned coordinates —
+    // a populated, valid-looking pair with no marker on the map and a disabled submit.
     if (!pending) {
+      setLatitudeText('')
+      setLongitudeText('')
+      setLatitudeTouched(false)
+      setLongitudeTouched(false)
       return
     }
     setLatitudeText((current) =>

@@ -121,6 +121,8 @@ export function CheckpointsPage() {
   // Resets whenever the active creation flow changes — including switching directly from one
   // kind to the other — so at most one creation flow is ever armed and switching discards the
   // abandoned pending placement rather than carrying it into the new flow (spec FR-016, FR-017).
+  // `startCreating` already resets for in-app switches; this covers the flows it doesn't run
+  // through, such as landing on a `create` param directly or moving between them with back/forward.
   // The effect body doesn't need creationKind's value, only to re-run whenever it changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
   useEffect(() => {
@@ -198,6 +200,9 @@ export function CheckpointsPage() {
     })
   }
   const startCreating = (kind: CheckpointKind) => {
+    // Discard synchronously, batched with the navigation: the effect above also resets, but only
+    // after the newly mounted panel has painted a pending marker at the abandoned position.
+    setPendingPlacement(null)
     void navigate({
       search: (previous) => ({ ...previous, create: CREATE_PARAM_BY_KIND[kind] }),
     })

@@ -28,6 +28,8 @@ test('switching from weighing-area creation to dock creation discards the pendin
   expect(await screen.findByRole('heading', { name: 'Create dock' })).toBeInTheDocument()
   expect(screen.queryByTestId('pending-checkpoint-marker')).not.toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Dock name' })).toBeInTheDocument()
+  expect(screen.getByRole('textbox', { name: 'Latitude' })).toHaveValue('')
+  expect(screen.getByRole('textbox', { name: 'Longitude' })).toHaveValue('')
 })
 
 test('switching from dock creation to weighing-area creation discards the pending dock marker', async () => {
@@ -45,6 +47,8 @@ test('switching from dock creation to weighing-area creation discards the pendin
   expect(await screen.findByRole('heading', { name: 'Create weighing area' })).toBeInTheDocument()
   expect(screen.queryByTestId('pending-checkpoint-marker')).not.toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Weighing area name' })).toBeInTheDocument()
+  expect(screen.getByRole('textbox', { name: 'Latitude' })).toHaveValue('')
+  expect(screen.getByRole('textbox', { name: 'Longitude' })).toHaveValue('')
 })
 
 test('at most one creation action is ever active: both remain available while the other is armed', async () => {
