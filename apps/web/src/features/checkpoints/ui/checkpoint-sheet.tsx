@@ -23,16 +23,16 @@ export function CheckpointSheet({
   onClose,
   createPanel = null,
   editPanel = null,
-  canEditDock,
-  onEditDock,
+  canEditCheckpoint,
+  onEditCheckpoint,
 }: {
   checkpoint: SelectedCheckpoint
   mode?: 'view' | 'create' | 'edit'
   onClose: () => void
   createPanel?: ReactNode
   editPanel?: ReactNode
-  canEditDock: boolean
-  onEditDock: () => void
+  canEditCheckpoint: boolean
+  onEditCheckpoint: () => void
 }) {
   const isCreating = mode === 'create'
   const isEditing = mode === 'edit'
@@ -52,10 +52,18 @@ export function CheckpointSheet({
         ) : (
           <>
             {checkpoint?.selection.kind === 'DOCK' && (
-              <DockDetails canEdit={canEditDock} dock={checkpoint.resource} onEdit={onEditDock} />
+              <DockDetails
+                canEdit={canEditCheckpoint}
+                dock={checkpoint.resource}
+                onEdit={onEditCheckpoint}
+              />
             )}
             {checkpoint?.selection.kind === 'WEIGHING_AREA' && (
-              <WeighingAreaDetails area={checkpoint.resource} />
+              <WeighingAreaDetails
+                area={checkpoint.resource}
+                canEdit={canEditCheckpoint}
+                onEdit={onEditCheckpoint}
+              />
             )}
           </>
         )}

@@ -5,7 +5,9 @@ import TransportCompany from '#models/transport_company'
 
 export const TransportCompanyFactory = factory
   .define(TransportCompany, ({ faker }) => ({
-    name: faker.company.name(),
+    // Suffixed to avoid the case-insensitive unique name index colliding across the
+    // finite faker.company.name() pool once enough companies are created in a run.
+    name: `${faker.company.name()} ${faker.string.alphanumeric({ length: 6 })}`,
     status: 'AVAILABLE' as const,
     archivedAt: null,
     archivedByUserId: null,

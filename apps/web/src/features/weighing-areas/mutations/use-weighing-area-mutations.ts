@@ -17,9 +17,15 @@ export function useWeighingAreaMutations() {
       onSuccess: () => invalidateWeighingAreas(),
     }),
   )
+  const update = useMutation(
+    tuyauQuery.weighingAreas.update.mutationOptions({
+      onSuccess: () => invalidateWeighingAreas(),
+    }),
+  )
 
   return {
     create,
     refreshWeighingAreas: invalidateWeighingAreas,
+    update,
   }
 }
