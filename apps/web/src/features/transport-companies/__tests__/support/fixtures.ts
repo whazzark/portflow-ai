@@ -65,3 +65,21 @@ export const TRANSPORT_COMPANIES: TransportCompanyDto[] = [
     updatedAt: '2026-07-20T14:32:11.000Z',
   },
 ]
+
+export function createdTransportCompany(name: string, id = 'created-1'): TransportCompanyDto {
+  return {
+    id,
+    name,
+    status: 'AVAILABLE',
+    archivedAt: null,
+    archivedByUserId: null,
+    archivedBy: null,
+    archiveComment: null,
+    reactivatedAt: null,
+    reactivatedByUserId: null,
+    reactivatedBy: null,
+    reactivationComment: null,
+    createdAt: '2026-08-24T09:41:00.000Z',
+    updatedAt: '2026-08-24T09:41:00.000Z',
+  }
+}

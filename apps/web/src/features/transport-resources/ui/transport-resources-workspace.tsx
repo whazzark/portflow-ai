@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { SearchIcon } from 'lucide-react'
+import { PlusIcon, SearchIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -14,6 +15,7 @@ import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { useTransportCompanyMutations } from '@/features/transport-companies/mutations/use-transport-company-mutations'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
+import { CreateTransportCompanyPanel } from '@/features/transport-companies/ui/create-transport-company-panel'
 import { EditTransportCompanyPanel } from '@/features/transport-companies/ui/edit-transport-company-panel'
 import { TransportCompaniesError } from '@/features/transport-companies/ui/transport-companies-error'
 import { TransportCompanyDetails } from '@/features/transport-companies/ui/transport-company-details'
@@ -57,6 +59,10 @@ export function TransportResourcesWorkspace() {
     editSession !== null &&
     editSession.id === companyDetailsId &&
     editSession.editable
+
+  // Creation is authoritative on the API side; gating here only keeps the interface honest, so a
+  // hand-typed `companyDetailsMode=create` opens nothing for a non-administrator.
+  const isCreatingCompany = companyDetailsMode === 'create' && canAdminister
 
   useEffect(() => {
     if (transportCompanyId && companiesQuery.data && !selectedCompany) {
@@ -119,6 +125,26 @@ export function TransportResourcesWorkspace() {
     })
   }
 
+  const startCompanyCreation = () => {
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        companyDetailsId: undefined,
+        companyDetailsMode: 'create',
+      }),
+    })
+  }
+
+  const closeCompanySheet = () => {
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        companyDetailsId: undefined,
+        companyDetailsMode: 'view',
+      }),
+    })
+  }
+
   return (
     <div className="grid min-h-0 flex-1 gap-4 lg:h-full lg:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)] lg:overflow-hidden">
       <Card
@@ -150,6 +176,12 @@ export function TransportResourcesWorkspace() {
                 />
               </div>
             </Field>
+            {canAdminister && (
+              <Button className="mt-3 w-full" onClick={startCompanyCreation}>
+                <PlusIcon aria-hidden="true" />
+                Create transport company
+              </Button>
+            )}
           </div>
 
           <Tabs
@@ -184,6 +216,7 @@ export function TransportResourcesWorkspace() {
                   canAdminister={canAdminister}
                   companies={selectedCompanies}
                   lifecycle="available"
+                  onCreate={startCompanyCreation}
                   onEdit={editCompanyDetails}
                   onSelect={toggleCompany}
                   onView={viewCompanyDetails}
@@ -215,19 +248,41 @@ export function TransportResourcesWorkspace() {
       <Sheet
         onOpenChange={(open) => {
           if (!open) {
-            void navigate({
-              search: (previous) => ({
-                ...previous,
-                companyDetailsId: undefined,
-                companyDetailsMode: 'view',
-              }),
-            })
+            closeCompanySheet()
           }
         }}
-        open={Boolean(companyDetails)}
+        open={Boolean(companyDetails) || isCreatingCompany}
       >
-        <SheetContent aria-label="Transport company details" className="overflow-y-auto">
-          {companyDetails && isEditingDetails ? (
+        <SheetContent
+          aria-label={isCreatingCompany ? 'Create transport company' : 'Transport company details'}
+          className="overflow-y-auto"
+        >
+          {isCreatingCompany ? (
+            <CreateTransportCompanyPanel
+              onCreate={async (value) => {
+                const result = await mutations.create.mutateAsync({ body: value })
+
+                return result.data
+              }}
+              onSuccess={(created) => {
+                toast.success('Transport company created')
+                void navigate({
+                  search: (previous) => ({
+                    ...previous,
+                    // A company is always created available, so land on the tab that actually
+                    // shows it — otherwise a success toast appears over an unchanged list.
+                    companyStatus: 'available',
+                    companyDetailsId: created.id,
+                    companyDetailsMode: 'view',
+                    // Changing tab always clears the selection, so do it here too: otherwise the
+                    // trucks panel stays scoped to a company the Available tab no longer lists.
+                    transportCompanyId: undefined,
+                    truckId: undefined,
+                  }),
+                })
+              }}
+            />
+          ) : companyDetails && isEditingDetails ? (
             <EditTransportCompanyPanel
               company={companyDetails}
               onCancel={() =>
