@@ -10,6 +10,7 @@ type TransportCompanySectionProps = {
   onSelect: (id: string) => void
   onView?: (id: string) => void
   onEdit?: (id: string) => void
+  onCreate?: () => void
   canAdminister?: boolean
   showStatus?: boolean
 }
@@ -22,6 +23,7 @@ export function TransportCompanySection({
   onSelect,
   onView,
   onEdit,
+  onCreate,
   canAdminister,
   showStatus,
 }: TransportCompanySectionProps) {
@@ -49,6 +51,7 @@ export function TransportCompanySection({
         }
         canAdminister={canAdminister}
         lifecycle={lifecycle}
+        onCreate={hasSearch ? undefined : onCreate}
         onEdit={onEdit}
         onSelect={onSelect}
         onView={onView}

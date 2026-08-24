@@ -32,6 +32,7 @@ router
 
     router
       .group(() => {
+        router.post('/', [controllers.TransportCompanies, 'store']).as('store')
         router.get('/', [controllers.TransportCompanies, 'index']).as('index')
         router.get('/available', [controllers.TransportCompanies, 'available']).as('available')
         router.patch('/:id', [controllers.TransportCompanies, 'update']).as('update')
