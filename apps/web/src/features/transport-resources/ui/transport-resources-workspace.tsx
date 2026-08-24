@@ -274,6 +274,10 @@ export function TransportResourcesWorkspace() {
                     companyStatus: 'available',
                     companyDetailsId: created.id,
                     companyDetailsMode: 'view',
+                    // Changing tab always clears the selection, so do it here too: otherwise the
+                    // trucks panel stays scoped to a company the Available tab no longer lists.
+                    transportCompanyId: undefined,
+                    truckId: undefined,
                   }),
                 })
               }}

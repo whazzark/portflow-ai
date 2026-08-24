@@ -134,7 +134,7 @@ export function TransportCompanyList({
           {canAdminister && onCreate && (
             <EmptyContent>
               <Button onClick={onCreate} size="sm">
-                Create the first transport company
+                Create a transport company
               </Button>
             </EmptyContent>
           )}

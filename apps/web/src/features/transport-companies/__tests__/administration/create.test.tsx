@@ -111,7 +111,7 @@ test('offers creation from the empty available collection', async () => {
   renderTransportCompanies()
   expect(await screen.findByText('No available transport companies')).toBeInTheDocument()
 
-  fireEvent.click(screen.getByRole('button', { name: 'Create the first transport company' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Create a transport company' }))
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Première Société' },
   })

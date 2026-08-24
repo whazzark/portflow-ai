@@ -4,7 +4,25 @@ import { TransportCompanyFactory } from '#database/factories/transport_company_f
 import { UserFactory } from '#database/factories/user_factory'
 import TransportCompany from '#models/transport_company'
 
-test.group('POST /api/v1/transport-companies', () => {
+test.group('POST /api/v1/transport-companies', (group) => {
+  // Cleaning up inline after the assertions leaks rows as soon as one of them fails, which then
+  // poisons every later test reusing a name. Snapshot the table instead and drop the additions.
+  let preExistingIds: string[] = []
+
+  group.each.setup(async () => {
+    preExistingIds = (await TransportCompany.query().select('id')).map((company) => company.id)
+  })
+
+  group.each.teardown(async () => {
+    const additions = TransportCompany.query()
+
+    if (preExistingIds.length > 0) {
+      additions.whereNotIn('id', preExistingIds)
+    }
+
+    await additions.delete()
+  })
+
   test('creates an available company and returns the complete representation', async ({
     assert,
     client,
@@ -33,8 +51,6 @@ test.group('POST /api/v1/transport-companies', () => {
       Math.floor(new Date(data.updatedAt).getTime() / 1000),
       Math.floor(new Date(data.createdAt).getTime() / 1000),
     )
-
-    await TransportCompany.query().where('id', data.id).delete()
   })
 
   test('accepts either administration role', async ({ assert, client }) => {
@@ -46,8 +62,6 @@ test.group('POST /api/v1/transport-companies', () => {
 
     response.assertStatus(201)
     assert.equal(response.body().data.name, 'Créé Par Org Admin')
-
-    await TransportCompany.query().where('id', response.body().data.id).delete()
   })
 
   test('publishes the created company to both consultation collections', async ({
@@ -76,8 +90,6 @@ test.group('POST /api/v1/transport-companies', () => {
       names,
       [...names].sort((left: string, right: string) => (left < right ? -1 : left > right ? 1 : 0)),
     )
-
-    await TransportCompany.query().where('id', id).delete()
   })
 
   test('trims surrounding whitespace while preserving the submitted casing', async ({
@@ -92,8 +104,6 @@ test.group('POST /api/v1/transport-companies', () => {
 
     response.assertStatus(201)
     assert.equal(response.body().data.name, 'Grand OUEST Camions')
-
-    await TransportCompany.query().where('id', response.body().data.id).delete()
   })
 
   test('leaves an existing company untouched when a new one is created', async ({
@@ -106,15 +116,12 @@ test.group('POST /api/v1/transport-companies', () => {
     const response = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: 'Presqu île Transports' })
+      .json({ name: 'Rade Brest Transports' })
 
     response.assertStatus(201)
     await existing.refresh()
     assert.equal(existing.name, 'Armor Fret Services')
     assert.equal(existing.status, 'AVAILABLE')
-
-    await TransportCompany.query().where('id', response.body().data.id).delete()
-    await existing.delete()
   })
 
   test('rejects missing, blank, whitespace-only, and over-long names', async ({
@@ -160,8 +167,6 @@ test.group('POST /api/v1/transport-companies', () => {
 
     response.assertStatus(201)
     assert.equal(response.body().data.name.length, 255)
-
-    await TransportCompany.query().where('id', response.body().data.id).delete()
   })
 
   test('rejects a duplicate name without naming the colliding company', async ({
@@ -179,15 +184,11 @@ test.group('POST /api/v1/transport-companies', () => {
     response.assertStatus(409)
     assert.equal(response.body().error.code, 'E_TRANSPORT_COMPANY_NAME_CONFLICT')
     assert.notInclude(response.body().error.message, existing.name)
-
-    await existing.delete()
   })
 
   test('rejects a name reserved by an archived company', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
-    const archived = await TransportCompanyFactory.apply('archived')
-      .merge({ name: 'Noroît Logistique' })
-      .create()
+    await TransportCompanyFactory.apply('archived').merge({ name: 'Noroît Logistique' }).create()
 
     const response = await client
       .post('/api/v1/transport-companies')
@@ -196,8 +197,6 @@ test.group('POST /api/v1/transport-companies', () => {
 
     response.assertStatus(409)
     assert.equal(response.body().error.code, 'E_TRANSPORT_COMPANY_NAME_CONFLICT')
-
-    await archived.delete()
   })
 
   test('creates exactly one company when the same name is submitted twice', async ({
@@ -221,8 +220,6 @@ test.group('POST /api/v1/transport-companies', () => {
 
     const matches = await TransportCompany.query().whereILike('name', 'presqu île transports')
     assert.lengthOf(matches, 1)
-
-    await TransportCompany.query().where('id', first.body().data.id).delete()
   })
 
   test('creates a company that owns no truck', async ({ assert, client }) => {
@@ -245,8 +242,6 @@ test.group('POST /api/v1/transport-companies', () => {
 
     const available = await client.get('/api/v1/transport-companies/available').loginAs(admin)
     assert.isTrue(available.body().data.some((company: { id: string }) => company.id === id))
-
-    await TransportCompany.query().where('id', id).delete()
   })
 
   test('rejects unauthenticated creation', async ({ assert, client }) => {

@@ -74,7 +74,7 @@ test('offers no creation affordance in the empty state to a non-administrator', 
   expect(await screen.findByText('No available transport companies')).toBeInTheDocument()
 
   expect(
-    screen.queryByRole('button', { name: 'Create the first transport company' }),
+    screen.queryByRole('button', { name: 'Create a transport company' }),
   ).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Create transport company' })).not.toBeInTheDocument()
 })
@@ -110,7 +110,5 @@ test('offers the empty-state creation affordance to an administrator', async () 
   renderTransportCompanies()
   expect(await screen.findByText('No available transport companies')).toBeInTheDocument()
 
-  expect(
-    screen.getByRole('button', { name: 'Create the first transport company' }),
-  ).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Create a transport company' })).toBeInTheDocument()
 })
