@@ -1,3 +1,4 @@
+import type { QueryClientContract } from '@adonisjs/lucid/types/database'
 import type { Decimal } from 'decimal.js'
 
 import type Truck from '#models/truck'
@@ -33,10 +34,18 @@ export type TruckWriteResult =
   | { kind: 'ARCHIVED' }
   | { kind: 'TRANSPORT_COMPANY_CHANGED' }
 
+export type FindCompanyIdsWithAvailableTrucksInput = {
+  transportCompanyIds: readonly string[]
+  client?: QueryClientContract
+}
+
 export default abstract class TruckRepository {
   abstract list(): Promise<Truck[]>
   abstract listAvailable(): Promise<Truck[]>
   abstract findById(id: string): Promise<Truck | null>
   abstract create(command: CreateTruckCommand): Promise<TruckWriteResult>
   abstract updateAvailable(command: UpdateTruckCommand): Promise<TruckWriteResult>
+  abstract findCompanyIdsWithAvailableTrucks(
+    input: FindCompanyIdsWithAvailableTrucksInput,
+  ): Promise<Set<string>>
 }

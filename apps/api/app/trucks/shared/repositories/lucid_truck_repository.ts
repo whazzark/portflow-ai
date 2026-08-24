@@ -6,6 +6,7 @@ import isUniqueViolation from '#shared/database/is_unique_violation'
 
 import TruckRepository, {
   type CreateTruckCommand,
+  type FindCompanyIdsWithAvailableTrucksInput,
   type TruckWriteResult,
   type UpdateTruckCommand,
 } from './truck_repository.ts'
@@ -132,5 +133,20 @@ export default class LucidTruckRepository extends TruckRepository {
         .orderBy('registration', 'asc')
         .orderBy('id', 'asc')
     )
+  }
+
+  async findCompanyIdsWithAvailableTrucks(
+    input: FindCompanyIdsWithAvailableTrucksInput,
+  ): Promise<Set<string>> {
+    if (input.transportCompanyIds.length === 0) {
+      return new Set()
+    }
+
+    const rows = await Truck.query({ client: input.client })
+      .select('transportCompanyId')
+      .whereIn('transportCompanyId', [...input.transportCompanyIds])
+      .where('status', 'AVAILABLE')
+
+    return new Set(rows.map((row) => row.transportCompanyId))
   }
 }
