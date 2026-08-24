@@ -9,7 +9,7 @@
 | #222 | List Trucks | backlog | pending selection |
 | #223 | Create a Truck | backlog | pending selection |
 | #224 | Update a Truck | in-progress | `./update-a-truck/` |
-| #225 | Archive a Truck | backlog | pending selection |
+| #225 | Archive a Truck | selected | `specs/site-references/transport-resources/trucks/archive-a-truck/spec.md` |
 | #226 | Reactivate a Truck | backlog | pending selection |
 
 Truck creation and update include the transport-company assignment rules. Lifecycle actions preserve

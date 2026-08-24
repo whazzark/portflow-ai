@@ -10,6 +10,9 @@ type TruckSectionProps = {
   selectedId?: string
   onSelect: (id: string) => void
   companies: TransportCompanyDto[]
+  selectable?: boolean
+  selectedIds?: Set<string>
+  onSelectionChange?: (checked: boolean, ids: string[]) => void
 }
 
 export function TruckSection({
@@ -19,6 +22,9 @@ export function TruckSection({
   selectedId,
   onSelect,
   companies,
+  selectable,
+  selectedIds,
+  onSelectionChange,
 }: TruckSectionProps) {
   const matches = trucks.filter((truck) =>
     truckMatchesSearch(
@@ -45,8 +51,11 @@ export function TruckSection({
         emptyTitle={hasSearch ? 'No matching trucks' : `No ${lifecycle} trucks`}
         lifecycle={lifecycle}
         onSelect={onSelect}
+        onSelectionChange={onSelectionChange}
         search={search}
+        selectable={selectable}
         selectedId={selectedId}
+        selectedIds={selectedIds}
       />
     </section>
   )

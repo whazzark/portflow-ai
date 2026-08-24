@@ -30,3 +30,15 @@ export class TruckTransportCompanyLockedException extends Exception {
   static message =
     'Truck transport company cannot change while the truck is assigned to a planned or active discharge'
 }
+
+export class TruckAlreadyArchivedException extends Exception {
+  static status = 409
+  static code = 'E_TRUCK_ALREADY_ARCHIVED'
+  static message = 'Truck is already archived'
+}
+
+export class TruckInUseException extends Exception {
+  static status = 409
+  static code = 'E_TRUCK_IN_USE'
+  static message = 'Truck is used by a planned or active discharge'
+}

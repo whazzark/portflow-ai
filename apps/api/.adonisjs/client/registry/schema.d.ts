@@ -247,6 +247,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'trucks.archive_many': {
+    methods: ["POST"]
+    pattern: '/api/v1/trucks/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#trucks/shared/truck_validator').archiveTrucksValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#trucks/shared/truck_validator').archiveTrucksValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['archiveMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['archiveMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'trucks.archive': {
+    methods: ["POST"]
+    pattern: '/api/v1/trucks/:id/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#trucks/shared/truck_validator').archiveTruckValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#trucks/shared/truck_validator').archiveTruckValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['archive']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'docks.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/docks'

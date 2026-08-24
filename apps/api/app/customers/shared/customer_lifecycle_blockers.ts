@@ -1,3 +1,5 @@
+import { indexById, orderByIds } from '#shared/lifecycle/bulk_lifecycle_records'
+
 export type CustomerLifecycleRecord = {
   id: string
   code: string
@@ -12,11 +14,8 @@ export type BulkCustomerLifecycleBlocker = {
   reason: 'NOT_FOUND' | 'IN_USE' | 'ALREADY_ARCHIVED' | 'ALREADY_AVAILABLE'
 }
 
-export function indexCustomersById<T extends CustomerLifecycleRecord>(
-  customers: T[],
-): Map<string, T> {
-  return new Map(customers.map((customer) => [customer.id, customer]))
-}
+export const indexCustomersById = indexById
+export const orderCustomers = orderByIds
 
 export function findBulkBlockers(
   ids: string[],
@@ -54,15 +53,5 @@ export function findBulkBlockers(
     }
 
     return []
-  })
-}
-
-export function orderCustomers<T extends { id: string }>(
-  ids: string[],
-  customersById: Map<string, T>,
-): T[] {
-  return ids.flatMap((id) => {
-    const customer = customersById.get(id)
-    return customer ? [customer] : []
   })
 }

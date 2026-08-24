@@ -22,6 +22,12 @@ export function useTruckMutations() {
       onSuccess: () => invalidateTrucks(),
     }),
   )
+  const archive = useMutation(
+    tuyauQuery.trucks.archive.mutationOptions({
+      onSuccess: () => invalidateTrucks(),
+    }),
+  )
+  const archiveMany = useMutation(tuyauQuery.trucks.archiveMany.mutationOptions())
 
   const update = useMutation(
     tuyauQuery.trucks.update.mutationOptions({
@@ -30,6 +36,8 @@ export function useTruckMutations() {
   )
 
   return {
+    archive,
+    archiveMany,
     create,
     update,
     refreshTrucks: invalidateTrucks,

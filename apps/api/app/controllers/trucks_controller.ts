@@ -1,12 +1,20 @@
 import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
+import { DateTime } from 'luxon'
 
+import ArchiveTruckUseCase from '#trucks/archive/archive_truck_use_case'
+import ArchiveTrucksUseCase from '#trucks/archive/archive_trucks_use_case'
 import ListAvailableTrucksUseCase from '#trucks/available/list_available_trucks_use_case'
 import CreateTruckUseCase from '#trucks/create/create_truck_use_case'
 import ListTrucksUseCase from '#trucks/list/list_trucks_use_case'
 import TruckPolicy from '#trucks/shared/truck_policy'
 import TruckTransformer from '#trucks/shared/truck_transformer'
-import { createTruckValidator, updateTruckValidator } from '#trucks/shared/truck_validator'
+import {
+  archiveTrucksValidator,
+  archiveTruckValidator,
+  createTruckValidator,
+  updateTruckValidator,
+} from '#trucks/shared/truck_validator'
 import UpdateTruckUseCase from '#trucks/update/update_truck_use_case'
 
 @inject()
@@ -16,6 +24,8 @@ export default class TrucksController {
     private listAvailableTrucksUseCase: ListAvailableTrucksUseCase,
     private createTruckUseCase: CreateTruckUseCase,
     private updateTruckUseCase: UpdateTruckUseCase,
+    private archiveTruckUseCase: ArchiveTruckUseCase,
+    private archiveTrucksUseCase: ArchiveTrucksUseCase,
   ) {}
 
   async store({ bouncer, request, response, serialize }: HttpContext) {
@@ -65,5 +75,41 @@ export default class TrucksController {
     const trucks = await this.listAvailableTrucksUseCase.handle()
 
     return serialize(TruckTransformer.transform(trucks))
+  }
+
+  async archive({ auth, bouncer, params, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(TruckPolicy).authorize('archive')
+
+    const payload = await request.validateUsing(archiveTruckValidator)
+
+    const truck = await this.archiveTruckUseCase.handle({
+      id: params.id,
+      archivedByUserId: user.id,
+      archivedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize(TruckTransformer.transform(truck))
+  }
+
+  async archiveMany({ auth, bouncer, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(TruckPolicy).authorize('archive')
+
+    const payload = await request.validateUsing(archiveTrucksValidator)
+    const result = await this.archiveTrucksUseCase.handle({
+      ids: payload.ids,
+      archivedByUserId: user.id,
+      archivedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize({
+      updatedTrucks: TruckTransformer.transform(result.updatedTrucks),
+      blockedTrucks: result.blockedTrucks,
+    })
   }
 }

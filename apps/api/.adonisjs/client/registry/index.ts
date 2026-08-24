@@ -126,6 +126,18 @@ const routes = {
     tokens: [{"old":"/api/v1/trucks/:id","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/:id","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['trucks.update']['types'],
   },
+  'trucks.archive_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/trucks/archive',
+    tokens: [{"old":"/api/v1/trucks/archive","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/archive","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['trucks.archive_many']['types'],
+  },
+  'trucks.archive': {
+    methods: ["POST"],
+    pattern: '/api/v1/trucks/:id/archive',
+    tokens: [{"old":"/api/v1/trucks/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/:id/archive","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/trucks/:id/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['trucks.archive']['types'],
+  },
   'docks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/docks',

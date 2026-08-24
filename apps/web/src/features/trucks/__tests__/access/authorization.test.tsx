@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
 import {
@@ -56,6 +56,28 @@ test.each([ACTIVE_OPERATIONS_ADMIN])('shows the create-truck control for $role',
   renderTrucks()
 
   expect(await screen.findByRole('button', { name: 'Create truck' })).toBeInTheDocument()
+})
+
+test.each([ACTIVE_OBSERVER, ACTIVE_OPERATIONS_LEAD])(
+  'hides the archive-truck control for $role',
+  async (user) => {
+    mockTrucks({ user })
+
+    renderTrucks()
+    fireEvent.click(await screen.findByRole('button', { name: 'AA-101-PF, Atlantic Transport' }))
+
+    expect(await screen.findByRole('heading', { name: 'AA-101-PF' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Archive truck' })).not.toBeInTheDocument()
+  },
+)
+
+test('shows the archive-truck control for an operations administrator', async () => {
+  mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
+
+  renderTrucks()
+  fireEvent.click(await screen.findByRole('button', { name: 'AA-101-PF, Atlantic Transport' }))
+
+  expect(await screen.findByRole('button', { name: 'Archive truck' })).toBeInTheDocument()
 })
 
 test('uses the complete endpoint and exposes archived consultation to administrators', async () => {

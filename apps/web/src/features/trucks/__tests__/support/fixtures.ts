@@ -101,3 +101,85 @@ export const TRUCKS: TruckDto[] = [
 ]
 
 export const AVAILABLE_TRUCKS = TRUCKS.filter((truck) => truck.status === 'AVAILABLE')
+
+/**
+ * A larger, self-contained truck set for lifecycle and multi-selection tests, so bulk-archive
+ * scenarios don't have to share (and accidentally shift the lifecycle counts asserted by) the
+ * default {@link TRUCKS} fixture.
+ */
+export const BULK_TRUCKS: TruckDto[] = [
+  {
+    id: '00000000-0000-4000-8000-000000000201',
+    registration: 'GG-701-PF',
+    vehicleModel: 'DAF XF',
+    capacityTonnes: 24,
+    transportCompanyId: '00000000-0000-4000-8000-000000000001',
+    status: 'AVAILABLE',
+    archivedAt: null,
+    archivedByUserId: null,
+    archivedBy: null,
+    archiveComment: null,
+    reactivatedAt: null,
+    reactivatedByUserId: null,
+    reactivatedBy: null,
+    reactivationComment: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000202',
+    registration: 'HH-802-PF',
+    vehicleModel: null,
+    capacityTonnes: 19.5,
+    transportCompanyId: '00000000-0000-4000-8000-000000000002',
+    status: 'AVAILABLE',
+    archivedAt: null,
+    archivedByUserId: null,
+    archivedBy: null,
+    archiveComment: null,
+    reactivatedAt: null,
+    reactivatedByUserId: null,
+    reactivatedBy: null,
+    reactivationComment: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000203',
+    registration: 'II-903-PF',
+    vehicleModel: 'Renault T',
+    capacityTonnes: 27.25,
+    transportCompanyId: '00000000-0000-4000-8000-000000000003',
+    status: 'AVAILABLE',
+    archivedAt: null,
+    archivedByUserId: null,
+    archivedBy: null,
+    archiveComment: null,
+    reactivatedAt: null,
+    reactivatedByUserId: null,
+    reactivatedBy: null,
+    reactivationComment: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000204',
+    registration: 'JJ-004-PF',
+    vehicleModel: 'MAN TGX',
+    capacityTonnes: 22,
+    transportCompanyId: '00000000-0000-4000-8000-000000000001',
+    status: 'ARCHIVED',
+    archivedAt: '2026-07-15T11:00:00.000Z',
+    archivedByUserId: 'operations-admin-1',
+    archivedBy: { id: 'operations-admin-1', firstName: 'Olivia', lastName: 'Observer' },
+    archiveComment: null,
+    reactivatedAt: null,
+    reactivatedByUserId: null,
+    reactivatedBy: null,
+    reactivationComment: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-07-15T11:00:00.000Z',
+  },
+]
+
+export const BULK_AVAILABLE_TRUCKS = BULK_TRUCKS.filter((truck) => truck.status === 'AVAILABLE')
