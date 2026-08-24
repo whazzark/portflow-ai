@@ -3,11 +3,21 @@ import {
   ResourceDetailField,
   ResourceDetailHeader,
 } from '@/components/resource-map/resource-details'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { SheetFooter } from '@/components/ui/sheet'
 import type { DockDto } from '@/features/docks/types'
 import { formatDateTime } from '@/helpers/dates'
 
-export function DockDetails({ dock }: { dock: DockDto }) {
+export function DockDetails({
+  canEdit,
+  dock,
+  onEdit,
+}: {
+  canEdit: boolean
+  dock: DockDto
+  onEdit: () => void
+}) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ResourceDetailHeader
@@ -41,6 +51,11 @@ export function DockDetails({ dock }: { dock: DockDto }) {
           </dl>
         </section>
       </ResourceDetailBody>
+      {canEdit && dock.status === 'AVAILABLE' && (
+        <SheetFooter className="shrink-0 border-t bg-popover">
+          <Button onClick={onEdit}>Edit dock</Button>
+        </SheetFooter>
+      )}
     </div>
   )
 }

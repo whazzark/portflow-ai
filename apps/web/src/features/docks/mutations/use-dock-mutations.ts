@@ -17,9 +17,15 @@ export function useDockMutations() {
       onSuccess: () => invalidateDocks(),
     }),
   )
+  const update = useMutation(
+    tuyauQuery.docks.update.mutationOptions({
+      onSuccess: () => invalidateDocks(),
+    }),
+  )
 
   return {
     create,
     refreshDocks: invalidateDocks,
+    update,
   }
 }
