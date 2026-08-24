@@ -14,6 +14,7 @@ export type TransportCompanyWriteResult =
 export default abstract class TransportCompanyRepository {
   abstract list(): Promise<TransportCompany[]>
   abstract listAvailable(): Promise<TransportCompany[]>
+  abstract findById(id: string): Promise<TransportCompany | null>
   abstract updateAvailable(
     command: UpdateTransportCompanyCommand,
   ): Promise<TransportCompanyWriteResult>

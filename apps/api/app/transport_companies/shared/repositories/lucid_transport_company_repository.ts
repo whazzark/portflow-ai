@@ -26,6 +26,10 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
       .orderBy('id', 'asc')
   }
 
+  findById(id: string): Promise<TransportCompany | null> {
+    return TransportCompany.query().where('id', id).first()
+  }
+
   async updateAvailable(
     command: UpdateTransportCompanyCommand,
   ): Promise<TransportCompanyWriteResult> {

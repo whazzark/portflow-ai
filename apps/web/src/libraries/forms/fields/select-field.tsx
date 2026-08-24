@@ -38,10 +38,16 @@ export function SelectField({
       </FieldLabel>
       {description && <FieldDescription>{description}</FieldDescription>}
       <Select
+        items={options}
         value={field.state.value}
         onValueChange={(value) => {
           if (value !== null) {
             field.handleChange(value)
+          }
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            field.handleBlur()
           }
         }}
       >
