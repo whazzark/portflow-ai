@@ -36,6 +36,8 @@ router
         router.get('/', [controllers.TransportCompanies, 'index']).as('index')
         router.get('/available', [controllers.TransportCompanies, 'available']).as('available')
         router.patch('/:id', [controllers.TransportCompanies, 'update']).as('update')
+        router.post('/archive', [controllers.TransportCompanies, 'archiveMany']).as('archive_many')
+        router.post('/:id/archive', [controllers.TransportCompanies, 'archive']).as('archive')
       })
       .prefix('/transport-companies')
       .as('transport_companies')

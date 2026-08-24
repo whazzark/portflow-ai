@@ -1,10 +1,6 @@
 import vine from '@vinejs/vine'
 
-import {
-  lifecycleComment,
-  lifecycleIds,
-  nonBlank,
-} from '#site_references/shared/site_reference_validator'
+import { lifecycleComment, lifecycleIds, nonBlank } from '#shared/validators/lifecycle_validator'
 
 /**
  * `trucks.capacity_tonnes` is a NUMERIC(12, 3) column guarded by a `capacity_tonnes > 0` check,

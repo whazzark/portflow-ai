@@ -1,5 +1,5 @@
 import vine from '@vinejs/vine'
-import { nonBlank } from '#site_references/shared/site_reference_validator'
+import { nonBlank } from '#shared/validators/lifecycle_validator'
 
 export const createWeighingAreaValidator = vine.create({
   name: vine.string().use(nonBlank()).minLength(1).maxLength(255),

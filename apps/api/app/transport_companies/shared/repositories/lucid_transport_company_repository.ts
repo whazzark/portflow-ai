@@ -1,15 +1,31 @@
+import { inject } from '@adonisjs/core'
 import { DateTime } from 'luxon'
 
 import TransportCompany from '#models/transport_company'
 import isUniqueViolation from '#shared/database/is_unique_violation'
+import {
+  findBulkArchiveBlockers,
+  indexCompaniesById,
+  orderCompanies,
+} from '#transport_companies/shared/transport_company_lifecycle_blockers'
+import TruckRepository from '#trucks/shared/repositories/truck_repository'
 
 import TransportCompanyRepository, {
+  type ArchiveTransportCompaniesCommand,
+  type ArchiveTransportCompanyCommand,
+  type ArchiveTransportCompanyResult,
+  type BulkTransportCompanyLifecycleResult,
   type CreateTransportCompanyCommand,
   type TransportCompanyWriteResult,
   type UpdateTransportCompanyCommand,
 } from './transport_company_repository.ts'
 
+@inject()
 export default class LucidTransportCompanyRepository extends TransportCompanyRepository {
+  constructor(private truckRepository: TruckRepository) {
+    super()
+  }
+
   async create(command: CreateTransportCompanyCommand): Promise<TransportCompanyWriteResult> {
     try {
       const company = await TransportCompany.create({
@@ -108,5 +124,105 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
 
       throw error
     }
+  }
+
+  archiveAvailable(
+    command: ArchiveTransportCompanyCommand,
+  ): Promise<ArchiveTransportCompanyResult> {
+    return TransportCompany.transaction(async (trx) => {
+      // Locking the row before checking trucks closes the race the two-step check-then-write used
+      // to have: truck creation (LucidTruckRepository#create) locks this same company row before
+      // inserting an AVAILABLE truck, so whichever of the two transactions runs first is fully
+      // committed before the other observes the company's state.
+      const company = await TransportCompany.query({ client: trx })
+        .where('id', command.id)
+        .forUpdate()
+        .first()
+
+      if (!company) {
+        return { kind: 'NOT_FOUND' }
+      }
+      if (company.status === 'ARCHIVED') {
+        return { kind: 'ALREADY_ARCHIVED' }
+      }
+
+      const idsWithAvailableTrucks = await this.truckRepository.findCompanyIdsWithAvailableTrucks({
+        transportCompanyIds: [command.id],
+        client: trx,
+      })
+      if (idsWithAvailableTrucks.has(command.id)) {
+        return { kind: 'HAS_AVAILABLE_TRUCKS' }
+      }
+
+      await TransportCompany.query({ client: trx })
+        .where('id', command.id)
+        .update({
+          status: 'ARCHIVED',
+          archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
+          archivedByUserId: command.archivedByUserId,
+          archiveComment: command.archiveComment,
+          updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
+        })
+
+      const archived = await TransportCompany.query({ client: trx })
+        .where('id', command.id)
+        .preload('archivedBy')
+        .preload('reactivatedBy')
+        .first()
+      if (!archived) {
+        return { kind: 'NOT_FOUND' }
+      }
+
+      return { kind: 'ARCHIVED', company: archived }
+    })
+  }
+
+  archiveAvailableMany(
+    command: ArchiveTransportCompaniesCommand,
+  ): Promise<BulkTransportCompanyLifecycleResult> {
+    return TransportCompany.transaction(async (trx) => {
+      const companies = await TransportCompany.query({ client: trx })
+        .whereIn('id', command.ids)
+        .forUpdate()
+      const companiesById = indexCompaniesById(companies)
+      const companyIdsWithAvailableTrucks =
+        await this.truckRepository.findCompanyIdsWithAvailableTrucks({
+          transportCompanyIds: command.ids,
+          client: trx,
+        })
+      const blockers = findBulkArchiveBlockers(
+        command.ids,
+        companiesById,
+        companyIdsWithAvailableTrucks,
+      )
+
+      const blockedIds = new Set(blockers.map((blocker) => blocker.id))
+      const eligibleIds = command.ids.filter((id) => !blockedIds.has(id))
+
+      const [affectedRows] = await TransportCompany.query({ client: trx })
+        .whereIn('id', eligibleIds)
+        .where('status', 'AVAILABLE')
+        .update({
+          status: 'ARCHIVED',
+          archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
+          archivedByUserId: command.archivedByUserId,
+          archiveComment: command.archiveComment,
+          updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
+        })
+
+      if (affectedRows !== eligibleIds.length) {
+        throw new Error('Transport company bulk archive changed during transaction')
+      }
+
+      const archived = await TransportCompany.query({ client: trx })
+        .whereIn('id', eligibleIds)
+        .preload('archivedBy')
+        .preload('reactivatedBy')
+
+      return {
+        updatedCompanies: orderCompanies(eligibleIds, indexCompaniesById(archived)),
+        blockedCompanies: blockers,
+      }
+    })
   }
 }

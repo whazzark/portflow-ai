@@ -2,6 +2,7 @@ import { inject } from '@adonisjs/core'
 import { Decimal } from 'decimal.js'
 import { DateTime } from 'luxon'
 
+import TransportCompany from '#models/transport_company'
 import Truck from '#models/truck'
 import isUniqueViolation from '#shared/database/is_unique_violation'
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
@@ -17,6 +18,7 @@ import TruckRepository, {
   type ArchiveTrucksCommand,
   type BulkTruckLifecycleResult,
   type CreateTruckCommand,
+  type FindCompanyIdsWithAvailableTrucksInput,
   type TruckWriteResult,
   type UpdateTruckCommand,
 } from './truck_repository.ts'
@@ -38,28 +40,50 @@ export default class LucidTruckRepository extends TruckRepository {
     super()
   }
 
-  async create(command: CreateTruckCommand): Promise<TruckWriteResult> {
-    try {
-      const truck = await Truck.create({
-        ...command,
-        capacityTonnes: new Decimal(command.capacityTonnes),
-        status: 'AVAILABLE',
-        archivedAt: null,
-        archivedByUserId: null,
-        archiveComment: null,
-        reactivatedAt: null,
-        reactivatedByUserId: null,
-        reactivationComment: null,
-      })
+  create(command: CreateTruckCommand): Promise<TruckWriteResult> {
+    return Truck.transaction(async (trx) => {
+      // Locking the parent company row before inserting closes the race the plain read used to
+      // have: archiving a company (LucidTransportCompanyRepository#archiveAvailable) locks this
+      // same row before checking for available trucks, so whichever of the two transactions runs
+      // first is fully committed before the other observes the company's state.
+      const transportCompany = await TransportCompany.query({ client: trx })
+        .where('id', command.transportCompanyId)
+        .forUpdate()
+        .first()
 
-      return { kind: 'CREATED', truck }
-    } catch (error) {
-      if (isRegistrationUniqueViolation(error)) {
-        return { kind: 'DUPLICATE_REGISTRATION' }
+      if (transportCompany?.status !== 'AVAILABLE') {
+        return { kind: 'INVALID_TRANSPORT_COMPANY' }
       }
 
-      throw error
-    }
+      try {
+        const truck = await Truck.create(
+          {
+            ...command,
+            capacityTonnes: new Decimal(command.capacityTonnes),
+            status: 'AVAILABLE',
+            archivedAt: null,
+            archivedByUserId: null,
+            archiveComment: null,
+            reactivatedAt: null,
+            reactivatedByUserId: null,
+            reactivationComment: null,
+          },
+          { client: trx },
+        )
+
+        return { kind: 'CREATED', truck }
+      } catch (error) {
+        if (isRegistrationUniqueViolation(error)) {
+          return { kind: 'DUPLICATE_REGISTRATION' }
+        }
+
+        throw error
+      }
+    })
+  }
+
+  findById(id: string): Promise<Truck | null> {
+    return Truck.query().where('id', id).preload('archivedBy').preload('reactivatedBy').first()
   }
 
   async updateAvailable(command: UpdateTruckCommand): Promise<TruckWriteResult> {
@@ -146,8 +170,19 @@ export default class LucidTruckRepository extends TruckRepository {
     )
   }
 
-  findById(id: string): Promise<Truck | null> {
-    return Truck.query().where('id', id).preload('archivedBy').preload('reactivatedBy').first()
+  async findCompanyIdsWithAvailableTrucks(
+    input: FindCompanyIdsWithAvailableTrucksInput,
+  ): Promise<Set<string>> {
+    if (input.transportCompanyIds.length === 0) {
+      return new Set()
+    }
+
+    const rows = await Truck.query({ client: input.client })
+      .select('transportCompanyId')
+      .whereIn('transportCompanyId', [...input.transportCompanyIds])
+      .where('status', 'AVAILABLE')
+
+    return new Set(rows.map((row) => row.transportCompanyId))
   }
 
   archiveAvailable(command: ArchiveTruckCommand): Promise<ArchiveTruckResult> {
