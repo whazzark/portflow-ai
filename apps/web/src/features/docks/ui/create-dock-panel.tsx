@@ -23,10 +23,13 @@ export function CreateDockPanel({
       </SheetHeader>
       <div className="px-4">
         <DockForm
-          onCreate={onCreate}
+          errorTitle="Unable to create dock"
           onPendingChange={onPendingChange}
+          onSubmit={onCreate}
           onSuccess={onSuccess}
           pending={pending}
+          pendingLabel="Creating…"
+          submitLabel="Create dock"
         />
       </div>
     </div>

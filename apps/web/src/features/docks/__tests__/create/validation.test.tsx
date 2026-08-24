@@ -34,7 +34,7 @@ test('rejects a blank dock name with an inline field error and keeps the pending
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
   await user.click(screen.getByRole('button', { name: 'New dock' }))
-  await user.click(screen.getByRole('button', { name: 'Simulate map click to place dock' }))
+  await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
 
   await user.click(screen.getByRole('button', { name: 'Create dock' }))
 
@@ -56,7 +56,7 @@ test('rejects a duplicate dock name inline on the name field and keeps entered v
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
   await user.click(screen.getByRole('button', { name: 'New dock' }))
-  await user.click(screen.getByRole('button', { name: 'Simulate map click to place dock' }))
+  await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(screen.getByRole('textbox', { name: 'Dock name' }), DOCKS[1].name)
   await user.click(screen.getByRole('button', { name: 'Create dock' }))
 
@@ -71,7 +71,7 @@ test('rejects a manually edited out-of-range coordinate and disables submission'
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
   await user.click(screen.getByRole('button', { name: 'New dock' }))
-  await user.click(screen.getByRole('button', { name: 'Simulate map click to place dock' }))
+  await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(screen.getByRole('textbox', { name: 'Dock name' }), 'South Dock')
 
   const latitudeInput = screen.getByRole('textbox', { name: 'Latitude' })

@@ -18,6 +18,11 @@ export function useTransportCompanyMutations() {
     ])
   }
 
+  const create = useMutation(
+    tuyauQuery.transportCompanies.store.mutationOptions({
+      onSuccess: () => invalidateTransportCompanies(),
+    }),
+  )
   const update = useMutation(
     tuyauQuery.transportCompanies.update.mutationOptions({
       onSuccess: () => invalidateTransportCompanies(),
@@ -25,6 +30,7 @@ export function useTransportCompanyMutations() {
   )
 
   return {
+    create,
     refreshTransportCompanies: invalidateTransportCompanies,
     update,
   }

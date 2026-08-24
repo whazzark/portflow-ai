@@ -4,11 +4,42 @@ import TransportCompany from '#models/transport_company'
 import isUniqueViolation from '#shared/database/is_unique_violation'
 
 import TransportCompanyRepository, {
+  type CreateTransportCompanyCommand,
   type TransportCompanyWriteResult,
   type UpdateTransportCompanyCommand,
 } from './transport_company_repository.ts'
 
 export default class LucidTransportCompanyRepository extends TransportCompanyRepository {
+  async create(command: CreateTransportCompanyCommand): Promise<TransportCompanyWriteResult> {
+    try {
+      const company = await TransportCompany.create({
+        ...command,
+        status: 'AVAILABLE',
+        // Set explicitly rather than left unset: the columns default to NULL, but an unset
+        // attribute stays `undefined` on the in-memory model and would be dropped from the
+        // serialized response instead of being reported as null.
+        archivedAt: null,
+        archivedByUserId: null,
+        archiveComment: null,
+        reactivatedAt: null,
+        reactivatedByUserId: null,
+        reactivationComment: null,
+      })
+
+      // A new company has no archive or reactivation actor by construction, so the lifecycle
+      // relations have nothing to preload and the transformer already emits null for them.
+      return { kind: 'CREATED', company }
+    } catch (error) {
+      // The generated primary key cannot realistically collide, so the only unique constraint an
+      // INSERT on this table can violate is transport_companies_name_unique.
+      if (isUniqueViolation(error)) {
+        return { kind: 'DUPLICATE_NAME' }
+      }
+
+      throw error
+    }
+  }
+
   list(): Promise<TransportCompany[]> {
     return TransportCompany.query()
       .preload('archivedBy')
