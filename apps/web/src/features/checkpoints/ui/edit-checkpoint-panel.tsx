@@ -2,11 +2,17 @@ import { ArrowLeftIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FieldDescription } from '@/components/ui/field'
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import type { DockDto } from '@/features/docks/types'
-import { DockForm, type PendingDockPlacement } from '@/features/docks/ui/dock-form'
+import { CHECKPOINT_KIND_LABELS, type CheckpointKind } from '@/features/checkpoints/types'
+import {
+  CheckpointResourceForm,
+  type PendingCheckpointPlacement,
+} from '@/features/checkpoints/ui/checkpoint-resource-form'
 
-export function EditDockPanel({
-  dock,
+export function EditCheckpointPanel<
+  TResource extends { name: string; latitude: number; longitude: number },
+>({
+  kind,
+  resource,
   draft,
   origin,
   onDraftChange,
@@ -16,17 +22,19 @@ export function EditDockPanel({
   onUpdate,
   onSuccess,
 }: {
-  dock: DockDto
-  draft: PendingDockPlacement
-  /** Where the dock stood when this edit session started — not its live, refetchable position. */
-  origin: PendingDockPlacement
-  onDraftChange: (point: PendingDockPlacement) => void
+  kind: CheckpointKind
+  resource: TResource
+  draft: PendingCheckpointPlacement
+  /** Where the resource stood when this edit session started — not its live, refetchable position. */
+  origin: PendingCheckpointPlacement
+  onDraftChange: (point: PendingCheckpointPlacement) => void
   onRestorePosition: () => void
   onCancel: () => void
   onNotFound: () => void
-  onUpdate: (value: { name: string; latitude: number; longitude: number }) => Promise<DockDto>
-  onSuccess: (dock: DockDto) => void
+  onUpdate: (value: { name: string; latitude: number; longitude: number }) => Promise<TResource>
+  onSuccess: (resource: TResource) => void
 }) {
+  const resourceNoun = CHECKPOINT_KIND_LABELS[kind].toLowerCase()
   const positionModified =
     draft.latitude !== origin.latitude || draft.longitude !== origin.longitude
 
@@ -35,11 +43,11 @@ export function EditDockPanel({
       <SheetHeader>
         <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
           <ArrowLeftIcon aria-hidden="true" />
-          Back to dock details
+          Back to {resourceNoun} details
         </Button>
-        <SheetTitle>Edit dock</SheetTitle>
+        <SheetTitle>Edit {resourceNoun}</SheetTitle>
         <SheetDescription>
-          Drag the marker or edit its coordinates to reposition {dock.name}.
+          Drag the marker or edit its coordinates to reposition {resource.name}.
         </SheetDescription>
       </SheetHeader>
       <div className="px-4">
@@ -51,9 +59,10 @@ export function EditDockPanel({
             </Button>
           </FieldDescription>
         )}
-        <DockForm
-          errorTitle="Unable to update dock"
-          initialValues={{ name: dock.name, latitude: dock.latitude, longitude: dock.longitude }}
+        <CheckpointResourceForm
+          errorTitle={`Unable to update ${resourceNoun}`}
+          initialValues={resource}
+          kind={kind}
           onNotFound={onNotFound}
           onPendingChange={onDraftChange}
           onSubmit={onUpdate}

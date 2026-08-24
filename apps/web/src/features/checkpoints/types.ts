@@ -57,6 +57,13 @@ export const CHECKPOINT_KIND_LABELS: Record<CheckpointKind, string> = {
   WEIGHING_AREA: 'Weighing area',
 }
 
+/** Shared between the `create`/`edit` search params and element id prefixes: both name a
+ * checkpoint kind with the same two string values. */
+export const CHECKPOINT_PARAM_BY_KIND: Record<CheckpointKind, 'dock' | 'weighing-area'> = {
+  DOCK: 'dock',
+  WEIGHING_AREA: 'weighing-area',
+}
+
 export const CHECKPOINT_STATUS_LABELS: Record<CheckpointStatus, string> = {
   AVAILABLE: 'Available',
   ARCHIVED: 'Archived',

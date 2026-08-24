@@ -21,6 +21,14 @@ test('adapts available and archived collection DTOs with exact coordinates', () 
       name: 'Retired Scale',
       status: 'ARCHIVED',
     },
+    {
+      id: WEIGHING_AREAS[2].id,
+      kind: 'WEIGHING_AREA',
+      latitude: 45.75,
+      longitude: 4.85,
+      name: 'Beta Scale',
+      status: 'AVAILABLE',
+    },
   ])
 })
 
