@@ -11,5 +11,6 @@
 | #219 | Update a Transport Company | in-progress | `./update-a-transport-company/` |
 | #220 | Archive a Transport Company | implemented | `./archive-a-transport-company/` |
 | #221 | Reactivate a Transport Company | backlog | pending selection |
+| #254 | Maintain Transport Company Contact Details | in-progress | `./maintain-transport-company-contact-details/` |
 
 Lifecycle actions preserve company identity and enforce the rules for available trucks.

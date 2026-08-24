@@ -86,6 +86,8 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
         .where('status', 'AVAILABLE')
         .update({
           name: command.name,
+          contactPhone: command.contactPhone,
+          contactEmail: command.contactEmail,
           updatedAt: DateTime.now().toSQL({ includeOffset: false }),
         })
 

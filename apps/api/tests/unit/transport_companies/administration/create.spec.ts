@@ -9,6 +9,11 @@ import CreateTransportCompanyUseCase from '#transport_companies/create/create_tr
 import TransportCompanyRepository from '#transport_companies/shared/repositories/transport_company_repository'
 import { DuplicateTransportCompanyNameException } from '#transport_companies/shared/transport_company_exceptions'
 
+const VALID_CONTACT = {
+  contactPhone: '+33 1 23 45 67 89',
+  contactEmail: 'contact@example.test',
+}
+
 test.group('CreateTransportCompanyUseCase', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
   group.each.teardown(() => app.container.restore(TransportCompanyRepository))
@@ -19,7 +24,10 @@ test.group('CreateTransportCompanyUseCase', (group) => {
     const existing = await TransportCompanyFactory.merge({ name: 'Armor Fret Services' }).create()
     const useCase = await app.container.make(CreateTransportCompanyUseCase)
 
-    const created = await useCase.handle({ name: 'Atlantique Transport Routier' })
+    const created = await useCase.handle({
+      name: 'Atlantique Transport Routier',
+      ...VALID_CONTACT,
+    })
 
     assert.isString(created.id)
     assert.notEqual(created.id, existing.id)
@@ -31,6 +39,8 @@ test.group('CreateTransportCompanyUseCase', (group) => {
     assert.isNull(created.reactivatedAt)
     assert.isNull(created.reactivatedByUserId)
     assert.isNull(created.reactivationComment)
+    assert.equal(created.contactPhone, VALID_CONTACT.contactPhone)
+    assert.equal(created.contactEmail, VALID_CONTACT.contactEmail)
     assert.isTrue(created.createdAt.isValid)
     assert.equal(created.updatedAt.toSeconds(), created.createdAt.toSeconds())
   })
@@ -40,7 +50,7 @@ test.group('CreateTransportCompanyUseCase', (group) => {
   }) => {
     const useCase = await app.container.make(CreateTransportCompanyUseCase)
 
-    const created = await useCase.handle({ name: 'Estuaire Bennes' })
+    const created = await useCase.handle({ name: 'Estuaire Bennes', ...VALID_CONTACT })
 
     const persisted = await TransportCompany.find(created.id)
     assert.isNotNull(persisted)
@@ -51,7 +61,10 @@ test.group('CreateTransportCompanyUseCase', (group) => {
   test('trims surrounding whitespace while preserving the submitted casing', async ({ assert }) => {
     const useCase = await app.container.make(CreateTransportCompanyUseCase)
 
-    const created = await useCase.handle({ name: '  Grand OUEST Camions  ' })
+    const created = await useCase.handle({
+      name: '  Grand OUEST Camions  ',
+      ...VALID_CONTACT,
+    })
 
     assert.equal(created.name, 'Grand OUEST Camions')
   })
@@ -59,7 +72,7 @@ test.group('CreateTransportCompanyUseCase', (group) => {
   test('accepts a name at exactly the maximum length', async ({ assert }) => {
     const useCase = await app.container.make(CreateTransportCompanyUseCase)
 
-    const created = await useCase.handle({ name: 'A'.repeat(255) })
+    const created = await useCase.handle({ name: 'A'.repeat(255), ...VALID_CONTACT })
 
     assert.equal(created.name.length, 255)
   })
@@ -67,7 +80,10 @@ test.group('CreateTransportCompanyUseCase', (group) => {
   test('rejects a blank name before reaching the repository', async ({ assert }) => {
     const useCase = await app.container.make(CreateTransportCompanyUseCase)
 
-    await assert.rejects(() => useCase.handle({ name: '   ' }), InvalidSiteReferenceNameException)
+    await assert.rejects(
+      () => useCase.handle({ name: '   ', ...VALID_CONTACT }),
+      InvalidSiteReferenceNameException,
+    )
     assert.equal(await countCompanies(), 0)
   })
 
@@ -75,7 +91,7 @@ test.group('CreateTransportCompanyUseCase', (group) => {
     const useCase = await app.container.make(CreateTransportCompanyUseCase)
 
     await assert.rejects(
-      () => useCase.handle({ name: 'A'.repeat(256) }),
+      () => useCase.handle({ name: 'A'.repeat(256), ...VALID_CONTACT }),
       InvalidSiteReferenceNameException,
     )
     assert.equal(await countCompanies(), 0)
@@ -86,7 +102,7 @@ test.group('CreateTransportCompanyUseCase', (group) => {
     const useCase = await app.container.make(CreateTransportCompanyUseCase)
 
     await assert.rejects(
-      () => useCase.handle({ name: 'Loire Vrac Transport' }),
+      () => useCase.handle({ name: 'Loire Vrac Transport', ...VALID_CONTACT }),
       DuplicateTransportCompanyNameException,
     )
     assert.equal(await countCompanies(), 1)
@@ -97,7 +113,7 @@ test.group('CreateTransportCompanyUseCase', (group) => {
     const useCase = await app.container.make(CreateTransportCompanyUseCase)
 
     await assert.rejects(
-      () => useCase.handle({ name: 'Noroît Logistique' }),
+      () => useCase.handle({ name: 'Noroît Logistique', ...VALID_CONTACT }),
       DuplicateTransportCompanyNameException,
     )
     assert.equal(await countCompanies(), 1)
@@ -110,7 +126,7 @@ test.group('CreateTransportCompanyUseCase', (group) => {
     const useCase = await app.container.make(CreateTransportCompanyUseCase)
 
     await assert.rejects(
-      () => useCase.handle({ name: '  atlantique TRANSPORT routier  ' }),
+      () => useCase.handle({ name: '  atlantique TRANSPORT routier  ', ...VALID_CONTACT }),
       DuplicateTransportCompanyNameException,
     )
     assert.equal(await countCompanies(), 1)
@@ -119,9 +135,9 @@ test.group('CreateTransportCompanyUseCase', (group) => {
   test('creates exactly one company when the same name is submitted twice', async ({ assert }) => {
     const useCase = await app.container.make(CreateTransportCompanyUseCase)
 
-    await useCase.handle({ name: 'Estuaire Bennes' })
+    await useCase.handle({ name: 'Estuaire Bennes', ...VALID_CONTACT })
     await assert.rejects(
-      () => useCase.handle({ name: 'estuaire bennes' }),
+      () => useCase.handle({ name: 'estuaire bennes', ...VALID_CONTACT }),
       DuplicateTransportCompanyNameException,
     )
 

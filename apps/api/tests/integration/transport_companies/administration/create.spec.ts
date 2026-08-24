@@ -4,6 +4,11 @@ import { TransportCompanyFactory } from '#database/factories/transport_company_f
 import { UserFactory } from '#database/factories/user_factory'
 import TransportCompany from '#models/transport_company'
 
+const VALID_CONTACT = {
+  contactPhone: '+33 1 23 45 67 89',
+  contactEmail: 'contact@example.test',
+}
+
 test.group('POST /api/v1/transport-companies', (group) => {
   // Cleaning up inline after the assertions leaks rows as soon as one of them fails, which then
   // poisons every later test reusing a name. Snapshot the table instead and drop the additions.
@@ -31,7 +36,7 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const response = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: 'Atlantique Transport Routier' })
+      .json({ name: 'Atlantique Transport Routier', ...VALID_CONTACT })
 
     response.assertStatus(201)
     const data = response.body().data
@@ -46,6 +51,8 @@ test.group('POST /api/v1/transport-companies', (group) => {
     assert.isNull(data.reactivatedByUserId)
     assert.isNull(data.reactivatedBy)
     assert.isNull(data.reactivationComment)
+    assert.equal(data.contactPhone, VALID_CONTACT.contactPhone)
+    assert.equal(data.contactEmail, VALID_CONTACT.contactEmail)
     assert.isNotNull(data.createdAt)
     assert.equal(
       Math.floor(new Date(data.updatedAt).getTime() / 1000),
@@ -58,7 +65,7 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const response = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: 'Créé Par Org Admin' })
+      .json({ name: 'Créé Par Org Admin', ...VALID_CONTACT })
 
     response.assertStatus(201)
     assert.equal(response.body().data.name, 'Créé Par Org Admin')
@@ -72,7 +79,7 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const created = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: 'Baie Douarnenez Transports' })
+      .json({ name: 'Baie Douarnenez Transports', ...VALID_CONTACT })
 
     created.assertStatus(201)
     const id = created.body().data.id
@@ -100,7 +107,7 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const response = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: '  Grand OUEST Camions  ' })
+      .json({ name: '  Grand OUEST Camions  ', ...VALID_CONTACT })
 
     response.assertStatus(201)
     assert.equal(response.body().data.name, 'Grand OUEST Camions')
@@ -116,7 +123,7 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const response = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: 'Rade Brest Transports' })
+      .json({ name: 'Rade Brest Transports', ...VALID_CONTACT })
 
     response.assertStatus(201)
     await existing.refresh()
@@ -132,15 +139,18 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const before = await TransportCompany.query().count('* as total')
 
     const missing = await client.post('/api/v1/transport-companies').loginAs(admin).json({})
-    const blank = await client.post('/api/v1/transport-companies').loginAs(admin).json({ name: '' })
+    const blank = await client
+      .post('/api/v1/transport-companies')
+      .loginAs(admin)
+      .json({ name: '', ...VALID_CONTACT })
     const whitespace = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: '   ' })
+      .json({ name: '   ', ...VALID_CONTACT })
     const tooLong = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: 'A'.repeat(256) })
+      .json({ name: 'A'.repeat(256), ...VALID_CONTACT })
 
     missing.assertStatus(422)
     blank.assertStatus(422)
@@ -163,7 +173,7 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const response = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: 'M'.repeat(255) })
+      .json({ name: 'M'.repeat(255), ...VALID_CONTACT })
 
     response.assertStatus(201)
     assert.equal(response.body().data.name.length, 255)
@@ -179,7 +189,7 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const response = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: '  loire VRAC transport  ' })
+      .json({ name: '  loire VRAC transport  ', ...VALID_CONTACT })
 
     response.assertStatus(409)
     assert.equal(response.body().error.code, 'E_TRANSPORT_COMPANY_NAME_CONFLICT')
@@ -193,7 +203,7 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const response = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: 'Noroît Logistique' })
+      .json({ name: 'Noroît Logistique', ...VALID_CONTACT })
 
     response.assertStatus(409)
     assert.equal(response.body().error.code, 'E_TRANSPORT_COMPANY_NAME_CONFLICT')
@@ -208,11 +218,11 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const first = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: 'Presqu île Transports' })
+      .json({ name: 'Presqu île Transports', ...VALID_CONTACT })
     const second = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: '  presqu île TRANSPORTS  ' })
+      .json({ name: '  presqu île TRANSPORTS  ', ...VALID_CONTACT })
 
     first.assertStatus(201)
     second.assertStatus(409)
@@ -227,7 +237,7 @@ test.group('POST /api/v1/transport-companies', (group) => {
     const response = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: 'Sans Camion Transports' })
+      .json({ name: 'Sans Camion Transports', ...VALID_CONTACT })
 
     response.assertStatus(201)
     const id = response.body().data.id
