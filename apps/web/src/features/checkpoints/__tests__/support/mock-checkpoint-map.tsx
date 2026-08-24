@@ -96,13 +96,13 @@ export function CheckpointMap({
           onClick={() => placement?.onPlace({ latitude: 10.5, longitude: 20.5 })}
           type="button"
         >
-          Simulate map click to place dock
+          Simulate map click to place checkpoint
         </button>
       )}
       {placement?.pending && (
         <>
-          <div data-testid="pending-dock-marker">
-            Pending dock at {placement.pending.latitude}, {placement.pending.longitude}
+          <div data-testid="pending-checkpoint-marker">
+            Pending checkpoint at {placement.pending.latitude}, {placement.pending.longitude}
           </div>
           <button
             onClick={() => {

@@ -7,27 +7,31 @@ import {
 } from '@/components/resource-map/resource-placement-fields'
 import { Button } from '@/components/ui/button'
 import { FieldDescription, FieldGroup } from '@/components/ui/field'
-import type { DockDto } from '@/features/docks/types'
+import type { WeighingAreaDto } from '@/features/weighing-areas/types'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
-export type PendingDockPlacement = LatLng
+export type PendingWeighingAreaPlacement = LatLng
 
 const nameSchema = z.object({
-  name: z.string().trim().min(1, 'Dock name is required.').max(255),
+  name: z.string().trim().min(1, 'Weighing area name is required.').max(255),
 })
 
-export function DockForm({
+export function WeighingAreaForm({
   pending,
   onPendingChange,
   onCreate,
   onSuccess,
 }: {
-  pending: PendingDockPlacement | null
-  onPendingChange: (point: PendingDockPlacement) => void
-  onCreate: (value: { name: string; latitude: number; longitude: number }) => Promise<DockDto>
-  onSuccess: (dock: DockDto) => void
+  pending: PendingWeighingAreaPlacement | null
+  onPendingChange: (point: PendingWeighingAreaPlacement) => void
+  onCreate: (value: {
+    name: string
+    latitude: number
+    longitude: number
+  }) => Promise<WeighingAreaDto>
+  onSuccess: (area: WeighingAreaDto) => void
 }) {
   const coordinateFields = useCoordinateFields(pending, onPendingChange)
   const hasCoordinateError = Boolean(
@@ -58,12 +62,12 @@ export function DockForm({
         if (!applyValidationError(formApi, error)) {
           const apiError = parseApiError(error)
 
-          if (apiError.code === 'E_DOCK_NAME_CONFLICT') {
+          if (apiError.code === 'E_WEIGHING_AREA_NAME_CONFLICT') {
             formApi.setErrorMap({
               onSubmit: { fields: { name: apiError.message }, form: '' },
             })
           } else {
-            toast.error('Unable to create dock', { description: apiError.message })
+            toast.error('Unable to create weighing area', { description: apiError.message })
           }
         }
       }
@@ -78,32 +82,32 @@ export function DockForm({
             {(field) => (
               <field.TextField
                 autoComplete="off"
-                label="Dock name"
-                placeholder="North Dock"
+                label="Weighing area name"
+                placeholder="North Scale"
                 required={true}
               />
             )}
           </form.AppField>
           <FieldDescription role="status">
-            Click the map to place the new dock, or enter its coordinates directly.
+            Click the map to place the new weighing area, or enter its coordinates directly.
           </FieldDescription>
           <CoordinateField
             axis="latitude"
             error={coordinateFields.latitude.error}
-            idPrefix="dock"
+            idPrefix="weighing-area"
             onChange={coordinateFields.latitude.onChange}
             text={coordinateFields.latitude.text}
           />
           <CoordinateField
             axis="longitude"
             error={coordinateFields.longitude.error}
-            idPrefix="dock"
+            idPrefix="weighing-area"
             onChange={coordinateFields.longitude.onChange}
             text={coordinateFields.longitude.text}
           />
           {!pending && (
             <FieldDescription role="status">
-              A location must be placed before this dock can be created.
+              A location must be placed before this weighing area can be created.
             </FieldDescription>
           )}
         </FieldGroup>
@@ -111,7 +115,7 @@ export function DockForm({
         <form.Subscribe selector={(state) => state.isSubmitting}>
           {(isSubmitting) => (
             <Button disabled={isSubmitting || !canSubmit} type="submit">
-              {isSubmitting ? 'Creating…' : 'Create dock'}
+              {isSubmitting ? 'Creating…' : 'Create weighing area'}
             </Button>
           )}
         </form.Subscribe>

@@ -55,7 +55,9 @@ export function ResourceMapCreateControl({ actions }: { actions: ResourceMapCrea
         >
           <PlusIcon aria-hidden="true" className="size-4" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        {/* The trigger is a `size-8` icon button, so the default `w-(--anchor-width)` sizing would
+            leave the menu at its 128px floor and wrap the action labels. */}
+        <DropdownMenuContent align="end" className="min-w-44">
           {actions.map((action) => (
             <DropdownMenuItem key={action.key} onClick={action.onSelect}>
               {action.icon}
