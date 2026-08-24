@@ -17,7 +17,7 @@ type TruckListProps = {
   companies: TransportCompanyDto[]
   selectable?: boolean
   selectedIds?: Set<string>
-  onSelectionChange?: (ids: string[]) => void
+  onSelectionChange?: (checked: boolean, ids: string[]) => void
 }
 
 export function TruckList({
@@ -45,18 +45,6 @@ export function TruckList({
     )
   })
 
-  const setSelection = (checked: boolean, ids: string[]) => {
-    const next = new Set(selectedIds)
-    for (const id of ids) {
-      if (checked) {
-        next.add(id)
-      } else {
-        next.delete(id)
-      }
-    }
-    onSelectionChange?.([...next])
-  }
-
   const visibleIds = ordered.map((truck) => truck.id)
   const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id))
   const someSelected = visibleIds.some((id) => selectedIds.has(id))
@@ -71,7 +59,7 @@ export function TruckList({
                 aria-checked={someSelected && !allSelected ? 'mixed' : allSelected}
                 aria-label={`Select all ${lifecycle} trucks`}
                 checked={allSelected}
-                onCheckedChange={(checked) => setSelection(checked === true, visibleIds)}
+                onCheckedChange={(checked) => onSelectionChange?.(checked === true, visibleIds)}
               />
               <span className="text-muted-foreground text-xs">Select all</span>
             </div>
@@ -91,7 +79,9 @@ export function TruckList({
                     <Checkbox
                       aria-label={`Select truck ${truck.registration}`}
                       checked={selectedIds.has(truck.id)}
-                      onCheckedChange={(checked) => setSelection(checked === true, [truck.id])}
+                      onCheckedChange={(checked) =>
+                        onSelectionChange?.(checked === true, [truck.id])
+                      }
                     />
                   )}
                   <button

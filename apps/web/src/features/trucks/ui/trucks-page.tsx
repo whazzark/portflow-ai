@@ -116,10 +116,10 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
   )
   const lifecycleActionIds = useMemo(
     () =>
-      blockedTrucks.length > 0
+      truckStatus === 'available' && blockedTrucks.length > 0
         ? blockedTrucks.map((blocked) => blocked.id)
         : visibleSelectedTruckIdList,
-    [blockedTrucks, visibleSelectedTruckIdList],
+    [blockedTrucks, truckStatus, visibleSelectedTruckIdList],
   )
 
   useEffect(() => {
@@ -251,8 +251,18 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
               <TruckSection
                 lifecycle="available"
                 onSelect={toggleTruck}
-                onSelectionChange={(ids) => {
-                  setSelectedTruckIds(new Set(ids))
+                onSelectionChange={(checked, ids) => {
+                  setSelectedTruckIds((previous) => {
+                    const next = new Set(previous)
+                    for (const id of ids) {
+                      if (checked) {
+                        next.add(id)
+                      } else {
+                        next.delete(id)
+                      }
+                    }
+                    return next
+                  })
                   setBlockedTrucks([])
                 }}
                 search={truckSearch}

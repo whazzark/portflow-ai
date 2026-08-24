@@ -150,34 +150,49 @@ export default class LucidTruckRepository extends TruckRepository {
     return Truck.query().where('id', id).preload('archivedBy').preload('reactivatedBy').first()
   }
 
-  async archiveAvailable(command: ArchiveTruckCommand): Promise<ArchiveTruckResult> {
-    const [affectedRows] = await Truck.query()
-      .where('id', command.id)
-      .where('status', 'AVAILABLE')
-      .update({
-        status: 'ARCHIVED',
-        archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
-        archivedByUserId: command.archivedByUserId,
-        archiveComment: command.archiveComment,
-        updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
-      })
-
-    if (affectedRows === 0) {
-      const truck = await this.findById(command.id)
+  archiveAvailable(command: ArchiveTruckCommand): Promise<ArchiveTruckResult> {
+    return Truck.transaction(async (trx) => {
+      const truck = await Truck.query({ client: trx }).where('id', command.id).forUpdate().first()
 
       if (!truck) {
         return { kind: 'NOT_FOUND' }
       }
+      if (truck.status === 'ARCHIVED') {
+        return { kind: 'ALREADY_ARCHIVED' }
+      }
 
-      return truck.status === 'ARCHIVED' ? { kind: 'ALREADY_ARCHIVED' } : { kind: 'NOT_FOUND' }
-    }
+      const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
+        referenceType: 'TRUCK',
+        referenceIds: [command.id],
+        client: trx,
+      })
 
-    const truck = await this.findById(command.id)
-    if (!truck) {
-      return { kind: 'NOT_FOUND' }
-    }
+      if (usedIds.has(command.id)) {
+        return { kind: 'IN_USE' }
+      }
 
-    return { kind: 'ARCHIVED', truck }
+      await Truck.query({ client: trx })
+        .where('id', command.id)
+        .update({
+          status: 'ARCHIVED',
+          archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
+          archivedByUserId: command.archivedByUserId,
+          archiveComment: command.archiveComment,
+          updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
+        })
+
+      const archived = await Truck.query({ client: trx })
+        .where('id', command.id)
+        .preload('archivedBy')
+        .preload('reactivatedBy')
+        .first()
+
+      if (!archived) {
+        return { kind: 'NOT_FOUND' }
+      }
+
+      return { kind: 'ARCHIVED', truck: archived }
+    })
   }
 
   archiveAvailableMany(command: ArchiveTrucksCommand): Promise<BulkTruckLifecycleResult> {

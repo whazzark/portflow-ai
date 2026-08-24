@@ -12,7 +12,7 @@ type TruckSectionProps = {
   companies: TransportCompanyDto[]
   selectable?: boolean
   selectedIds?: Set<string>
-  onSelectionChange?: (ids: string[]) => void
+  onSelectionChange?: (checked: boolean, ids: string[]) => void
 }
 
 export function TruckSection({

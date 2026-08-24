@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 
@@ -77,6 +78,47 @@ test('reports unchanged trucks in a toast and allows retrying only those', async
     expect(requestBodies).toHaveLength(2)
   })
   expect(requestBodies[1]?.ids.sort()).toEqual([second.id, third.id].sort())
+})
+
+test('hides the retry toolbar for blocked trucks after leaving the available tab', async () => {
+  const [first, second, third] = BULK_AVAILABLE_TRUCKS
+  const user = userEvent.setup()
+
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_ADMIN,
+    complete: BULK_TRUCKS,
+    available: BULK_AVAILABLE_TRUCKS,
+  })
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/trucks/archive`, () =>
+      HttpResponse.json({
+        data: {
+          updatedTrucks: [{ ...first, status: 'ARCHIVED', archiveComment: null }],
+          blockedTrucks: [
+            { id: second.id, registration: second.registration, reason: 'IN_USE' },
+            { id: third.id, registration: third.registration, reason: 'ALREADY_ARCHIVED' },
+          ],
+        },
+      }),
+    ),
+  )
+
+  renderTrucks()
+  await screen.findByRole('list', { name: 'Available trucks' })
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Select all available trucks' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Archive selected' }))
+  fireEvent.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Archive' }),
+  )
+
+  expect(await screen.findByRole('button', { name: 'Retry blocked trucks' })).toBeInTheDocument()
+
+  await user.click(screen.getByRole('tab', { name: /Archived/ }))
+
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Retry blocked trucks' })).not.toBeInTheDocument(),
+  )
+  expect(screen.queryByRole('toolbar')).not.toBeInTheDocument()
 })
 
 test('reports every truck as unchanged and archives nothing when the whole selection is ineligible', async () => {

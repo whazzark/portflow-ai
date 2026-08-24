@@ -1,7 +1,6 @@
 import { inject } from '@adonisjs/core'
 import { DateTime } from 'luxon'
 
-import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 import TruckRepository from '#trucks/shared/repositories/truck_repository'
 import {
   TruckAlreadyArchivedException,
@@ -18,30 +17,9 @@ export type ArchiveTruckInput = {
 
 @inject()
 export default class ArchiveTruckUseCase {
-  constructor(
-    private truckRepository: TruckRepository,
-    private usageChecker: SiteReferenceUsageChecker,
-  ) {}
+  constructor(private truckRepository: TruckRepository) {}
 
   async handle(input: ArchiveTruckInput) {
-    const truck = await this.truckRepository.findById(input.id)
-
-    if (!truck) {
-      throw new TruckNotFoundException()
-    }
-    if (truck.status === 'ARCHIVED') {
-      throw new TruckAlreadyArchivedException()
-    }
-
-    const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
-      referenceType: 'TRUCK',
-      referenceIds: [input.id],
-    })
-
-    if (usedIds.has(input.id)) {
-      throw new TruckInUseException()
-    }
-
     const result = await this.truckRepository.archiveAvailable({
       id: input.id,
       archivedAt: input.archivedAt,
@@ -54,6 +32,9 @@ export default class ArchiveTruckUseCase {
     }
     if (result.kind === 'ALREADY_ARCHIVED') {
       throw new TruckAlreadyArchivedException()
+    }
+    if (result.kind === 'IN_USE') {
+      throw new TruckInUseException()
     }
     return result.truck
   }

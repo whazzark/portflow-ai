@@ -46,6 +46,7 @@ export type ArchiveTruckResult =
   | { kind: 'ARCHIVED'; truck: Truck }
   | { kind: 'ALREADY_ARCHIVED' }
   | { kind: 'NOT_FOUND' }
+  | { kind: 'IN_USE' }
 
 export type ArchiveTrucksCommand = {
   ids: string[]

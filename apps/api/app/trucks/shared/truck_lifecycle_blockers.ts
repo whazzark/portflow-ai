@@ -1,3 +1,5 @@
+import { indexById, orderByIds } from '#shared/lifecycle/bulk_lifecycle_records'
+
 export type TruckLifecycleRecord = {
   id: string
   registration: string
@@ -10,9 +12,8 @@ export type BulkTruckLifecycleBlocker = {
   reason: 'NOT_FOUND' | 'IN_USE' | 'ALREADY_ARCHIVED'
 }
 
-export function indexTrucksById<T extends TruckLifecycleRecord>(trucks: T[]): Map<string, T> {
-  return new Map(trucks.map((truck) => [truck.id, truck]))
-}
+export const indexTrucksById = indexById
+export const orderTrucks = orderByIds
 
 export function findBulkBlockers(
   ids: string[],
@@ -35,15 +36,5 @@ export function findBulkBlockers(
     }
 
     return []
-  })
-}
-
-export function orderTrucks<T extends { id: string }>(
-  ids: string[],
-  trucksById: Map<string, T>,
-): T[] {
-  return ids.flatMap((id) => {
-    const truck = trucksById.get(id)
-    return truck ? [truck] : []
   })
 }
