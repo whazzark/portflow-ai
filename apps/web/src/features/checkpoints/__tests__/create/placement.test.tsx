@@ -26,7 +26,7 @@ test('arms placement mode, suspends existing marker selection, and places a pend
   await user.click(screen.getByRole('button', { name: 'View dock North Dock (Available)' }))
   expect(screen.queryByRole('heading', { name: 'North Dock' })).not.toBeInTheDocument()
 
-  await user.click(screen.getByRole('button', { name: 'Simulate map click to place dock' }))
+  await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
 
   expect(await screen.findByRole('textbox', { name: 'Latitude' })).toHaveValue('10.5')
   expect(screen.getByRole('textbox', { name: 'Longitude' })).toHaveValue('20.5')
@@ -43,7 +43,7 @@ test('allows typing a decimal coordinate without it being reset mid-entry', asyn
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
   await user.click(screen.getByRole('button', { name: 'New dock' }))
-  await user.click(screen.getByRole('button', { name: 'Simulate map click to place dock' }))
+  await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
 
   const latitudeInput = screen.getByRole('textbox', { name: 'Latitude' })
   await user.clear(latitudeInput)

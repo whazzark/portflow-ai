@@ -47,7 +47,7 @@ test('places, names, and creates a dock, then shows it as the selected read-only
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
   await user.click(screen.getByRole('button', { name: 'New dock' }))
-  await user.click(screen.getByRole('button', { name: 'Simulate map click to place dock' }))
+  await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
 
   await user.type(screen.getByRole('textbox', { name: 'Dock name' }), created.name)
   await user.click(screen.getByRole('button', { name: 'Create dock' }))
@@ -98,7 +98,7 @@ test('reveals the new dock even when the active filters would hide it', async ()
   const { router } = renderCheckpoints(`/checkpoints?${hidingFilters}`)
 
   await user.click(await screen.findByRole('button', { name: 'New dock' }))
-  await user.click(screen.getByRole('button', { name: 'Simulate map click to place dock' }))
+  await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(screen.getByRole('textbox', { name: 'Dock name' }), created.name)
   await user.click(screen.getByRole('button', { name: 'Create dock' }))
 

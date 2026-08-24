@@ -114,6 +114,12 @@ const routes = {
     tokens: [{"old":"/api/v1/trucks/available","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/available","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/available","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/available","type":0,"val":"available","end":""}],
     types: placeholder as Registry['trucks.available']['types'],
   },
+  'trucks.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/trucks',
+    tokens: [{"old":"/api/v1/trucks","type":0,"val":"api","end":""},{"old":"/api/v1/trucks","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks","type":0,"val":"trucks","end":""}],
+    types: placeholder as Registry['trucks.store']['types'],
+  },
   'docks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/docks',

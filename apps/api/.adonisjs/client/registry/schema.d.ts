@@ -223,6 +223,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['available']>>>
     }
   }
+  'trucks.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/trucks'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#trucks/shared/truck_validator').createTruckValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#trucks/shared/truck_validator').createTruckValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'docks.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/docks'
