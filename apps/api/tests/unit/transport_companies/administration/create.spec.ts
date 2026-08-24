@@ -42,7 +42,9 @@ test.group('CreateTransportCompanyUseCase', (group) => {
     assert.equal(created.contactPhone, VALID_CONTACT.contactPhone)
     assert.equal(created.contactEmail, VALID_CONTACT.contactEmail)
     assert.isTrue(created.createdAt.isValid)
-    assert.equal(created.updatedAt.toSeconds(), created.createdAt.toSeconds())
+    // Both stamps are assigned separately by the model, so they can land a few milliseconds
+    // apart; what matters is that creation left no later update behind.
+    assert.closeTo(created.updatedAt.toMillis(), created.createdAt.toMillis(), 1000)
   })
 
   test('persists the created company so it is retrievable by identity and name', async ({
