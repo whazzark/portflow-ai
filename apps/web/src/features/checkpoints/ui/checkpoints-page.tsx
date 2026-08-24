@@ -18,6 +18,7 @@ import { CheckpointKindIcon, CheckpointLegend } from '@/features/checkpoints/map
 import type { PresentedCheckpoint } from '@/features/checkpoints/types'
 import {
   CHECKPOINT_KINDS,
+  CHECKPOINT_PARAM_BY_KIND,
   type CheckpointKind,
   type CheckpointKindFilter,
   type CheckpointLayerVisibility,
@@ -29,6 +30,8 @@ import {
   CheckpointSheet,
   type SelectedCheckpoint,
 } from '@/features/checkpoints/ui/checkpoint-sheet'
+import { CreateCheckpointPanel } from '@/features/checkpoints/ui/create-checkpoint-panel'
+import { EditCheckpointPanel } from '@/features/checkpoints/ui/edit-checkpoint-panel'
 import {
   type EditableCheckpoint,
   useCheckpointEditSession,
@@ -37,13 +40,9 @@ import { toDockCheckpoint } from '@/features/docks/dock-checkpoint-adapter'
 import { useDockMutations } from '@/features/docks/mutations/use-dock-mutations'
 import { dockQueries } from '@/features/docks/queries/dock-queries'
 import type { DockDto } from '@/features/docks/types'
-import { CreateDockPanel } from '@/features/docks/ui/create-dock-panel'
-import { EditDockPanel } from '@/features/docks/ui/edit-dock-panel'
 import { useWeighingAreaMutations } from '@/features/weighing-areas/mutations/use-weighing-area-mutations'
 import { weighingAreaQueries } from '@/features/weighing-areas/queries/weighing-area-queries'
 import type { WeighingAreaDto } from '@/features/weighing-areas/types'
-import { CreateWeighingAreaPanel } from '@/features/weighing-areas/ui/create-weighing-area-panel'
-import { EditWeighingAreaPanel } from '@/features/weighing-areas/ui/edit-weighing-area-panel'
 import { toWeighingAreaCheckpoint } from '@/features/weighing-areas/weighing-area-checkpoint-adapter'
 
 /** The `kinds` filter value that would hide a just-created checkpoint of this kind, so a
@@ -51,13 +50,6 @@ import { toWeighingAreaCheckpoint } from '@/features/weighing-areas/weighing-are
 const OPPOSITE_KIND_FILTER: Record<CheckpointKind, CheckpointKindFilter> = {
   DOCK: 'weighing-area',
   WEIGHING_AREA: 'dock',
-}
-
-/** Shared between `create` and `edit`: both search params name a checkpoint kind with the same
- * two string values. */
-const CHECKPOINT_PARAM_BY_KIND: Record<CheckpointKind, 'dock' | 'weighing-area'> = {
-  DOCK: 'dock',
-  WEIGHING_AREA: 'weighing-area',
 }
 
 const CREATE_LABEL_BY_KIND: Record<CheckpointKind, string> = {
@@ -136,23 +128,31 @@ export function CheckpointsPage() {
       : selection?.kind === 'WEIGHING_AREA' && selectedWeighingArea
         ? { resource: selectedWeighingArea, selection: { ...selection, kind: 'WEIGHING_AREA' } }
         : undefined
-  const selectedEditable: EditableCheckpoint | undefined = selectedDock
-    ? {
+  // Memoized so its identity only changes when the selected dock/weighing-area itself changes
+  // (both are stable references across renders that don't touch query data, e.g. every mousemove
+  // while dragging a marker) — otherwise the edit session's effect, which depends on this value by
+  // reference, would re-run on every one of those renders.
+  const selectedEditable: EditableCheckpoint | undefined = useMemo(() => {
+    if (selectedDock) {
+      return {
         kind: 'DOCK',
         id: selectedDock.id,
         latitude: selectedDock.latitude,
         longitude: selectedDock.longitude,
         status: selectedDock.status,
       }
-    : selectedWeighingArea
-      ? {
-          kind: 'WEIGHING_AREA',
-          id: selectedWeighingArea.id,
-          latitude: selectedWeighingArea.latitude,
-          longitude: selectedWeighingArea.longitude,
-          status: selectedWeighingArea.status,
-        }
-      : undefined
+    }
+    if (selectedWeighingArea) {
+      return {
+        kind: 'WEIGHING_AREA',
+        id: selectedWeighingArea.id,
+        latitude: selectedWeighingArea.latitude,
+        longitude: selectedWeighingArea.longitude,
+        status: selectedWeighingArea.status,
+      }
+    }
+    return undefined
+  }, [selectedDock, selectedWeighingArea])
   const {
     isEditing,
     session: editSession,
@@ -161,7 +161,6 @@ export function CheckpointsPage() {
     restoreOrigin,
     clear: clearEditSession,
   } = useCheckpointEditSession({ requestedKind: requestedEditKind, selected: selectedEditable })
-  const isEditingDock = isEditing && editSession?.kind === 'DOCK'
 
   // Resets whenever the active creation flow changes — including switching directly from one
   // kind to the other — so at most one creation flow is ever armed and switching discards the
@@ -365,14 +364,16 @@ export function CheckpointsPage() {
 
   const createPanel =
     creationKind === 'DOCK' ? (
-      <CreateDockPanel
+      <CreateCheckpointPanel
+        kind="DOCK"
         onCreate={createDock}
         onPendingChange={setPendingPlacement}
         onSuccess={handleDockCreated}
         pending={pendingPlacement}
       />
     ) : creationKind === 'WEIGHING_AREA' ? (
-      <CreateWeighingAreaPanel
+      <CreateCheckpointPanel
+        kind="WEIGHING_AREA"
         onCreate={createWeighingArea}
         onPendingChange={setPendingPlacement}
         onSuccess={handleWeighingAreaCreated}
@@ -380,30 +381,41 @@ export function CheckpointsPage() {
       />
     ) : null
 
+  // Resolved once, in one place, to whichever of the two kinds is actually being edited — the map
+  // marker label and the edit panel below both read from it, instead of each re-deriving the same
+  // DOCK/WEIGHING_AREA branch independently.
+  const editing =
+    isEditing && editSession?.kind === 'DOCK' && selectedDock
+      ? {
+          kind: 'DOCK' as const,
+          resource: selectedDock,
+          onUpdate: (value: { name: string; latitude: number; longitude: number }) =>
+            updateDock(selectedDock.id, value),
+          onSuccess: handleDockUpdated,
+        }
+      : isEditing && editSession?.kind === 'WEIGHING_AREA' && selectedWeighingArea
+        ? {
+            kind: 'WEIGHING_AREA' as const,
+            resource: selectedWeighingArea,
+            onUpdate: (value: { name: string; latitude: number; longitude: number }) =>
+              updateWeighingArea(selectedWeighingArea.id, value),
+            onSuccess: handleWeighingAreaUpdated,
+          }
+        : undefined
+
   const editPanel =
-    isEditingDock && selectedDock && draft && editSession ? (
-      <EditDockPanel
-        dock={selectedDock}
+    editing && draft && editSession ? (
+      <EditCheckpointPanel
         draft={draft}
+        kind={editing.kind}
         onCancel={cancelEditing}
         onDraftChange={setDraft}
         onNotFound={handleEditNotFound}
         onRestorePosition={restoreOrigin}
-        onSuccess={handleDockUpdated}
-        onUpdate={(value) => updateDock(selectedDock.id, value)}
+        onSuccess={editing.onSuccess}
+        onUpdate={editing.onUpdate}
         origin={editSession.origin}
-      />
-    ) : isEditing && editSession?.kind === 'WEIGHING_AREA' && selectedWeighingArea && draft ? (
-      <EditWeighingAreaPanel
-        area={selectedWeighingArea}
-        draft={draft}
-        onCancel={cancelEditing}
-        onDraftChange={setDraft}
-        onNotFound={handleEditNotFound}
-        onRestorePosition={restoreOrigin}
-        onSuccess={handleWeighingAreaUpdated}
-        onUpdate={(value) => updateWeighingArea(selectedWeighingArea.id, value)}
-        origin={editSession.origin}
+        resource={editing.resource}
       />
     ) : null
 
@@ -445,12 +457,7 @@ export function CheckpointsPage() {
             !(checkpoint.kind === editSession.kind && checkpoint.id === editSession.id),
         )
       : checkpoints
-  const editingLabel =
-    isEditing && editSession?.kind === 'DOCK'
-      ? selectedDock?.name
-      : isEditing && editSession?.kind === 'WEIGHING_AREA'
-        ? selectedWeighingArea?.name
-        : undefined
+  const editingLabel = editing?.resource.name
 
   return (
     <>

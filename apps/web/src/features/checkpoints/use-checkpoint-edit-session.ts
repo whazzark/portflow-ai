@@ -68,6 +68,7 @@ export function useCheckpointEditSession(input: {
     selected !== undefined &&
     session.id === selected.id &&
     session.kind === selected.kind &&
+    session.kind === requestedKind &&
     session.editable
 
   const restoreOrigin = () => {

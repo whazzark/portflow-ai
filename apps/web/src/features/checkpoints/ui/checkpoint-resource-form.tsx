@@ -7,18 +7,32 @@ import {
 } from '@/components/resource-map/resource-placement-fields'
 import { Button } from '@/components/ui/button'
 import { FieldDescription, FieldGroup } from '@/components/ui/field'
-import type { WeighingAreaDto } from '@/features/weighing-areas/types'
+import {
+  CHECKPOINT_KIND_LABELS,
+  CHECKPOINT_PARAM_BY_KIND,
+  type CheckpointKind,
+} from '@/features/checkpoints/types'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
-export type PendingWeighingAreaPlacement = LatLng
+export type PendingCheckpointPlacement = LatLng
 
-const nameSchema = z.object({
-  name: z.string().trim().min(1, 'Weighing area name is required.').max(255),
-})
+const NAME_PLACEHOLDER_BY_KIND: Record<CheckpointKind, string> = {
+  DOCK: 'North Dock',
+  WEIGHING_AREA: 'North Scale',
+}
 
-export function WeighingAreaForm({
+/** Every checkpoint kind's API errors follow `E_<KIND>_<REASON>`, keyed the same way as
+ * `CheckpointKind` itself (e.g. `E_DOCK_ARCHIVED`, `E_WEIGHING_AREA_ARCHIVED`). */
+const ERROR_CODE = {
+  nameConflict: (kind: CheckpointKind) => `E_${kind}_NAME_CONFLICT`,
+  archived: (kind: CheckpointKind) => `E_${kind}_ARCHIVED`,
+  notFound: (kind: CheckpointKind) => `E_${kind}_NOT_FOUND`,
+}
+
+export function CheckpointResourceForm<TResource>({
+  kind,
   initialValues = null,
   pending,
   onPendingChange,
@@ -29,27 +43,29 @@ export function WeighingAreaForm({
   pendingLabel,
   errorTitle,
 }: {
+  kind: CheckpointKind
   initialValues?: { name: string; latitude: number; longitude: number } | null
-  pending: PendingWeighingAreaPlacement | null
-  onPendingChange: (point: PendingWeighingAreaPlacement) => void
-  onSubmit: (value: {
-    name: string
-    latitude: number
-    longitude: number
-  }) => Promise<WeighingAreaDto>
-  onSuccess: (area: WeighingAreaDto) => void
-  /** Update-only: called when the server reports the weighing area no longer exists. */
+  pending: PendingCheckpointPlacement | null
+  onPendingChange: (point: PendingCheckpointPlacement) => void
+  onSubmit: (value: { name: string; latitude: number; longitude: number }) => Promise<TResource>
+  onSuccess: (resource: TResource) => void
+  /** Update-only: called when the server reports the resource no longer exists. */
   onNotFound?: () => void
   submitLabel: string
   pendingLabel: string
   errorTitle: string
 }) {
   const isEditing = initialValues !== null
+  const resourceNoun = CHECKPOINT_KIND_LABELS[kind].toLowerCase()
+  const idPrefix = CHECKPOINT_PARAM_BY_KIND[kind]
   const coordinateFields = useCoordinateFields(pending, onPendingChange)
   const hasCoordinateError = Boolean(
     coordinateFields.latitude.error || coordinateFields.longitude.error,
   )
   const canSubmit = (isEditing || Boolean(pending)) && !hasCoordinateError
+  const nameSchema = z.object({
+    name: z.string().trim().min(1, `${CHECKPOINT_KIND_LABELS[kind]} name is required.`).max(255),
+  })
 
   const form = useAppForm({
     defaultValues: { name: initialValues?.name ?? '' },
@@ -74,18 +90,18 @@ export function WeighingAreaForm({
         if (!applyValidationError(formApi, error)) {
           const apiError = parseApiError(error)
 
-          if (apiError.code === 'E_WEIGHING_AREA_NAME_CONFLICT') {
+          if (apiError.code === ERROR_CODE.nameConflict(kind)) {
             formApi.setErrorMap({
               onSubmit: { fields: { name: apiError.message }, form: '' },
             })
-          } else if (apiError.code === 'E_WEIGHING_AREA_ARCHIVED') {
+          } else if (apiError.code === ERROR_CODE.archived(kind)) {
             formApi.setErrorMap({
               onSubmit: {
                 fields: {},
-                form: `${apiError.message}. Reactivate the weighing area before editing it.`,
+                form: `${apiError.message}. Reactivate the ${resourceNoun} before editing it.`,
               },
             })
-          } else if (apiError.code === 'E_WEIGHING_AREA_NOT_FOUND' && onNotFound) {
+          } else if (apiError.code === ERROR_CODE.notFound(kind) && onNotFound) {
             toast.error(errorTitle, { description: apiError.message })
             onNotFound()
           } else {
@@ -105,34 +121,34 @@ export function WeighingAreaForm({
               <field.TextField
                 autoComplete="off"
                 autoFocus={isEditing}
-                label="Weighing area name"
-                placeholder="North Scale"
+                label={`${CHECKPOINT_KIND_LABELS[kind]} name`}
+                placeholder={NAME_PLACEHOLDER_BY_KIND[kind]}
                 required={true}
               />
             )}
           </form.AppField>
           {!isEditing && (
             <FieldDescription role="status">
-              Click the map to place the new weighing area, or enter its coordinates directly.
+              Click the map to place the new {resourceNoun}, or enter its coordinates directly.
             </FieldDescription>
           )}
           <CoordinateField
             axis="latitude"
             error={coordinateFields.latitude.error}
-            idPrefix="weighing-area"
+            idPrefix={idPrefix}
             onChange={coordinateFields.latitude.onChange}
             text={coordinateFields.latitude.text}
           />
           <CoordinateField
             axis="longitude"
             error={coordinateFields.longitude.error}
-            idPrefix="weighing-area"
+            idPrefix={idPrefix}
             onChange={coordinateFields.longitude.onChange}
             text={coordinateFields.longitude.text}
           />
           {!isEditing && !pending && (
             <FieldDescription role="status">
-              A location must be placed before this weighing area can be created.
+              A location must be placed before this {resourceNoun} can be created.
             </FieldDescription>
           )}
         </FieldGroup>
