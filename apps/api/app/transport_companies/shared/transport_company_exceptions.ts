@@ -30,6 +30,12 @@ export class TransportCompanyHasAvailableTrucksException extends Exception {
   static message = 'Transport company still provides available trucks'
 }
 
+export class TransportCompanyAlreadyAvailableException extends Exception {
+  static status = 409
+  static code = 'E_TRANSPORT_COMPANY_ALREADY_AVAILABLE'
+  static message = 'Transport company is already available'
+}
+
 export class InvalidTransportCompanyContactPhoneException extends Exception {
   static status = 422
   static code = 'E_TRANSPORT_COMPANY_CONTACT_PHONE_INVALID'

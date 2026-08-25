@@ -52,6 +52,28 @@ export type BulkTransportCompanyLifecycleResult = {
   blockedCompanies: BulkTransportCompanyLifecycleBlocker[]
 }
 
+export type ReactivateTransportCompanyCommand = {
+  id: string
+  reactivatedAt: DateTime
+  reactivatedByUserId: string
+  reactivationComment: string | null
+}
+
+// Deliberately a separate type from `ArchiveTransportCompanyResult` and from
+// `TransportCompanyWriteResult`, whose `ARCHIVED` member means yet another thing. Reusing one type
+// for more than one meaning would make `kind` ambiguous at every call site.
+export type ReactivateTransportCompanyResult =
+  | { kind: 'REACTIVATED'; company: TransportCompany }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'ALREADY_AVAILABLE' }
+
+export type ReactivateTransportCompaniesCommand = {
+  ids: string[]
+  reactivatedAt: DateTime
+  reactivatedByUserId: string
+  reactivationComment: string | null
+}
+
 export default abstract class TransportCompanyRepository {
   abstract create(command: CreateTransportCompanyCommand): Promise<TransportCompanyWriteResult>
   abstract list(): Promise<TransportCompany[]>
@@ -65,5 +87,11 @@ export default abstract class TransportCompanyRepository {
   ): Promise<ArchiveTransportCompanyResult>
   abstract archiveAvailableMany(
     command: ArchiveTransportCompaniesCommand,
+  ): Promise<BulkTransportCompanyLifecycleResult>
+  abstract reactivateArchived(
+    command: ReactivateTransportCompanyCommand,
+  ): Promise<ReactivateTransportCompanyResult>
+  abstract reactivateArchivedMany(
+    command: ReactivateTransportCompaniesCommand,
   ): Promise<BulkTransportCompanyLifecycleResult>
 }

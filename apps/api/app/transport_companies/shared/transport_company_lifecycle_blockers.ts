@@ -7,7 +7,7 @@ export type TransportCompanyLifecycleRecord = {
 export type BulkTransportCompanyLifecycleBlocker = {
   id: string
   name?: string
-  reason: 'NOT_FOUND' | 'ALREADY_ARCHIVED' | 'HAS_AVAILABLE_TRUCKS'
+  reason: 'NOT_FOUND' | 'ALREADY_ARCHIVED' | 'ALREADY_AVAILABLE' | 'HAS_AVAILABLE_TRUCKS'
 }
 
 export function indexCompaniesById<T extends TransportCompanyLifecycleRecord>(
@@ -16,10 +16,18 @@ export function indexCompaniesById<T extends TransportCompanyLifecycleRecord>(
   return new Map(companies.map((company) => [company.id, company]))
 }
 
-export function findBulkArchiveBlockers(
+/**
+ * Partitions a requested selection against one lifecycle direction. `expectedStatus` is the
+ * status a company must already have for the transition to be eligible: `AVAILABLE` for archival,
+ * `ARCHIVED` for reactivation. `companyIdsWithAvailableTrucks` is consulted only when `AVAILABLE`
+ * is expected — reactivation has no truck-based blocker, so its default (empty) makes that branch
+ * unreachable by construction rather than by convention.
+ */
+export function findBulkBlockers(
   ids: string[],
   companiesById: Map<string, TransportCompanyLifecycleRecord>,
-  companyIdsWithAvailableTrucks: Set<string>,
+  expectedStatus: 'AVAILABLE' | 'ARCHIVED',
+  companyIdsWithAvailableTrucks: Set<string> = new Set(),
 ): BulkTransportCompanyLifecycleBlocker[] {
   return ids.flatMap((id): BulkTransportCompanyLifecycleBlocker[] => {
     const company = companiesById.get(id)
@@ -28,11 +36,17 @@ export function findBulkArchiveBlockers(
       return [{ id, reason: 'NOT_FOUND' }]
     }
 
-    if (company.status === 'ARCHIVED') {
-      return [{ id, name: company.name, reason: 'ALREADY_ARCHIVED' }]
+    if (company.status !== expectedStatus) {
+      return [
+        {
+          id,
+          name: company.name,
+          reason: expectedStatus === 'AVAILABLE' ? 'ALREADY_ARCHIVED' : 'ALREADY_AVAILABLE',
+        },
+      ]
     }
 
-    if (companyIdsWithAvailableTrucks.has(id)) {
+    if (expectedStatus === 'AVAILABLE' && companyIdsWithAvailableTrucks.has(id)) {
       return [{ id, name: company.name, reason: 'HAS_AVAILABLE_TRUCKS' }]
     }
 

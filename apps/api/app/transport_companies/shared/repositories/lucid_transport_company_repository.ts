@@ -4,7 +4,7 @@ import { DateTime } from 'luxon'
 import TransportCompany from '#models/transport_company'
 import isUniqueViolation from '#shared/database/is_unique_violation'
 import {
-  findBulkArchiveBlockers,
+  findBulkBlockers,
   indexCompaniesById,
   orderCompanies,
 } from '#transport_companies/shared/transport_company_lifecycle_blockers'
@@ -16,6 +16,9 @@ import TransportCompanyRepository, {
   type ArchiveTransportCompanyResult,
   type BulkTransportCompanyLifecycleResult,
   type CreateTransportCompanyCommand,
+  type ReactivateTransportCompaniesCommand,
+  type ReactivateTransportCompanyCommand,
+  type ReactivateTransportCompanyResult,
   type TransportCompanyWriteResult,
   type UpdateTransportCompanyCommand,
 } from './transport_company_repository.ts'
@@ -192,9 +195,10 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
           transportCompanyIds: command.ids,
           client: trx,
         })
-      const blockers = findBulkArchiveBlockers(
+      const blockers = findBulkBlockers(
         command.ids,
         companiesById,
+        'AVAILABLE',
         companyIdsWithAvailableTrucks,
       )
 
@@ -223,6 +227,86 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
 
       return {
         updatedCompanies: orderCompanies(eligibleIds, indexCompaniesById(archived)),
+        blockedCompanies: blockers,
+      }
+    })
+  }
+
+  async reactivateArchived(
+    command: ReactivateTransportCompanyCommand,
+  ): Promise<ReactivateTransportCompanyResult> {
+    // Unlike `archiveAvailable`, this write reads no second table and races with nothing else, so
+    // a single conditional UPDATE is already atomic — no transaction, no `forUpdate` lock.
+    const [affectedRows] = await TransportCompany.query()
+      .where('id', command.id)
+      .where('status', 'ARCHIVED')
+      .update({
+        status: 'AVAILABLE',
+        reactivatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+        reactivatedByUserId: command.reactivatedByUserId,
+        reactivationComment: command.reactivationComment,
+        updatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+      })
+
+    if (affectedRows === 0) {
+      const company = await TransportCompany.find(command.id)
+
+      if (!company) {
+        return { kind: 'NOT_FOUND' }
+      }
+
+      return company.status === 'AVAILABLE' ? { kind: 'ALREADY_AVAILABLE' } : { kind: 'NOT_FOUND' }
+    }
+
+    const company = await TransportCompany.query()
+      .where('id', command.id)
+      .preload('archivedBy')
+      .preload('reactivatedBy')
+      .first()
+    if (!company) {
+      return { kind: 'NOT_FOUND' }
+    }
+
+    return { kind: 'REACTIVATED', company }
+  }
+
+  reactivateArchivedMany(
+    command: ReactivateTransportCompaniesCommand,
+  ): Promise<BulkTransportCompanyLifecycleResult> {
+    return TransportCompany.transaction(async (trx) => {
+      const companies = await TransportCompany.query({ client: trx })
+        .whereIn('id', command.ids)
+        .forUpdate()
+      const companiesById = indexCompaniesById(companies)
+      // No truck read here, unlike archiveAvailableMany: reactivation has no blocking rule, so
+      // findBulkBlockers is called with its truck-set parameter left at its default empty set.
+      const blockers = findBulkBlockers(command.ids, companiesById, 'ARCHIVED')
+
+      const blockedIds = new Set(blockers.map((blocker) => blocker.id))
+      const eligibleIds = command.ids.filter((id) => !blockedIds.has(id))
+
+      const [affectedRows] = await TransportCompany.query({ client: trx })
+        .whereIn('id', eligibleIds)
+        .where('status', 'ARCHIVED')
+        .update({
+          status: 'AVAILABLE',
+          reactivatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+          reactivatedByUserId: command.reactivatedByUserId,
+          reactivationComment: command.reactivationComment,
+          updatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+        })
+
+      if (affectedRows !== eligibleIds.length) {
+        throw new Error('Transport company bulk reactivation changed during transaction')
+      }
+
+      const reactivated = await TransportCompany.query({ client: trx })
+        .whereIn('id', eligibleIds)
+        .preload('archivedBy')
+        .preload('reactivatedBy')
+
+      return {
+        updatedCompanies: orderCompanies(eligibleIds, indexCompaniesById(reactivated)),
         blockedCompanies: blockers,
       }
     })

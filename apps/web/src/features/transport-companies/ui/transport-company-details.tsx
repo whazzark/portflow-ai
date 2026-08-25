@@ -10,14 +10,14 @@ import { formatDateTime } from '@/helpers/dates'
 type TransportCompanyDetailsProps = {
   canAdminister: boolean
   company: TransportCompanyDto
-  onArchiveSuccess?: () => void
+  onLifecycleSuccess?: () => void
   onEdit: () => void
 }
 
 export function TransportCompanyDetails({
   canAdminister,
   company,
-  onArchiveSuccess,
+  onLifecycleSuccess,
   onEdit,
 }: TransportCompanyDetailsProps) {
   const isArchived = company.status === 'ARCHIVED'
@@ -80,10 +80,10 @@ export function TransportCompanyDetails({
           </dl>
         </section>
       </div>
-      {canAdminister && !isArchived && (
+      {canAdminister && (
         <footer className="flex shrink-0 gap-2 border-t bg-popover px-5 py-4 md:px-6">
-          <Button onClick={onEdit}>Edit company</Button>
-          <TransportCompanyLifecycleActions company={company} onSuccess={onArchiveSuccess} />
+          {!isArchived && <Button onClick={onEdit}>Edit company</Button>}
+          <TransportCompanyLifecycleActions company={company} onSuccess={onLifecycleSuccess} />
         </footer>
       )}
     </section>

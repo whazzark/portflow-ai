@@ -22,40 +22,50 @@ import type {
 import { classnames } from '@/libraries/shadcn/helpers'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
+type TransportCompanyLifecycleDirection = 'archive' | 'reactivate'
+
 type BulkTransportCompanyLifecycleActionsProps = {
+  direction: TransportCompanyLifecycleDirection
   selectedIds: string[]
   onClear: () => void
   onSuccess: (result: BulkTransportCompanyLifecycleResult) => void
 }
 
 export function BulkTransportCompanyLifecycleActions({
+  direction,
   selectedIds,
   onClear,
   onSuccess,
 }: BulkTransportCompanyLifecycleActionsProps) {
   const mutations = useTransportCompanyMutations()
+  const archiving = direction === 'archive'
 
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
 
   const submit = async () => {
     try {
-      const result = await mutations.archiveMany.mutateAsync({
-        body: { ids: selectedIds, comment: comment || null },
-      })
+      const result = archiving
+        ? await mutations.archiveMany.mutateAsync({
+            body: { ids: selectedIds, comment: comment || null },
+          })
+        : await mutations.reactivateMany.mutateAsync({
+            body: { ids: selectedIds, comment: comment || null },
+          })
       setOpen(false)
       setComment('')
       onSuccess(result.data)
       void mutations.refreshTransportCompanies()
 
-      const archivedCount = result.data.updatedCompanies.length
+      const updatedCount = result.data.updatedCompanies.length
       const blockedCount = result.data.blockedCompanies.length
-      const archivedLabel = `${archivedCount} transport ${archivedCount === 1 ? 'company' : 'companies'} archived`
+      const verb = archiving ? 'archived' : 'reactivated'
+      const updatedLabel = `${updatedCount} transport ${updatedCount === 1 ? 'company' : 'companies'} ${verb}`
 
       if (blockedCount === 0) {
-        toast.success(archivedLabel)
+        toast.success(updatedLabel)
       } else {
-        toast.warning(`${archivedLabel}; ${blockedCount} unchanged`, {
+        toast.warning(`${updatedLabel}; ${blockedCount} unchanged`, {
           description: result.data.blockedCompanies
             .map(
               (blocked) => `${blocked.name ?? blocked.id}: ${formatBlockerReason(blocked.reason)}`,
@@ -64,13 +74,17 @@ export function BulkTransportCompanyLifecycleActions({
         })
       }
     } catch (cause) {
-      toast.error('Unable to archive transport companies', {
-        description: parseApiError(cause).message,
-      })
+      toast.error(
+        archiving
+          ? 'Unable to archive transport companies'
+          : 'Unable to reactivate transport companies',
+        { description: parseApiError(cause).message },
+      )
     }
   }
 
   const visible = selectedIds.length > 0
+  const isPending = archiving ? mutations.archiveMany.isPending : mutations.reactivateMany.isPending
 
   return (
     <>
@@ -88,8 +102,12 @@ export function BulkTransportCompanyLifecycleActions({
           <span className="whitespace-nowrap px-2 font-medium text-sm tabular-nums">
             {selectedIds.length} selected
           </span>
-          <Button onClick={() => setOpen(true)} size="sm" variant="destructive">
-            Archive selected
+          <Button
+            onClick={() => setOpen(true)}
+            size="sm"
+            variant={archiving ? 'destructive' : 'default'}
+          >
+            {archiving ? 'Archive selected' : 'Reactivate selected'}
           </Button>
           <Button aria-label="Clear selection" onClick={onClear} size="icon-sm" variant="ghost">
             <XIcon aria-hidden="true" />
@@ -100,12 +118,13 @@ export function BulkTransportCompanyLifecycleActions({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Archive {selectedIds.length} transport{' '}
+              {archiving ? 'Archive' : 'Reactivate'} {selectedIds.length} transport{' '}
               {selectedIds.length === 1 ? 'company' : 'companies'}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              These companies will remain readable but will no longer be selectable for new
-              operational use.
+              {archiving
+                ? 'These companies will remain readable but will no longer be selectable for new operational use.'
+                : 'These companies will become selectable again for new operational use.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Field>
@@ -123,13 +142,13 @@ export function BulkTransportCompanyLifecycleActions({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={mutations.archiveMany.isPending}
+              disabled={isPending}
               onClick={(event) => {
                 event.preventDefault()
                 void submit()
               }}
             >
-              Archive
+              {archiving ? 'Archive' : 'Reactivate'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -143,6 +162,7 @@ function formatBlockerReason(reason: BulkTransportCompanyLifecycleBlocker['reaso
     {
       NOT_FOUND: 'not found',
       ALREADY_ARCHIVED: 'already archived',
+      ALREADY_AVAILABLE: 'already available',
       HAS_AVAILABLE_TRUCKS: 'still provides available trucks',
     }[reason] ?? reason
   )

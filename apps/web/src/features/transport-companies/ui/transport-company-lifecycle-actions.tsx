@@ -29,67 +29,88 @@ export function TransportCompanyLifecycleActions({
   onSuccess,
 }: TransportCompanyLifecycleActionsProps) {
   const mutations = useTransportCompanyMutations()
+  const archived = company.status === 'ARCHIVED'
 
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
 
   const submit = async () => {
     try {
-      await mutations.archive.mutateAsync({
-        params: { id: company.id },
-        body: { comment: comment || null },
-      })
+      if (archived) {
+        await mutations.reactivate.mutateAsync({
+          params: { id: company.id },
+          body: { comment: comment || null },
+        })
+      } else {
+        await mutations.archive.mutateAsync({
+          params: { id: company.id },
+          body: { comment: comment || null },
+        })
+      }
 
       setOpen(false)
       setComment('')
-      toast.success('Transport company archived')
+      toast.success(archived ? 'Transport company reactivated' : 'Transport company archived')
       onSuccess?.()
     } catch (error) {
-      toast.error(`Unable to archive transport company “${company.name}”`, {
-        description: parseApiError(error).message,
-      })
+      toast.error(
+        archived
+          ? `Unable to reactivate transport company “${company.name}”`
+          : `Unable to archive transport company “${company.name}”`,
+        { description: parseApiError(error).message },
+      )
     }
   }
 
+  const isPending = archived ? mutations.reactivate.isPending : mutations.archive.isPending
+
   return (
     <>
-      <Button className={className} onClick={() => setOpen(true)} variant="destructive">
-        Archive company
+      <Button
+        className={className}
+        onClick={() => setOpen(true)}
+        variant={archived ? 'default' : 'destructive'}
+      >
+        {archived ? 'Reactivate company' : 'Archive company'}
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Archive company?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {archived ? 'Reactivate company?' : 'Archive company?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This company will remain readable but will no longer be selectable for new operational
-              use.
+              {archived
+                ? 'This company will become selectable again for new operational use.'
+                : 'This company will remain readable but will no longer be selectable for new operational use.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="archive-transport-company-comment">
+              <FieldLabel htmlFor="transport-company-lifecycle-comment">
                 Comment (optional)
               </FieldLabel>
               <Textarea
-                id="archive-transport-company-comment"
+                id="transport-company-lifecycle-comment"
                 maxLength={1000}
                 onChange={(event) => setComment(event.target.value)}
                 value={comment}
               />
               <FieldDescription>
-                Keep a short explanation for the archival (maximum 1,000 characters).
+                Keep a short explanation for the {archived ? 'reactivation' : 'archival'} (maximum
+                1,000 characters).
               </FieldDescription>
             </Field>
           </FieldGroup>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={mutations.archive.isPending}
+              disabled={isPending}
               onClick={() => {
                 void submit()
               }}
             >
-              Archive
+              {archived ? 'Reactivate' : 'Archive'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
