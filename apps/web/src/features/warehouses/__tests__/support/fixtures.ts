@@ -2,6 +2,21 @@ import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
 
 export const API_BASE_URL = 'http://localhost:3333'
 
+export const WAREHOUSE_ADMIN = {
+  id: 1,
+  firstName: 'Claire',
+  lastName: 'Martin',
+  email: 'admin@portflow.test',
+  role: 'OPERATIONS_ADMIN',
+  accessStatus: 'ACTIVE',
+}
+
+export const WAREHOUSE_OBSERVER = {
+  ...WAREHOUSE_ADMIN,
+  email: 'observer@portflow.test',
+  role: 'OBSERVER',
+}
+
 export const WAREHOUSES: WarehouseWithDoorsDto[] = [
   {
     id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -53,3 +68,17 @@ export const WAREHOUSES: WarehouseWithDoorsDto[] = [
     ],
   },
 ]
+
+export const CREATED_WAREHOUSE: WarehouseWithDoorsDto = {
+  id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  name: 'South Shed',
+  status: 'AVAILABLE',
+  footprint: {
+    points: [
+      { latitude: 10.5, longitude: 20.5 },
+      { latitude: 11.5, longitude: 21.5 },
+      { latitude: 12.5, longitude: 20.5 },
+    ],
+  },
+  doors: [],
+}

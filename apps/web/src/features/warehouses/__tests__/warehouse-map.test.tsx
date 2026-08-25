@@ -18,6 +18,7 @@ const { fitBoundsMock, mapMock } = vi.hoisted(() => {
 
 vi.mock('@/components/ui/map', () => ({
   Map: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  MapControls: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   useMap: () => ({ isLoaded: true, map: mapMock }),
 }))
 

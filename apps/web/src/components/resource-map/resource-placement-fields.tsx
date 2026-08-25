@@ -3,7 +3,7 @@ import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 
-type CoordinateAxis = 'latitude' | 'longitude'
+export type CoordinateAxis = 'latitude' | 'longitude'
 
 const COORDINATE_LABELS: Record<CoordinateAxis, string> = {
   latitude: 'Latitude',
@@ -15,7 +15,7 @@ const COORDINATE_RANGES: Record<CoordinateAxis, [number, number]> = {
   longitude: [-180, 180],
 }
 
-function parseCoordinate(axis: CoordinateAxis, text: string): number | undefined {
+export function parseCoordinate(axis: CoordinateAxis, text: string): number | undefined {
   const trimmed = text.trim()
   if (trimmed === '') {
     return undefined
@@ -34,7 +34,7 @@ function parseCoordinate(axis: CoordinateAxis, text: string): number | undefined
   return parsed
 }
 
-function coordinateError(axis: CoordinateAxis, text: string): string | undefined {
+export function coordinateError(axis: CoordinateAxis, text: string): string | undefined {
   const label = COORDINATE_LABELS[axis]
   if (text.trim() === '') {
     return `${label} is required.`

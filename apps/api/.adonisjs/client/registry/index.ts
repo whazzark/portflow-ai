@@ -282,6 +282,12 @@ const routes = {
     tokens: [{"old":"/api/v1/warehouses","type":0,"val":"api","end":""},{"old":"/api/v1/warehouses","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouses","type":0,"val":"warehouses","end":""}],
     types: placeholder as Registry['warehouses.index']['types'],
   },
+  'warehouses.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/warehouses',
+    tokens: [{"old":"/api/v1/warehouses","type":0,"val":"api","end":""},{"old":"/api/v1/warehouses","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouses","type":0,"val":"warehouses","end":""}],
+    types: placeholder as Registry['warehouses.store']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

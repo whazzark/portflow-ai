@@ -30,3 +30,46 @@ export function warehousesSequenceHandler(
         )
   })
 }
+
+export function createWarehouseHandler(created: WarehouseDto) {
+  return http.post(`${API_BASE_URL}/api/v1/warehouses`, () =>
+    HttpResponse.json({ data: created }, { status: 201 }),
+  )
+}
+
+export function createWarehouseConflictHandler() {
+  return http.post(`${API_BASE_URL}/api/v1/warehouses`, () =>
+    HttpResponse.json(
+      {
+        error: {
+          code: 'E_WAREHOUSE_NAME_CONFLICT',
+          message: 'Warehouse name is already in use',
+        },
+      },
+      { status: 409 },
+    ),
+  )
+}
+
+export function createWarehouseInvalidFootprintHandler() {
+  return http.post(`${API_BASE_URL}/api/v1/warehouses`, () =>
+    HttpResponse.json(
+      {
+        error: {
+          code: 'E_WAREHOUSE_INVALID_FOOTPRINT',
+          message: 'Warehouse footprint outline must not cross itself',
+        },
+      },
+      { status: 422 },
+    ),
+  )
+}
+
+export function createWarehouseFailureHandler(status = 500) {
+  return http.post(`${API_BASE_URL}/api/v1/warehouses`, () =>
+    HttpResponse.json(
+      { error: { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' } },
+      { status },
+    ),
+  )
+}
