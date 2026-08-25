@@ -108,11 +108,23 @@ const routes = {
     tokens: [{"old":"/api/v1/transport-companies/archive","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/archive","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/archive","type":0,"val":"archive","end":""}],
     types: placeholder as Registry['transport_companies.archive_many']['types'],
   },
+  'transport_companies.reactivate_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/transport-companies/reactivate',
+    tokens: [{"old":"/api/v1/transport-companies/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/reactivate","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['transport_companies.reactivate_many']['types'],
+  },
   'transport_companies.archive': {
     methods: ["POST"],
     pattern: '/api/v1/transport-companies/:id/archive',
     tokens: [{"old":"/api/v1/transport-companies/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/:id/archive","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/transport-companies/:id/archive","type":0,"val":"archive","end":""}],
     types: placeholder as Registry['transport_companies.archive']['types'],
+  },
+  'transport_companies.reactivate': {
+    methods: ["POST"],
+    pattern: '/api/v1/transport-companies/:id/reactivate',
+    tokens: [{"old":"/api/v1/transport-companies/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/transport-companies/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/transport-companies/:id/reactivate","type":0,"val":"transport-companies","end":""},{"old":"/api/v1/transport-companies/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/transport-companies/:id/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['transport_companies.reactivate']['types'],
   },
   'trucks.index': {
     methods: ["GET","HEAD"],

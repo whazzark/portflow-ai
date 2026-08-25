@@ -28,3 +28,12 @@ export const archiveTransportCompaniesValidator = vine.create({
   ids: lifecycleIds(),
   comment: lifecycleComment(),
 })
+
+export const reactivateTransportCompanyValidator = vine.create({
+  comment: lifecycleComment(),
+})
+
+export const reactivateTransportCompaniesValidator = vine.create({
+  ids: lifecycleIds(),
+  comment: lifecycleComment(),
+})

@@ -101,7 +101,70 @@ export function mockTransportCompanyArchival(initial: TransportCompanyDto[] = TR
   return state
 }
 
-type BulkBlockerReason = 'NOT_FOUND' | 'ALREADY_ARCHIVED' | 'HAS_AVAILABLE_TRUCKS'
+/**
+ * Intercepts single reactivation against a mutable collection so a test can assert that the
+ * reactivated company really moves lifecycle state through the invalidated consultation query,
+ * rather than only asserting that the request was sent.
+ */
+export function mockTransportCompanyReactivation(
+  initial: TransportCompanyDto[] = TRANSPORT_COMPANIES,
+) {
+  const state = { companies: [...initial], attempts: 0, reactivatedByUserId: 'user-2' }
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/transport-companies`, () =>
+      HttpResponse.json({ data: state.companies }),
+    ),
+    http.post(
+      `${API_BASE_URL}/api/v1/transport-companies/:id/reactivate`,
+      async ({ params, request }) => {
+        const body = (await request.json().catch(() => ({}))) as { comment?: string | null }
+        state.attempts += 1
+        const target = state.companies.find((company) => company.id === params.id)
+
+        if (!target) {
+          return HttpResponse.json(
+            {
+              error: {
+                code: 'E_TRANSPORT_COMPANY_NOT_FOUND',
+                message: 'Transport company not found',
+              },
+            },
+            { status: 404 },
+          )
+        }
+
+        const reactivatedAt = '2026-08-24T09:41:00.000Z'
+        const reactivated: TransportCompanyDto = {
+          ...target,
+          status: 'AVAILABLE',
+          reactivatedAt,
+          reactivatedByUserId: state.reactivatedByUserId,
+          reactivatedBy: {
+            id: state.reactivatedByUserId,
+            firstName: 'Claire',
+            lastName: 'Martin',
+          },
+          reactivationComment: body.comment?.trim() || null,
+          updatedAt: reactivatedAt,
+        }
+        state.companies = state.companies.map((company) =>
+          company.id === reactivated.id ? reactivated : company,
+        )
+
+        return HttpResponse.json({ data: reactivated })
+      },
+    ),
+  )
+
+  return state
+}
+
+type BulkBlockerReason =
+  | 'NOT_FOUND'
+  | 'ALREADY_ARCHIVED'
+  | 'ALREADY_AVAILABLE'
+  | 'HAS_AVAILABLE_TRUCKS'
 type BulkBlocker = { id: string; name?: string; reason: BulkBlockerReason }
 
 /**
@@ -169,6 +232,88 @@ export function mockTransportCompanyBulkArchival({
   return state
 }
 
+/**
+ * Intercepts bulk reactivation against a mutable collection, computing a real per-company
+ * partition (already available / not found / eligible) so a test can assert the reported outcome
+ * rather than only asserting that the request was sent. Unlike archival, no artificial blocker
+ * list is needed: ALREADY_AVAILABLE follows directly from each company's own status.
+ */
+export function mockTransportCompanyBulkReactivation({
+  initial = TRANSPORT_COMPANIES,
+}: {
+  initial?: TransportCompanyDto[]
+} = {}) {
+  const state = { companies: [...initial], attempts: 0, reactivatedByUserId: 'user-2' }
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/transport-companies`, () =>
+      HttpResponse.json({ data: state.companies }),
+    ),
+    http.post(`${API_BASE_URL}/api/v1/transport-companies/reactivate`, async ({ request }) => {
+      const body = (await request.json()) as { ids: string[]; comment?: string | null }
+      state.attempts += 1
+
+      const updatedCompanies: TransportCompanyDto[] = []
+      const blockedCompanies: BulkBlocker[] = []
+      const reactivatedAt = '2026-08-24T09:41:00.000Z'
+
+      for (const id of body.ids) {
+        const target = state.companies.find((company) => company.id === id)
+
+        if (!target) {
+          blockedCompanies.push({ id, reason: 'NOT_FOUND' })
+          continue
+        }
+        if (target.status === 'AVAILABLE') {
+          blockedCompanies.push({ id, name: target.name, reason: 'ALREADY_AVAILABLE' })
+          continue
+        }
+
+        const reactivated: TransportCompanyDto = {
+          ...target,
+          status: 'AVAILABLE',
+          reactivatedAt,
+          reactivatedByUserId: state.reactivatedByUserId,
+          reactivatedBy: {
+            id: state.reactivatedByUserId,
+            firstName: 'Claire',
+            lastName: 'Martin',
+          },
+          reactivationComment: body.comment?.trim() || null,
+          updatedAt: reactivatedAt,
+        }
+        updatedCompanies.push(reactivated)
+      }
+
+      state.companies = state.companies.map(
+        (company) =>
+          updatedCompanies.find((reactivated) => reactivated.id === company.id) ?? company,
+      )
+
+      return HttpResponse.json({ data: { updatedCompanies, blockedCompanies } })
+    }),
+  )
+
+  return state
+}
+
+export function mockTransportCompanyBulkReactivationFailure(
+  status: number,
+  error: { code: string; message: string; details?: { field: string; message: string }[] },
+) {
+  const state = { attempts: 0 }
+
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/transport-companies/reactivate`, () => {
+      state.attempts += 1
+
+      return HttpResponse.json({ error }, { status })
+    }),
+  )
+
+  return state
+}
+
 export function mockTransportCompanyArchivalFailure(
   status: number,
   error: { code: string; message: string; details?: { field: string; message: string }[] },
@@ -177,6 +322,23 @@ export function mockTransportCompanyArchivalFailure(
 
   server.use(
     http.post(`${API_BASE_URL}/api/v1/transport-companies/:id/archive`, () => {
+      state.attempts += 1
+
+      return HttpResponse.json({ error }, { status })
+    }),
+  )
+
+  return state
+}
+
+export function mockTransportCompanyReactivationFailure(
+  status: number,
+  error: { code: string; message: string; details?: { field: string; message: string }[] },
+) {
+  const state = { attempts: 0 }
+
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/transport-companies/:id/reactivate`, () => {
       state.attempts += 1
 
       return HttpResponse.json({ error }, { status })
