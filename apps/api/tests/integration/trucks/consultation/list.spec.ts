@@ -75,6 +75,44 @@ test.group('Truck consultation HTTP contracts', (group) => {
     }
   })
 
+  test('withholds the responsible administrator from the available collection', async ({
+    assert,
+    client,
+  }) => {
+    const company = await TransportCompanyFactory.create()
+    const administrator = await UserFactory.apply('active')
+      .merge({ role: 'OPERATIONS_ADMIN' })
+      .create()
+    // Back in service after a suspension: the cycle stays readable, its actors do not.
+    await TruckFactory.merge({
+      registration: 'RETURNED-001',
+      transportCompanyId: company.id,
+      suspendedAt: DateTime.fromISO('2026-07-02T09:00:00.000Z'),
+      suspendedByUserId: administrator.id,
+      suspensionComment: 'Gearbox failure, awaiting workshop slot',
+      returnedToServiceAt: DateTime.fromISO('2026-07-20T09:00:00.000Z'),
+      returnedToServiceByUserId: administrator.id,
+      returnToServiceComment: 'Gearbox replaced',
+    }).create()
+
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const response = await client.get('/api/v1/trucks/available').loginAs(observer)
+
+    response.assertStatus(200)
+    const [truck] = response.body().data
+    assert.equal(truck.returnToServiceComment, 'Gearbox replaced')
+    assert.isNotNull(truck.returnedToServiceAt)
+    assert.equal(truck.suspensionComment, 'Gearbox failure, awaiting workshop slot')
+    // FR-015 keeps the responsible administrator in the administration collections.
+    assert.notProperty(truck, 'returnedToServiceBy')
+    // biome-ignore lint/security/noSecrets: DTO identifier field, not a secret
+    assert.notProperty(truck, 'returnedToServiceByUserId')
+    assert.notProperty(truck, 'suspendedBy')
+    assert.notProperty(truck, 'suspendedByUserId')
+    assert.notProperty(truck, 'archivedBy')
+    assert.notProperty(truck, 'reactivatedBy')
+  })
+
   test('rejects unauthenticated and non-active access without exposing data', async ({
     assert,
     client,

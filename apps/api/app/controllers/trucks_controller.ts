@@ -96,7 +96,7 @@ export default class TrucksController {
 
     const trucks = await this.listAvailableTrucksUseCase.handle()
 
-    return serialize(TruckTransformer.transform(trucks))
+    return serialize(TruckTransformer.transform(trucks).useVariant('toOperationalView'))
   }
 
   async archive({ auth, bouncer, params, request, serialize }: HttpContext) {

@@ -181,9 +181,15 @@ export default class LucidTruckRepository extends TruckRepository {
     )
   }
 
+  /**
+   * Read by every active role like the suspended collection, so it preloads no lifecycle actor
+   * either: a truck returned to service or reactivated carries one, and `toOperationalView`
+   * never exposes it.
+   */
   listAvailable(): Promise<Truck[]> {
     return (
-      preloadLifecycleActors(Truck.query().where('status', 'AVAILABLE'))
+      Truck.query()
+        .where('status', 'AVAILABLE')
         // biome-ignore lint/security/noSecrets: SQL ordering expression, not a secret
         .orderByRaw('LOWER(registration) ASC')
         .orderBy('registration', 'asc')
