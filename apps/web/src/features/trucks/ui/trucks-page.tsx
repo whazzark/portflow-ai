@@ -94,33 +94,39 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
 
   const [selectedTruckIds, setSelectedTruckIds] = useState<Set<string>>(new Set())
   const [blockedTrucks, setBlockedTrucks] = useState<BulkTruckLifecycleBlocker[]>([])
-  // Selection is offered only in the available tab (this slice archives, it does not
-  // reactivate), so leaving that tab, changing the company filter, or a background refresh
-  // that drops a truck from the available scope prunes it from the selection too — and,
-  // unlike customers (whose bulk toolbar spans both tabs), it also hides the floating toolbar,
-  // since there is no archived-tab bulk action for a pruned truck to fall back into.
+  const activeLifecycleStatus = truckStatus === 'archived' ? 'ARCHIVED' : 'AVAILABLE'
+  // Selection is offered in both tabs (archive here, reactivate in the archived tab), scoped to
+  // the trucks currently listed in the active lifecycle tab and transport-company filter: a
+  // truck's own lifecycle status determines which single tab lists it, so pruning by the visible
+  // list also prevents a selection made in one tab from leaking into the other direction's action.
   const visibleSelectedTruckIds = useMemo(() => {
-    if (truckStatus !== 'available') {
-      return new Set<string>()
-    }
-
     const visibleIds = new Set(
-      scopedTrucks.filter((truck) => truck.status === 'AVAILABLE').map((truck) => truck.id),
+      scopedTrucks
+        .filter((truck) => truck.status === activeLifecycleStatus)
+        .map((truck) => truck.id),
     )
 
     return new Set([...selectedTruckIds].filter((id) => visibleIds.has(id)))
-  }, [scopedTrucks, selectedTruckIds, truckStatus])
+  }, [activeLifecycleStatus, scopedTrucks, selectedTruckIds])
   const visibleSelectedTruckIdList = useMemo(
     () => [...visibleSelectedTruckIds],
     [visibleSelectedTruckIds],
   )
   const lifecycleActionIds = useMemo(
     () =>
-      truckStatus === 'available' && blockedTrucks.length > 0
+      blockedTrucks.length > 0
         ? blockedTrucks.map((blocked) => blocked.id)
         : visibleSelectedTruckIdList,
-    [blockedTrucks, truckStatus, visibleSelectedTruckIdList],
+    [blockedTrucks, visibleSelectedTruckIdList],
   )
+
+  // The retry set from a previous outcome is meaningful only for the direction (archive or
+  // reactivate) it came from, so leaving the tab it was reported in clears it — the same reason
+  // switching tabs already prunes the selection itself.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: truckStatus is the trigger, not a value read by the effect body.
+  useEffect(() => {
+    setBlockedTrucks([])
+  }, [truckStatus])
 
   useEffect(() => {
     if (!administrator && truckStatus === 'archived') {
@@ -280,8 +286,24 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
                 <TruckSection
                   lifecycle="archived"
                   onSelect={toggleTruck}
+                  onSelectionChange={(checked, ids) => {
+                    setSelectedTruckIds((previous) => {
+                      const next = new Set(previous)
+                      for (const id of ids) {
+                        if (checked) {
+                          next.add(id)
+                        } else {
+                          next.delete(id)
+                        }
+                      }
+                      return next
+                    })
+                    setBlockedTrucks([])
+                  }}
                   search={truckSearch}
+                  selectable={administrator}
                   selectedId={truckId}
+                  selectedIds={visibleSelectedTruckIds}
                   trucks={selectedTrucks}
                   companies={companies}
                 />
@@ -358,6 +380,7 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
   const bulkLifecycleActions = administrator && (
     <TruckBulkLifecycleActions
       blockedTrucks={blockedTrucks}
+      isArchived={truckStatus === 'archived'}
       onClear={() => {
         setSelectedTruckIds(new Set())
         setBlockedTrucks([])

@@ -162,6 +162,18 @@ const routes = {
     tokens: [{"old":"/api/v1/trucks/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/:id/archive","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/trucks/:id/archive","type":0,"val":"archive","end":""}],
     types: placeholder as Registry['trucks.archive']['types'],
   },
+  'trucks.reactivate_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/trucks/reactivate',
+    tokens: [{"old":"/api/v1/trucks/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/reactivate","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['trucks.reactivate_many']['types'],
+  },
+  'trucks.reactivate': {
+    methods: ["POST"],
+    pattern: '/api/v1/trucks/:id/reactivate',
+    tokens: [{"old":"/api/v1/trucks/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/:id/reactivate","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/trucks/:id/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['trucks.reactivate']['types'],
+  },
   'docks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/docks',

@@ -42,3 +42,16 @@ export class TruckInUseException extends Exception {
   static code = 'E_TRUCK_IN_USE'
   static message = 'Truck is used by a planned or active discharge'
 }
+
+export class TruckAlreadyAvailableException extends Exception {
+  static status = 409
+  static code = 'E_TRUCK_ALREADY_AVAILABLE'
+  static message = 'Truck is already available'
+}
+
+export class TruckTransportCompanyArchivedException extends Exception {
+  static status = 409
+  static code = 'E_TRUCK_TRANSPORT_COMPANY_ARCHIVED'
+  static message =
+    'Truck transport company is archived; reactivate the company or reassign the truck before returning it to service'
+}

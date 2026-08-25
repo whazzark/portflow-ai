@@ -37,6 +37,8 @@ export interface ApiDefinition {
     update: typeof routes['trucks.update']
     archiveMany: typeof routes['trucks.archive_many']
     archive: typeof routes['trucks.archive']
+    reactivateMany: typeof routes['trucks.reactivate_many']
+    reactivate: typeof routes['trucks.reactivate']
   }
   docks: {
     index: typeof routes['docks.index']

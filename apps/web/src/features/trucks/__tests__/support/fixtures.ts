@@ -85,6 +85,8 @@ export const TRUCKS: TruckDto[] = [
     registration: 'CC-303-PF',
     vehicleModel: 'Scania XT',
     capacityTonnes: 34.25,
+    // This company (see TRANSPORT_COMPANIES) is itself ARCHIVED, so this truck doubles as the
+    // fixture for the transport-company-archived reactivation refusal.
     transportCompanyId: '00000000-0000-4000-8000-000000000003',
     status: 'ARCHIVED',
     archivedAt: '2026-07-20T14:32:11.000Z',
@@ -101,6 +103,97 @@ export const TRUCKS: TruckDto[] = [
 ]
 
 export const AVAILABLE_TRUCKS = TRUCKS.filter((truck) => truck.status === 'AVAILABLE')
+
+/**
+ * A self-contained truck set for single-truck reactivation tests, so they don't have to share
+ * (and accidentally shift the lifecycle tab counts asserted against) the default {@link TRUCKS}
+ * fixture, the same reason {@link BULK_TRUCKS} exists below.
+ */
+export const REACTIVATE_TRUCKS: TruckDto[] = [
+  {
+    id: '00000000-0000-4000-8000-000000000401',
+    registration: 'LL-501-PF',
+    vehicleModel: 'Volvo FH',
+    capacityTonnes: 30,
+    transportCompanyId: '00000000-0000-4000-8000-000000000001',
+    status: 'AVAILABLE',
+    archivedAt: null,
+    archivedByUserId: null,
+    archivedBy: null,
+    archiveComment: null,
+    reactivatedAt: null,
+    reactivatedByUserId: null,
+    reactivatedBy: null,
+    reactivationComment: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000402',
+    registration: 'MM-602-PF',
+    vehicleModel: 'Scania R',
+    capacityTonnes: 31.5,
+    // Available company: the eligible target for a successful reactivation.
+    transportCompanyId: '00000000-0000-4000-8000-000000000001',
+    status: 'ARCHIVED',
+    archivedAt: '2026-08-10T09:00:00.000Z',
+    archivedByUserId: 'admin-1',
+    archivedBy: { id: 'admin-1', firstName: 'Olivia', lastName: 'Observer' },
+    archiveComment: 'Gearbox failure',
+    reactivatedAt: null,
+    reactivatedByUserId: null,
+    reactivatedBy: null,
+    reactivationComment: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-08-10T09:00:00.000Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000403',
+    registration: 'NN-703-PF',
+    vehicleModel: 'Renault T',
+    capacityTonnes: 27,
+    // Available company; carries a prior reactivation context that a new reactivation must
+    // replace rather than merge with.
+    transportCompanyId: '00000000-0000-4000-8000-000000000001',
+    status: 'ARCHIVED',
+    archivedAt: '2026-08-05T09:00:00.000Z',
+    archivedByUserId: 'admin-1',
+    archivedBy: { id: 'admin-1', firstName: 'Olivia', lastName: 'Observer' },
+    archiveComment: 'Second archival, engine fault',
+    reactivatedAt: '2026-03-01T10:15:00.000Z',
+    reactivatedByUserId: 'operations-admin-1',
+    reactivatedBy: { id: 'operations-admin-1', firstName: 'Olivia', lastName: 'Observer' },
+    reactivationComment: 'First reactivation, after repair',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-08-05T09:00:00.000Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000404',
+    registration: 'OO-804-PF',
+    vehicleModel: 'Iveco S-Way',
+    capacityTonnes: 26.5,
+    // Archived company: blocks reactivation with a TRANSPORT_COMPANY_ARCHIVED refusal.
+    transportCompanyId: '00000000-0000-4000-8000-000000000003',
+    status: 'ARCHIVED',
+    archivedAt: '2026-08-12T09:00:00.000Z',
+    archivedByUserId: 'admin-1',
+    archivedBy: { id: 'admin-1', firstName: 'Olivia', lastName: 'Observer' },
+    archiveComment: 'Provider stopped serving the site',
+    reactivatedAt: null,
+    reactivatedByUserId: null,
+    reactivatedBy: null,
+    reactivationComment: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-08-12T09:00:00.000Z',
+  },
+]
+
+export const REACTIVATE_AVAILABLE_TRUCKS = REACTIVATE_TRUCKS.filter(
+  (truck) => truck.status === 'AVAILABLE',
+)
+export const REACTIVATE_ARCHIVED_TRUCKS = REACTIVATE_TRUCKS.filter(
+  (truck) => truck.status === 'ARCHIVED',
+)
 
 /**
  * A larger, self-contained truck set for lifecycle and multi-selection tests, so bulk-archive
@@ -167,6 +260,7 @@ export const BULK_TRUCKS: TruckDto[] = [
     registration: 'JJ-004-PF',
     vehicleModel: 'MAN TGX',
     capacityTonnes: 22,
+    // Available company: eligible for reactivation.
     transportCompanyId: '00000000-0000-4000-8000-000000000001',
     status: 'ARCHIVED',
     archivedAt: '2026-07-15T11:00:00.000Z',
@@ -180,6 +274,26 @@ export const BULK_TRUCKS: TruckDto[] = [
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-07-15T11:00:00.000Z',
   },
+  {
+    id: '00000000-0000-4000-8000-000000000205',
+    registration: 'KK-105-PF',
+    vehicleModel: 'Mercedes Actros',
+    capacityTonnes: 25,
+    // Archived company: blocks reactivation with TRANSPORT_COMPANY_ARCHIVED.
+    transportCompanyId: '00000000-0000-4000-8000-000000000003',
+    status: 'ARCHIVED',
+    archivedAt: '2026-07-18T11:00:00.000Z',
+    archivedByUserId: 'operations-admin-1',
+    archivedBy: { id: 'operations-admin-1', firstName: 'Olivia', lastName: 'Observer' },
+    archiveComment: null,
+    reactivatedAt: null,
+    reactivatedByUserId: null,
+    reactivatedBy: null,
+    reactivationComment: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-07-18T11:00:00.000Z',
+  },
 ]
 
 export const BULK_AVAILABLE_TRUCKS = BULK_TRUCKS.filter((truck) => truck.status === 'AVAILABLE')
+export const BULK_ARCHIVED_TRUCKS = BULK_TRUCKS.filter((truck) => truck.status === 'ARCHIVED')

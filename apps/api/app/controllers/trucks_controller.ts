@@ -7,12 +7,16 @@ import ArchiveTrucksUseCase from '#trucks/archive/archive_trucks_use_case'
 import ListAvailableTrucksUseCase from '#trucks/available/list_available_trucks_use_case'
 import CreateTruckUseCase from '#trucks/create/create_truck_use_case'
 import ListTrucksUseCase from '#trucks/list/list_trucks_use_case'
+import ReactivateTruckUseCase from '#trucks/reactivate/reactivate_truck_use_case'
+import ReactivateTrucksUseCase from '#trucks/reactivate/reactivate_trucks_use_case'
 import TruckPolicy from '#trucks/shared/truck_policy'
 import TruckTransformer from '#trucks/shared/truck_transformer'
 import {
   archiveTrucksValidator,
   archiveTruckValidator,
   createTruckValidator,
+  reactivateTrucksValidator,
+  reactivateTruckValidator,
   updateTruckValidator,
 } from '#trucks/shared/truck_validator'
 import UpdateTruckUseCase from '#trucks/update/update_truck_use_case'
@@ -26,6 +30,8 @@ export default class TrucksController {
     private updateTruckUseCase: UpdateTruckUseCase,
     private archiveTruckUseCase: ArchiveTruckUseCase,
     private archiveTrucksUseCase: ArchiveTrucksUseCase,
+    private reactivateTruckUseCase: ReactivateTruckUseCase,
+    private reactivateTrucksUseCase: ReactivateTrucksUseCase,
   ) {}
 
   async store({ bouncer, request, response, serialize }: HttpContext) {
@@ -104,6 +110,42 @@ export default class TrucksController {
       ids: payload.ids,
       archivedByUserId: user.id,
       archivedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize({
+      updatedTrucks: TruckTransformer.transform(result.updatedTrucks),
+      blockedTrucks: result.blockedTrucks,
+    })
+  }
+
+  async reactivate({ auth, bouncer, params, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(TruckPolicy).authorize('reactivate')
+
+    const payload = await request.validateUsing(reactivateTruckValidator)
+
+    const truck = await this.reactivateTruckUseCase.handle({
+      id: params.id,
+      reactivatedByUserId: user.id,
+      reactivatedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize(TruckTransformer.transform(truck))
+  }
+
+  async reactivateMany({ auth, bouncer, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(TruckPolicy).authorize('reactivate')
+
+    const payload = await request.validateUsing(reactivateTrucksValidator)
+    const result = await this.reactivateTrucksUseCase.handle({
+      ids: payload.ids,
+      reactivatedByUserId: user.id,
+      reactivatedAt: DateTime.now(),
       comment: payload.comment,
     })
 
