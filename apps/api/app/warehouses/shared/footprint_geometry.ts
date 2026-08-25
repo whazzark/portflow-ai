@@ -99,3 +99,72 @@ export function assertSimpleFootprint(points: FootprintPoint[]) {
     throw new InvalidWarehouseFootprintException(FLAT_FOOTPRINT_MESSAGE)
   }
 }
+
+/**
+ * How far off an edge a point may sit and still count as being on it, in degrees.
+ *
+ * Exact collinearity is the wrong test here: `cross` is computed from differences of coordinates
+ * around 50 degrees, so a point an operator placed *on* an edge lands within ~1e-14 degrees of it,
+ * never exactly on it. This tolerance is about 0.1 mm on the ground — five orders of magnitude
+ * above that arithmetic noise and far below any placement precision the site can mean.
+ */
+const ON_BOUNDARY_TOLERANCE_DEGREES = 1e-9
+
+/** True when the point lies on the segment, within the tolerance above. */
+function isOnSegment(point: FootprintPoint, start: FootprintPoint, end: FootprintPoint) {
+  const length = Math.hypot(end.longitude - start.longitude, end.latitude - start.latitude)
+
+  if (length === 0) {
+    return samePoint(point, start)
+  }
+
+  // |cross| is twice the triangle's area, so dividing by the base gives the perpendicular distance.
+  const distance = Math.abs(cross(start, end, point)) / length
+
+  return distance <= ON_BOUNDARY_TOLERANCE_DEGREES && isBetween(point, start, end)
+}
+
+/** True when the point lies on one of the ring's edges, closing edge included. */
+const onBoundary = (points: FootprintPoint[], point: FootprintPoint) =>
+  points.some((start, index) => isOnSegment(point, start, points[(index + 1) % points.length]))
+
+/**
+ * True when the point lies inside the ring or exactly on its boundary.
+ *
+ * The boundary is tested first and on purpose: an even-odd ray cast is undefined for a point sitting
+ * on an edge, and the domain makes that position a contained one — a warehouse door is placed
+ * "within or on the boundary" of its warehouse footprint (`CONTEXT.md`, Warehouse Door GPS Location).
+ *
+ * The cast itself sends a ray toward increasing longitude and counts the edges it crosses, with the
+ * half-open latitude comparison that makes a ray passing exactly through a vertex count once rather
+ * than twice. Pure and dependency-free like the rest of this module, and independent of the ring's
+ * winding direction.
+ */
+export function containsPoint(points: FootprintPoint[], point: FootprintPoint) {
+  if (onBoundary(points, point)) {
+    return true
+  }
+
+  let inside = false
+
+  for (let index = 0, previous = points.length - 1; index < points.length; previous = index++) {
+    const current = points[index]
+    const other = points[previous]
+    const straddlesRay = current.latitude > point.latitude !== other.latitude > point.latitude
+
+    if (!straddlesRay) {
+      continue
+    }
+
+    const crossingLongitude =
+      ((other.longitude - current.longitude) * (point.latitude - current.latitude)) /
+        (other.latitude - current.latitude) +
+      current.longitude
+
+    if (point.longitude < crossingLongitude) {
+      inside = !inside
+    }
+  }
+
+  return inside
+}

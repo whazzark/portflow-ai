@@ -1,32 +1,13 @@
-import type * as GeoJSON from 'geojson'
 import { useCallback, useRef } from 'react'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { useResourceMapPlacement } from '@/components/resource-map/resource-map-placement'
-import { MapGeoJSON, MapMarker, MarkerContent } from '@/components/ui/map'
+import { PolygonOutline } from '@/components/resource-map/resource-map-polygon-outline'
+import { MapMarker, MarkerContent } from '@/components/ui/map'
 
 const OUTLINE_ID = 'pending-footprint'
 
 /** Below three points there is no ring to close, so finishing is not offered yet. */
 const MINIMUM_RING_POINTS = 3
-
-/** Two points can only be a line; three or more close into a ring whose final edge back to the
- * first point is implied, never stored. */
-function toOutlineFeature(points: LatLng[]): GeoJSON.Feature | null {
-  const coordinates = points.map(({ latitude, longitude }) => [longitude, latitude])
-
-  if (coordinates.length < 2) {
-    return null
-  }
-
-  return {
-    type: 'Feature',
-    properties: {},
-    geometry:
-      coordinates.length === 2
-        ? { type: 'LineString', coordinates }
-        : { type: 'Polygon', coordinates: [[...coordinates, coordinates[0]]] },
-  }
-}
 
 /**
  * A resource-agnostic pending polygon: arms the enclosing `<Map>` so clicks append boundary points,
@@ -66,22 +47,9 @@ export function PendingPolygonPlacement({
   // its button, with no second `onComplete !== undefined` check to keep in step.
   const completeOutline = completed || points.length < MINIMUM_RING_POINTS ? undefined : onComplete
 
-  const outline = toOutlineFeature(points)
-
   return (
     <>
-      {outline && (
-        <MapGeoJSON
-          data={{ type: 'FeatureCollection', features: [outline] }}
-          fillPaint={
-            outline.geometry.type === 'Polygon'
-              ? { 'fill-color': fillColor, 'fill-opacity': 0.25 }
-              : false
-          }
-          id={OUTLINE_ID}
-          linePaint={{ 'line-color': fillColor, 'line-dasharray': [2, 2], 'line-width': 3 }}
-        />
-      )}
+      <PolygonOutline fillColor={fillColor} id={OUTLINE_ID} points={points} />
       {points.map((point, index) => (
         <MapMarker
           draggable

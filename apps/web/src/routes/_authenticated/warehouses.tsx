@@ -9,6 +9,7 @@ const warehouseSearchSchema = z.object({
   create: z.literal('warehouse').optional().catch(undefined),
   doorId: z.string().optional().catch(undefined),
   doorStatus: z.enum(['available', 'archived']).optional().catch(undefined),
+  edit: z.literal('warehouse').optional().catch(undefined),
   warehouseId: z.string().optional().catch(undefined),
   search: z.string().catch(''),
   // Mirrors the Checkpoints `selecting` param. Honoured only for administrators; for anyone else

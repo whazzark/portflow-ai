@@ -73,3 +73,69 @@ export function createWarehouseFailureHandler(status = 500) {
     ),
   )
 }
+
+const warehouseUrl = (id: string) => `${API_BASE_URL}/api/v1/warehouses/${id}`
+
+export function updateWarehouseHandler(updated: WarehouseDto) {
+  return http.patch(warehouseUrl(updated.id), () => HttpResponse.json({ data: updated }))
+}
+
+export function updateWarehouseErrorHandler(
+  id: string,
+  error: { code: string; message: string },
+  status: number,
+) {
+  return http.patch(warehouseUrl(id), () => HttpResponse.json({ error }, { status }))
+}
+
+export const updateWarehouseConflictHandler = (id: string) =>
+  updateWarehouseErrorHandler(
+    id,
+    { code: 'E_WAREHOUSE_NAME_CONFLICT', message: 'Warehouse name is already in use' },
+    409,
+  )
+
+export const updateWarehouseArchivedHandler = (id: string) =>
+  updateWarehouseErrorHandler(
+    id,
+    {
+      code: 'E_WAREHOUSE_ARCHIVED',
+      message: 'Archived warehouses are read-only. Reactivate the warehouse first.',
+    },
+    409,
+  )
+
+export const updateWarehouseDoorsOutsideHandler = (id: string, doorNames: string[]) =>
+  updateWarehouseErrorHandler(
+    id,
+    {
+      code: 'E_WAREHOUSE_DOORS_OUTSIDE_FOOTPRINT',
+      message: `Doors ${doorNames.join(', ')} would fall outside the new footprint`,
+    },
+    409,
+  )
+
+export const updateWarehouseNotFoundHandler = (id: string) =>
+  updateWarehouseErrorHandler(
+    id,
+    { code: 'E_WAREHOUSE_NOT_FOUND', message: 'Warehouse not found' },
+    404,
+  )
+
+export const updateWarehouseInvalidFootprintHandler = (id: string) =>
+  updateWarehouseErrorHandler(
+    id,
+    {
+      code: 'E_WAREHOUSE_INVALID_FOOTPRINT',
+      message: 'Warehouse footprint outline must not cross itself',
+    },
+    422,
+  )
+
+export function updateWarehouseFailureHandler(id: string, status = 500) {
+  return updateWarehouseErrorHandler(
+    id,
+    { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' },
+    status,
+  )
+}

@@ -75,8 +75,35 @@ export type CreateWarehouseResult =
   | { kind: 'CREATED'; warehouse: Warehouse }
   | { kind: 'DUPLICATE_NAME' }
 
+export type WarehouseDoorPosition = { name: string; latitude: number; longitude: number }
+
+export type UpdateWarehouseCommand = {
+  id: string
+  name?: string
+  /** The complete resulting ring when a footprint was submitted; absent leaves the stored one. */
+  points?: WarehouseFootprintPointCommand[]
+  /**
+   * Names the doors the submitted ring would leave outside. The caller keeps the geometry; the
+   * repository only calls this inside the write transaction, against the doors as they stand there,
+   * so a door created or moved since the pre-flight read cannot slip outside the stored footprint.
+   */
+  excludedDoors?: (doors: WarehouseDoorPosition[]) => string[]
+}
+
+export type UpdateWarehouseResult =
+  | { kind: 'UPDATED'; warehouse: Warehouse }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'ARCHIVED' }
+  | { kind: 'DUPLICATE_NAME' }
+  | { kind: 'DOORS_OUTSIDE'; doorNames: string[] }
+
 export default abstract class WarehouseRepository {
   abstract create(command: CreateWarehouseCommand): Promise<CreateWarehouseResult>
+
+  /** Loads the warehouse with the doors an update has to shape around, or null when it is gone. */
+  abstract findWithDoors(id: string): Promise<Warehouse | null>
+
+  abstract updateAvailable(command: UpdateWarehouseCommand): Promise<UpdateWarehouseResult>
 
   abstract list(): Promise<Warehouse[]>
 

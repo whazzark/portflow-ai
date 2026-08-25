@@ -1,11 +1,13 @@
 import { inject } from '@adonisjs/core'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
+import { DateTime } from 'luxon'
 
 import Warehouse from '#models/warehouse'
 import WarehouseDoor from '#models/warehouse_door'
 import WarehouseFootprintPoint from '#models/warehouse_footprint_point'
 import isUniqueViolation from '#shared/database/is_unique_violation'
+import isUuid from '#shared/database/is_uuid'
 import { indexById, orderByIds } from '#shared/lifecycle/bulk_lifecycle_records'
 import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 import { findBulkBlockers } from '#warehouses/shared/warehouse_lifecycle_blockers'
@@ -20,6 +22,8 @@ import WarehouseRepository, {
   type ReactivateWarehouseCommand,
   type ReactivateWarehouseResult,
   type ReactivateWarehousesCommand,
+  type UpdateWarehouseCommand,
+  type UpdateWarehouseResult,
 } from './warehouse_repository.ts'
 
 type WarehouseQuery = ModelQueryBuilderContract<typeof Warehouse, Warehouse>
@@ -30,6 +34,16 @@ const withRelations = <Query extends WarehouseQuery>(query: Query): Query =>
     .preload('doors', (doors) =>
       doors.orderByRaw('LOWER(name) ASC').orderBy('name', 'asc').orderBy('id', 'asc'),
     ) as Query
+
+/**
+ * Rolls the write back when the doors read inside the transaction no longer fit the submitted ring.
+ * It never escapes the repository: `updateAvailable` turns it into a `DOORS_OUTSIDE` result.
+ */
+class DoorsOutsideFootprint extends Error {
+  constructor(readonly doorNames: string[]) {
+    super('Warehouse doors fall outside the submitted footprint')
+  }
+}
 
 @inject()
 export default class LucidWarehouseRepository extends WarehouseRepository {
@@ -67,6 +81,104 @@ export default class LucidWarehouseRepository extends WarehouseRepository {
 
       return { kind: 'CREATED', warehouse }
     } catch (error) {
+      if (isUniqueViolation(error)) {
+        return { kind: 'DUPLICATE_NAME' }
+      }
+
+      throw error
+    }
+  }
+
+  findWithDoors(id: string): Promise<Warehouse | null> {
+    // An identifier that cannot name a row is simply not found: without this the `uuid` column
+    // makes Postgres raise `22P02`, turning a mistyped URL into a 500 instead of a 404.
+    if (!isUuid(id)) {
+      return Promise.resolve(null)
+    }
+
+    return Warehouse.query()
+      .where('id', id)
+      .preload('footprintPoints', (query) => query.orderBy('position', 'asc'))
+      .preload('doors')
+      .first()
+  }
+
+  async updateAvailable(command: UpdateWarehouseCommand): Promise<UpdateWarehouseResult> {
+    if (!isUuid(command.id)) {
+      return { kind: 'NOT_FOUND' }
+    }
+
+    try {
+      const affectedRows = await Warehouse.transaction(async (trx) => {
+        const [updated] = await Warehouse.query({ client: trx })
+          .where('id', command.id)
+          .where('status', 'AVAILABLE')
+          .update({
+            ...(command.name === undefined ? {} : { name: command.name }),
+            updatedAt: DateTime.now().toSQL({ includeOffset: false }),
+          })
+
+        if (updated === 0) {
+          return 0
+        }
+
+        if (command.points !== undefined) {
+          if (command.excludedDoors) {
+            // The guarded update above holds the warehouse row for the rest of the transaction, so
+            // the doors are read here rather than before it: the containment rule is checked against
+            // the same snapshot the footprint below is written into, instead of against a pre-flight
+            // read a concurrent door change could have invalidated.
+            const doors = await WarehouseDoor.query({ client: trx }).where(
+              'warehouse_id',
+              command.id,
+            )
+            const excluded = command.excludedDoors(doors)
+
+            if (excluded.length > 0) {
+              throw new DoorsOutsideFootprint(excluded)
+            }
+          }
+
+          // The footprint is replaced as a whole: `position` is part of the primary key, so a diff
+          // would have to renumber around every insertion and removal. Deleting and re-inserting
+          // inside the same transaction reproduces the submitted order by construction and can
+          // leave no half-replaced ring behind.
+          await WarehouseFootprintPoint.query({ client: trx })
+            .where('warehouse_id', command.id)
+            .delete()
+
+          await WarehouseFootprintPoint.createMany(
+            command.points.map((point, position) => ({
+              warehouseId: command.id,
+              position,
+              latitude: point.latitude,
+              longitude: point.longitude,
+            })),
+            { client: trx },
+          )
+        }
+
+        return updated
+      })
+
+      if (affectedRows === 0) {
+        const warehouse = await Warehouse.find(command.id)
+
+        if (!warehouse) {
+          return { kind: 'NOT_FOUND' }
+        }
+
+        return warehouse.status === 'AVAILABLE' ? { kind: 'NOT_FOUND' } : { kind: 'ARCHIVED' }
+      }
+
+      const warehouse = await this.findWithDoors(command.id)
+
+      return warehouse ? { kind: 'UPDATED', warehouse } : { kind: 'NOT_FOUND' }
+    } catch (error) {
+      if (error instanceof DoorsOutsideFootprint) {
+        return { kind: 'DOORS_OUTSIDE', doorNames: error.doorNames }
+      }
+
       if (isUniqueViolation(error)) {
         return { kind: 'DUPLICATE_NAME' }
       }

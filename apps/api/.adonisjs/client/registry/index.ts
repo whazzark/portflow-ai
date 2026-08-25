@@ -306,6 +306,12 @@ const routes = {
     tokens: [{"old":"/api/v1/warehouses","type":0,"val":"api","end":""},{"old":"/api/v1/warehouses","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouses","type":0,"val":"warehouses","end":""}],
     types: placeholder as Registry['warehouses.store']['types'],
   },
+  'warehouses.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/warehouses/:id',
+    tokens: [{"old":"/api/v1/warehouses/:id","type":0,"val":"api","end":""},{"old":"/api/v1/warehouses/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouses/:id","type":0,"val":"warehouses","end":""},{"old":"/api/v1/warehouses/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['warehouses.update']['types'],
+  },
   'warehouses.archive_many': {
     methods: ["POST"],
     pattern: '/api/v1/warehouses/archive',

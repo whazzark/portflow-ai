@@ -607,6 +607,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'warehouses.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/warehouses/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#warehouses/shared/warehouse_validator').updateWarehouseValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#warehouses/shared/warehouse_validator').updateWarehouseValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'warehouses.archive_many': {
     methods: ["POST"]
     pattern: '/api/v1/warehouses/archive'
