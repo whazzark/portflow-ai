@@ -20,6 +20,12 @@ export function useWarehouseMutations() {
     }),
   )
 
+  const update = useMutation(
+    tuyauQuery.warehouses.update.mutationOptions({
+      onSuccess: () => invalidateWarehouses(),
+    }),
+  )
+
   const archive = useMutation(
     tuyauQuery.warehouses.archive.mutationOptions({
       onSuccess: () => invalidateWarehouses(),
@@ -45,6 +51,7 @@ export function useWarehouseMutations() {
     create,
     reactivate,
     reactivateMany,
+    update,
     refreshWarehouses: invalidateWarehouses,
   }
 }

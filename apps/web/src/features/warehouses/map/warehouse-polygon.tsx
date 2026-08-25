@@ -57,6 +57,7 @@ export function WarehousePolygons({
   checkableIds,
   onToggleChecked,
   onShiftSelect,
+  excludedId,
 }: {
   warehouses: PresentedWarehouse[]
   selectedId?: string
@@ -72,6 +73,9 @@ export function WarehousePolygons({
   checkableIds?: Set<string>
   onToggleChecked?: (id: string) => void
   onShiftSelect?: (id: string) => void
+  /** The warehouse whose ring is being corrected: the editing layer owns it for the duration, so
+   * drawing it here too would stack the stored shape under the draft. */
+  excludedId?: string
 }) {
   const [hovered, setHovered] = useState<HoveredWarehouse>(null)
   const [focused, setFocused] = useState<PresentedWarehouse | null>(null)
@@ -79,8 +83,9 @@ export function WarehousePolygons({
   const tooltipBounds = tooltipWarehouse
     ? getFootprintBounds(tooltipWarehouse.footprint.points)
     : null
-  const available = warehouses.filter((warehouse) => warehouse.status === 'AVAILABLE')
-  const archived = warehouses.filter((warehouse) => warehouse.status === 'ARCHIVED')
+  const drawn = warehouses.filter((warehouse) => warehouse.id !== excludedId)
+  const available = drawn.filter((warehouse) => warehouse.status === 'AVAILABLE')
+  const archived = drawn.filter((warehouse) => warehouse.status === 'ARCHIVED')
 
   const renderLayer = (items: PresentedWarehouse[], status: PresentedWarehouse['status']) => (
     <WarehousePolygonLayer
