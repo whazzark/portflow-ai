@@ -190,7 +190,10 @@ export function CreateWarehousePanel({
 
         const apiError = parseApiError(error)
 
-        if (apiError.code === 'E_WAREHOUSE_NAME_CONFLICT') {
+        if (
+          apiError.code === 'E_WAREHOUSE_NAME_CONFLICT' ||
+          apiError.code === 'E_WAREHOUSE_NAME_INVALID'
+        ) {
           formApi.setErrorMap({ onSubmit: { fields: { name: apiError.message }, form: '' } })
         } else if (apiError.code === 'E_WAREHOUSE_INVALID_FOOTPRINT') {
           formApi.setErrorMap({ onSubmit: { fields: {}, form: apiError.message } })

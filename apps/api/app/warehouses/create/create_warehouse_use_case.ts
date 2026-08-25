@@ -1,13 +1,20 @@
 import { inject } from '@adonisjs/core'
 
 import {
-  assertLegalSiteReferenceLatitude,
-  assertLegalSiteReferenceLongitude,
-  assertValidSiteReferenceName,
+  isLegalSiteReferenceLatitude,
+  isLegalSiteReferenceLongitude,
+  MAX_SITE_REFERENCE_NAME_LENGTH,
+  normalizeSiteReferenceName,
 } from '#site_references/shared/normalize_site_reference'
 import { assertSimpleFootprint } from '#warehouses/shared/footprint_geometry'
 import WarehouseRepository from '#warehouses/shared/repositories/warehouse_repository'
-import { DuplicateWarehouseNameException } from '#warehouses/shared/warehouse_exceptions'
+import {
+  DuplicateWarehouseNameException,
+  InvalidWarehouseFootprintException,
+  InvalidWarehouseNameException,
+} from '#warehouses/shared/warehouse_exceptions'
+
+const OUT_OF_RANGE_MESSAGE = 'Warehouse footprint coordinates are out of range'
 
 export type CreateWarehouseInput = {
   name: string
@@ -19,11 +26,22 @@ export default class CreateWarehouseUseCase {
   constructor(private repository: WarehouseRepository) {}
 
   async handle(input: CreateWarehouseInput) {
-    const name = assertValidSiteReferenceName(input.name)
+    // The name and coordinate rules are shared with every other site reference, but their error
+    // codes are not: this slice reuses the rules and raises its own exceptions, so a warehouse form
+    // never has to make sense of an `E_SITE_REFERENCE_*` code it does not map.
+    const name = normalizeSiteReferenceName(input.name)
+
+    if (!name || name.length > MAX_SITE_REFERENCE_NAME_LENGTH) {
+      throw new InvalidWarehouseNameException()
+    }
 
     for (const point of input.points) {
-      assertLegalSiteReferenceLatitude(point.latitude)
-      assertLegalSiteReferenceLongitude(point.longitude)
+      if (
+        !isLegalSiteReferenceLatitude(point.latitude) ||
+        !isLegalSiteReferenceLongitude(point.longitude)
+      ) {
+        throw new InvalidWarehouseFootprintException(OUT_OF_RANGE_MESSAGE)
+      }
     }
 
     // Geometry is settled before any transaction opens, so a rejected outline never touches

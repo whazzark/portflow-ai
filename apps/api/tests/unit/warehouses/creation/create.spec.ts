@@ -11,6 +11,7 @@ import WarehouseRepository from '#warehouses/shared/repositories/warehouse_repos
 import {
   DuplicateWarehouseNameException,
   InvalidWarehouseFootprintException,
+  InvalidWarehouseNameException,
 } from '#warehouses/shared/warehouse_exceptions'
 import WarehousePolicy from '#warehouses/shared/warehouse_policy'
 
@@ -125,18 +126,38 @@ test.group('Create warehouse use case', (group) => {
     assert.lengthOf(commands, 0)
   })
 
-  test('rejects an illegal coordinate before reaching persistence', async ({ assert }) => {
+  test('rejects an illegal coordinate in warehouse terms, before reaching persistence', async ({
+    assert,
+  }) => {
     const commands = stubRepository({
       kind: 'CREATED',
       warehouse: { id: 'created' } as unknown as Warehouse,
     })
 
     const useCase = await app.container.make(CreateWarehouseUseCase)
-    await assert.rejects(() =>
-      useCase.handle({
-        name: 'Off World',
-        points: [{ latitude: 91, longitude: 0 }, ...TRIANGLE.slice(1)],
-      }),
+    // The rule is shared with every site reference, the error code is not: an administrator on the
+    // warehouse form must never be shown an `E_SITE_REFERENCE_*` failure.
+    await assert.rejects(
+      () =>
+        useCase.handle({
+          name: 'Off World',
+          points: [{ latitude: 91, longitude: 0 }, ...TRIANGLE.slice(1)],
+        }),
+      'Warehouse footprint coordinates are out of range',
+    )
+    assert.lengthOf(commands, 0)
+  })
+
+  test('rejects a blank name in warehouse terms', async ({ assert }) => {
+    const commands = stubRepository({
+      kind: 'CREATED',
+      warehouse: { id: 'created' } as unknown as Warehouse,
+    })
+
+    const useCase = await app.container.make(CreateWarehouseUseCase)
+    await assert.rejects(
+      () => useCase.handle({ name: '   ', points: TRIANGLE }),
+      new InvalidWarehouseNameException().message,
     )
     assert.lengthOf(commands, 0)
   })
