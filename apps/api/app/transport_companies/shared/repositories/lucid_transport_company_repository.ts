@@ -254,8 +254,14 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
       if (!company) {
         return { kind: 'NOT_FOUND' }
       }
+      if (company.status === 'AVAILABLE') {
+        return { kind: 'ALREADY_AVAILABLE' }
+      }
 
-      return company.status === 'AVAILABLE' ? { kind: 'ALREADY_AVAILABLE' } : { kind: 'NOT_FOUND' }
+      // The row is ARCHIVED again but the UPDATE above matched no rows: it was archived
+      // concurrently between the UPDATE and this refetch. Treat it like the caller's original
+      // read was stale rather than reporting a misleading success.
+      return { kind: 'NOT_FOUND' }
     }
 
     const company = await TransportCompany.query()
