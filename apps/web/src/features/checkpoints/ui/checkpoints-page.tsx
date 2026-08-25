@@ -1,10 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { countResources } from '@/components/resource-map/resource-map-search'
 import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
+import {
+  useClearSelectionShortcut,
+  useSelectAllShortcut,
+} from '@/components/resource-map/use-bulk-selection-shortcuts'
 import { Button } from '@/components/ui/button'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
@@ -271,24 +275,10 @@ export function CheckpointsPage() {
   // the intent falls back to the status filter (Archived reactivates, anything else archives), so
   // Ctrl+A always grabs what the administrator is actually looking at. That fallback is clamped to
   // the intents the kind supports, so a kind that only archives never gets a reactivate selection.
-  // Ignored while typing in a field, so the browser's native "select all text" keeps working there.
-  useEffect(() => {
-    if (!canManageCheckpoints) {
-      return
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const isSelectAllShortcut =
-        (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a'
-      if (!isSelectAllShortcut) {
-        return
-      }
-      const target = event.target as HTMLElement | null
-      const isEditableTarget =
-        target !== null &&
-        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
-      if (isEditableTarget) {
-        return
-      }
+  // The listener itself — including ignoring the shortcut while a field has focus — lives in
+  // `useSelectAllShortcut`, shared with the warehouse map.
+  const selectAllVisible = useCallback(
+    (event: KeyboardEvent) => {
       const targetKind =
         selectingKind ?? BULK_LIFECYCLE_CAPABLE_KINDS.find((kind) => layerVisibility[kind])
       if (!targetKind) {
@@ -319,35 +309,20 @@ export function CheckpointsPage() {
           selecting: SELECTING_PARAM_BY_KIND[targetKind],
         }),
       })
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [
-    canManageCheckpoints,
-    checkpoints,
-    layerVisibility,
-    navigate,
-    selectingKind,
-    selectionIntent,
-    status,
-  ])
+    },
+    [checkpoints, layerVisibility, navigate, selectingKind, selectionIntent, status],
+  )
+  useSelectAllShortcut({ enabled: canManageCheckpoints, onSelectAll: selectAllVisible })
 
   // Escape clears an in-progress selection without leaving select mode — the keyboard counterpart
-  // of the bulk action bar's "Clear selection" button, so a second Escape (with nothing left
-  // checked) is free to fall through to whatever else Escape already does (e.g. closing a menu),
+  // of the bulk action bar's "Clear selection" button. `enabled` goes false with nothing checked,
+  // so a second Escape falls through to whatever else Escape already does (e.g. closing a menu)
   // rather than this handler swallowing every Escape press.
-  useEffect(() => {
-    if (!selectingKind || checkedIds.size === 0) {
-      return
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setCheckedIds(new Set())
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectingKind, checkedIds.size])
+  const clearChecked = useCallback(() => setCheckedIds(new Set()), [])
+  useClearSelectionShortcut({
+    enabled: Boolean(selectingKind) && checkedIds.size > 0,
+    onClear: clearChecked,
+  })
 
   useEffect(() => {
     const sourceLoaded =

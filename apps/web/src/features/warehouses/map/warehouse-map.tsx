@@ -1,10 +1,17 @@
+import { SquareDashedMousePointer } from 'lucide-react'
 import { LngLatBounds } from 'maplibre-gl'
 import { useEffect, useMemo, useState } from 'react'
 import type { ResourceMapCreateAction } from '@/components/resource-map/resource-map-create-control'
 import { ResourceMapCreateControl } from '@/components/resource-map/resource-map-create-control'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { PendingPolygonPlacement } from '@/components/resource-map/resource-map-polygon-placement'
-import { Map as MapCanvas, MapControls, useMap } from '@/components/ui/map'
+import {
+  ControlButton,
+  ControlGroup,
+  Map as MapCanvas,
+  MapControls,
+  useMap,
+} from '@/components/ui/map'
 import { mapStyleUrls } from '@/config/map'
 import { WarehouseDoorMarker } from '@/features/warehouse-doors/map/warehouse-door-marker'
 import type { WarehouseDoorDto } from '@/features/warehouse-doors/types'
@@ -135,6 +142,12 @@ export function WarehouseMap({
   onDoorSelect,
   placement,
   createActions = [],
+  selectMode = false,
+  checkedIds,
+  checkableIds,
+  onToggleChecked,
+  onToggleSelectMode,
+  onShiftSelect,
 }: {
   detailsPanelSide?: DetailsPanelSide
   warehouses: PresentedWarehouse[]
@@ -146,6 +159,13 @@ export function WarehouseMap({
   onDoorSelect?: (door: WarehouseDoorDto) => void
   placement?: WarehouseMapPlacement
   createActions?: ResourceMapCreateAction[]
+  selectMode?: boolean
+  checkedIds?: Set<string>
+  checkableIds?: Set<string>
+  onToggleChecked?: (id: string) => void
+  /** Present only for administrators; its absence is what hides the select control entirely. */
+  onToggleSelectMode?: () => void
+  onShiftSelect?: (id: string) => void
 }) {
   const [hoveredDoorId, setHoveredDoorId] = useState<string>()
   const isArmed = placement?.armed ?? false
@@ -176,6 +196,11 @@ export function WarehouseMap({
           onSelect={onSelect}
           hideTooltip={hoveredDoorId !== undefined}
           disabled={isArmed}
+          selectMode={selectMode}
+          checkedIds={checkedIds}
+          checkableIds={checkableIds}
+          onToggleChecked={onToggleChecked}
+          onShiftSelect={onShiftSelect}
         />
         {placement && (
           <PendingPolygonPlacement
@@ -187,9 +212,6 @@ export function WarehouseMap({
             points={placement.points}
           />
         )}
-        <MapControls position="bottom-right" showZoom>
-          <ResourceMapCreateControl actions={createActions} />
-        </MapControls>
         {selected &&
           onDoorSelect &&
           doors.map((door) => (
@@ -202,6 +224,20 @@ export function WarehouseMap({
               onHoverChange={(hovered) => setHoveredDoorId(hovered ? door.id : undefined)}
             />
           ))}
+        <MapControls position="bottom-right" showZoom>
+          {onToggleSelectMode && (
+            <ControlGroup>
+              <ControlButton
+                active={selectMode}
+                label={selectMode ? 'Stop selecting warehouses' : 'Select warehouses'}
+                onClick={onToggleSelectMode}
+              >
+                <SquareDashedMousePointer aria-hidden="true" className="size-4" />
+              </ControlButton>
+            </ControlGroup>
+          )}
+          <ResourceMapCreateControl actions={createActions} />
+        </MapControls>
       </MapCanvas>
       <section aria-label="Warehouses on map" className="sr-only">
         {warehouses.map((warehouse) => (

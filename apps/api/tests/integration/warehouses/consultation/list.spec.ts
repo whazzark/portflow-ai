@@ -69,6 +69,7 @@ test.group('Warehouse consultation', (group) => {
         status: string
         latitude: number
         longitude: number
+        archivedWithWarehouse: boolean
       }>
     }>
     assert.deepEqual(
@@ -80,23 +81,35 @@ test.group('Warehouse consultation', (group) => {
       3,
     )
     assert.equal(data.find((warehouse) => warehouse.id === archived.id)?.status, 'ARCHIVED')
-    const returnedDoors = data.find((warehouse) => warehouse.id === available.id)?.doors
-    assert.deepEqual(returnedDoors, [
-      {
-        id: availableDoor.id,
-        name: availableDoor.name,
-        status: 'AVAILABLE',
-        latitude: availableDoor.latitude,
-        longitude: availableDoor.longitude,
-      },
-      {
-        id: archivedDoor.id,
-        name: archivedDoor.name,
-        status: 'ARCHIVED',
-        latitude: archivedDoor.latitude,
-        longitude: archivedDoor.longitude,
-      },
-    ])
+    const returnedDoors = data.find((warehouse) => warehouse.id === available.id)
+    assert.deepEqual(
+      returnedDoors?.doors.map((door) => ({
+        id: door.id,
+        name: door.name,
+        status: door.status,
+        latitude: door.latitude,
+        longitude: door.longitude,
+      })),
+      [
+        {
+          id: availableDoor.id,
+          name: availableDoor.name,
+          status: 'AVAILABLE',
+          latitude: availableDoor.latitude,
+          longitude: availableDoor.longitude,
+        },
+        {
+          id: archivedDoor.id,
+          name: archivedDoor.name,
+          status: 'ARCHIVED',
+          latitude: archivedDoor.latitude,
+          longitude: archivedDoor.longitude,
+        },
+      ],
+    )
+    // The lifecycle context added by GH-210 travels with every door.
+    assert.isFalse(returnedDoors?.doors[0].archivedWithWarehouse)
+    assert.isFalse(returnedDoors?.doors[1].archivedWithWarehouse)
   })
 
   test('does not expose a warehouse with an incomplete footprint', async ({ client }) => {

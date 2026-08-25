@@ -3,11 +3,13 @@ import { describe, expect, test } from 'vitest'
 import { WarehouseLegend } from '@/features/warehouses/map/warehouse-legend'
 import { WarehouseTooltip } from '@/features/warehouses/map/warehouse-tooltip'
 import { WarehousesError } from '@/features/warehouses/ui/warehouses-error'
+import { warehouseLifecycle } from './support/fixtures'
 
 const warehouse = {
   id: 'warehouse-1',
   name: 'North Shed',
   status: 'AVAILABLE' as const,
+  ...warehouseLifecycle(),
   footprint: {
     points: [
       { latitude: 1, longitude: 2 },

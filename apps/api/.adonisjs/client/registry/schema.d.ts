@@ -595,4 +595,28 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'warehouses.archive_many': {
+    methods: ["POST"]
+    pattern: '/api/v1/warehouses/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#warehouses/shared/warehouse_validator').archiveWarehousesValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#warehouses/shared/warehouse_validator').archiveWarehousesValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['archiveMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['archiveMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'warehouses.archive': {
+    methods: ["POST"]
+    pattern: '/api/v1/warehouses/:id/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#warehouses/shared/warehouse_validator').archiveWarehouseValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#warehouses/shared/warehouse_validator').archiveWarehouseValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['archive']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
 }

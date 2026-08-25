@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { beforeCreate, belongsTo } from '@adonisjs/lucid/orm'
+import { beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import { DateTime } from 'luxon'
 import { WarehouseDoorSchema } from '#database/schema'
@@ -19,6 +19,12 @@ export default class WarehouseDoor extends WarehouseDoorSchema {
   declare reactivatedAt: DateTime | null
   declare reactivatedByUserId: string | null
   declare reactivationComment: string | null
+
+  // SQLite (the test database, per ADR 0002) stores booleans as 1/0 and hands them back as
+  // integers, so callers comparing against `true`/`false` would silently disagree with PostgreSQL.
+  // Normalizing on read keeps `archivedWithWarehouse` a real boolean on both engines.
+  @column({ consume: (value) => Boolean(value) })
+  declare archivedWithWarehouse: boolean
 
   @belongsTo(() => Warehouse, { foreignKey: 'warehouseId' })
   declare warehouse: BelongsTo<typeof Warehouse>
