@@ -248,6 +248,22 @@ export function CheckpointsPage() {
     }
   }, [selectingKind])
 
+  // A checked checkpoint that drops out of the collection entirely — a failed list refetch empties
+  // its source (see weighingAreas above) — would leave selectionIntent falling back to ARCHIVE
+  // over what may be an archived selection, offering and sending the wrong bulk action. Such ids
+  // are dropped instead. Search-hidden checkpoints are untouched: this looks at the whole
+  // collection, not the presented list, so a search term never prunes the selection (spec FR-036).
+  useEffect(() => {
+    setCheckedIds((current) => {
+      if (current.size === 0) {
+        return current
+      }
+      const resolvableIds = new Set(checkpointCollection.map((checkpoint) => checkpoint.id))
+      const next = new Set([...current].filter((id) => resolvableIds.has(id)))
+      return next.size === current.size ? current : next
+    })
+  }, [checkpointCollection])
+
   // Ctrl/Cmd+A selects every currently visible checkpoint of the active selecting kind matching
   // the selection's intent, entering select mode on the fly just like a shift-click — the
   // administrator never has to reach for the map control first. With no kind being selected it

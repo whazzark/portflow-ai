@@ -1,7 +1,10 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixtures'
+import { weighingAreasSequenceHandler } from '@/features/weighing-areas/__tests__/support/handlers'
+import { weighingAreaQueries } from '@/features/weighing-areas/queries/weighing-area-queries'
+import { server } from '@/test/msw/server'
 import { mockDocks, renderCheckpoints } from '../support/test-helpers'
 
 vi.mock(
@@ -96,4 +99,27 @@ test('selects several archived weighing areas together', async () => {
 
   expect(screen.getByText('2 selected')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Reactivate selected' })).toBeInTheDocument()
+})
+
+test('drops a checked weighing area a failed refresh removes rather than flipping to archival', async () => {
+  mockDocks()
+  server.use(weighingAreasSequenceHandler([{ areas: WEIGHING_AREAS }, { errorStatus: 503 }]))
+  const user = userEvent.setup()
+  const { queryClient } = renderCheckpoints('/checkpoints?status=all')
+
+  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await user.click(
+    screen.getByRole('button', { name: `Select weighing area ${RETIRED_SCALE.name}` }),
+  )
+  expect(screen.getByRole('button', { name: 'Reactivate selected' })).toBeInTheDocument()
+
+  await queryClient.invalidateQueries({ queryKey: weighingAreaQueries.list().queryKey })
+
+  // The failed refresh leaves no weighing area to resolve the checked id against. The selection
+  // goes with them: keeping it would fall back to an archival intent and offer — then send — the
+  // opposite bulk action over ids that are archived already.
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Reactivate selected' })).not.toBeInTheDocument(),
+  )
+  expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
 })
