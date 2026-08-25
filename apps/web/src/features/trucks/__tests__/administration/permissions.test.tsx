@@ -16,7 +16,7 @@ test('hides the edit-truck affordance for an observer', async () => {
   renderTrucks()
   await screen.findByRole('list', { name: 'Available trucks' })
 
-  expect(screen.queryByRole('button', { name: 'Edit truck' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('does not open an edit form for an observer requesting truckMode=edit directly', async () => {
@@ -34,7 +34,7 @@ test('hides the edit-truck affordance for an administrator viewing an archived t
   renderTrucks(`/transport-resources?truckStatus=archived&truckId=${archivedTruck.id}`)
 
   await screen.findByRole('heading', { name: archivedTruck.registration })
-  expect(screen.queryByRole('button', { name: 'Edit truck' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('does not open an edit form for an archived truck requested with truckMode=edit directly', async () => {

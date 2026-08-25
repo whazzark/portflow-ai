@@ -199,6 +199,11 @@ export function TrucksPage() {
   const selectTruck = (id: string) => {
     void navigate({ search: (previous) => ({ ...previous, truckId: id }) })
   }
+  // The row menu edits a truck that is not necessarily the selected one, so it carries the
+  // selection and the mode in a single navigation.
+  const editTruck = (id: string) => {
+    void navigate({ search: (previous) => ({ ...previous, truckId: id, truckMode: 'edit' }) })
+  }
 
   const directory = (
     <Card
@@ -275,7 +280,9 @@ export function TrucksPage() {
           <TabsContent className="min-h-0" value="available">
             {(truckStatus === 'available' || !administrator) && (
               <TruckSection
+                canAdminister={administrator}
                 lifecycle="available"
+                onEdit={editTruck}
                 onSelect={toggleTruck}
                 onSelectionChange={(checked, ids) => {
                   setSelectedTruckIds((previous) => {
@@ -291,6 +298,7 @@ export function TrucksPage() {
                   })
                   setBlockedTrucks([])
                 }}
+                onView={selectTruck}
                 search={truckSearch}
                 selectable={administrator}
                 selectedId={truckId}
@@ -304,8 +312,11 @@ export function TrucksPage() {
             <TabsContent className="min-h-0" value="suspended">
               {truckStatus === 'suspended' && (
                 <TruckSection
+                  canAdminister={administrator}
                   lifecycle="suspended"
+                  onEdit={editTruck}
                   onSelect={toggleTruck}
+                  onView={selectTruck}
                   search={truckSearch}
                   selectable={false}
                   selectedId={truckId}
@@ -319,7 +330,9 @@ export function TrucksPage() {
             <TabsContent className="min-h-0" value="archived">
               {truckStatus === 'archived' && (
                 <TruckSection
+                  canAdminister={administrator}
                   lifecycle="archived"
+                  onEdit={editTruck}
                   onSelect={toggleTruck}
                   onSelectionChange={(checked, ids) => {
                     setSelectedTruckIds((previous) => {
@@ -335,6 +348,7 @@ export function TrucksPage() {
                     })
                     setBlockedTrucks([])
                   }}
+                  onView={selectTruck}
                   search={truckSearch}
                   selectable={administrator}
                   selectedId={truckId}

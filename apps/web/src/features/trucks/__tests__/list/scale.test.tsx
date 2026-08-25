@@ -78,7 +78,7 @@ test('keeps 1,000-truck endpoint selection, lifecycle counts, and local search b
 
   await user.type(screen.getByRole('textbox', { name: 'Search trucks' }), '0999')
   const availableList = screen.getByRole('list', { name: 'Available trucks' })
-  expect(within(availableList).getAllByRole('button')).toHaveLength(1)
+  expect(within(availableList).getAllByRole('listitem')).toHaveLength(1)
   expect(
     within(availableList).getByRole('button', { name: 'SCALE-0999, Carrier 0999' }),
   ).toBeInTheDocument()

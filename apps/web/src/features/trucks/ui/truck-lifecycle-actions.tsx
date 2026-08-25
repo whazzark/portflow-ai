@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -17,87 +17,84 @@ import { useTruckMutations } from '@/features/trucks/mutations/use-truck-mutatio
 import type { TruckDto } from '@/features/trucks/types'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
-type TruckLifecycleActionsProps = {
-  className?: string
-  truck: TruckDto
-}
+export type TruckLifecycleAction = 'archive' | 'reactivate' | 'suspend'
 
-type LifecycleAction = 'archive' | 'reactivate' | 'suspend'
-
-const COPY: Record<
-  LifecycleAction,
-  { trigger: string; title: string; description: string; confirm: string; success: string }
+export const TRUCK_LIFECYCLE_COPY: Record<
+  TruckLifecycleAction,
+  { label: string; title: string; description: string; success: string }
 > = {
   archive: {
-    trigger: 'Archive truck',
+    label: 'Archive',
     title: 'Archive truck?',
     description: 'This truck will remain readable but no longer offered for new operational work.',
-    confirm: 'Archive',
     success: 'Truck archived',
   },
   reactivate: {
-    trigger: 'Reactivate truck',
+    label: 'Reactivate',
     title: 'Reactivate truck?',
     description: 'This truck will become selectable again for new operational work.',
-    confirm: 'Reactivate',
     success: 'Truck reactivated',
   },
   suspend: {
-    trigger: 'Suspend truck',
+    label: 'Suspend',
     title: 'Suspend truck?',
     description:
       'This truck will be temporarily out of service. It stops being offered for new work, ' +
       'while the discharges, shifts, and rotations it is already part of are left untouched.',
-    confirm: 'Suspend',
     success: 'Truck suspended',
   },
 }
 
-export function TruckLifecycleActions({ className, truck }: TruckLifecycleActionsProps) {
-  const mutations = useTruckMutations()
+// A suspended truck has no lifecycle action yet: returning it to service is its own delivery
+// slice, and archiving it requires it to be available first.
+export function truckLifecycleActions(status: TruckDto['status']): TruckLifecycleAction[] {
+  if (status === 'SUSPENDED') {
+    return []
+  }
 
-  const [openAction, setOpenAction] = useState<LifecycleAction | null>(null)
+  return status === 'ARCHIVED' ? ['reactivate'] : ['suspend', 'archive']
+}
+
+type TruckLifecycleDialogProps = {
+  action: TruckLifecycleAction | null
+  onClose: () => void
+  truck: TruckDto
+}
+
+/**
+ * The confirmation half of a lifecycle change, shared by the detail-pane buttons and the
+ * per-row actions menu so both offer the same copy, comment, and refusal handling.
+ */
+export function TruckLifecycleDialog({ action, onClose, truck }: TruckLifecycleDialogProps) {
+  const mutations = useTruckMutations()
+  const commentId = useId()
   const [comment, setComment] = useState('')
 
-  // A suspended truck has no lifecycle action yet: returning it to service is its own delivery
-  // slice, and archiving it requires it to be available first.
-  if (truck.status === 'SUSPENDED') {
-    return (
-      <p className={className} data-testid="truck-suspended-notice">
-        This truck is out of service. It must be returned to service before it can be archived, and
-        returning a truck to service is not available yet.
-      </p>
-    )
-  }
-
-  const archived = truck.status === 'ARCHIVED'
-  const actions: LifecycleAction[] = archived ? ['reactivate'] : ['suspend', 'archive']
-
   const close = () => {
-    setOpenAction(null)
     setComment('')
+    onClose()
   }
 
-  const submit = async (action: LifecycleAction) => {
+  const submit = async (lifecycleAction: TruckLifecycleAction) => {
     const body = { comment: comment || null }
 
     try {
-      if (action === 'reactivate') {
+      if (lifecycleAction === 'reactivate') {
         await mutations.reactivate.mutateAsync({ params: { id: truck.id }, body })
-      } else if (action === 'suspend') {
+      } else if (lifecycleAction === 'suspend') {
         await mutations.suspend.mutateAsync({ params: { id: truck.id }, body })
       } else {
         await mutations.archive.mutateAsync({ params: { id: truck.id }, body })
       }
 
       close()
-      toast.success(COPY[action].success)
+      toast.success(TRUCK_LIFECYCLE_COPY[lifecycleAction].success)
     } catch (error) {
       // A refusal (already suspended/archived/available, in-use, archived transport company) may
       // mean the truck's authoritative state has moved on since this view loaded; refresh so the
       // consultation workspace shows it, not just the success path.
       void mutations.refreshTrucks()
-      toast.error(`Unable to ${action} truck “${truck.registration}”`, {
+      toast.error(`Unable to ${lifecycleAction} truck “${truck.registration}”`, {
         description: parseApiError(error).message,
       })
     }
@@ -107,9 +104,67 @@ export function TruckLifecycleActions({ className, truck }: TruckLifecycleAction
     mutations.archive.isPending || mutations.reactivate.isPending || mutations.suspend.isPending
 
   return (
+    <AlertDialog open={action !== null} onOpenChange={(open) => !open && close()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{action ? TRUCK_LIFECYCLE_COPY[action].title : ''}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {action ? TRUCK_LIFECYCLE_COPY[action].description : ''}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor={commentId}>Comment (optional)</FieldLabel>
+            <Textarea
+              id={commentId}
+              maxLength={1000}
+              onChange={(event) => setComment(event.target.value)}
+              value={comment}
+            />
+            <FieldDescription>
+              Keep a short explanation for the lifecycle change (maximum 1,000 characters).
+            </FieldDescription>
+          </Field>
+        </FieldGroup>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isPending}
+            onClick={() => {
+              if (action) {
+                void submit(action)
+              }
+            }}
+          >
+            {action ? TRUCK_LIFECYCLE_COPY[action].label : ''}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+type TruckLifecycleActionsProps = {
+  className?: string
+  truck: TruckDto
+}
+
+export function TruckLifecycleActions({ className, truck }: TruckLifecycleActionsProps) {
+  const [openAction, setOpenAction] = useState<TruckLifecycleAction | null>(null)
+
+  if (truck.status === 'SUSPENDED') {
+    return (
+      <p className={className} data-testid="truck-suspended-notice">
+        This truck is out of service. It must be returned to service before it can be archived, and
+        returning a truck to service is not available yet.
+      </p>
+    )
+  }
+
+  return (
     <div className={className}>
       <div className="flex flex-wrap items-center gap-2">
-        {actions.map((action) => (
+        {truckLifecycleActions(truck.status).map((action) => (
           <Button
             key={action}
             onClick={() => setOpenAction(action)}
@@ -118,47 +173,11 @@ export function TruckLifecycleActions({ className, truck }: TruckLifecycleAction
               action === 'archive' ? 'destructive' : action === 'suspend' ? 'outline' : 'default'
             }
           >
-            {COPY[action].trigger}
+            {TRUCK_LIFECYCLE_COPY[action].label}
           </Button>
         ))}
       </div>
-      <AlertDialog open={openAction !== null} onOpenChange={(open) => !open && close()}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{openAction ? COPY[openAction].title : ''}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {openAction ? COPY[openAction].description : ''}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="truck-lifecycle-comment">Comment (optional)</FieldLabel>
-              <Textarea
-                id="truck-lifecycle-comment"
-                maxLength={1000}
-                onChange={(event) => setComment(event.target.value)}
-                value={comment}
-              />
-              <FieldDescription>
-                Keep a short explanation for the lifecycle change (maximum 1,000 characters).
-              </FieldDescription>
-            </Field>
-          </FieldGroup>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isPending}
-              onClick={() => {
-                if (openAction) {
-                  void submit(openAction)
-                }
-              }}
-            >
-              {openAction ? COPY[openAction].confirm : ''}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <TruckLifecycleDialog action={openAction} onClose={() => setOpenAction(null)} truck={truck} />
     </div>
   )
 }

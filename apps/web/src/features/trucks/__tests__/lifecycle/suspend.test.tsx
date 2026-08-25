@@ -66,12 +66,14 @@ test('suspends a truck with a comment and moves it to the suspended tab without 
   renderTrucks()
   await openTruck(user, target)
 
-  await user.click(within(details()).getByRole('button', { name: 'Suspend truck' }))
+  await user.click(within(details()).getByRole('button', { name: 'Suspend' }))
   await user.type(
     await screen.findByLabelText('Comment (optional)'),
     'Gearbox failure, in the workshop',
   )
-  await user.click(screen.getByRole('button', { name: 'Suspend' }))
+  await user.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Suspend' }),
+  )
 
   await waitFor(() => {
     expect(received).toEqual({ comment: 'Gearbox failure, in the workshop' })
@@ -100,10 +102,10 @@ test('shows the suspension context and offers no lifecycle action for a suspende
   expect(within(panel).getAllByText('Suspended').length).toBeGreaterThan(0)
   expect(within(panel).getByText('Suspension context')).toBeInTheDocument()
   expect(within(panel).getByText('Gearbox failure, awaiting workshop slot')).toBeInTheDocument()
-  expect(within(panel).queryByRole('button', { name: 'Edit truck' })).not.toBeInTheDocument()
-  expect(within(panel).queryByRole('button', { name: 'Suspend truck' })).not.toBeInTheDocument()
-  expect(within(panel).queryByRole('button', { name: 'Archive truck' })).not.toBeInTheDocument()
-  expect(within(panel).queryByRole('button', { name: 'Reactivate truck' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Suspend' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
   expect(within(panel).getByTestId('truck-suspended-notice')).toHaveTextContent(
     /returned to service/i,
   )
@@ -181,8 +183,10 @@ test('refreshes to the authoritative state when suspension is refused', async ()
   await openTruck(user, target)
   const requestsBefore = completeRequests
 
-  await user.click(within(details()).getByRole('button', { name: 'Suspend truck' }))
-  await user.click(await screen.findByRole('button', { name: 'Suspend' }))
+  await user.click(within(details()).getByRole('button', { name: 'Suspend' }))
+  await user.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Suspend' }),
+  )
 
   expect(await screen.findByText(/Unable to suspend truck/)).toBeInTheDocument()
   await waitFor(() => {

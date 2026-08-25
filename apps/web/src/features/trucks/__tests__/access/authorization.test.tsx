@@ -66,7 +66,7 @@ test.each([ACTIVE_OBSERVER, ACTIVE_OPERATIONS_LEAD])(
     fireEvent.click(await screen.findByRole('button', { name: 'AA-101-PF, Atlantic Transport' }))
 
     expect(await screen.findByRole('heading', { name: 'AA-101-PF' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Archive truck' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
   },
 )
 
@@ -76,7 +76,7 @@ test('shows the archive-truck control for an operations administrator', async ()
   renderTrucks()
   fireEvent.click(await screen.findByRole('button', { name: 'AA-101-PF, Atlantic Transport' }))
 
-  expect(await screen.findByRole('button', { name: 'Archive truck' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Archive' })).toBeInTheDocument()
 })
 
 test.each([ACTIVE_OBSERVER, ACTIVE_OPERATIONS_LEAD])(
@@ -94,7 +94,7 @@ test.each([ACTIVE_OBSERVER, ACTIVE_OPERATIONS_LEAD])(
       .poll(() => router.state.location.search)
       .toMatchObject({ truckStatus: 'available' })
     expect(queryTruckTab(/Archived/)).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Reactivate truck' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
   },
 )
 
@@ -106,8 +106,8 @@ test('shows the reactivate-truck control for an operations administrator on an a
   fireEvent.click(truckTab(/Archived/))
   fireEvent.click(await screen.findByRole('button', { name: 'CC-303-PF, Coastal Haulage' }))
 
-  expect(await screen.findByRole('button', { name: 'Reactivate truck' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Edit truck' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('uses the complete endpoint and exposes archived consultation to administrators', async () => {

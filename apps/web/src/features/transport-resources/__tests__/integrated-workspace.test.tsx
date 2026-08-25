@@ -69,7 +69,9 @@ test('scopes lifecycle counts and searches to the selected company for administr
   expect(await screen.findByText('CC-303-PF')).toBeInTheDocument()
 
   await user.type(screen.getByRole('textbox', { name: 'Search trucks' }), '303')
-  expect(await screen.findByRole('button', { name: /CC-303-PF/ })).toBeInTheDocument()
+  expect(
+    await screen.findByRole('button', { name: 'CC-303-PF, Coastal Haulage' }),
+  ).toBeInTheDocument()
   expect(screen.queryByText('BB-202-PF')).not.toBeInTheDocument()
 })
 

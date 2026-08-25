@@ -13,6 +13,9 @@ type TruckSectionProps = {
   selectable?: boolean
   selectedIds?: Set<string>
   onSelectionChange?: (checked: boolean, ids: string[]) => void
+  canAdminister?: boolean
+  onEdit?: (id: string) => void
+  onView?: (id: string) => void
 }
 
 export function TruckSection({
@@ -25,6 +28,9 @@ export function TruckSection({
   selectable,
   selectedIds,
   onSelectionChange,
+  canAdminister,
+  onEdit,
+  onView,
 }: TruckSectionProps) {
   const lifecycleLabel =
     lifecycle === 'archived' ? 'Archived' : lifecycle === 'suspended' ? 'Suspended' : 'Available'
@@ -41,6 +47,7 @@ export function TruckSection({
     <section aria-label={`${lifecycleLabel} trucks`} className="flex h-full min-h-0">
       <TruckList
         trucks={matches}
+        canAdminister={canAdminister}
         companies={companies}
         emptyDescription={
           hasSearch
@@ -49,8 +56,10 @@ export function TruckSection({
         }
         emptyTitle={hasSearch ? 'No matching trucks' : `No ${lifecycle} trucks`}
         lifecycle={lifecycle}
+        onEdit={onEdit}
         onSelect={onSelect}
         onSelectionChange={onSelectionChange}
+        onView={onView}
         search={search}
         selectable={selectable}
         selectedId={selectedId}

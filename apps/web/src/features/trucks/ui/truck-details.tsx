@@ -111,7 +111,7 @@ export function TruckDetails({
       </div>
       {(canAdminister || administrator) && (
         <footer className="flex shrink-0 items-center justify-between gap-2 border-t bg-popover px-5 py-4 md:px-6">
-          {canAdminister && isAvailable && <Button onClick={onEdit}>Edit truck</Button>}
+          {canAdminister && isAvailable && <Button onClick={onEdit}>Edit</Button>}
           {administrator && <TruckLifecycleActions truck={truck} />}
         </footer>
       )}
