@@ -1,4 +1,5 @@
 import { inject } from '@adonisjs/core'
+import type { ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import { Decimal } from 'decimal.js'
 import { DateTime } from 'luxon'
 
@@ -22,11 +23,29 @@ import TruckRepository, {
   type ReactivateTruckCommand,
   type ReactivateTruckResult,
   type ReactivateTrucksCommand,
+  type ReturnTruckToServiceCommand,
+  type ReturnTruckToServiceResult,
   type SuspendTruckCommand,
   type SuspendTruckResult,
   type TruckWriteResult,
   type UpdateTruckCommand,
 } from './truck_repository.ts'
+
+/**
+ * Every truck read that serializes lifecycle context needs all four actor relations, and a missed
+ * one is invisible in types: the relation simply resolves to `null`, so the actor disappears from
+ * one endpoint and nowhere else. Nine call sites repeated the list before a fourth block was added;
+ * they go through here instead so a fifth is a one-line change.
+ */
+function preloadLifecycleActors(
+  query: ModelQueryBuilderContract<typeof Truck, Truck>,
+): ModelQueryBuilderContract<typeof Truck, Truck> {
+  return query
+    .preload('archivedBy')
+    .preload('reactivatedBy')
+    .preload('suspendedBy')
+    .preload('returnedToServiceBy')
+}
 
 function isRegistrationUniqueViolation(error: unknown): boolean {
   if (!isUniqueViolation(error)) {
@@ -91,12 +110,7 @@ export default class LucidTruckRepository extends TruckRepository {
   }
 
   findById(id: string): Promise<Truck | null> {
-    return Truck.query()
-      .where('id', id)
-      .preload('archivedBy')
-      .preload('reactivatedBy')
-      .preload('suspendedBy')
-      .first()
+    return preloadLifecycleActors(Truck.query().where('id', id)).first()
   }
 
   async updateAvailable(command: UpdateTruckCommand): Promise<TruckWriteResult> {
@@ -142,12 +156,7 @@ export default class LucidTruckRepository extends TruckRepository {
         return { kind: 'NOT_FOUND' }
       }
 
-      const truck = await Truck.query()
-        .where('id', command.id)
-        .preload('archivedBy')
-        .preload('reactivatedBy')
-        .preload('suspendedBy')
-        .first()
+      const truck = await preloadLifecycleActors(Truck.query().where('id', command.id)).first()
       if (!truck) {
         return { kind: 'NOT_FOUND' }
       }
@@ -164,10 +173,7 @@ export default class LucidTruckRepository extends TruckRepository {
 
   list(): Promise<Truck[]> {
     return (
-      Truck.query()
-        .preload('archivedBy')
-        .preload('reactivatedBy')
-        .preload('suspendedBy')
+      preloadLifecycleActors(Truck.query())
         // biome-ignore lint/security/noSecrets: SQL ordering expression, not a secret
         .orderByRaw('LOWER(registration) ASC')
         .orderBy('registration', 'asc')
@@ -175,13 +181,15 @@ export default class LucidTruckRepository extends TruckRepository {
     )
   }
 
+  /**
+   * Read by every active role like the suspended collection, so it preloads no lifecycle actor
+   * either: a truck returned to service or reactivated carries one, and `toOperationalView`
+   * never exposes it.
+   */
   listAvailable(): Promise<Truck[]> {
     return (
       Truck.query()
         .where('status', 'AVAILABLE')
-        .preload('archivedBy')
-        .preload('reactivatedBy')
-        .preload('suspendedBy')
         // biome-ignore lint/security/noSecrets: SQL ordering expression, not a secret
         .orderByRaw('LOWER(registration) ASC')
         .orderBy('registration', 'asc')
@@ -255,12 +263,9 @@ export default class LucidTruckRepository extends TruckRepository {
           updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
         })
 
-      const archived = await Truck.query({ client: trx })
-        .where('id', command.id)
-        .preload('archivedBy')
-        .preload('reactivatedBy')
-        .preload('suspendedBy')
-        .first()
+      const archived = await preloadLifecycleActors(
+        Truck.query({ client: trx }).where('id', command.id),
+      ).first()
 
       if (!archived) {
         return { kind: 'NOT_FOUND' }
@@ -299,11 +304,9 @@ export default class LucidTruckRepository extends TruckRepository {
         throw new Error('Truck bulk archive changed during transaction')
       }
 
-      const archived = await Truck.query({ client: trx })
-        .whereIn('id', eligibleIds)
-        .preload('archivedBy')
-        .preload('reactivatedBy')
-        .preload('suspendedBy')
+      const archived = await preloadLifecycleActors(
+        Truck.query({ client: trx }).whereIn('id', eligibleIds),
+      )
 
       return {
         updatedTrucks: orderTrucks(eligibleIds, indexTrucksById(archived)),
@@ -355,12 +358,9 @@ export default class LucidTruckRepository extends TruckRepository {
           updatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
         })
 
-      const reactivated = await Truck.query({ client: trx })
-        .where('id', command.id)
-        .preload('archivedBy')
-        .preload('reactivatedBy')
-        .preload('suspendedBy')
-        .first()
+      const reactivated = await preloadLifecycleActors(
+        Truck.query({ client: trx }).where('id', command.id),
+      ).first()
 
       if (!reactivated) {
         return { kind: 'NOT_FOUND' }
@@ -428,11 +428,9 @@ export default class LucidTruckRepository extends TruckRepository {
         throw new Error('Truck bulk reactivation changed during transaction')
       }
 
-      const reactivated = await Truck.query({ client: trx })
-        .whereIn('id', eligibleIds)
-        .preload('archivedBy')
-        .preload('reactivatedBy')
-        .preload('suspendedBy')
+      const reactivated = await preloadLifecycleActors(
+        Truck.query({ client: trx }).whereIn('id', eligibleIds),
+      )
 
       return {
         updatedTrucks: orderTrucks(eligibleIds, indexTrucksById(reactivated)),
@@ -495,18 +493,101 @@ export default class LucidTruckRepository extends TruckRepository {
         return { kind: 'NOT_FOUND' }
       }
 
-      const suspended = await Truck.query({ client: trx })
-        .where('id', command.id)
-        .preload('archivedBy')
-        .preload('reactivatedBy')
-        .preload('suspendedBy')
-        .first()
+      const suspended = await preloadLifecycleActors(
+        Truck.query({ client: trx }).where('id', command.id),
+      ).first()
 
       if (!suspended) {
         return { kind: 'NOT_FOUND' }
       }
 
       return { kind: 'SUSPENDED', truck: suspended }
+    })
+  }
+
+  returnSuspendedToService(
+    command: ReturnTruckToServiceCommand,
+  ): Promise<ReturnTruckToServiceResult> {
+    return Truck.transaction(async (trx) => {
+      const truck = await Truck.query({ client: trx }).where('id', command.id).forUpdate().first()
+
+      if (!truck) {
+        return { kind: 'NOT_FOUND' }
+      }
+      if (truck.status === 'AVAILABLE') {
+        return { kind: 'ALREADY_AVAILABLE' }
+      }
+      // Reactivation reverses an archival, this reverses a suspension. An archived truck was never
+      // suspended, so returning it to service would make it available without any reactivation
+      // decision — the mirror of the guard `reactivateArchived` carries against a suspended truck.
+      if (truck.status === 'ARCHIVED') {
+        return { kind: 'ARCHIVED' }
+      }
+
+      // Locked for the same reason `reactivateArchived` locks it: this is the second write that can
+      // produce an available truck, and a transport company cannot be archived while it still
+      // provides one. `findCompanyIdsWithAvailableTrucks` counts only AVAILABLE trucks, so a company
+      // whose whole fleet is suspended *can* be archived — which makes this the only path that could
+      // create an available truck under an archived company. Reading the company under a lock,
+      // inside the same transaction as the truck's own lock and write, closes the check-then-act
+      // window a plain read would leave.
+      //
+      // Company archival takes these two locks in the opposite order, but it cannot deadlock against
+      // this: its truck read (`findCompanyIdsWithAvailableTrucks`) is a plain SELECT and holds no row
+      // lock, so only one of the two transactions can ever wait. A suspended truck's
+      // `transportCompanyId` cannot change underneath us either — `updateAvailable` is guarded by
+      // `WHERE status = 'AVAILABLE'`.
+      const transportCompany = await TransportCompany.query({ client: trx })
+        .where('id', truck.transportCompanyId)
+        .forUpdate()
+        .first()
+
+      if (transportCompany?.status !== 'AVAILABLE') {
+        return { kind: 'TRANSPORT_COMPANY_ARCHIVED' }
+      }
+
+      // The suspension columns are deliberately left as they are: the return ends the suspension it
+      // describes without erasing why the vehicle was out of service (FR-013).
+      const [affectedRows] = await Truck.query({ client: trx })
+        .where('id', command.id)
+        .where('status', 'SUSPENDED')
+        .update({
+          status: 'AVAILABLE',
+          returnedToServiceAt: command.returnedToServiceAt.toSQL({ includeOffset: false }),
+          returnedToServiceByUserId: command.returnedToServiceByUserId,
+          returnToServiceComment: command.returnToServiceComment,
+          updatedAt: command.returnedToServiceAt.toSQL({ includeOffset: false }),
+        })
+
+      if (affectedRows === 0) {
+        // The row read above was SUSPENDED, so a zero-row UPDATE means it moved on in between.
+        // PostgreSQL cannot reach this — the `forUpdate()` above holds the row — but knex emits no
+        // `FOR UPDATE` on SQLite, where a concurrent writer would otherwise be reported as a
+        // successful return of a truck that never changed.
+        const current = await Truck.query({ client: trx }).where('id', command.id).first()
+
+        if (!current) {
+          return { kind: 'NOT_FOUND' }
+        }
+        if (current.status === 'ARCHIVED') {
+          return { kind: 'ARCHIVED' }
+        }
+
+        // Available already: unlike `suspendAvailable`, which reports its equivalent branch as a
+        // stale read, here it means another return won the race — which is exactly what the loser of
+        // two concurrent returns must be told (FR-021).
+        return { kind: 'ALREADY_AVAILABLE' }
+      }
+
+      const returned = await preloadLifecycleActors(
+        Truck.query({ client: trx }).where('id', command.id),
+      ).first()
+
+      if (!returned) {
+        return { kind: 'NOT_FOUND' }
+      }
+
+      return { kind: 'RETURNED', truck: returned }
     })
   }
 }

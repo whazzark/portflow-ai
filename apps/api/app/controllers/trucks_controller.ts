@@ -9,6 +9,7 @@ import CreateTruckUseCase from '#trucks/create/create_truck_use_case'
 import ListTrucksUseCase from '#trucks/list/list_trucks_use_case'
 import ReactivateTruckUseCase from '#trucks/reactivate/reactivate_truck_use_case'
 import ReactivateTrucksUseCase from '#trucks/reactivate/reactivate_trucks_use_case'
+import ReturnTruckToServiceUseCase from '#trucks/return_to_service/return_truck_to_service_use_case'
 import TruckPolicy from '#trucks/shared/truck_policy'
 import TruckTransformer from '#trucks/shared/truck_transformer'
 import {
@@ -17,6 +18,7 @@ import {
   createTruckValidator,
   reactivateTrucksValidator,
   reactivateTruckValidator,
+  returnTruckToServiceValidator,
   suspendTruckValidator,
   updateTruckValidator,
 } from '#trucks/shared/truck_validator'
@@ -36,6 +38,7 @@ export default class TrucksController {
     private reactivateTruckUseCase: ReactivateTruckUseCase,
     private reactivateTrucksUseCase: ReactivateTrucksUseCase,
     private suspendTruckUseCase: SuspendTruckUseCase,
+    private returnTruckToServiceUseCase: ReturnTruckToServiceUseCase,
     private listSuspendedTrucksUseCase: ListSuspendedTrucksUseCase,
   ) {}
 
@@ -93,7 +96,7 @@ export default class TrucksController {
 
     const trucks = await this.listAvailableTrucksUseCase.handle()
 
-    return serialize(TruckTransformer.transform(trucks))
+    return serialize(TruckTransformer.transform(trucks).useVariant('toOperationalView'))
   }
 
   async archive({ auth, bouncer, params, request, serialize }: HttpContext) {
@@ -179,6 +182,23 @@ export default class TrucksController {
       id: params.id,
       suspendedByUserId: user.id,
       suspendedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize(TruckTransformer.transform(truck))
+  }
+
+  async returnToService({ auth, bouncer, params, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(TruckPolicy).authorize('returnToService')
+
+    const payload = await request.validateUsing(returnTruckToServiceValidator)
+
+    const truck = await this.returnTruckToServiceUseCase.handle({
+      id: params.id,
+      returnedToServiceByUserId: user.id,
+      returnedToServiceAt: DateTime.now(),
       comment: payload.comment,
     })
 

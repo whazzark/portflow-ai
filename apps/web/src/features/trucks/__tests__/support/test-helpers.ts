@@ -53,7 +53,9 @@ export function mockTrucks({
       return HttpResponse.json({
         data: complete
           .filter((truck) => truck.status === 'SUSPENDED')
-          .map(({ archivedBy, reactivatedBy, suspendedBy, ...truck }) => truck),
+          .map(
+            ({ archivedBy, reactivatedBy, suspendedBy, returnedToServiceBy, ...truck }) => truck,
+          ),
       })
     }),
   )

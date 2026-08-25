@@ -49,6 +49,10 @@ test('suspends a truck from its row without opening the detail pane', async () =
         status: 'SUSPENDED',
         suspendedAt: '2026-08-25T09:00:00.000Z',
         suspensionComment: received.comment,
+        returnedToServiceAt: null,
+        returnedToServiceByUserId: null,
+        returnedToServiceBy: null,
+        returnToServiceComment: null,
       }
       currentComplete = currentComplete.map((truck) =>
         truck.id === AVAILABLE.id ? suspended : truck,
@@ -156,7 +160,7 @@ test('opens the detail pane from the row menu', async () => {
   ).toBeInTheDocument()
 })
 
-test('offers a suspended truck View alone, since it carries no lifecycle action yet', async () => {
+test('offers a suspended truck View and Return to service', async () => {
   const user = userEvent.setup()
 
   mockDirectory()
@@ -172,7 +176,7 @@ test('offers a suspended truck View alone, since it carries no lifecycle action 
     within(menu)
       .getAllByRole('menuitem')
       .map((item) => item.textContent),
-  ).toEqual(['View'])
+  ).toEqual(['View', 'Return to service'])
 })
 
 test('offers an available truck the full set, view first', async () => {

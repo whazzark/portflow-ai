@@ -186,6 +186,12 @@ const routes = {
     tokens: [{"old":"/api/v1/trucks/:id/suspend","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/:id/suspend","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/:id/suspend","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/:id/suspend","type":1,"val":"id","end":""},{"old":"/api/v1/trucks/:id/suspend","type":0,"val":"suspend","end":""}],
     types: placeholder as Registry['trucks.suspend']['types'],
   },
+  'trucks.return_to_service': {
+    methods: ["POST"],
+    pattern: '/api/v1/trucks/:id/return-to-service',
+    tokens: [{"old":"/api/v1/trucks/:id/return-to-service","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/:id/return-to-service","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/:id/return-to-service","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/:id/return-to-service","type":1,"val":"id","end":""},{"old":"/api/v1/trucks/:id/return-to-service","type":0,"val":"return-to-service","end":""}],
+    types: placeholder as Registry['trucks.return_to_service']['types'],
+  },
   'docks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/docks',

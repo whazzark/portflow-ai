@@ -265,7 +265,7 @@ export class TransportCompanySchema extends BaseModel {
 }
 
 export class TruckSchema extends BaseModel {
-  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'capacityTonnes', 'createdAt', 'id', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'registration', 'status', 'suspendedAt', 'suspendedByUserId', 'suspensionComment', 'transportCompanyId', 'updatedAt', 'vehicleModel'] as const
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'capacityTonnes', 'createdAt', 'id', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'registration', 'returnToServiceComment', 'returnedToServiceAt', 'returnedToServiceByUserId', 'status', 'suspendedAt', 'suspendedByUserId', 'suspensionComment', 'transportCompanyId', 'updatedAt', 'vehicleModel'] as const
   $columns = TruckSchema.$columns
   @column()
   declare archiveComment: string | null
@@ -287,6 +287,12 @@ export class TruckSchema extends BaseModel {
   declare reactivationComment: string | null
   @column()
   declare registration: string
+  @column()
+  declare returnToServiceComment: string | null
+  @column.dateTime()
+  declare returnedToServiceAt: DateTime | null
+  @column()
+  declare returnedToServiceByUserId: string | null
   @column()
   declare status: string
   @column.dateTime()

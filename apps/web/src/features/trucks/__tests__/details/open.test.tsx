@@ -56,8 +56,11 @@ test('shows optional values accurately and clears a stale identity with explicit
 
   const details = await screen.findByRole('region', { name: 'Truck details' })
   expect(within(details).getAllByText('Not specified').length).toBeGreaterThan(0)
-  expect(within(details).getByText('Latest reactivation context')).toBeInTheDocument()
+  expect(within(details).getByText('Reactivation context')).toBeInTheDocument()
   expect(within(details).getByText('Vehicle returned to service')).toBeInTheDocument()
+  // Each block the truck carries gets its own section, so an archival that was later reversed stays
+  // readable beside the reactivation that reversed it.
+  expect(within(details).getByText('Archive context')).toBeInTheDocument()
 
   cleanup()
   mockTrucks()

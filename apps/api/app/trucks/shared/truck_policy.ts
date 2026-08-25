@@ -38,4 +38,8 @@ export default class TruckPolicy extends BasePolicy {
   suspend(user: User): AuthorizerResponse {
     return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
   }
+
+  returnToService(user: User): AuthorizerResponse {
+    return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
+  }
 }

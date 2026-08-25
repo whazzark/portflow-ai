@@ -96,6 +96,25 @@ export type SuspendTruckResult =
   | { kind: 'ARCHIVED' }
   | { kind: 'NOT_FOUND' }
 
+export type ReturnTruckToServiceCommand = {
+  id: string
+  returnedToServiceAt: DateTime
+  returnedToServiceByUserId: string
+  returnToServiceComment: string | null
+}
+
+/**
+ * The mirror of `ReactivateTruckResult`, minus `SUSPENDED` — the source state *is* suspended — and
+ * plus `ARCHIVED`. Both transitions guard the same invariant (no available truck under an archived
+ * transport company) and differ only in the state they start from.
+ */
+export type ReturnTruckToServiceResult =
+  | { kind: 'RETURNED'; truck: Truck }
+  | { kind: 'ALREADY_AVAILABLE' }
+  | { kind: 'ARCHIVED' }
+  | { kind: 'TRANSPORT_COMPANY_ARCHIVED' }
+  | { kind: 'NOT_FOUND' }
+
 export type ReactivateTrucksCommand = {
   ids: string[]
   reactivatedAt: DateTime
@@ -120,4 +139,7 @@ export default abstract class TruckRepository {
     command: ReactivateTrucksCommand,
   ): Promise<BulkTruckLifecycleResult>
   abstract suspendAvailable(command: SuspendTruckCommand): Promise<SuspendTruckResult>
+  abstract returnSuspendedToService(
+    command: ReturnTruckToServiceCommand,
+  ): Promise<ReturnTruckToServiceResult>
 }

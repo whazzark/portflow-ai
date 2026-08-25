@@ -21,6 +21,9 @@ export const TruckFactory = factory
     suspendedAt: null,
     suspendedByUserId: null,
     suspensionComment: null,
+    returnedToServiceAt: null,
+    returnedToServiceByUserId: null,
+    returnToServiceComment: null,
   }))
   .state('archived', (truck) => {
     truck.status = 'ARCHIVED'
@@ -34,6 +37,13 @@ export const TruckFactory = factory
   .state('suspended', (truck) => {
     truck.status = 'SUSPENDED'
     truck.suspendedAt ??= DateTime.now()
+  })
+  // A truck that went out of service and came back. Both context blocks are set, because the return
+  // ends a suspension without erasing it.
+  .state('returned', (truck) => {
+    truck.status = 'AVAILABLE'
+    truck.suspendedAt ??= DateTime.now().minus({ days: 10 })
+    truck.returnedToServiceAt ??= DateTime.now()
   })
   .before('create', async (_builder, truck, context) => {
     if (truck.transportCompanyId) {

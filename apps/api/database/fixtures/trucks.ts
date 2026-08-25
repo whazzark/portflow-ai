@@ -19,6 +19,9 @@ type TruckLifecycleAttributes = Omit<LifecycleAttributes, 'status'> & {
   suspendedAt: DateTime | null
   suspendedByUserId: string | null
   suspensionComment: string | null
+  returnedToServiceAt: DateTime | null
+  returnedToServiceByUserId: string | null
+  returnToServiceComment: string | null
 }
 
 const noSuspension = {
@@ -27,7 +30,13 @@ const noSuspension = {
   suspensionComment: null,
 } as const
 
-type TruckFixtureState = LifecycleFactoryState | 'suspended'
+const noReturnToService = {
+  returnedToServiceAt: null,
+  returnedToServiceByUserId: null,
+  returnToServiceComment: null,
+} as const
+
+type TruckFixtureState = LifecycleFactoryState | 'suspended' | 'returned'
 
 const values = [
   ['AA-101-PF', 'Volvo FMX', '32.5', TRANSPORT_COMPANY_FIXTURE_IDS.atlantic, 'available'],
@@ -35,6 +44,7 @@ const values = [
   ['CC-303-PF', 'Renault Trucks C', '30', TRANSPORT_COMPANY_FIXTURE_IDS.estuaire, 'reactivated'],
   ['ZZ-909-PF', 'Scania XT', '34.25', TRANSPORT_COMPANY_FIXTURE_IDS.loire, 'archived'],
   ['DD-404-PF', 'MAN TGS', '31.5', TRANSPORT_COMPANY_FIXTURE_IDS.atlantic, 'suspended'],
+  ['EE-505-PF', 'Iveco S-Way', '29.5', TRANSPORT_COMPANY_FIXTURE_IDS.armor, 'returned'],
 ] as const
 
 export const TRUCK_FIXTURES = values.map(
@@ -50,6 +60,7 @@ export const TRUCK_FIXTURES = values.map(
             reactivatedByUserId: null,
             reactivationComment: null,
             ...noSuspension,
+            ...noReturnToService,
           }
         : state === 'suspended'
           ? {
@@ -63,21 +74,41 @@ export const TRUCK_FIXTURES = values.map(
               suspendedAt: FIXTURE_REFERENCE_DATE.minus({ days: 5 }),
               suspendedByUserId: USER_FIXTURE_IDS.operationsAdmin,
               suspensionComment: 'Gearbox failure, awaiting workshop slot',
+              ...noReturnToService,
             }
-          : state === 'reactivated'
+          : state === 'returned'
             ? {
+                // Out of service and back again: the return ends a suspension without erasing it,
+                // so both context blocks are readable side by side.
                 status: 'AVAILABLE' as const,
-                archivedAt: FIXTURE_REFERENCE_DATE.minus({ days: 75 }),
-                archivedByUserId: USER_FIXTURE_IDS.operationsAdmin,
-                // Deliberately a retirement reason: a temporary immobilisation is now modelled by
-                // the SUSPENDED state, not by archiving and reactivating the truck.
-                archiveComment: 'Vehicle withdrawn pending fleet review',
-                reactivatedAt: FIXTURE_REFERENCE_DATE.minus({ days: 15 }),
-                reactivatedByUserId: USER_FIXTURE_IDS.operationsAdmin,
-                reactivationComment: 'Vehicle returned to the active fleet',
-                ...noSuspension,
+                archivedAt: null,
+                archivedByUserId: null,
+                archiveComment: null,
+                reactivatedAt: null,
+                reactivatedByUserId: null,
+                reactivationComment: null,
+                suspendedAt: FIXTURE_REFERENCE_DATE.minus({ days: 40 }),
+                suspendedByUserId: USER_FIXTURE_IDS.operationsAdmin,
+                suspensionComment: 'Brake system fault reported on arrival',
+                returnedToServiceAt: FIXTURE_REFERENCE_DATE.minus({ days: 26 }),
+                returnedToServiceByUserId: USER_FIXTURE_IDS.organizationAdmin,
+                returnToServiceComment: 'Brakes replaced, roadworthiness check passed',
               }
-            : { ...availableLifecycle(), ...noSuspension }
+            : state === 'reactivated'
+              ? {
+                  status: 'AVAILABLE' as const,
+                  archivedAt: FIXTURE_REFERENCE_DATE.minus({ days: 75 }),
+                  archivedByUserId: USER_FIXTURE_IDS.operationsAdmin,
+                  // Deliberately a retirement reason: a temporary immobilisation is now modelled by
+                  // the SUSPENDED state, not by archiving and reactivating the truck.
+                  archiveComment: 'Vehicle withdrawn pending fleet review',
+                  reactivatedAt: FIXTURE_REFERENCE_DATE.minus({ days: 15 }),
+                  reactivatedByUserId: USER_FIXTURE_IDS.operationsAdmin,
+                  reactivationComment: 'Vehicle returned to the active fleet',
+                  ...noSuspension,
+                  ...noReturnToService,
+                }
+              : { ...availableLifecycle(), ...noSuspension, ...noReturnToService }
     return {
       id: fixtureUuid(23500008, index + 1),
       state: state as TruckFixtureState,
@@ -98,10 +129,12 @@ export const TRUCK_FIXTURE_IDS = {
   reactivated: TRUCK_FIXTURES[2].id,
   archived: TRUCK_FIXTURES[3].id,
   suspended: TRUCK_FIXTURES[4].id,
+  returned: TRUCK_FIXTURES[5].id,
 } as const
 export const TRUCK_FIXTURE_EXEMPLARS = {
   available: TRUCK_FIXTURES[0],
   reactivated: TRUCK_FIXTURES[2],
   archived: TRUCK_FIXTURES[3],
   suspended: TRUCK_FIXTURES[4],
+  returned: TRUCK_FIXTURES[5],
 } as const

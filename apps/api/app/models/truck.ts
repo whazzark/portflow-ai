@@ -24,6 +24,9 @@ export default class Truck extends TruckSchema {
   declare suspendedAt: DateTime | null
   declare suspendedByUserId: string | null
   declare suspensionComment: string | null
+  declare returnedToServiceAt: DateTime | null
+  declare returnedToServiceByUserId: string | null
+  declare returnToServiceComment: string | null
 
   @column({
     consume: (value) => new Decimal(value),
@@ -44,6 +47,10 @@ export default class Truck extends TruckSchema {
 
   @belongsTo(() => User, { foreignKey: 'suspendedByUserId' })
   declare suspendedBy: BelongsTo<typeof User>
+
+  // biome-ignore lint/security/noSecrets: database column name, not a secret
+  @belongsTo(() => User, { foreignKey: 'returnedToServiceByUserId' })
+  declare returnedToServiceBy: BelongsTo<typeof User>
 
   @beforeCreate()
   static assignId(truck: Truck) {

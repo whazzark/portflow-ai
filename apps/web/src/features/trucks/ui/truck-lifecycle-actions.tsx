@@ -17,23 +17,36 @@ import { useTruckMutations } from '@/features/trucks/mutations/use-truck-mutatio
 import type { TruckDto } from '@/features/trucks/types'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
-export type TruckLifecycleAction = 'archive' | 'reactivate' | 'suspend'
+export type TruckLifecycleAction = 'archive' | 'reactivate' | 'suspend' | 'return-to-service'
 
 export const TRUCK_LIFECYCLE_COPY: Record<
   TruckLifecycleAction,
-  { label: string; title: string; description: string; success: string }
+  {
+    label: string
+    title: string
+    description: string
+    success: string
+    /**
+     * How the action reads inside a failure sentence. Kept separate from `label` because the
+     * action's own identifier is not a verb phrase: interpolating it would produce
+     * "Unable to return-to-service truck".
+     */
+    failure: string
+  }
 > = {
   archive: {
     label: 'Archive',
     title: 'Archive truck?',
     description: 'This truck will remain readable but no longer offered for new operational work.',
     success: 'Truck archived',
+    failure: 'archive',
   },
   reactivate: {
     label: 'Reactivate',
     title: 'Reactivate truck?',
     description: 'This truck will become selectable again for new operational work.',
     success: 'Truck reactivated',
+    failure: 'reactivate',
   },
   suspend: {
     label: 'Suspend',
@@ -42,14 +55,24 @@ export const TRUCK_LIFECYCLE_COPY: Record<
       'This truck will be temporarily out of service. It stops being offered for new work, ' +
       'while the discharges, shifts, and rotations it is already part of are left untouched.',
     success: 'Truck suspended',
+    failure: 'suspend',
+  },
+  'return-to-service': {
+    label: 'Return to service',
+    title: 'Return truck to service?',
+    description:
+      'This truck will become available again and offered for new discharges, shifts, and ' +
+      'rotations, through the assignments it kept while it was out of service.',
+    success: 'Truck returned to service',
+    failure: 'return to service',
   },
 }
 
-// A suspended truck has no lifecycle action yet: returning it to service is its own delivery
-// slice, and archiving it requires it to be available first.
+// A suspended truck leaves that state only by returning to service: archiving or reactivating it
+// requires it to be available first.
 export function truckLifecycleActions(status: TruckDto['status']): TruckLifecycleAction[] {
   if (status === 'SUSPENDED') {
-    return []
+    return ['return-to-service']
   }
 
   return status === 'ARCHIVED' ? ['reactivate'] : ['suspend', 'archive']
@@ -83,6 +106,8 @@ export function TruckLifecycleDialog({ action, onClose, truck }: TruckLifecycleD
         await mutations.reactivate.mutateAsync({ params: { id: truck.id }, body })
       } else if (lifecycleAction === 'suspend') {
         await mutations.suspend.mutateAsync({ params: { id: truck.id }, body })
+      } else if (lifecycleAction === 'return-to-service') {
+        await mutations.returnToService.mutateAsync({ params: { id: truck.id }, body })
       } else {
         await mutations.archive.mutateAsync({ params: { id: truck.id }, body })
       }
@@ -94,14 +119,20 @@ export function TruckLifecycleDialog({ action, onClose, truck }: TruckLifecycleD
       // mean the truck's authoritative state has moved on since this view loaded; refresh so the
       // consultation workspace shows it, not just the success path.
       void mutations.refreshTrucks()
-      toast.error(`Unable to ${lifecycleAction} truck “${truck.registration}”`, {
-        description: parseApiError(error).message,
-      })
+      toast.error(
+        `Unable to ${TRUCK_LIFECYCLE_COPY[lifecycleAction].failure} truck “${truck.registration}”`,
+        {
+          description: parseApiError(error).message,
+        },
+      )
     }
   }
 
   const isPending =
-    mutations.archive.isPending || mutations.reactivate.isPending || mutations.suspend.isPending
+    mutations.archive.isPending ||
+    mutations.reactivate.isPending ||
+    mutations.suspend.isPending ||
+    mutations.returnToService.isPending
 
   return (
     <AlertDialog open={action !== null} onOpenChange={(open) => !open && close()}>
@@ -151,15 +182,6 @@ type TruckLifecycleActionsProps = {
 
 export function TruckLifecycleActions({ className, truck }: TruckLifecycleActionsProps) {
   const [openAction, setOpenAction] = useState<TruckLifecycleAction | null>(null)
-
-  if (truck.status === 'SUSPENDED') {
-    return (
-      <p className={className} data-testid="truck-suspended-notice">
-        This truck is out of service. It must be returned to service before it can be archived, and
-        returning a truck to service is not available yet.
-      </p>
-    )
-  }
 
   return (
     <div className={className}>
