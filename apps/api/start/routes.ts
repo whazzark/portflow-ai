@@ -102,6 +102,7 @@ router
     router
       .group(() => {
         router.get('/', [controllers.Warehouses, 'index']).as('index')
+        router.post('/', [controllers.Warehouses, 'store']).as('store')
       })
       .prefix('/warehouses')
       .as('warehouses')

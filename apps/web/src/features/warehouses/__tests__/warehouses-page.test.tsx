@@ -9,13 +9,20 @@ const { isMobileMock, navigateMock } = vi.hoisted(() => ({
 }))
 
 vi.mock('@tanstack/react-query', () => ({
+  useMutation: () => ({ mutateAsync: vi.fn() }),
   useQuery: () => ({ data: { data: WAREHOUSES }, isError: false }),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}))
+
+vi.mock('@/features/auth/context/use-authenticated-user', () => ({
+  useAuthenticatedUser: () => ({ role: 'OPERATIONS_ADMIN' }),
 }))
 
 vi.mock('@tanstack/react-router', () => ({
   getRouteApi: () => ({
     useNavigate: () => navigateMock,
     useSearch: () => ({
+      create: undefined,
       doorId: undefined,
       doorStatus: undefined,
       search: '',
