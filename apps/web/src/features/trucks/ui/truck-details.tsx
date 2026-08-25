@@ -101,10 +101,12 @@ export function TruckDetails({
               label={lifecycleTimeLabel}
               value={lifecycleTime ? formatDateTime(lifecycleTime) : null}
             />
-            <ResourceDetailField
-              label={lifecycleActorLabel}
-              value={lifecycleActor ? formatFullName(lifecycleActor) : null}
-            />
+            {administrator && (
+              <ResourceDetailField
+                label={lifecycleActorLabel}
+                value={lifecycleActor ? formatFullName(lifecycleActor) : null}
+              />
+            )}
             <ResourceDetailField label="Comment" value={lifecycleComment} />
           </dl>
         </section>

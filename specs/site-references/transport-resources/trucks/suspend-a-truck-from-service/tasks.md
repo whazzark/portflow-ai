@@ -246,6 +246,17 @@ Do not ship the MVP alone, though: until Phase 5 lands, a suspended truck can st
 5. + US4 → refusals are legible and recoverable
 6. Polish → vocabulary, roadmap, gates, browser flow, review
 
+### Post-review addition: FR-016
+
+- [X] T055 Add `GET /api/v1/trucks/suspended` with a `listSuspended` ability open to every active user, backed by `ListSuspendedTrucksUseCase` and `LucidTruckRepository.listSuspended`, in `apps/api/app/trucks/suspended/`, `apps/api/app/trucks/shared/truck_policy.ts` and `apps/api/start/routes.ts`
+- [X] T056 Add the `toOperationalView` variant to `apps/api/app/trucks/shared/truck_transformer.ts`, withholding the lifecycle actor identities while keeping the suspension date and comment (FR-015 / FR-016)
+- [X] T057 Integration spec in `apps/api/tests/integration/trucks/consultation/suspended.spec.ts`: every active role reads the collection, an unauthenticated caller is refused, the responsible administrator is withheld, and the complete collection still carries it
+- [X] T058 Offer the suspended tab to every active role in `apps/web/src/features/trucks/ui/trucks-page.tsx`, reading `truckQueries.suspended()` for non-administrators, and keep the archived tab administrator-only
+- [X] T059 Hide the lifecycle actor field from non-administrators in `apps/web/src/features/trucks/ui/truck-details.tsx`
+- [X] T060 Replace the "hides the suspended tab from non-administrators" web spec with its inverse and add the withheld-administrator case in `apps/web/src/features/trucks/__tests__/lifecycle/suspend.test.tsx`
+
+FR-016 was delivered after the initial review flagged it as the only functional requirement without a task. Suspended trucks are disclosed to every active role; the archived collection stays administrator-only, and so does the identity of whoever suspended the truck.
+
 ### Known boundary, carried deliberately
 
 After this slice a suspended truck cannot be returned to service through the product — that is issue `#253`. T048 makes the interface say so. Three of User Story 2's acceptance scenarios ship as `CONTEXT.md` constraints (T054) rather than code, because rotations do not exist yet. Both were confirmed at the T002 gate.

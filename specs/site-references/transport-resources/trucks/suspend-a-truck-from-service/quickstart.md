@@ -104,8 +104,9 @@ New cases required in each:
   not the `500` the row-count assertion would otherwise raise.
 - **update** — updating a suspended truck is refused with `E_TRUCK_SUSPENDED`, not
   `E_TRUCK_ARCHIVED`.
-- **list / available** — a suspended truck appears in `GET /trucks` for administrators and is absent
-  from `GET /trucks/available` for every role.
+- **list / available / suspended** — a suspended truck appears in `GET /trucks` for administrators,
+  is absent from `GET /trucks/available` for every role, and is returned by `GET /trucks/suspended`
+  to every active role, without its responsible administrator.
 
 ## 4. Run the web feature tests
 
@@ -115,8 +116,10 @@ pnpm --dir apps/web exec vitest run src/features/trucks
 
 New and extended coverage:
 
-- the suspended tab lists suspended trucks, shows its count, and is offered to administrators only
-- a non-administrator never sees the suspended tab and never receives a suspended truck
+- the suspended tab lists suspended trucks, shows its count, and is offered to every active role
+- a non-administrator sees the suspended tab but never the archived one, and never receives a
+  suspended truck in the available collection
+- a non-administrator reads the suspension date and comment but not the responsible administrator
 - suspending from the details panel calls `trucks.suspend`, shows success, and moves the truck out of
   the available tab without a manual refresh
 - a refused suspension shows the specific reason and refreshes to the authoritative state
@@ -162,8 +165,10 @@ As an organization administrator, then repeated as an operations administrator:
 7. In a second browser session, suspend the same truck concurrently. Confirm exactly one suspension
    is recorded and the second attempt reports *already suspended* and refreshes.
 8. Select the suspended truck in the archived-tab bulk flow — confirm it is not selectable there.
-9. Sign in as an operations lead and as an observer. Confirm neither sees the suspended tab and
-   neither receives suspended trucks in any selection list.
+9. Sign in as an operations lead and as an observer. Confirm each sees the suspended tab and can
+   open a suspended truck to read its date and comment, that neither sees the archived tab, that
+   neither is shown the responsible administrator, and that no suspended truck appears in the
+   available list or in any selection list.
 10. Repeat step 3 on a mobile viewport.
 
 ## Known boundary to confirm, not to fix

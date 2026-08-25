@@ -16,6 +16,7 @@ type MockTrucksOptions = {
   companies?: Array<Pick<TransportCompanyDto, 'id' | 'name' | 'status'>>
   onCompleteRequest?: () => void
   onAvailableRequest?: () => void
+  onSuspendedRequest?: () => void
 }
 
 export function mockTrucks({
@@ -25,6 +26,7 @@ export function mockTrucks({
   companies = TRANSPORT_COMPANIES,
   onCompleteRequest,
   onAvailableRequest,
+  onSuspendedRequest,
 }: MockTrucksOptions = {}) {
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
@@ -43,6 +45,16 @@ export function mockTrucks({
     http.get(`${API_BASE_URL}/api/v1/trucks/available`, () => {
       onAvailableRequest?.()
       return HttpResponse.json({ data: available })
+    }),
+    // Read by non-administrators only, and without the lifecycle actors the complete
+    // collection carries — the endpoint withholds them.
+    http.get(`${API_BASE_URL}/api/v1/trucks/suspended`, () => {
+      onSuspendedRequest?.()
+      return HttpResponse.json({
+        data: complete
+          .filter((truck) => truck.status === 'SUSPENDED')
+          .map(({ archivedBy, reactivatedBy, suspendedBy, ...truck }) => truck),
+      })
     }),
   )
 }

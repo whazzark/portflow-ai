@@ -32,11 +32,20 @@ export function TrucksPage() {
     transportResourcesRoute.useSearch()
   const navigate = transportResourcesRoute.useNavigate()
   const trucksQuery = useQuery(administrator ? truckQueries.all() : truckQueries.available())
+  // Administrators already receive suspended trucks in the complete collection, with their
+  // lifecycle actors; everyone else reads them here, without.
+  const suspendedTrucksQuery = useQuery({
+    ...truckQueries.suspended(),
+    enabled: !administrator,
+  })
   const companiesQuery = useQuery(transportCompanyQueries.all())
   const availableCompaniesQuery = useQuery(transportCompanyQueries.available())
   const companies = companiesQuery.data?.data ?? []
   const availableCompanies = availableCompaniesQuery.data?.data
-  const trucks = (trucksQuery.data?.data ?? []) as TruckDto[]
+  const trucks = [
+    ...((trucksQuery.data?.data ?? []) as TruckDto[]),
+    ...((suspendedTrucksQuery.data?.data ?? []) as unknown as TruckDto[]),
+  ]
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const truckMutations = useTruckMutations()
   const scopedTrucks = transportCompanyId
@@ -130,7 +139,7 @@ export function TrucksPage() {
   }, [truckStatus])
 
   useEffect(() => {
-    if (!administrator && (truckStatus === 'archived' || truckStatus === 'suspended')) {
+    if (!administrator && truckStatus === 'archived') {
       void navigate({
         replace: true,
         search: (previous) => ({ ...previous, truckId: undefined, truckStatus: 'available' }),
@@ -178,15 +187,12 @@ export function TrucksPage() {
 
   const available = scopedTrucks.filter((truck) => truck.status === 'AVAILABLE')
   const archived = administrator ? scopedTrucks.filter((truck) => truck.status === 'ARCHIVED') : []
-  const suspended = administrator
-    ? scopedTrucks.filter((truck) => truck.status === 'SUSPENDED')
-    : []
-  const selectedTrucks = !administrator
-    ? available
-    : truckStatus === 'archived'
-      ? archived
-      : truckStatus === 'suspended'
-        ? suspended
+  const suspended = scopedTrucks.filter((truck) => truck.status === 'SUSPENDED')
+  const selectedTrucks =
+    truckStatus === 'suspended'
+      ? suspended
+      : administrator && truckStatus === 'archived'
+        ? archived
         : available
   const toggleTruck = (id: string) => {
     void navigate({
@@ -246,7 +252,8 @@ export function TrucksPage() {
           onValueChange={(value) => {
             if (
               value === 'available' ||
-              (administrator && (value === 'archived' || value === 'suspended'))
+              value === 'suspended' ||
+              (administrator && value === 'archived')
             ) {
               void navigate({
                 search: (previous) => ({
@@ -257,19 +264,17 @@ export function TrucksPage() {
               })
             }
           }}
-          value={administrator ? truckStatus : 'available'}
+          value={truckStatus}
         >
           <TabsList aria-label="Truck status" className="mx-3 mt-3" variant="line">
             <TabsTrigger value="available">
               Available{' '}
               <span className="text-muted-foreground tabular-nums">({available.length})</span>
             </TabsTrigger>
-            {administrator && (
-              <TabsTrigger value="suspended">
-                Suspended{' '}
-                <span className="text-muted-foreground tabular-nums">({suspended.length})</span>
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="suspended">
+              Suspended{' '}
+              <span className="text-muted-foreground tabular-nums">({suspended.length})</span>
+            </TabsTrigger>
             {administrator && (
               <TabsTrigger value="archived">
                 Archived{' '}
@@ -278,7 +283,7 @@ export function TrucksPage() {
             )}
           </TabsList>
           <TabsContent className="min-h-0" value="available">
-            {(truckStatus === 'available' || !administrator) && (
+            {truckStatus === 'available' && (
               <TruckSection
                 canAdminister={administrator}
                 lifecycle="available"
@@ -308,24 +313,22 @@ export function TrucksPage() {
               />
             )}
           </TabsContent>
-          {administrator && (
-            <TabsContent className="min-h-0" value="suspended">
-              {truckStatus === 'suspended' && (
-                <TruckSection
-                  canAdminister={administrator}
-                  lifecycle="suspended"
-                  onEdit={editTruck}
-                  onSelect={toggleTruck}
-                  onView={selectTruck}
-                  search={truckSearch}
-                  selectable={false}
-                  selectedId={truckId}
-                  trucks={selectedTrucks}
-                  companies={companies}
-                />
-              )}
-            </TabsContent>
-          )}
+          <TabsContent className="min-h-0" value="suspended">
+            {truckStatus === 'suspended' && (
+              <TruckSection
+                canAdminister={administrator}
+                lifecycle="suspended"
+                onEdit={editTruck}
+                onSelect={toggleTruck}
+                onView={selectTruck}
+                search={truckSearch}
+                selectable={false}
+                selectedId={truckId}
+                trucks={selectedTrucks}
+                companies={companies}
+              />
+            )}
+          </TabsContent>
           {administrator && (
             <TabsContent className="min-h-0" value="archived">
               {truckStatus === 'archived' && (

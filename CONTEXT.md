@@ -193,7 +193,7 @@ A vehicle registered for the site, provided by exactly one transport company at 
 _Avoid_: driver, vehicle
 
 **Suspended Truck**:
-A truck temporarily out of service — a breakdown, a maintenance slot, a technical inspection — that remains a live site reference under the same identity, registration, and transport company, with its registration still reserved. It is excluded from every collection offering trucks for new operational work, while the discharges, shifts, and rotations it is already part of continue untouched. Suspension records its time, responsible administrator, and an optional comment, and is entered only from available: an archived truck must be reactivated first, and a suspended truck must return to service before it can be archived, reactivated, or updated.
+A truck temporarily out of service — a breakdown, a maintenance slot, a technical inspection — that remains a live site reference under the same identity, registration, and transport company, with its registration still reserved. It is excluded from every collection offering trucks for new operational work, while the discharges, shifts, and rotations it is already part of continue untouched. Suspension records its time, responsible administrator, and an optional comment; every active role can see that a truck is suspended, along with when and why, while the responsible administrator remains administration context. It is entered only from available: an archived truck must be reactivated first, and a suspended truck must return to service before it can be archived, reactivated, or updated.
 _Avoid_: broken truck, inactive truck, archived truck, out-of-service resource
 
 **Discharge Truck Assignment**:

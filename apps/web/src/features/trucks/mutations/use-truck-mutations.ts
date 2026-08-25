@@ -15,6 +15,10 @@ export function useTruckMutations() {
       exact: true,
       queryKey: truckQueries.available().queryKey,
     })
+    await queryClient.invalidateQueries({
+      exact: true,
+      queryKey: truckQueries.suspended().queryKey,
+    })
   }
 
   const create = useMutation(

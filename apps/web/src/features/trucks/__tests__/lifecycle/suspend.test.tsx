@@ -15,6 +15,7 @@ import {
 import { mockTrucks, queryTruckTab, renderTrucks, truckTab } from '../support/test-helpers'
 
 const COMPANY_NAME = 'Atlantic Transport'
+const SUSPENDED_TRUCK = SUSPEND_TRUCKS[1]
 
 function details() {
   return screen.getByRole('region', { hidden: true, name: 'Truck details' })
@@ -194,7 +195,8 @@ test('refreshes to the authoritative state when suspension is refused', async ()
   })
 })
 
-test('hides the suspended tab from non-administrators', async () => {
+test('shows the suspended tab to a non-administrator, without the archived one', async () => {
+  const user = userEvent.setup()
   mockTrucks({
     user: ACTIVE_OPERATIONS_LEAD,
     complete: SUSPEND_TRUCKS,
@@ -204,6 +206,38 @@ test('hides the suspended tab from non-administrators', async () => {
   renderTrucks()
   await screen.findByRole('list', { name: 'Available trucks' })
 
-  expect(queryTruckTab(/Suspended/)).not.toBeInTheDocument()
+  // FR-016: an operational user must be able to tell that a truck they were using is out of
+  // service, which is not the same as being allowed into the archived collection.
+  expect(truckTab(/Suspended \(1\)/)).toBeInTheDocument()
+  expect(queryTruckTab(/Archived/)).not.toBeInTheDocument()
+  // A suspended truck is not offered for new work: it stays out of the available list.
   expect(screen.queryByText('TT-802-PF')).not.toBeInTheDocument()
+
+  await user.click(truckTab(/Suspended/))
+  expect(await screen.findByText('TT-802-PF')).toBeInTheDocument()
+})
+
+test('withholds the responsible administrator from a non-administrator', async () => {
+  const user = userEvent.setup()
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_LEAD,
+    complete: SUSPEND_TRUCKS,
+    available: SUSPEND_AVAILABLE_TRUCKS,
+  })
+
+  renderTrucks()
+  await screen.findByRole('list', { name: 'Available trucks' })
+  await user.click(truckTab(/Suspended/))
+  await user.click(
+    await screen.findByRole('button', {
+      name: `${SUSPENDED_TRUCK.registration}, Atlantic Transport`,
+    }),
+  )
+
+  const panel = await screen.findByRole('region', { hidden: true, name: 'Truck details' })
+  // The date and the comment explain why the truck is no longer offered; who suspended it is
+  // administration context (FR-015).
+  expect(within(panel).getByText(SUSPENDED_TRUCK.suspensionComment as string)).toBeInTheDocument()
+  expect(within(panel).queryByText('Suspended by')).not.toBeInTheDocument()
+  expect(within(panel).getByText('Suspended at')).toBeInTheDocument()
 })

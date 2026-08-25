@@ -26,6 +26,7 @@ export type ScannedRoutes = {
     'transport_companies.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'trucks.index': { paramsTuple?: []; params?: {} }
     'trucks.available': { paramsTuple?: []; params?: {} }
+    'trucks.suspended': { paramsTuple?: []; params?: {} }
     'trucks.store': { paramsTuple?: []; params?: {} }
     'trucks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'trucks.archive_many': { paramsTuple?: []; params?: {} }
@@ -60,6 +61,7 @@ export type ScannedRoutes = {
     'transport_companies.available': { paramsTuple?: []; params?: {} }
     'trucks.index': { paramsTuple?: []; params?: {} }
     'trucks.available': { paramsTuple?: []; params?: {} }
+    'trucks.suspended': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
     'weighing_areas.index': { paramsTuple?: []; params?: {} }
@@ -76,6 +78,7 @@ export type ScannedRoutes = {
     'transport_companies.available': { paramsTuple?: []; params?: {} }
     'trucks.index': { paramsTuple?: []; params?: {} }
     'trucks.available': { paramsTuple?: []; params?: {} }
+    'trucks.suspended': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
     'weighing_areas.index': { paramsTuple?: []; params?: {} }

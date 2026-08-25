@@ -21,6 +21,9 @@ test('retries an initial failure and renders the recovered authoritative collect
   let requests = 0
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_OBSERVER })),
+    // A non-administrator also loads the suspended collection; it is not what these
+    // specs exercise, so it answers empty.
+    http.get(`${API_BASE_URL}/api/v1/trucks/suspended`, () => HttpResponse.json({ data: [] })),
     http.get(`${API_BASE_URL}/api/v1/transport-companies`, () =>
       HttpResponse.json({
         data: [
@@ -55,6 +58,9 @@ test('retry replaces a failed stale snapshot and reconciles its selected identit
   let response: 'initial' | 'failure' | 'recovered' = 'initial'
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_OBSERVER })),
+    // A non-administrator also loads the suspended collection; it is not what these
+    // specs exercise, so it answers empty.
+    http.get(`${API_BASE_URL}/api/v1/trucks/suspended`, () => HttpResponse.json({ data: [] })),
     http.get(`${API_BASE_URL}/api/v1/transport-companies`, () =>
       HttpResponse.json({
         data: [

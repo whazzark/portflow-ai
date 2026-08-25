@@ -21,6 +21,7 @@ import {
   updateTruckValidator,
 } from '#trucks/shared/truck_validator'
 import SuspendTruckUseCase from '#trucks/suspend/suspend_truck_use_case'
+import ListSuspendedTrucksUseCase from '#trucks/suspended/list_suspended_trucks_use_case'
 import UpdateTruckUseCase from '#trucks/update/update_truck_use_case'
 
 @inject()
@@ -35,7 +36,16 @@ export default class TrucksController {
     private reactivateTruckUseCase: ReactivateTruckUseCase,
     private reactivateTrucksUseCase: ReactivateTrucksUseCase,
     private suspendTruckUseCase: SuspendTruckUseCase,
+    private listSuspendedTrucksUseCase: ListSuspendedTrucksUseCase,
   ) {}
+
+  async suspended({ bouncer, serialize }: HttpContext) {
+    await bouncer.with(TruckPolicy).authorize('listSuspended')
+
+    const trucks = await this.listSuspendedTrucksUseCase.handle()
+
+    return serialize(TruckTransformer.transform(trucks).useVariant('toOperationalView'))
+  }
 
   async store({ bouncer, request, response, serialize }: HttpContext) {
     await bouncer.with(TruckPolicy).authorize('create')

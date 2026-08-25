@@ -189,6 +189,21 @@ export default class LucidTruckRepository extends TruckRepository {
     )
   }
 
+  /**
+   * The suspended collection is read by every active role, not only administrators, so it
+   * deliberately preloads no lifecycle actor: `toOperationalView` never exposes one.
+   */
+  listSuspended(): Promise<Truck[]> {
+    return (
+      Truck.query()
+        .where('status', 'SUSPENDED')
+        // biome-ignore lint/security/noSecrets: SQL ordering expression, not a secret
+        .orderByRaw('LOWER(registration) ASC')
+        .orderBy('registration', 'asc')
+        .orderBy('id', 'asc')
+    )
+  }
+
   async findCompanyIdsWithAvailableTrucks(
     input: FindCompanyIdsWithAvailableTrucksInput,
   ): Promise<Set<string>> {

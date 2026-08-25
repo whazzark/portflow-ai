@@ -31,13 +31,20 @@ export const Route = createFileRoute('/_authenticated/transport-resources')({
   validateSearch: transportResourcesSearchSchema,
   loader: async ({ context: { queryClient } }) => {
     const session = await ensureSessionUser(queryClient)
-    const query = isAdministrator(session.data) ? truckQueries.all() : truckQueries.available()
-
     // Transport companies are intentionally not ensured here: both TrucksPage and
     // TransportResourcesWorkspace already own their own loading/error UI for that
     // query, and pre-fetching it would route a companies-specific failure into this
     // truck-labeled error boundary instead.
-    return queryClient.ensureQueryData(query)
+    if (isAdministrator(session.data)) {
+      return queryClient.ensureQueryData(truckQueries.all())
+    }
+
+    // A non-administrator reads two collections: the trucks on offer, and the suspended ones
+    // that explain why a truck they were using is no longer among them.
+    return Promise.all([
+      queryClient.ensureQueryData(truckQueries.available()),
+      queryClient.ensureQueryData(truckQueries.suspended()),
+    ])
   },
   pendingComponent: TrucksPending,
   errorComponent: TrucksError,

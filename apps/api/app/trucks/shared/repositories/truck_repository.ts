@@ -106,6 +106,7 @@ export type ReactivateTrucksCommand = {
 export default abstract class TruckRepository {
   abstract list(): Promise<Truck[]>
   abstract listAvailable(): Promise<Truck[]>
+  abstract listSuspended(): Promise<Truck[]>
   abstract findById(id: string): Promise<Truck | null>
   abstract create(command: CreateTruckCommand): Promise<TruckWriteResult>
   abstract updateAvailable(command: UpdateTruckCommand): Promise<TruckWriteResult>

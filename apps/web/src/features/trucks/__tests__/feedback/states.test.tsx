@@ -16,6 +16,9 @@ test('distinguishes loading, lifecycle-empty, and search-no-match feedback', asy
 
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_OBSERVER })),
+    // A non-administrator also loads the suspended collection; it is not what these
+    // specs exercise, so it answers empty.
+    http.get(`${API_BASE_URL}/api/v1/trucks/suspended`, () => HttpResponse.json({ data: [] })),
     http.get(`${API_BASE_URL}/api/v1/trucks/available`, async () => {
       await pendingTrucks
       return HttpResponse.json({ data: AVAILABLE_TRUCKS })
@@ -44,6 +47,9 @@ test('distinguishes loading, lifecycle-empty, and search-no-match feedback', asy
 test('shows initial and refresh failures instead of stale truck data', async () => {
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_OBSERVER })),
+    // A non-administrator also loads the suspended collection; it is not what these
+    // specs exercise, so it answers empty.
+    http.get(`${API_BASE_URL}/api/v1/trucks/suspended`, () => HttpResponse.json({ data: [] })),
     http.get(`${API_BASE_URL}/api/v1/trucks/available`, () =>
       HttpResponse.json(
         { error: { code: 'E_UNAVAILABLE', message: 'Unavailable' } },
@@ -59,6 +65,9 @@ test('shows initial and refresh failures instead of stale truck data', async () 
   let shouldFail = false
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_OBSERVER })),
+    // A non-administrator also loads the suspended collection; it is not what these
+    // specs exercise, so it answers empty.
+    http.get(`${API_BASE_URL}/api/v1/trucks/suspended`, () => HttpResponse.json({ data: [] })),
     http.get(`${API_BASE_URL}/api/v1/trucks/available`, () =>
       shouldFail
         ? HttpResponse.json(

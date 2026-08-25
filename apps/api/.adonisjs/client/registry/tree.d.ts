@@ -33,6 +33,7 @@ export interface ApiDefinition {
   trucks: {
     index: typeof routes['trucks.index']
     available: typeof routes['trucks.available']
+    suspended: typeof routes['trucks.suspended']
     store: typeof routes['trucks.store']
     update: typeof routes['trucks.update']
     archiveMany: typeof routes['trucks.archive_many']

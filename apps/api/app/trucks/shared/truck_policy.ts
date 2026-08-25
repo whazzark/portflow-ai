@@ -12,6 +12,13 @@ export default class TruckPolicy extends BasePolicy {
     return user.accessStatus === 'ACTIVE'
   }
 
+  // An operational user must be able to tell that a truck they were using is temporarily out
+  // of service, so the suspended collection is not restricted to administrators. Who suspended
+  // it stays administrator-only, withheld by the transformer variant rather than by this rule.
+  listSuspended(user: User): AuthorizerResponse {
+    return user.accessStatus === 'ACTIVE'
+  }
+
   create(user: User): AuthorizerResponse {
     return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
   }

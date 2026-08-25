@@ -4,6 +4,32 @@ import type Truck from '#models/truck'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 
 export default class TruckTransformer extends BaseTransformer<Truck> {
+  /**
+   * The truck as an operational user may read it: everything the administration view carries
+   * except who acted on its lifecycle. A suspended truck's date and comment explain why it is no
+   * longer offered, which is what FR-016 asks for; naming the responsible administrator is
+   * administration context and stays behind the administrator-only collections (FR-015).
+   */
+  toOperationalView() {
+    const truck = this.pick(this.resource, [
+      'id',
+      'registration',
+      'vehicleModel',
+      'transportCompanyId',
+      'status',
+      'archivedAt',
+      'archiveComment',
+      'reactivatedAt',
+      'reactivationComment',
+      'suspendedAt',
+      'suspensionComment',
+      'createdAt',
+      'updatedAt',
+    ])
+
+    return { ...truck, capacityTonnes: Number(this.resource.capacityTonnes) }
+  }
+
   toObject() {
     const truck = this.pick(this.resource, [
       'id',

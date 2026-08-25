@@ -52,6 +52,7 @@ router
       .group(() => {
         router.get('/', [controllers.Trucks, 'index']).as('index')
         router.get('/available', [controllers.Trucks, 'available']).as('available')
+        router.get('/suspended', [controllers.Trucks, 'suspended']).as('suspended')
         router.post('/', [controllers.Trucks, 'store']).as('store')
         router.patch('/:id', [controllers.Trucks, 'update']).as('update')
         router.post('/archive', [controllers.Trucks, 'archiveMany']).as('archive_many')

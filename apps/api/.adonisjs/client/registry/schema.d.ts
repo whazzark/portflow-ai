@@ -271,6 +271,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['available']>>>
     }
   }
+  'trucks.suspended': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/trucks/suspended'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['suspended']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['suspended']>>>
+    }
+  }
   'trucks.store': {
     methods: ["POST"]
     pattern: '/api/v1/trucks'
