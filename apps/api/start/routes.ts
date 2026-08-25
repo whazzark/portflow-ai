@@ -37,7 +37,13 @@ router
         router.get('/available', [controllers.TransportCompanies, 'available']).as('available')
         router.patch('/:id', [controllers.TransportCompanies, 'update']).as('update')
         router.post('/archive', [controllers.TransportCompanies, 'archiveMany']).as('archive_many')
+        router
+          .post('/reactivate', [controllers.TransportCompanies, 'reactivateMany'])
+          .as('reactivate_many')
         router.post('/:id/archive', [controllers.TransportCompanies, 'archive']).as('archive')
+        router
+          .post('/:id/reactivate', [controllers.TransportCompanies, 'reactivate'])
+          .as('reactivate')
       })
       .prefix('/transport-companies')
       .as('transport_companies')

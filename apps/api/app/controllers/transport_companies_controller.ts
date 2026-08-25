@@ -7,12 +7,16 @@ import ArchiveTransportCompanyUseCase from '#transport_companies/archive/archive
 import ListAvailableTransportCompaniesUseCase from '#transport_companies/available/list_available_transport_companies_use_case'
 import CreateTransportCompanyUseCase from '#transport_companies/create/create_transport_company_use_case'
 import ListTransportCompaniesUseCase from '#transport_companies/list/list_transport_companies_use_case'
+import ReactivateTransportCompaniesUseCase from '#transport_companies/reactivate/reactivate_transport_companies_use_case'
+import ReactivateTransportCompanyUseCase from '#transport_companies/reactivate/reactivate_transport_company_use_case'
 import TransportCompanyPolicy from '#transport_companies/shared/transport_company_policy'
 import TransportCompanyTransformer from '#transport_companies/shared/transport_company_transformer'
 import {
   archiveTransportCompaniesValidator,
   archiveTransportCompanyValidator,
   createTransportCompanyValidator,
+  reactivateTransportCompaniesValidator,
+  reactivateTransportCompanyValidator,
   updateTransportCompanyValidator,
 } from '#transport_companies/shared/transport_company_validator'
 import UpdateTransportCompanyUseCase from '#transport_companies/update/update_transport_company_use_case'
@@ -26,6 +30,8 @@ export default class TransportCompaniesController {
     private updateTransportCompanyUseCase: UpdateTransportCompanyUseCase,
     private archiveTransportCompanyUseCase: ArchiveTransportCompanyUseCase,
     private archiveTransportCompaniesUseCase: ArchiveTransportCompaniesUseCase,
+    private reactivateTransportCompanyUseCase: ReactivateTransportCompanyUseCase,
+    private reactivateTransportCompaniesUseCase: ReactivateTransportCompaniesUseCase,
   ) {}
 
   async store({ bouncer, request, response, serialize }: HttpContext) {
@@ -97,6 +103,43 @@ export default class TransportCompaniesController {
       ids: payload.ids,
       archivedByUserId: user.id,
       archivedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize({
+      updatedCompanies: TransportCompanyTransformer.transform(result.updatedCompanies),
+      blockedCompanies: result.blockedCompanies,
+    })
+  }
+
+  async reactivate({ auth, bouncer, params, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(TransportCompanyPolicy).authorize('reactivate')
+
+    const payload = await request.validateUsing(reactivateTransportCompanyValidator)
+
+    const company = await this.reactivateTransportCompanyUseCase.handle({
+      id: params.id,
+      reactivatedByUserId: user.id,
+      reactivatedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize(TransportCompanyTransformer.transform(company))
+  }
+
+  async reactivateMany({ auth, bouncer, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(TransportCompanyPolicy).authorize('reactivate')
+
+    const payload = await request.validateUsing(reactivateTransportCompaniesValidator)
+
+    const result = await this.reactivateTransportCompaniesUseCase.handle({
+      ids: payload.ids,
+      reactivatedByUserId: user.id,
+      reactivatedAt: DateTime.now(),
       comment: payload.comment,
     })
 

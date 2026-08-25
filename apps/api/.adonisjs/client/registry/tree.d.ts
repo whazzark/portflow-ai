@@ -26,7 +26,9 @@ export interface ApiDefinition {
     available: typeof routes['transport_companies.available']
     update: typeof routes['transport_companies.update']
     archiveMany: typeof routes['transport_companies.archive_many']
+    reactivateMany: typeof routes['transport_companies.reactivate_many']
     archive: typeof routes['transport_companies.archive']
+    reactivate: typeof routes['transport_companies.reactivate']
   }
   trucks: {
     index: typeof routes['trucks.index']

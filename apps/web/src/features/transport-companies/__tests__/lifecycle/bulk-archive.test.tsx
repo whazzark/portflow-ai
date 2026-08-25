@@ -24,7 +24,7 @@ test('offers no selection checkboxes to a non-administrator', async () => {
   expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
 })
 
-test('offers no selection checkboxes on the Archived tab', async () => {
+test('offers no Archive selected action on the Archived tab', async () => {
   mockTrucks()
   mockTransportCompanies(TRANSPORT_COMPANIES, ADMIN_USER)
 
@@ -33,7 +33,11 @@ test('offers no selection checkboxes on the Archived tab', async () => {
   fireEvent.click(within(await companyTabs()).getByRole('tab', { name: /^Archived/ }))
   const archivedList = await screen.findByRole('list', { name: 'Archived transport companies' })
 
-  expect(within(archivedList).queryByRole('checkbox', { name: /select/i })).not.toBeInTheDocument()
+  // The Archived tab now carries its own checkboxes for reactivation (see bulk-reactivate.test.tsx);
+  // what stays false here is that archival is never offered there.
+  fireEvent.click(within(archivedList).getByRole('checkbox', { name: 'Select Coastal Haulage' }))
+  expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Reactivate selected' })).toBeInTheDocument()
 })
 
 test('selecting a company does not change which company scopes the trucks panel', async () => {

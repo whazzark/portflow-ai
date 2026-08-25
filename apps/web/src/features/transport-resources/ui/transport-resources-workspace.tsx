@@ -273,16 +273,20 @@ export function TransportResourcesWorkspace() {
                   lifecycle="archived"
                   onEdit={editCompanyDetails}
                   onSelect={toggleCompany}
+                  onToggleSelection={canAdminister ? toggleCompanySelection : undefined}
+                  onToggleVisible={canAdminister ? toggleVisibleCompanySelection : undefined}
                   onView={viewCompanyDetails}
                   search={companySearch}
                   selectedId={transportCompanyId}
+                  selectedIds={canAdminister ? selectedCompanyIds : undefined}
                 />
               )}
             </TabsContent>
           </Tabs>
         </CardContent>
-        {canAdminister && companyStatus === 'available' && (
+        {canAdminister && (
           <BulkTransportCompanyLifecycleActions
+            direction={companyStatus === 'available' ? 'archive' : 'reactivate'}
             onClear={clearCompanySelection}
             onSuccess={(result) => {
               setSelectedCompanyIds(new Set(result.blockedCompanies.map((blocked) => blocked.id)))
@@ -358,11 +362,11 @@ export function TransportResourcesWorkspace() {
             <TransportCompanyDetails
               canAdminister={canAdminister}
               company={companyDetails}
-              onArchiveSuccess={() =>
+              onLifecycleSuccess={() =>
                 void navigate({
                   search: (previous) => ({
                     ...previous,
-                    companyStatus: 'archived',
+                    companyStatus: companyDetails.status === 'ARCHIVED' ? 'available' : 'archived',
                     transportCompanyId: undefined,
                     truckId: undefined,
                   }),

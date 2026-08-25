@@ -211,6 +211,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['archiveMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'transport_companies.reactivate_many': {
+    methods: ["POST"]
+    pattern: '/api/v1/transport-companies/reactivate'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').reactivateTransportCompaniesValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').reactivateTransportCompaniesValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['reactivateMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['reactivateMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'transport_companies.archive': {
     methods: ["POST"]
     pattern: '/api/v1/transport-companies/:id/archive'
@@ -221,6 +233,18 @@ export interface Registry {
       query: ExtractQuery<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').archiveTransportCompanyValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['archive']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'transport_companies.reactivate': {
+    methods: ["POST"]
+    pattern: '/api/v1/transport-companies/:id/reactivate'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').reactivateTransportCompanyValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#transport_companies/shared/transport_company_validator').reactivateTransportCompanyValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['reactivate']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/transport_companies_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'trucks.index': {
