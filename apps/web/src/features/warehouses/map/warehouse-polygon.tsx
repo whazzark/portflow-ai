@@ -48,11 +48,15 @@ export function WarehousePolygons({
   selectedId,
   onSelect,
   hideTooltip = false,
+  disabled = false,
 }: {
   warehouses: PresentedWarehouse[]
   selectedId?: string
   onSelect: (warehouse: PresentedWarehouse) => void
   hideTooltip?: boolean
+  /** While a footprint is being drawn the map's clicks belong to the drawing, so no warehouse may
+   * be selected — neither through its polygon layer nor through its focusable marker. */
+  disabled?: boolean
 }) {
   const [hovered, setHovered] = useState<HoveredWarehouse>(null)
   const [focused, setFocused] = useState<PresentedWarehouse | null>(null)
@@ -65,6 +69,7 @@ export function WarehousePolygons({
 
   const renderLayer = (items: PresentedWarehouse[], status: PresentedWarehouse['status']) => (
     <WarehousePolygonLayer
+      disabled={disabled}
       items={items}
       onSelect={onSelect}
       onHover={setHovered}
@@ -78,7 +83,7 @@ export function WarehousePolygons({
     <>
       {renderLayer(available, 'AVAILABLE')}
       {renderLayer(archived, 'ARCHIVED')}
-      {tooltipWarehouse && tooltipBounds && !hideTooltip && (
+      {tooltipWarehouse && tooltipBounds && !hideTooltip && !disabled && (
         <MapPopup
           anchor="bottom"
           latitude={tooltipBounds.maxLatitude}
@@ -101,6 +106,7 @@ function WarehousePolygonLayer({
   onSelect,
   onHover,
   onFocus,
+  disabled,
 }: {
   items: PresentedWarehouse[]
   selectedId?: string
@@ -108,6 +114,7 @@ function WarehousePolygonLayer({
   onSelect: (warehouse: PresentedWarehouse) => void
   onHover: (warehouse: HoveredWarehouse) => void
   onFocus: (warehouse: PresentedWarehouse | null) => void
+  disabled: boolean
 }) {
   const data: GeoJSON.FeatureCollection<GeoJSON.Polygon, WarehouseProperties> = {
     type: 'FeatureCollection',
@@ -131,7 +138,7 @@ function WarehousePolygonLayer({
           ],
         }}
         id={`warehouses-${status.toLowerCase()}`}
-        interactive
+        interactive={!disabled}
         linePaint={{
           'line-color': paint.line,
           'line-width': [
@@ -179,6 +186,7 @@ function WarehousePolygonLayer({
             <MarkerContent>
               <button
                 aria-label={`View warehouse ${warehouse.name} (${warehouse.status === 'AVAILABLE' ? 'Available' : 'Archived'})`}
+                disabled={disabled}
                 className={classnames(
                   'grid size-11 cursor-pointer place-items-center rounded-full transition-[opacity,transform,filter] duration-200 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none',
                   warehouse.isSearchMatch ? 'scale-100 opacity-100' : 'scale-75 opacity-35',

@@ -119,3 +119,30 @@ describe('warehouse polygon selection', () => {
     expect(marker.querySelector('svg')).toBeInTheDocument()
   })
 })
+
+test('stops selecting warehouses while a footprint is being drawn', async () => {
+  const user = userEvent.setup()
+  const onSelect = vi.fn()
+  mapGeoJsonMock.mockClear()
+
+  render(
+    <WarehousePolygons
+      disabled
+      onSelect={onSelect}
+      warehouses={WAREHOUSES.map((warehouse) => ({ ...warehouse, isSearchMatch: true }))}
+    />,
+  )
+
+  // The polygon layer's own click handler is registered by MapLibre per layer, so arming the map
+  // is not enough on its own — the layer has to stand down too.
+  for (const call of mapGeoJsonMock.mock.calls) {
+    expect((call[0] as { interactive?: boolean }).interactive).toBe(false)
+  }
+
+  const marker = screen.getByRole('button', {
+    name: 'View warehouse North Shed (Available)',
+  })
+  expect(marker).toBeDisabled()
+  await user.click(marker)
+  expect(onSelect).not.toHaveBeenCalled()
+})

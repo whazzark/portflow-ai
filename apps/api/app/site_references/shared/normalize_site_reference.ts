@@ -17,14 +17,22 @@ export const assertValidSiteReferenceName = (name: string) => {
   return normalizedName
 }
 
+/** The coordinate rules are also exposed as predicates so a slice with its own error vocabulary can
+ * reuse the rule without inheriting the site-reference exceptions. */
+export const isLegalSiteReferenceLatitude = (latitude: number) =>
+  Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
+
+export const isLegalSiteReferenceLongitude = (longitude: number) =>
+  Number.isFinite(longitude) && longitude >= -180 && longitude <= 180
+
 export const assertLegalSiteReferenceLatitude = (latitude: number) => {
-  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+  if (!isLegalSiteReferenceLatitude(latitude)) {
     throw new InvalidSiteReferenceCoordinatesException()
   }
 }
 
 export const assertLegalSiteReferenceLongitude = (longitude: number) => {
-  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+  if (!isLegalSiteReferenceLongitude(longitude)) {
     throw new InvalidSiteReferenceCoordinatesException()
   }
 }

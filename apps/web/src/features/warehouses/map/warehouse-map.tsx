@@ -1,6 +1,10 @@
 import { LngLatBounds } from 'maplibre-gl'
 import { useEffect, useMemo, useState } from 'react'
-import { Map as MapCanvas, useMap } from '@/components/ui/map'
+import type { ResourceMapCreateAction } from '@/components/resource-map/resource-map-create-control'
+import { ResourceMapCreateControl } from '@/components/resource-map/resource-map-create-control'
+import type { LatLng } from '@/components/resource-map/resource-map-placement'
+import { PendingPolygonPlacement } from '@/components/resource-map/resource-map-polygon-placement'
+import { Map as MapCanvas, MapControls, useMap } from '@/components/ui/map'
 import { mapStyleUrls } from '@/config/map'
 import { WarehouseDoorMarker } from '@/features/warehouse-doors/map/warehouse-door-marker'
 import type { WarehouseDoorDto } from '@/features/warehouse-doors/types'
@@ -14,6 +18,15 @@ const MOBILE_PANEL_MAX_HEIGHT = 38 * 16
 const MOBILE_PANEL_VIEWPORT_RATIO = 0.75
 
 type DetailsPanelSide = 'right' | 'bottom'
+
+export type WarehouseMapPlacement = {
+  armed: boolean
+  points: LatLng[]
+  onAddPoint: (point: LatLng) => void
+  onMovePoint: (index: number, point: LatLng) => void
+  onComplete: () => void
+  completed: boolean
+}
 
 function getFitPadding(
   selected: PresentedWarehouse | undefined,
@@ -120,6 +133,8 @@ export function WarehouseMap({
   doors = [],
   selectedDoorId,
   onDoorSelect,
+  placement,
+  createActions = [],
 }: {
   detailsPanelSide?: DetailsPanelSide
   warehouses: PresentedWarehouse[]
@@ -129,8 +144,11 @@ export function WarehouseMap({
   doors?: WarehouseDoorDto[]
   selectedDoorId?: string
   onDoorSelect?: (door: WarehouseDoorDto) => void
+  placement?: WarehouseMapPlacement
+  createActions?: ResourceMapCreateAction[]
 }) {
   const [hoveredDoorId, setHoveredDoorId] = useState<string>()
+  const isArmed = placement?.armed ?? false
   const initialCenter = useMemo<[number, number]>(() => {
     const point = warehouses[0]?.footprint.points[0]
     return point ? [point.longitude, point.latitude] : [-1.2264, 46.1591]
@@ -145,17 +163,33 @@ export function WarehouseMap({
         styles={mapStyleUrls}
         zoom={warehouses.length === 1 ? 13 : 5}
       >
-        <FitWarehouseBounds
-          detailsPanelSide={detailsPanelSide}
-          warehouses={warehouses}
-          selected={selected}
-        />
+        {!isArmed && (
+          <FitWarehouseBounds
+            detailsPanelSide={detailsPanelSide}
+            warehouses={warehouses}
+            selected={selected}
+          />
+        )}
         <WarehousePolygons
           warehouses={warehouses}
           selectedId={selected?.id}
           onSelect={onSelect}
           hideTooltip={hoveredDoorId !== undefined}
+          disabled={isArmed}
         />
+        {placement && (
+          <PendingPolygonPlacement
+            armed={placement.armed}
+            completed={placement.completed}
+            onAddPoint={placement.onAddPoint}
+            onComplete={placement.onComplete}
+            onMovePoint={placement.onMovePoint}
+            points={placement.points}
+          />
+        )}
+        <MapControls position="bottom-right" showZoom>
+          <ResourceMapCreateControl actions={createActions} />
+        </MapControls>
         {selected &&
           onDoorSelect &&
           doors.map((door) => (
@@ -172,6 +206,7 @@ export function WarehouseMap({
       <section aria-label="Warehouses on map" className="sr-only">
         {warehouses.map((warehouse) => (
           <button
+            disabled={isArmed}
             key={warehouse.id}
             onClick={() => onSelect(warehouse)}
             title={`${warehouse.name} — ${warehouse.status === 'AVAILABLE' ? 'Available' : 'Archived'}`}

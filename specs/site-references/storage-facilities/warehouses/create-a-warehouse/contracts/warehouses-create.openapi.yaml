@@ -1,0 +1,216 @@
+openapi: 3.1.0
+info:
+  title: Portflow Warehouse Creation Contract
+  version: 1.0.0
+  description: >-
+    Write contract for Issue #208 Create a Warehouse. Extends the read contract introduced by #207
+    (specs/site-references/storage-facilities/warehouses/list-warehouses/contracts/warehouses.openapi.yaml),
+    reusing its Warehouse, WarehouseFootprint, and GeographicPoint schemas unchanged.
+paths:
+  /api/v1/warehouses:
+    post:
+      operationId: createWarehouse
+      summary: Create a warehouse with its required footprint
+      description: >-
+        Creates one available warehouse from a trimmed unique name and an ordered footprint of at
+        least three boundary points. The created warehouse always starts AVAILABLE and always starts
+        with no doors. Requires an authenticated, active organization or operations administrator.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWarehouseRequest"
+            examples:
+              triangle:
+                summary: Minimal three-point footprint
+                value:
+                  name: North Shed
+                  footprint:
+                    points:
+                      - { latitude: 49.4938, longitude: 0.1077 }
+                      - { latitude: 49.4938, longitude: 0.1092 }
+                      - { latitude: 49.4929, longitude: 0.1088 }
+      responses:
+        "201":
+          description: The warehouse was created. Point order matches the submitted order exactly.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Warehouse"
+              examples:
+                created:
+                  value:
+                    data:
+                      id: 018f80c0-8799-7cb0-bb14-2d2c8d206a8c
+                      name: North Shed
+                      status: AVAILABLE
+                      footprint:
+                        points:
+                          - { latitude: 49.4938, longitude: 0.1077 }
+                          - { latitude: 49.4938, longitude: 0.1092 }
+                          - { latitude: 49.4929, longitude: 0.1088 }
+                      doors: []
+        "401":
+          description: The session is missing, invalid, expired, or belongs to a user who is no longer active.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The user is active but lacks warehouse management permission.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: >-
+            Another warehouse already uses this name, compared case-insensitively after trimming and
+            regardless of its lifecycle status. No warehouse is created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                duplicateName:
+                  value:
+                    error:
+                      code: E_WAREHOUSE_NAME_CONFLICT
+                      message: Warehouse name is already in use
+        "422":
+          description: >-
+            The payload is structurally invalid (blank name, fewer than three points, coordinate out
+            of range or non-numeric) or the outline is geometrically invalid (duplicate consecutive
+            points, a boundary that crosses itself, or points that are all in line and so enclose no
+            area). No warehouse is created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                tooFewPoints:
+                  value:
+                    error:
+                      code: E_VALIDATION_ERROR
+                      message: Validation failure
+                      details:
+                        - field: footprint.points
+                          rule: array.minLength
+                selfIntersecting:
+                  value:
+                    error:
+                      code: E_WAREHOUSE_INVALID_FOOTPRINT
+                      message: Warehouse footprint outline must not cross itself
+                flatOutline:
+                  value:
+                    error:
+                      code: E_WAREHOUSE_INVALID_FOOTPRINT
+                      message: Warehouse footprint outline must enclose an area
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: adonis-session
+  schemas:
+    CreateWarehouseRequest:
+      type: object
+      additionalProperties: false
+      required: [name, footprint]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Trimmed before validation and storage; must not be blank after trimming.
+        footprint:
+          $ref: "#/components/schemas/WarehouseFootprint"
+    Warehouse:
+      type: object
+      additionalProperties: false
+      required: [id, name, status, footprint, doors]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+          description: Always AVAILABLE for a newly created warehouse.
+        footprint:
+          $ref: "#/components/schemas/WarehouseFootprint"
+        doors:
+          type: array
+          description: Always empty for a newly created warehouse.
+          items:
+            $ref: "#/components/schemas/WarehouseDoor"
+    WarehouseFootprint:
+      type: object
+      additionalProperties: false
+      required: [points]
+      properties:
+        points:
+          type: array
+          minItems: 3
+          maxItems: 500
+          description: >-
+            Ordered boundary points forming a simple, non-crossing outline. The closing edge from the
+            last point back to the first is implied and MUST NOT be repeated. Consecutive duplicates,
+            including last equal to first, are rejected.
+          items:
+            $ref: "#/components/schemas/GeographicPoint"
+    GeographicPoint:
+      type: object
+      additionalProperties: false
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+    WarehouseDoor:
+      type: object
+      additionalProperties: false
+      required: [id, name, status, latitude, longitude]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+        latitude:
+          type: number
+        longitude:
+          type: number
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
