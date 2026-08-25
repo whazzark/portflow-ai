@@ -15,6 +15,10 @@ export function useTruckMutations() {
       exact: true,
       queryKey: truckQueries.available().queryKey,
     })
+    await queryClient.invalidateQueries({
+      exact: true,
+      queryKey: truckQueries.suspended().queryKey,
+    })
   }
 
   const create = useMutation(
@@ -36,6 +40,12 @@ export function useTruckMutations() {
   )
   const reactivateMany = useMutation(tuyauQuery.trucks.reactivateMany.mutationOptions())
 
+  const suspend = useMutation(
+    tuyauQuery.trucks.suspend.mutationOptions({
+      onSuccess: () => invalidateTrucks(),
+    }),
+  )
+
   const update = useMutation(
     tuyauQuery.trucks.update.mutationOptions({
       onSuccess: () => invalidateTrucks(),
@@ -48,6 +58,7 @@ export function useTruckMutations() {
     create,
     reactivate,
     reactivateMany,
+    suspend,
     update,
     refreshTrucks: invalidateTrucks,
   }

@@ -22,8 +22,12 @@ export function TrucksError({ onRetry }: TrucksErrorProps) {
       return
     }
 
-    const query = isAdministrator(user) ? truckQueries.all() : truckQueries.available()
-    queryClient.removeQueries({ queryKey: query.queryKey })
+    const queryKeys = isAdministrator(user)
+      ? [truckQueries.all().queryKey]
+      : [truckQueries.available().queryKey, truckQueries.suspended().queryKey]
+    for (const queryKey of queryKeys) {
+      queryClient.removeQueries({ queryKey })
+    }
     await router.invalidate()
   }
 

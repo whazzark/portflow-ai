@@ -8,6 +8,7 @@ import {
   ArchivedTruckReadOnlyException,
   DuplicateTruckRegistrationException,
   InvalidTransportCompanyException,
+  SuspendedTruckReadOnlyException,
   TruckNotFoundException,
   TruckTransportCompanyLockedException,
 } from '#trucks/shared/truck_exceptions'
@@ -48,6 +49,9 @@ export default class UpdateTruckUseCase {
         throw new TruckNotFoundException()
       }
 
+      if (truck.status === 'SUSPENDED') {
+        throw new SuspendedTruckReadOnlyException()
+      }
       if (truck.status === 'ARCHIVED') {
         throw new ArchivedTruckReadOnlyException()
       }
@@ -90,6 +94,9 @@ export default class UpdateTruckUseCase {
       }
       if (result.kind === 'NOT_FOUND') {
         throw new TruckNotFoundException()
+      }
+      if (result.kind === 'SUSPENDED') {
+        throw new SuspendedTruckReadOnlyException()
       }
       if (result.kind === 'ARCHIVED') {
         throw new ArchivedTruckReadOnlyException()

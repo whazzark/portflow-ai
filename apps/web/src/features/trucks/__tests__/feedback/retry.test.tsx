@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -21,6 +21,9 @@ test('retries an initial failure and renders the recovered authoritative collect
   let requests = 0
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_OBSERVER })),
+    // A non-administrator also loads the suspended collection; it is not what these
+    // specs exercise, so it answers empty.
+    http.get(`${API_BASE_URL}/api/v1/trucks/suspended`, () => HttpResponse.json({ data: [] })),
     http.get(`${API_BASE_URL}/api/v1/transport-companies`, () =>
       HttpResponse.json({
         data: [
@@ -44,7 +47,9 @@ test('retries an initial failure and renders the recovered authoritative collect
   await user.click(screen.getByRole('button', { name: 'Try again' }))
 
   expect(await screen.findByText('ZZ-999-PF')).toBeInTheDocument()
-  expect(screen.getByText('Recovered Carrier')).toBeInTheDocument()
+  // The workspace lists the company in its own directory too, so scope to the truck list.
+  const trucks = screen.getByRole('list', { name: 'Available trucks' })
+  expect(within(trucks).getByText('Recovered Carrier')).toBeInTheDocument()
   expect(requests).toBeGreaterThanOrEqual(2)
 })
 
@@ -53,6 +58,9 @@ test('retry replaces a failed stale snapshot and reconciles its selected identit
   let response: 'initial' | 'failure' | 'recovered' = 'initial'
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_OBSERVER })),
+    // A non-administrator also loads the suspended collection; it is not what these
+    // specs exercise, so it answers empty.
+    http.get(`${API_BASE_URL}/api/v1/trucks/suspended`, () => HttpResponse.json({ data: [] })),
     http.get(`${API_BASE_URL}/api/v1/transport-companies`, () =>
       HttpResponse.json({
         data: [
@@ -95,6 +103,8 @@ test('retry replaces a failed stale snapshot and reconciles its selected identit
   response = 'recovered'
   await user.click(screen.getByRole('button', { name: 'Try again' }))
   expect(await screen.findByText('ZZ-999-PF')).toBeInTheDocument()
-  expect(screen.getByText('Recovered Carrier')).toBeInTheDocument()
+  // The workspace lists the company in its own directory too, so scope to the truck list.
+  const trucks = screen.getByRole('list', { name: 'Available trucks' })
+  expect(within(trucks).getByText('Recovered Carrier')).toBeInTheDocument()
   await expect.poll(() => router.state.location.search).not.toHaveProperty('truckId')
 })

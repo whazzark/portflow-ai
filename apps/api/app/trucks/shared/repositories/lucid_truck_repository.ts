@@ -22,6 +22,8 @@ import TruckRepository, {
   type ReactivateTruckCommand,
   type ReactivateTruckResult,
   type ReactivateTrucksCommand,
+  type SuspendTruckCommand,
+  type SuspendTruckResult,
   type TruckWriteResult,
   type UpdateTruckCommand,
 } from './truck_repository.ts'
@@ -70,6 +72,9 @@ export default class LucidTruckRepository extends TruckRepository {
             reactivatedAt: null,
             reactivatedByUserId: null,
             reactivationComment: null,
+            suspendedAt: null,
+            suspendedByUserId: null,
+            suspensionComment: null,
           },
           { client: trx },
         )
@@ -86,7 +91,12 @@ export default class LucidTruckRepository extends TruckRepository {
   }
 
   findById(id: string): Promise<Truck | null> {
-    return Truck.query().where('id', id).preload('archivedBy').preload('reactivatedBy').first()
+    return Truck.query()
+      .where('id', id)
+      .preload('archivedBy')
+      .preload('reactivatedBy')
+      .preload('suspendedBy')
+      .first()
   }
 
   async updateAvailable(command: UpdateTruckCommand): Promise<TruckWriteResult> {
@@ -116,6 +126,9 @@ export default class LucidTruckRepository extends TruckRepository {
         if (!truck) {
           return { kind: 'NOT_FOUND' }
         }
+        if (truck.status === 'SUSPENDED') {
+          return { kind: 'SUSPENDED' }
+        }
         if (truck.status !== 'AVAILABLE') {
           return { kind: 'ARCHIVED' }
         }
@@ -133,6 +146,7 @@ export default class LucidTruckRepository extends TruckRepository {
         .where('id', command.id)
         .preload('archivedBy')
         .preload('reactivatedBy')
+        .preload('suspendedBy')
         .first()
       if (!truck) {
         return { kind: 'NOT_FOUND' }
@@ -153,6 +167,7 @@ export default class LucidTruckRepository extends TruckRepository {
       Truck.query()
         .preload('archivedBy')
         .preload('reactivatedBy')
+        .preload('suspendedBy')
         // biome-ignore lint/security/noSecrets: SQL ordering expression, not a secret
         .orderByRaw('LOWER(registration) ASC')
         .orderBy('registration', 'asc')
@@ -166,6 +181,22 @@ export default class LucidTruckRepository extends TruckRepository {
         .where('status', 'AVAILABLE')
         .preload('archivedBy')
         .preload('reactivatedBy')
+        .preload('suspendedBy')
+        // biome-ignore lint/security/noSecrets: SQL ordering expression, not a secret
+        .orderByRaw('LOWER(registration) ASC')
+        .orderBy('registration', 'asc')
+        .orderBy('id', 'asc')
+    )
+  }
+
+  /**
+   * The suspended collection is read by every active role, not only administrators, so it
+   * deliberately preloads no lifecycle actor: `toOperationalView` never exposes one.
+   */
+  listSuspended(): Promise<Truck[]> {
+    return (
+      Truck.query()
+        .where('status', 'SUSPENDED')
         // biome-ignore lint/security/noSecrets: SQL ordering expression, not a secret
         .orderByRaw('LOWER(registration) ASC')
         .orderBy('registration', 'asc')
@@ -198,6 +229,11 @@ export default class LucidTruckRepository extends TruckRepository {
       if (truck.status === 'ARCHIVED') {
         return { kind: 'ALREADY_ARCHIVED' }
       }
+      // Without this branch a suspended truck reaches the unguarded UPDATE below and is archived:
+      // archival requires an available truck, and a suspended one has to return to service first.
+      if (truck.status === 'SUSPENDED') {
+        return { kind: 'SUSPENDED' }
+      }
 
       const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
         referenceType: 'TRUCK',
@@ -223,6 +259,7 @@ export default class LucidTruckRepository extends TruckRepository {
         .where('id', command.id)
         .preload('archivedBy')
         .preload('reactivatedBy')
+        .preload('suspendedBy')
         .first()
 
       if (!archived) {
@@ -266,6 +303,7 @@ export default class LucidTruckRepository extends TruckRepository {
         .whereIn('id', eligibleIds)
         .preload('archivedBy')
         .preload('reactivatedBy')
+        .preload('suspendedBy')
 
       return {
         updatedTrucks: orderTrucks(eligibleIds, indexTrucksById(archived)),
@@ -283,6 +321,11 @@ export default class LucidTruckRepository extends TruckRepository {
       }
       if (truck.status === 'AVAILABLE') {
         return { kind: 'ALREADY_AVAILABLE' }
+      }
+      // Reactivation reverses an archival. A suspended truck was never archived, so reactivating
+      // it would silently make it available without any return-to-service decision.
+      if (truck.status === 'SUSPENDED') {
+        return { kind: 'SUSPENDED' }
       }
 
       // Locked for the same reason `create` and `archiveAvailable` (transport-company side) lock
@@ -316,6 +359,7 @@ export default class LucidTruckRepository extends TruckRepository {
         .where('id', command.id)
         .preload('archivedBy')
         .preload('reactivatedBy')
+        .preload('suspendedBy')
         .first()
 
       if (!reactivated) {
@@ -388,11 +432,81 @@ export default class LucidTruckRepository extends TruckRepository {
         .whereIn('id', eligibleIds)
         .preload('archivedBy')
         .preload('reactivatedBy')
+        .preload('suspendedBy')
 
       return {
         updatedTrucks: orderTrucks(eligibleIds, indexTrucksById(reactivated)),
         blockedTrucks: blockers,
       }
+    })
+  }
+
+  suspendAvailable(command: SuspendTruckCommand): Promise<SuspendTruckResult> {
+    return Truck.transaction(async (trx) => {
+      const truck = await Truck.query({ client: trx }).where('id', command.id).forUpdate().first()
+
+      if (!truck) {
+        return { kind: 'NOT_FOUND' }
+      }
+      if (truck.status === 'SUSPENDED') {
+        return { kind: 'ALREADY_SUSPENDED' }
+      }
+      if (truck.status === 'ARCHIVED') {
+        return { kind: 'ARCHIVED' }
+      }
+
+      // Deliberately no `SiteReferenceUsageChecker` call. Archival refuses a truck reserved by a
+      // planned or active discharge; suspension must accept it, because a vehicle breaks down
+      // precisely while it is in service and the assignment has to survive the immobilisation.
+      //
+      // Deliberately no transport-company lock either. `reactivateArchived` locks that row because
+      // it *produces* an available truck and could race a company archival. Suspension removes one,
+      // so it can only make the "no available truck under an archived company" invariant more true.
+      const [affectedRows] = await Truck.query({ client: trx })
+        .where('id', command.id)
+        .where('status', 'AVAILABLE')
+        .update({
+          status: 'SUSPENDED',
+          suspendedAt: command.suspendedAt.toSQL({ includeOffset: false }),
+          suspendedByUserId: command.suspendedByUserId,
+          suspensionComment: command.suspensionComment,
+          updatedAt: command.suspendedAt.toSQL({ includeOffset: false }),
+        })
+
+      if (affectedRows === 0) {
+        // The row read above was AVAILABLE, so a zero-row UPDATE means it moved on in between.
+        // PostgreSQL cannot reach this — the `forUpdate()` above holds the row — but knex emits no
+        // `FOR UPDATE` on SQLite, where a concurrent archive would otherwise be reported as a
+        // successful suspension of a truck that never changed.
+        const current = await Truck.query({ client: trx }).where('id', command.id).first()
+
+        if (!current) {
+          return { kind: 'NOT_FOUND' }
+        }
+        if (current.status === 'SUSPENDED') {
+          return { kind: 'ALREADY_SUSPENDED' }
+        }
+        if (current.status === 'ARCHIVED') {
+          return { kind: 'ARCHIVED' }
+        }
+
+        // Available again already: the caller's read was stale, the same way `updateAvailable`
+        // treats a concurrent reactivation.
+        return { kind: 'NOT_FOUND' }
+      }
+
+      const suspended = await Truck.query({ client: trx })
+        .where('id', command.id)
+        .preload('archivedBy')
+        .preload('reactivatedBy')
+        .preload('suspendedBy')
+        .first()
+
+      if (!suspended) {
+        return { kind: 'NOT_FOUND' }
+      }
+
+      return { kind: 'SUSPENDED', truck: suspended }
     })
   }
 }

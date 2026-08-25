@@ -18,6 +18,9 @@ export const TruckFactory = factory
     reactivatedAt: null,
     reactivatedByUserId: null,
     reactivationComment: null,
+    suspendedAt: null,
+    suspendedByUserId: null,
+    suspensionComment: null,
   }))
   .state('archived', (truck) => {
     truck.status = 'ARCHIVED'
@@ -27,6 +30,10 @@ export const TruckFactory = factory
     truck.status = 'AVAILABLE'
     truck.archivedAt ??= DateTime.now().minus({ days: 30 })
     truck.reactivatedAt ??= DateTime.now()
+  })
+  .state('suspended', (truck) => {
+    truck.status = 'SUSPENDED'
+    truck.suspendedAt ??= DateTime.now()
   })
   .before('create', async (_builder, truck, context) => {
     if (truck.transportCompanyId) {

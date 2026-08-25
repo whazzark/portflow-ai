@@ -26,17 +26,47 @@ export function TruckDetails({
   onEdit: () => void
 }) {
   const isArchived = truck.status === 'ARCHIVED'
-  const lifecycleTime = isArchived ? truck.archivedAt : truck.reactivatedAt
-  const lifecycleActor = isArchived ? truck.archivedBy : truck.reactivatedBy
-  const lifecycleComment = isArchived ? truck.archiveComment : truck.reactivationComment
+  const isSuspended = truck.status === 'SUSPENDED'
+  const isAvailable = truck.status === 'AVAILABLE'
+  const statusLabel = isArchived ? 'Archived' : isSuspended ? 'Suspended' : 'Available'
+  const lifecycleHeading = isArchived
+    ? 'Archive context'
+    : isSuspended
+      ? 'Suspension context'
+      : 'Latest reactivation context'
+  const lifecycleTimeLabel = isArchived
+    ? 'Archived at'
+    : isSuspended
+      ? 'Suspended at'
+      : 'Reactivated at'
+  const lifecycleActorLabel = isArchived
+    ? 'Archived by'
+    : isSuspended
+      ? 'Suspended by'
+      : 'Reactivated by'
+  const lifecycleTime = isArchived
+    ? truck.archivedAt
+    : isSuspended
+      ? truck.suspendedAt
+      : truck.reactivatedAt
+  const lifecycleActor = isArchived
+    ? truck.archivedBy
+    : isSuspended
+      ? truck.suspendedBy
+      : truck.reactivatedBy
+  const lifecycleComment = isArchived
+    ? truck.archiveComment
+    : isSuspended
+      ? truck.suspensionComment
+      : truck.reactivationComment
 
   return (
     <section aria-label="Truck details" className="flex min-h-0 flex-1 flex-col">
       <header className="shrink-0 border-b px-5 py-4 md:px-6">
         <h2 className="font-heading font-semibold text-xl">{truck.registration}</h2>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Badge variant={isArchived ? 'outline' : 'secondary'}>
-            {isArchived ? 'Archived' : 'Available'}
+          <Badge variant={isArchived ? 'outline' : isSuspended ? 'destructive' : 'secondary'}>
+            {statusLabel}
           </Badge>
           {company?.status === 'ARCHIVED' && <Badge variant="outline">Archived company</Badge>}
         </div>
@@ -57,31 +87,33 @@ export function TruckDetails({
                 : null
             }
           />
-          <ResourceDetailField label="Truck status" value={isArchived ? 'Archived' : 'Available'} />
+          <ResourceDetailField label="Truck status" value={statusLabel} />
           <ResourceDetailField label="Created" value={formatDateTime(truck.createdAt)} />
           <ResourceDetailField label="Last updated" value={formatDateTime(truck.updatedAt)} />
         </dl>
         <Separator className="my-6" />
         <section aria-labelledby="truck-lifecycle-heading" className="flex flex-col gap-3">
           <h3 className="font-medium" id="truck-lifecycle-heading">
-            {isArchived ? 'Archive context' : 'Latest reactivation context'}
+            {lifecycleHeading}
           </h3>
           <dl className="grid gap-4 text-sm">
             <ResourceDetailField
-              label={isArchived ? 'Archived at' : 'Reactivated at'}
+              label={lifecycleTimeLabel}
               value={lifecycleTime ? formatDateTime(lifecycleTime) : null}
             />
-            <ResourceDetailField
-              label={isArchived ? 'Archived by' : 'Reactivated by'}
-              value={lifecycleActor ? formatFullName(lifecycleActor) : null}
-            />
+            {administrator && (
+              <ResourceDetailField
+                label={lifecycleActorLabel}
+                value={lifecycleActor ? formatFullName(lifecycleActor) : null}
+              />
+            )}
             <ResourceDetailField label="Comment" value={lifecycleComment} />
           </dl>
         </section>
       </div>
       {(canAdminister || administrator) && (
         <footer className="flex shrink-0 items-center justify-between gap-2 border-t bg-popover px-5 py-4 md:px-6">
-          {canAdminister && !isArchived && <Button onClick={onEdit}>Edit truck</Button>}
+          {canAdminister && isAvailable && <Button onClick={onEdit}>Edit</Button>}
           {administrator && <TruckLifecycleActions truck={truck} />}
         </footer>
       )}

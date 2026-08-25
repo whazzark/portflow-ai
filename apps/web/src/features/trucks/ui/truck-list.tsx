@@ -4,6 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
 import type { TruckDto, TruckLifecycle } from '@/features/trucks/types'
+import { TruckRowActions } from '@/features/trucks/ui/truck-row-actions'
 import { classnames } from '@/libraries/shadcn/helpers'
 
 type TruckListProps = {
@@ -18,6 +19,9 @@ type TruckListProps = {
   selectable?: boolean
   selectedIds?: Set<string>
   onSelectionChange?: (checked: boolean, ids: string[]) => void
+  canAdminister?: boolean
+  onEdit?: (id: string) => void
+  onView?: (id: string) => void
 }
 
 export function TruckList({
@@ -32,7 +36,12 @@ export function TruckList({
   selectable = false,
   selectedIds = new Set(),
   onSelectionChange,
+  canAdminister = false,
+  onEdit,
+  onView,
 }: TruckListProps) {
+  const lifecycleLabel =
+    lifecycle === 'archived' ? 'Archived' : lifecycle === 'suspended' ? 'Suspended' : 'Available'
   const ordered = [...trucks].sort((left, right) => {
     const byRegistration = left.registration.localeCompare(right.registration, undefined, {
       sensitivity: 'base',
@@ -65,7 +74,7 @@ export function TruckList({
             </div>
           )}
           <ul
-            aria-label={`${lifecycle === 'archived' ? 'Archived' : 'Available'} trucks`}
+            aria-label={`${lifecycleLabel} trucks`}
             className="min-h-0 flex-1 overflow-y-auto p-2"
           >
             {ordered.map((truck) => {
@@ -88,7 +97,7 @@ export function TruckList({
                     aria-label={`${truck.registration}, ${companyName}`}
                     aria-current={selected ? 'true' : undefined}
                     className={classnames(
-                      'w-full cursor-pointer rounded-lg border border-transparent px-3 py-2.5 text-left transition-colors hover:bg-muted focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                      'min-w-0 flex-1 cursor-pointer rounded-lg border border-transparent px-3 py-2.5 text-left transition-colors hover:bg-muted focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
                       selected && 'border-border bg-muted',
                     )}
                     onClick={() => onSelect(truck.id)}
@@ -107,6 +116,9 @@ export function TruckList({
                       )}
                     </span>
                   </button>
+                  {canAdminister && (
+                    <TruckRowActions onEdit={onEdit} onView={onView} truck={truck} />
+                  )}
                 </li>
               )
             })}

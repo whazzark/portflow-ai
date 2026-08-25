@@ -34,6 +34,7 @@ export type TruckWriteResult =
   | { kind: 'DUPLICATE_REGISTRATION' }
   | { kind: 'NOT_FOUND' }
   | { kind: 'ARCHIVED' }
+  | { kind: 'SUSPENDED' }
   | { kind: 'TRANSPORT_COMPANY_CHANGED' }
   | { kind: 'INVALID_TRANSPORT_COMPANY' }
 
@@ -54,6 +55,7 @@ export type ArchiveTruckResult =
   | { kind: 'ALREADY_ARCHIVED' }
   | { kind: 'NOT_FOUND' }
   | { kind: 'IN_USE' }
+  | { kind: 'SUSPENDED' }
 
 export type ArchiveTrucksCommand = {
   ids: string[]
@@ -79,6 +81,20 @@ export type ReactivateTruckResult =
   | { kind: 'ALREADY_AVAILABLE' }
   | { kind: 'NOT_FOUND' }
   | { kind: 'TRANSPORT_COMPANY_ARCHIVED' }
+  | { kind: 'SUSPENDED' }
+
+export type SuspendTruckCommand = {
+  id: string
+  suspendedAt: DateTime
+  suspendedByUserId: string
+  suspensionComment: string | null
+}
+
+export type SuspendTruckResult =
+  | { kind: 'SUSPENDED'; truck: Truck }
+  | { kind: 'ALREADY_SUSPENDED' }
+  | { kind: 'ARCHIVED' }
+  | { kind: 'NOT_FOUND' }
 
 export type ReactivateTrucksCommand = {
   ids: string[]
@@ -90,6 +106,7 @@ export type ReactivateTrucksCommand = {
 export default abstract class TruckRepository {
   abstract list(): Promise<Truck[]>
   abstract listAvailable(): Promise<Truck[]>
+  abstract listSuspended(): Promise<Truck[]>
   abstract findById(id: string): Promise<Truck | null>
   abstract create(command: CreateTruckCommand): Promise<TruckWriteResult>
   abstract updateAvailable(command: UpdateTruckCommand): Promise<TruckWriteResult>
@@ -102,4 +119,5 @@ export default abstract class TruckRepository {
   abstract reactivateArchivedMany(
     command: ReactivateTrucksCommand,
   ): Promise<BulkTruckLifecycleResult>
+  abstract suspendAvailable(command: SuspendTruckCommand): Promise<SuspendTruckResult>
 }

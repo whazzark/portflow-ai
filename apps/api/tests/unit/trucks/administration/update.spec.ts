@@ -12,6 +12,7 @@ import {
   ArchivedTruckReadOnlyException,
   DuplicateTruckRegistrationException,
   InvalidTransportCompanyException,
+  SuspendedTruckReadOnlyException,
   TruckNotFoundException,
   TruckTransportCompanyLockedException,
 } from '#trucks/shared/truck_exceptions'
@@ -374,6 +375,28 @@ test.group('UpdateTruckUseCase', (group) => {
         }),
       ArchivedTruckReadOnlyException,
     )
+  })
+
+  test('rejects updating a suspended truck with its own reason, not the archived one', async ({
+    assert,
+  }) => {
+    const suspended = await TruckFactory.apply('suspended').create()
+    const useCase = await app.container.make(UpdateTruckUseCase)
+
+    await assert.rejects(
+      () =>
+        useCase.handle({
+          id: suspended.id,
+          registration: 'SUSPENDED-UPD-01',
+          vehicleModel: suspended.vehicleModel,
+          capacityTonnes: suspended.capacityTonnes.toNumber(),
+          transportCompanyId: suspended.transportCompanyId,
+        }),
+      SuspendedTruckReadOnlyException,
+    )
+
+    await suspended.refresh()
+    assert.equal(suspended.status, 'SUSPENDED')
   })
 
   test('rejects updating a truck that does not exist', async ({ assert }) => {

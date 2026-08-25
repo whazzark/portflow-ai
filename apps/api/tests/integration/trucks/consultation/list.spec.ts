@@ -144,6 +144,10 @@ test.group('Truck consultation HTTP contracts', (group) => {
       'reactivationComment',
       'registration',
       'status',
+      'suspendedAt',
+      'suspendedBy',
+      'suspendedByUserId',
+      'suspensionComment',
       'transportCompanyId',
       'updatedAt',
       'vehicleModel',
@@ -194,5 +198,46 @@ test.group('Truck consultation HTTP contracts', (group) => {
     const response = await client.get(`/api/v1/trucks/${truck.id}`).loginAs(admin)
 
     response.assertStatus(404)
+  })
+
+  test('excludes suspended trucks from the available collection for every role', async ({
+    assert,
+    client,
+  }) => {
+    const company = await TransportCompanyFactory.create()
+    const suspended = await TruckFactory.apply('suspended')
+      .merge({ registration: 'SUSPENDED-100', transportCompanyId: company.id })
+      .create()
+    await TruckFactory.merge({
+      registration: 'AVAILABLE-100',
+      transportCompanyId: company.id,
+    }).create()
+
+    for (const role of [
+      'ORGANIZATION_ADMIN',
+      'OPERATIONS_ADMIN',
+      'OPERATIONS_LEAD',
+      'OBSERVER',
+    ] as const) {
+      const user = await UserFactory.apply('active').merge({ role }).create()
+      const response = await client.get('/api/v1/trucks/available').loginAs(user)
+
+      response.assertStatus(200)
+      const registrations = (response.body().data as Array<Record<string, unknown>>).map(
+        (truck) => truck.registration,
+      )
+      assert.notInclude(registrations, 'SUSPENDED-100')
+      assert.include(registrations, 'AVAILABLE-100')
+    }
+
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const all = await client.get('/api/v1/trucks').loginAs(admin)
+
+    all.assertStatus(200)
+    const listed = (all.body().data as Array<Record<string, unknown>>).find(
+      (truck) => truck.id === suspended.id,
+    )
+    assert.equal(listed?.status, 'SUSPENDED')
+    assert.isNotNull(listed?.suspendedAt)
   })
 })

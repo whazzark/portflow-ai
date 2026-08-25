@@ -7,6 +7,7 @@ import { TruckFactory } from '#database/factories/truck_factory'
 import { UserFactory } from '#database/factories/user_factory'
 import ReactivateTruckUseCase from '#trucks/reactivate/reactivate_truck_use_case'
 import {
+  SuspendedTruckReadOnlyException,
   TruckAlreadyAvailableException,
   TruckNotFoundException,
   TruckTransportCompanyArchivedException,
@@ -159,5 +160,29 @@ test.group('ReactivateTruckUseCase', (group) => {
       comment: null,
     })
     assert.equal(reactivated.status, 'AVAILABLE')
+  })
+
+  test('refuses to reactivate a suspended truck and leaves it suspended', async ({ assert }) => {
+    const actor = await UserFactory.apply('active').create()
+    const truck = await TruckFactory.apply('suspended')
+      .merge({ suspensionComment: 'In the workshop' })
+      .create()
+
+    await assert.rejects(
+      () =>
+        (async () =>
+          (await app.container.make(ReactivateTruckUseCase)).handle({
+            id: truck.id,
+            reactivatedByUserId: actor.id,
+            reactivatedAt: DateTime.now(),
+            comment: null,
+          }))(),
+      SuspendedTruckReadOnlyException.message,
+    )
+
+    await truck.refresh()
+    assert.equal(truck.status, 'SUSPENDED')
+    assert.equal(truck.suspensionComment, 'In the workshop')
+    assert.isNull(truck.reactivatedAt)
   })
 })
