@@ -20,6 +20,40 @@ export const createWarehouseValidator = vine.create({
   }),
 })
 
+const footprintPoints = () =>
+  vine
+    .array(
+      vine.object({
+        latitude: vine.number().min(-90).max(90),
+        longitude: vine.number().min(-180).max(180),
+      }),
+    )
+    .minLength(3)
+    .maxLength(MAX_FOOTPRINT_POINTS)
+
+/**
+ * Both members are optional, but at least one must be present, and a member that *is* present must
+ * be complete: a submitted footprint carries the whole resulting ring, never a partial edit. Same
+ * `requiredWhen` / `requiredIfMissing` shape the dock update validator already uses.
+ */
+export const updateWarehouseValidator = vine.create(
+  vine.object({
+    name: vine
+      .string()
+      .use(nonBlank())
+      .minLength(1)
+      .maxLength(255)
+      .optional()
+      .requiredWhen((field) => Object.hasOwn(field.parent, field.name))
+      .requiredIfMissing(['footprint']),
+    footprint: vine
+      .object({ points: footprintPoints() })
+      .optional()
+      .requiredWhen((field) => Object.hasOwn(field.parent, field.name))
+      .requiredIfMissing(['name']),
+  }),
+)
+
 export const archiveWarehouseValidator = vine.create({
   comment: lifecycleComment(),
 })
