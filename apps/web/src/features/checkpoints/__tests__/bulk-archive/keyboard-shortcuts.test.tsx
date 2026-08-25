@@ -87,3 +87,19 @@ test('Ctrl+A does not hijack the native select-all while typing in the search fi
 
   expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
 })
+
+test('Escape clears an in-progress selection without leaving select mode', async () => {
+  mockDocks()
+  const user = userEvent.setup()
+  renderCheckpoints()
+
+  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await user.click(screen.getByRole('button', { name: `Select dock ${NORTH_DOCK.name}` }))
+  expect(screen.getByText('1 selected')).toBeInTheDocument()
+
+  await user.keyboard('{Escape}')
+
+  expect(screen.getByText('0 selected')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Stop selecting docks' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: `Select dock ${NORTH_DOCK.name}` })).toBeInTheDocument()
+})

@@ -81,6 +81,7 @@ export function CheckpointMap({
   createActions = [],
   selectMode,
   checkedIds,
+  checkableDockIds,
   onToggleChecked,
   canSelectDocks = false,
   onToggleSelectMode,
@@ -92,6 +93,7 @@ export function CheckpointMap({
   createActions?: MockCreateAction[]
   selectMode?: 'docks'
   checkedIds?: Set<string>
+  checkableDockIds?: Set<string>
   onToggleChecked?: (id: string) => void
   canSelectDocks?: boolean
   onToggleSelectMode?: () => void
@@ -112,8 +114,9 @@ export function CheckpointMap({
         </button>
       ))}
       {checkpoints.map((checkpoint) => {
-        const isAvailableDock = checkpoint.kind === 'DOCK' && checkpoint.status === 'AVAILABLE'
-        const isSelectableDock = selectMode === 'docks' && isAvailableDock
+        const isCheckableDock =
+          checkpoint.kind === 'DOCK' && (checkableDockIds?.has(checkpoint.id) ?? false)
+        const isSelectableDock = selectMode === 'docks' && isCheckableDock
 
         return (
           <MockMarker
@@ -122,7 +125,7 @@ export function CheckpointMap({
             key={`${checkpoint.kind}:${checkpoint.id}`}
             muted={isArmed}
             onSelect={(selectedCheckpoint, event) => {
-              if (isAvailableDock && event.shiftKey && onShiftSelectDock) {
+              if (isCheckableDock && event.shiftKey && onShiftSelectDock) {
                 onShiftSelectDock(checkpoint.id)
                 return
               }

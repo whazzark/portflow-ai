@@ -28,11 +28,19 @@ export function useDockMutations() {
     }),
   )
   const archiveMany = useMutation(tuyauQuery.docks.archiveMany.mutationOptions())
+  const reactivate = useMutation(
+    tuyauQuery.docks.reactivate.mutationOptions({
+      onSuccess: () => invalidateDocks(),
+    }),
+  )
+  const reactivateMany = useMutation(tuyauQuery.docks.reactivateMany.mutationOptions())
 
   return {
     archive,
     archiveMany,
     create,
+    reactivate,
+    reactivateMany,
     refreshDocks: invalidateDocks,
     update,
   }

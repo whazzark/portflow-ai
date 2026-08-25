@@ -19,7 +19,8 @@ import type { BulkDockLifecycleBlocker, BulkDockLifecycleResult } from '@/featur
 import { classnames } from '@/libraries/shadcn/helpers'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
-type BulkArchiveDocksActionsProps = {
+type BulkDockLifecycleActionsProps = {
+  intent: 'ARCHIVE' | 'REACTIVATE'
   selectedIds: string[]
   onClear: () => void
   onSuccess: (result: BulkDockLifecycleResult) => void
@@ -32,12 +33,14 @@ const BLOCKER_REASON_LABELS: Record<BulkDockLifecycleBlocker['reason'], string> 
   ALREADY_AVAILABLE: 'already available',
 }
 
-export function BulkArchiveDocksActions({
+export function BulkDockLifecycleActions({
+  intent,
   selectedIds,
   onClear,
   onSuccess,
-}: BulkArchiveDocksActionsProps) {
+}: BulkDockLifecycleActionsProps) {
   const mutations = useDockMutations()
+  const isReactivate = intent === 'REACTIVATE'
 
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
@@ -47,17 +50,20 @@ export function BulkArchiveDocksActions({
     setIsSubmitting(true)
     try {
       const body = { ids: selectedIds, comment: comment || null }
-      const result = await mutations.archiveMany.mutateAsync({ body })
+      const result = isReactivate
+        ? await mutations.reactivateMany.mutateAsync({ body })
+        : await mutations.archiveMany.mutateAsync({ body })
       const { updatedDocks, blockedDocks } = result.data
 
       setOpen(false)
       setComment('')
       onSuccess(result.data)
       void mutations.refreshDocks()
+      const verb = isReactivate ? 'reactivated' : 'archived'
       toast.success(
         blockedDocks.length > 0
-          ? `${updatedDocks.length} dock${updatedDocks.length === 1 ? '' : 's'} archived; ${blockedDocks.length} unchanged`
-          : `${selectedIds.length} dock${selectedIds.length === 1 ? '' : 's'} archived`,
+          ? `${updatedDocks.length} dock${updatedDocks.length === 1 ? '' : 's'} ${verb}; ${blockedDocks.length} unchanged`
+          : `${selectedIds.length} dock${selectedIds.length === 1 ? '' : 's'} ${verb}`,
         blockedDocks.length > 0
           ? {
               description: blockedDocks
@@ -70,7 +76,7 @@ export function BulkArchiveDocksActions({
           : undefined,
       )
     } catch (cause) {
-      toast.error('Unable to archive docks', {
+      toast.error(isReactivate ? 'Unable to reactivate docks' : 'Unable to archive docks', {
         description: parseApiError(cause).message,
       })
     } finally {
@@ -96,8 +102,12 @@ export function BulkArchiveDocksActions({
           <span className="whitespace-nowrap px-2 font-medium text-sm tabular-nums">
             {selectedIds.length} selected
           </span>
-          <Button onClick={() => setOpen(true)} size="sm" variant="destructive">
-            Archive selected
+          <Button
+            onClick={() => setOpen(true)}
+            size="sm"
+            variant={isReactivate ? 'default' : 'destructive'}
+          >
+            {isReactivate ? 'Reactivate selected' : 'Archive selected'}
           </Button>
           <Button aria-label="Clear selection" onClick={onClear} size="icon-sm" variant="ghost">
             <XIcon aria-hidden="true" />
@@ -107,15 +117,19 @@ export function BulkArchiveDocksActions({
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Archive selected docks?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isReactivate ? 'Reactivate selected docks?' : 'Archive selected docks?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              These docks will remain readable but no longer selectable for new discharges.
+              {isReactivate
+                ? 'These docks will become selectable for new discharges again.'
+                : 'These docks will remain readable but no longer selectable for new discharges.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Field>
-            <FieldLabel htmlFor="bulk-dock-archive-comment">Comment (optional)</FieldLabel>
+            <FieldLabel htmlFor="bulk-dock-lifecycle-comment">Comment (optional)</FieldLabel>
             <Textarea
-              id="bulk-dock-archive-comment"
+              id="bulk-dock-lifecycle-comment"
               maxLength={1000}
               onChange={(event) => setComment(event.target.value)}
               value={comment}
@@ -131,7 +145,7 @@ export function BulkArchiveDocksActions({
                 void submit()
               }}
             >
-              Archive
+              {isReactivate ? 'Reactivate' : 'Archive'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

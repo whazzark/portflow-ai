@@ -70,12 +70,16 @@ test('leaves weighing area marker clicks opening the details sheet', async () =>
   expect(await screen.findByRole('heading', { name: 'Alpha Scale' })).toBeInTheDocument()
 })
 
-test('keeps an archived dock marker opening details instead of offering it as checkable', async () => {
+test('excludes an archived dock marker once an available-dock selection is in progress', async () => {
+  // A selection is homogeneous by status (#201): checking an available dock first fixes the
+  // selection to archiving, so an archived dock stays a details trigger rather than becoming
+  // checkable — the counterpart of #201's own "select docks archived-only" case.
   mockDocks()
   const user = userEvent.setup()
   renderCheckpoints('/checkpoints?status=all')
 
   await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await user.click(screen.getByRole('button', { name: `Select dock ${NORTH_DOCK.name}` }))
 
   expect(
     screen.queryByRole('button', { name: `Select dock ${RETIRED_DOCK.name}` }),

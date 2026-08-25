@@ -15,6 +15,7 @@ import type {
   DockWriteResult,
   ReactivateDockCommand,
   ReactivateDockResult,
+  ReactivateDocksCommand,
   UpdateDockCommand,
 } from './dock_repository.ts'
 import DockRepository from './dock_repository.ts'
@@ -178,6 +179,39 @@ export default class LucidDockRepository extends DockRepository {
 
       return {
         updatedDocks: orderDocks(eligibleIds, indexDocksById(archived)),
+        blockedDocks: blockers,
+      }
+    })
+  }
+
+  reactivateArchivedMany(command: ReactivateDocksCommand): Promise<BulkDockLifecycleResult> {
+    return Dock.transaction(async (trx) => {
+      const docks = await Dock.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      const docksById = indexDocksById(docks)
+      const blockers = findBulkBlockers(command.ids, docksById, 'ARCHIVED')
+
+      const blockedIds = new Set(blockers.map((blocker) => blocker.id))
+      const eligibleIds = command.ids.filter((id) => !blockedIds.has(id))
+
+      const [affectedRows] = await Dock.query({ client: trx })
+        .whereIn('id', eligibleIds)
+        .where('status', 'ARCHIVED')
+        .update({
+          status: 'AVAILABLE',
+          reactivatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+          reactivatedByUserId: command.reactivatedByUserId,
+          reactivationComment: command.reactivationComment,
+          updatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+        })
+
+      if (affectedRows !== eligibleIds.length) {
+        throw new Error('Dock bulk reactivation changed during transaction')
+      }
+
+      const reactivated = await Dock.query({ client: trx }).whereIn('id', eligibleIds)
+
+      return {
+        updatedDocks: orderDocks(eligibleIds, indexDocksById(reactivated)),
         blockedDocks: blockers,
       }
     })

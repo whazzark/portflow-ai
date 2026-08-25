@@ -62,6 +62,7 @@ router
         router.patch('/:id', [controllers.Docks, 'update']).as('update')
         router.post('/archive', [controllers.Docks, 'archiveMany']).as('archive_many')
         router.post('/:id/archive', [controllers.Docks, 'archive']).as('archive')
+        router.post('/reactivate', [controllers.Docks, 'reactivateMany']).as('reactivate_many')
         router.post('/:id/reactivate', [controllers.Docks, 'reactivate']).as('reactivate')
       })
       .prefix('/docks')
