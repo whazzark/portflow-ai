@@ -157,7 +157,12 @@ export default class LucidWeighingAreaRepository extends WeighingAreaRepository 
     command: ArchiveWeighingAreasCommand,
   ): Promise<BulkWeighingAreaLifecycleResult> {
     return WeighingArea.transaction(async (trx) => {
-      const areas = await WeighingArea.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      // Ordered by id so concurrent bulk archives and reactivations over overlapping id sets
+      // always take the row locks in the same order, and can never deadlock each other.
+      const areas = await WeighingArea.query({ client: trx })
+        .whereIn('id', command.ids)
+        .orderBy('id')
+        .forUpdate()
       const areasById = indexById(areas)
       const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
         referenceType: 'WEIGHING_AREA',
@@ -197,7 +202,12 @@ export default class LucidWeighingAreaRepository extends WeighingAreaRepository 
     command: ReactivateWeighingAreasCommand,
   ): Promise<BulkWeighingAreaLifecycleResult> {
     return WeighingArea.transaction(async (trx) => {
-      const areas = await WeighingArea.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      // Ordered by id so concurrent bulk archives and reactivations over overlapping id sets
+      // always take the row locks in the same order, and can never deadlock each other.
+      const areas = await WeighingArea.query({ client: trx })
+        .whereIn('id', command.ids)
+        .orderBy('id')
+        .forUpdate()
       const areasById = indexById(areas)
       // No usage lookup on this direction: an archived weighing area holds no shift membership in
       // a planned or active discharge, so IN_USE is structurally unreachable here.
