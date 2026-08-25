@@ -31,6 +31,34 @@ export type ArchiveWarehouseResult =
   | { kind: 'ALREADY_ARCHIVED' }
   | { kind: 'IN_USE' }
 
+export type ReactivateWarehouseCommand = {
+  id: string
+  reactivatedAt: DateTime
+  reactivatedByUserId: string
+  reactivationComment: string | null
+}
+
+export type ReactivateWarehousesCommand = {
+  ids: string[]
+  reactivatedAt: DateTime
+  reactivatedByUserId: string
+  reactivationComment: string | null
+}
+
+/**
+ * `reactivatedDoorCount` mirrors `archivedDoorCount`: it reports how many doors the restore
+ * actually brought back at submission time, which need not equal the advisory count the
+ * confirmation showed.
+ *
+ * There is no `IN_USE` arm. Archival carries one because its conditional write can lose a race the
+ * use case's pre-check passed; an archived warehouse holds no door in a planned or active
+ * discharge by construction, so the restore has no usage condition to lose a race on.
+ */
+export type ReactivateWarehouseResult =
+  | { kind: 'REACTIVATED'; warehouse: Warehouse; reactivatedDoorCount: number }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'ALREADY_AVAILABLE' }
+
 export type BulkWarehouseLifecycleResult = {
   updatedWarehouses: Warehouse[]
   blockedWarehouses: BulkWarehouseLifecycleBlocker[]
@@ -56,5 +84,13 @@ export default abstract class WarehouseRepository {
 
   abstract archiveAvailableMany(
     command: ArchiveWarehousesCommand,
+  ): Promise<BulkWarehouseLifecycleResult>
+
+  abstract reactivateArchived(
+    command: ReactivateWarehouseCommand,
+  ): Promise<ReactivateWarehouseResult>
+
+  abstract reactivateArchivedMany(
+    command: ReactivateWarehousesCommand,
   ): Promise<BulkWarehouseLifecycleResult>
 }

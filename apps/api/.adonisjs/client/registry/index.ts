@@ -312,6 +312,18 @@ const routes = {
     tokens: [{"old":"/api/v1/warehouses/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/warehouses/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouses/:id/archive","type":0,"val":"warehouses","end":""},{"old":"/api/v1/warehouses/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/warehouses/:id/archive","type":0,"val":"archive","end":""}],
     types: placeholder as Registry['warehouses.archive']['types'],
   },
+  'warehouses.reactivate_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/warehouses/reactivate',
+    tokens: [{"old":"/api/v1/warehouses/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/warehouses/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouses/reactivate","type":0,"val":"warehouses","end":""},{"old":"/api/v1/warehouses/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['warehouses.reactivate_many']['types'],
+  },
+  'warehouses.reactivate': {
+    methods: ["POST"],
+    pattern: '/api/v1/warehouses/:id/reactivate',
+    tokens: [{"old":"/api/v1/warehouses/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/warehouses/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouses/:id/reactivate","type":0,"val":"warehouses","end":""},{"old":"/api/v1/warehouses/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/warehouses/:id/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['warehouses.reactivate']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

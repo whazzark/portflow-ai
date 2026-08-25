@@ -55,6 +55,8 @@ export type ScannedRoutes = {
     'warehouses.store': { paramsTuple?: []; params?: {} }
     'warehouses.archive_many': { paramsTuple?: []; params?: {} }
     'warehouses.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'warehouses.reactivate_many': { paramsTuple?: []; params?: {} }
+    'warehouses.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   GET: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -122,6 +124,8 @@ export type ScannedRoutes = {
     'warehouses.store': { paramsTuple?: []; params?: {} }
     'warehouses.archive_many': { paramsTuple?: []; params?: {} }
     'warehouses.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'warehouses.reactivate_many': { paramsTuple?: []; params?: {} }
+    'warehouses.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PATCH: {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

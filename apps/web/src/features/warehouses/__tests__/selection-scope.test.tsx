@@ -61,3 +61,60 @@ test('never offers a warehouse outside the current status scope', async () => {
     screen.queryByRole('button', { name: `Select warehouse ${ARCHIVED.name}` }),
   ).not.toBeInTheDocument()
 })
+
+// A selection's intent is fixed by the first warehouse checked, so the two lifecycle directions can
+// never be mixed inside one submission — which is what lets a single intent drive the action bar.
+test('an archived selection stops offering available warehouses under the all filter', async () => {
+  mockWarehouses(undefined, BULK_WAREHOUSES)
+  const user = userEvent.setup()
+  renderWarehouses()
+
+  await checkWarehouses(user, ARCHIVED.name)
+
+  expect(screen.getByText('1 selected')).toBeInTheDocument()
+  expect(
+    screen.queryByRole('button', { name: `Select warehouse ${NORTH.name}` }),
+  ).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('button', { name: `Select warehouse ${EAST.name}` }),
+  ).not.toBeInTheDocument()
+})
+
+test('an available selection stops offering archived warehouses', async () => {
+  mockWarehouses(undefined, BULK_WAREHOUSES)
+  const user = userEvent.setup()
+  renderWarehouses()
+
+  await checkWarehouses(user, NORTH.name)
+
+  expect(
+    screen.queryByRole('button', { name: `Select warehouse ${ARCHIVED.name}` }),
+  ).not.toBeInTheDocument()
+})
+
+test('both lifecycle states are offered again once the selection is cleared', async () => {
+  mockWarehouses(undefined, BULK_WAREHOUSES)
+  const user = userEvent.setup()
+  renderWarehouses()
+
+  await checkWarehouses(user, ARCHIVED.name)
+  await user.click(screen.getByRole('button', { name: 'Clear selection' }))
+
+  expect(
+    await screen.findByRole('button', { name: `Select warehouse ${NORTH.name}` }),
+  ).toBeInTheDocument()
+  expect(
+    await screen.findByRole('button', { name: `Select warehouse ${ARCHIVED.name}` }),
+  ).toBeInTheDocument()
+})
+
+test('a search term does not prune an archived selection either', async () => {
+  mockWarehouses(undefined, BULK_WAREHOUSES)
+  const user = userEvent.setup()
+  renderWarehouses()
+
+  await checkWarehouses(user, ARCHIVED.name)
+  await user.type(screen.getByRole('textbox', { name: 'Search warehouses' }), NORTH.name)
+
+  expect(await screen.findByText('1 selected')).toBeInTheDocument()
+})

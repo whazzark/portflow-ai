@@ -30,6 +30,12 @@ export class WarehouseAlreadyArchivedException extends Exception {
   static message = 'Warehouse is already archived'
 }
 
+export class WarehouseAlreadyAvailableException extends Exception {
+  static status = 409
+  static code = 'E_WAREHOUSE_ALREADY_AVAILABLE'
+  static message = 'Warehouse is already available'
+}
+
 export class WarehouseInUseException extends Exception {
   static status = 409
   static code = 'E_WAREHOUSE_IN_USE'

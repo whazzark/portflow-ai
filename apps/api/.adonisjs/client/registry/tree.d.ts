@@ -70,5 +70,7 @@ export interface ApiDefinition {
     store: typeof routes['warehouses.store']
     archiveMany: typeof routes['warehouses.archive_many']
     archive: typeof routes['warehouses.archive']
+    reactivateMany: typeof routes['warehouses.reactivate_many']
+    reactivate: typeof routes['warehouses.reactivate']
   }
 }
