@@ -439,6 +439,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'weighing_areas.archive_many': {
+    methods: ["POST"]
+    pattern: '/api/v1/weighing-areas/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').archiveWeighingAreasValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').archiveWeighingAreasValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['archiveMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['archiveMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'weighing_areas.archive': {
     methods: ["POST"]
     pattern: '/api/v1/weighing-areas/:id/archive'

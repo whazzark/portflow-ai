@@ -1,7 +1,9 @@
 import { type MouseEvent, useState } from 'react'
 import {
   CHECKPOINT_KIND_LABELS,
+  CHECKPOINT_KIND_PLURAL_LABELS,
   CHECKPOINT_STATUS_LABELS,
+  type CheckpointKind,
   type PresentedCheckpoint,
 } from '@/features/checkpoints/types'
 
@@ -81,55 +83,63 @@ export function CheckpointMap({
   createActions = [],
   selectMode,
   checkedIds,
-  checkableDockIds,
+  checkableIds,
   onToggleChecked,
-  canSelectDocks = false,
+  selectableKinds = [],
   onToggleSelectMode,
-  onShiftSelectDock,
+  onShiftSelect,
 }: {
   checkpoints: PresentedCheckpoint[]
   onSelect: (checkpoint: PresentedCheckpoint) => void
   placement?: MockPlacement
   createActions?: MockCreateAction[]
-  selectMode?: 'docks'
+  selectMode?: CheckpointKind
   checkedIds?: Set<string>
-  checkableDockIds?: Set<string>
+  checkableIds?: Set<string>
   onToggleChecked?: (id: string) => void
-  canSelectDocks?: boolean
-  onToggleSelectMode?: () => void
-  onShiftSelectDock?: (id: string) => void
+  selectableKinds?: CheckpointKind[]
+  onToggleSelectMode?: (kind: CheckpointKind) => void
+  onShiftSelect?: (kind: CheckpointKind, id: string) => void
 }) {
   const isArmed = placement?.armed ?? false
 
   return (
     <section aria-label="Checkpoint map">
-      {canSelectDocks && onToggleSelectMode && (
-        <button aria-pressed={selectMode === 'docks'} onClick={onToggleSelectMode} type="button">
-          {selectMode === 'docks' ? 'Stop selecting docks' : 'Select docks'}
-        </button>
-      )}
+      {onToggleSelectMode &&
+        selectableKinds.map((kind) => (
+          <button
+            aria-pressed={selectMode === kind}
+            key={kind}
+            onClick={() => onToggleSelectMode(kind)}
+            type="button"
+          >
+            {selectMode === kind
+              ? `Stop selecting ${CHECKPOINT_KIND_PLURAL_LABELS[kind]}`
+              : `Select ${CHECKPOINT_KIND_PLURAL_LABELS[kind]}`}
+          </button>
+        ))}
       {createActions.map((action) => (
         <button key={action.key} onClick={action.onSelect} type="button">
           {action.label}
         </button>
       ))}
       {checkpoints.map((checkpoint) => {
-        const isCheckableDock =
-          checkpoint.kind === 'DOCK' && (checkableDockIds?.has(checkpoint.id) ?? false)
-        const isSelectableDock = selectMode === 'docks' && isCheckableDock
+        const isCheckable =
+          selectableKinds.includes(checkpoint.kind) && (checkableIds?.has(checkpoint.id) ?? false)
+        const isSelectableNow = selectMode === checkpoint.kind && isCheckable
 
         return (
           <MockMarker
-            checked={isSelectableDock ? (checkedIds?.has(checkpoint.id) ?? false) : undefined}
+            checked={isSelectableNow ? (checkedIds?.has(checkpoint.id) ?? false) : undefined}
             checkpoint={checkpoint}
             key={`${checkpoint.kind}:${checkpoint.id}`}
             muted={isArmed}
             onSelect={(selectedCheckpoint, event) => {
-              if (isCheckableDock && event.shiftKey && onShiftSelectDock) {
-                onShiftSelectDock(checkpoint.id)
+              if (isCheckable && event.shiftKey && onShiftSelect) {
+                onShiftSelect(checkpoint.kind, checkpoint.id)
                 return
               }
-              if (isSelectableDock) {
+              if (isSelectableNow) {
                 onToggleChecked?.(checkpoint.id)
                 return
               }

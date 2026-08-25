@@ -45,7 +45,7 @@ export function TransportCompanyLifecycleActions({
       toast.success('Transport company archived')
       onSuccess?.()
     } catch (error) {
-      toast.error('Unable to archive transport company', {
+      toast.error(`Unable to archive transport company “${company.name}”`, {
         description: parseApiError(error).message,
       })
     }

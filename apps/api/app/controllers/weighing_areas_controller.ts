@@ -3,6 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 
 import ArchiveWeighingAreaUseCase from '#weighing_areas/archive/archive_weighing_area_use_case'
+import ArchiveWeighingAreasUseCase from '#weighing_areas/archive/archive_weighing_areas_use_case'
 import ListAvailableWeighingAreasUseCase from '#weighing_areas/available/list_available_weighing_areas_use_case'
 import CreateWeighingAreaUseCase from '#weighing_areas/create/create_weighing_area_use_case'
 import ListWeighingAreasUseCase from '#weighing_areas/list/list_weighing_areas_use_case'
@@ -10,6 +11,7 @@ import ReactivateWeighingAreaUseCase from '#weighing_areas/reactivate/reactivate
 import WeighingAreaPolicy from '#weighing_areas/shared/weighing_area_policy'
 import WeighingAreaTransformer from '#weighing_areas/shared/weighing_area_transformer'
 import {
+  archiveWeighingAreasValidator,
   archiveWeighingAreaValidator,
   createWeighingAreaValidator,
   reactivateWeighingAreaValidator,
@@ -25,6 +27,7 @@ export default class WeighingAreasController {
     private listAvailable: ListAvailableWeighingAreasUseCase,
     private updateUseCase: UpdateWeighingAreaUseCase,
     private archiveUseCase: ArchiveWeighingAreaUseCase,
+    private archiveManyUseCase: ArchiveWeighingAreasUseCase,
     private reactivateUseCase: ReactivateWeighingAreaUseCase,
   ) {}
 
@@ -81,6 +84,25 @@ export default class WeighingAreasController {
     })
 
     return serialize(WeighingAreaTransformer.transform(area))
+  }
+
+  async archiveMany({ auth, bouncer, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(WeighingAreaPolicy).authorize('archive')
+
+    const payload = await request.validateUsing(archiveWeighingAreasValidator)
+    const result = await this.archiveManyUseCase.handle({
+      ids: payload.ids,
+      archivedByUserId: user.id,
+      archivedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize({
+      updatedWeighingAreas: WeighingAreaTransformer.transform(result.updatedWeighingAreas),
+      blockedWeighingAreas: result.blockedWeighingAreas,
+    })
   }
 
   async reactivate({ auth, bouncer, params, request, serialize }: HttpContext) {

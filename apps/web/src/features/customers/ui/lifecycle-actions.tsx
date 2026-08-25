@@ -48,9 +48,12 @@ export function LifecycleActions({ className, customer }: LifecycleActionsProps)
       setComment('')
       toast.success(archived ? 'Customer reactivated' : 'Customer archived')
     } catch (error) {
-      toast.error(archived ? 'Unable to reactivate customer' : 'Unable to archive customer', {
-        description: parseApiError(error).message,
-      })
+      toast.error(
+        archived
+          ? `Unable to reactivate customer “${customer.companyName}”`
+          : `Unable to archive customer “${customer.companyName}”`,
+        { description: parseApiError(error).message },
+      )
     }
   }
 

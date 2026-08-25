@@ -1,5 +1,5 @@
 import vine from '@vinejs/vine'
-import { nonBlank } from '#shared/validators/lifecycle_validator'
+import { lifecycleComment, lifecycleIds, nonBlank } from '#shared/validators/lifecycle_validator'
 
 export const createWeighingAreaValidator = vine.create({
   name: vine.string().use(nonBlank()).minLength(1).maxLength(255),
@@ -33,7 +33,12 @@ export const updateWeighingAreaValidator = vine.create(
 )
 
 export const archiveWeighingAreaValidator = vine.create({
-  comment: vine.string().nullable().optional(),
+  comment: lifecycleComment(),
+})
+
+export const archiveWeighingAreasValidator = vine.create({
+  ids: lifecycleIds(),
+  comment: lifecycleComment(),
 })
 
 export const reactivateWeighingAreaValidator = vine.create({

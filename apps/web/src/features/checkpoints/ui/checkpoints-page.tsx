@@ -17,6 +17,8 @@ import { CheckpointMap } from '@/features/checkpoints/map/checkpoint-map'
 import { CheckpointKindIcon, CheckpointLegend } from '@/features/checkpoints/map/checkpoint-marker'
 import type { PresentedCheckpoint } from '@/features/checkpoints/types'
 import {
+  BULK_LIFECYCLE_INTENTS,
+  type BulkLifecycleIntent,
   CHECKPOINT_KINDS,
   CHECKPOINT_PARAM_BY_KIND,
   type CheckpointKind,
@@ -24,8 +26,12 @@ import {
   type CheckpointLayerVisibility,
   checkpointKindFilterFromVisibility,
   checkpointLayerVisibilityFromFilter,
+  STATUS_FOR_BULK_INTENT,
 } from '@/features/checkpoints/types'
-import { BulkDockLifecycleActions } from '@/features/checkpoints/ui/bulk-dock-lifecycle-actions'
+import {
+  BulkCheckpointLifecycleActions,
+  type BulkLifecycleOutcome,
+} from '@/features/checkpoints/ui/bulk-checkpoint-lifecycle-actions'
 import { CheckpointMapControls } from '@/features/checkpoints/ui/checkpoint-map-controls'
 import {
   CheckpointSheet,
@@ -37,14 +43,35 @@ import {
   type EditableCheckpoint,
   useCheckpointEditSession,
 } from '@/features/checkpoints/use-checkpoint-edit-session'
-import { toDockCheckpoint } from '@/features/docks/dock-checkpoint-adapter'
+import {
+  toBulkLifecycleOutcome as toDockBulkLifecycleOutcome,
+  toDockCheckpoint,
+} from '@/features/docks/dock-checkpoint-adapter'
 import { useDockMutations } from '@/features/docks/mutations/use-dock-mutations'
 import { dockQueries } from '@/features/docks/queries/dock-queries'
-import type { BulkDockLifecycleResult, DockDto } from '@/features/docks/types'
+import type { DockDto } from '@/features/docks/types'
 import { useWeighingAreaMutations } from '@/features/weighing-areas/mutations/use-weighing-area-mutations'
 import { weighingAreaQueries } from '@/features/weighing-areas/queries/weighing-area-queries'
 import type { WeighingAreaDto } from '@/features/weighing-areas/types'
-import { toWeighingAreaCheckpoint } from '@/features/weighing-areas/weighing-area-checkpoint-adapter'
+import {
+  toBulkLifecycleOutcome as toWeighingAreaBulkLifecycleOutcome,
+  toWeighingAreaCheckpoint,
+} from '@/features/weighing-areas/weighing-area-checkpoint-adapter'
+
+/** Maps the `selecting` search param's on-the-wire value to the kind it names. */
+const SELECTING_KIND_BY_PARAM: Record<string, CheckpointKind> = {
+  docks: 'DOCK',
+  'weighing-areas': 'WEIGHING_AREA',
+}
+const SELECTING_PARAM_BY_KIND: Record<CheckpointKind, 'docks' | 'weighing-areas'> = {
+  DOCK: 'docks',
+  WEIGHING_AREA: 'weighing-areas',
+}
+/** Kinds whose bulk archive capability (backend + mutation) exists. Both kinds are capable now
+ * that the weighing-area bulk endpoint and mutation have landed (tasks.md T035-T046). */
+/** Kinds whose bulk lifecycle endpoints exist. Both kinds can be bulk-archived; only docks can
+ * additionally be bulk-reactivated until #206 ships weighing-area reactivation. */
+const BULK_LIFECYCLE_CAPABLE_KINDS: CheckpointKind[] = ['DOCK', 'WEIGHING_AREA']
 
 /** The `kinds` filter value that would hide a just-created checkpoint of this kind, so a
  * successful creation can widen it away (see `handleCreated`). */
@@ -91,8 +118,9 @@ export function CheckpointsPage() {
           ? 'WEIGHING_AREA'
           : null
   const [pendingPlacement, setPendingPlacement] = useState<LatLng | null>(null)
-  const isSelectingDocks = canManageCheckpoints && selecting === 'docks'
-  const [checkedDockIds, setCheckedDockIds] = useState<Set<string>>(new Set())
+  const selectingKind: CheckpointKind | undefined =
+    canManageCheckpoints && selecting ? SELECTING_KIND_BY_PARAM[selecting] : undefined
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
   const dockMutations = useDockMutations()
   const weighingAreaMutations = useWeighingAreaMutations()
   const docksQuery = useQuery(dockQueries.list())
@@ -109,39 +137,45 @@ export function CheckpointsPage() {
     (checkpoint) => !layerVisibility || layerVisibility[checkpoint.kind],
   )
   const checkpoints = presentCheckpoints(checkpointCollection, status, search, layerVisibility)
-  // The status of any currently checked dock fixes what a selection is for — Available means an
-  // archive is in progress, Archived means a reactivation is — since the selection is homogeneous
-  // by construction (see checkableDockIds below). Undefined while nothing is checked, so any dock
-  // may still start either kind of selection.
-  const selectionIntent: 'ARCHIVE' | 'REACTIVATE' | undefined = useMemo(() => {
-    if (checkedDockIds.size === 0) {
+  // The status of any currently checked checkpoint fixes what a selection is for — Available means
+  // an archive is in progress, Archived means a reactivation is — since the selection is
+  // homogeneous by construction (see checkableIds below). Undefined while nothing is checked, so
+  // any checkpoint may still start either kind of selection.
+  const selectionIntent: BulkLifecycleIntent | undefined = useMemo(() => {
+    if (checkedIds.size === 0) {
       return undefined
     }
-    const [firstCheckedId] = checkedDockIds
-    const firstCheckedDock = docks.find((dock) => dock.id === firstCheckedId)
-    return firstCheckedDock?.status === 'ARCHIVED' ? 'REACTIVATE' : 'ARCHIVE'
-  }, [checkedDockIds, docks])
-  // Every dock select mode may check right now, whether or not it is currently active — the map
-  // also uses this to gate shift-click, which can enter select mode directly. With nothing checked
-  // yet, any dock is checkable; once the selection's intent is fixed, only docks matching it are.
-  const checkableDockIds = useMemo(
+    const [firstCheckedId] = checkedIds
+    const firstChecked = checkpointCollection.find((entry) => entry.id === firstCheckedId)
+    return firstChecked?.status === 'ARCHIVED' ? 'REACTIVATE' : 'ARCHIVE'
+  }, [checkedIds, checkpointCollection])
+  // Every checkpoint select mode may check right now, whether or not it is currently active — the
+  // map also uses this to gate shift-click, which can enter select mode directly. Eligibility is
+  // three things at once: the kind must support bulk lifecycle actions and be the one being
+  // selected (if any), and the status must match the selection's intent — or, with nothing checked
+  // yet, any intent that kind supports. Weighing areas only support archival until #206, so their
+  // archived markers never become checkable.
+  const checkableIds = useMemo(
     () =>
       new Set(
         checkpoints
           .filter((checkpoint) => {
-            if (checkpoint.kind !== 'DOCK') {
+            if (!BULK_LIFECYCLE_CAPABLE_KINDS.includes(checkpoint.kind)) {
               return false
             }
-            if (!selectionIntent) {
-              return true
+            if (selectingKind && checkpoint.kind !== selectingKind) {
+              return false
             }
-            return (
-              checkpoint.status === (selectionIntent === 'REACTIVATE' ? 'ARCHIVED' : 'AVAILABLE')
-            )
+            const intents = selectionIntent
+              ? [selectionIntent]
+              : BULK_LIFECYCLE_INTENTS[checkpoint.kind]
+            return intents
+              .filter((intent) => BULK_LIFECYCLE_INTENTS[checkpoint.kind].includes(intent))
+              .some((intent) => checkpoint.status === STATUS_FOR_BULK_INTENT[intent])
           })
           .map((checkpoint) => checkpoint.id),
       ),
-    [checkpoints, selectionIntent],
+    [checkpoints, selectingKind, selectionIntent],
   )
   const selection = parseCheckpointSelection(checkpointParam)
   const selectedCheckpoint = selection
@@ -212,17 +246,20 @@ export function CheckpointsPage() {
   }, [creationKind])
 
   useEffect(() => {
-    if (!isSelectingDocks) {
-      setCheckedDockIds(new Set())
+    if (!selectingKind) {
+      setCheckedIds(new Set())
     }
-  }, [isSelectingDocks])
+  }, [selectingKind])
 
-  // Ctrl/Cmd+A selects every currently visible dock matching the selection's intent, entering
-  // select mode on the fly just like a shift-click — the administrator never has to reach for the
-  // map control first. With nothing checked yet, the intent falls back to the status filter
-  // (Archived shows archived docks, anything else shows available ones), so Ctrl+A always grabs
-  // the docks the administrator is actually looking at. Ignored while typing in a field, so the
-  // browser's native "select all text" keeps working there.
+  // Ctrl/Cmd+A selects every currently visible checkpoint of the active selecting kind matching
+  // the selection's intent, entering select mode on the fly just like a shift-click — the
+  // administrator never has to reach for the map control first. With no kind being selected it
+  // defaults to the first capable visible kind (docks before weighing areas); with nothing checked
+  // the intent falls back to the status filter (Archived reactivates, anything else archives), so
+  // Ctrl+A always grabs what the administrator is actually looking at. That fallback is clamped to
+  // the intents the kind supports, so it never targets archived weighing areas, which have no bulk
+  // reactivation until #206. Ignored while typing in a field, so the browser's native "select all
+  // text" keeps working there.
   useEffect(() => {
     if (!canManageCheckpoints) {
       return
@@ -240,52 +277,65 @@ export function CheckpointsPage() {
       if (isEditableTarget) {
         return
       }
-      const targetStatus =
-        selectionIntent === 'REACTIVATE'
-          ? 'ARCHIVED'
-          : selectionIntent === 'ARCHIVE'
-            ? 'AVAILABLE'
-            : status === 'archived'
-              ? 'ARCHIVED'
-              : 'AVAILABLE'
-      const matchingDockIds = checkpoints
-        .filter((checkpoint) => checkpoint.kind === 'DOCK' && checkpoint.status === targetStatus)
+      const targetKind =
+        selectingKind ?? BULK_LIFECYCLE_CAPABLE_KINDS.find((kind) => layerVisibility[kind])
+      if (!targetKind) {
+        return
+      }
+      const supportedIntents = BULK_LIFECYCLE_INTENTS[targetKind]
+      const preferredIntent = selectionIntent ?? (status === 'archived' ? 'REACTIVATE' : 'ARCHIVE')
+      const targetIntent = supportedIntents.includes(preferredIntent)
+        ? preferredIntent
+        : supportedIntents[0]
+      const targetStatus = STATUS_FOR_BULK_INTENT[targetIntent]
+      const matchingIds = checkpoints
+        .filter(
+          (checkpoint) => checkpoint.kind === targetKind && checkpoint.status === targetStatus,
+        )
         .map((checkpoint) => checkpoint.id)
-      if (matchingDockIds.length === 0) {
+      if (matchingIds.length === 0) {
         return
       }
       event.preventDefault()
-      setCheckedDockIds(new Set(matchingDockIds))
+      setCheckedIds(new Set(matchingIds))
       void navigate({
         search: (previous) => ({
           ...previous,
           checkpoint: undefined,
           create: undefined,
           edit: undefined,
-          selecting: 'docks',
+          selecting: SELECTING_PARAM_BY_KIND[targetKind],
         }),
       })
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [canManageCheckpoints, checkpoints, navigate, selectionIntent, status])
+  }, [
+    canManageCheckpoints,
+    checkpoints,
+    layerVisibility,
+    navigate,
+    selectingKind,
+    selectionIntent,
+    status,
+  ])
 
-  // Escape clears an in-progress dock selection without leaving select mode — the keyboard
-  // counterpart of the bulk action bar's "Clear selection" button, so a second Escape (with
-  // nothing left checked) is free to fall through to whatever else Escape already does (e.g.
-  // closing a menu), rather than this handler swallowing every Escape press.
+  // Escape clears an in-progress selection without leaving select mode — the keyboard counterpart
+  // of the bulk action bar's "Clear selection" button, so a second Escape (with nothing left
+  // checked) is free to fall through to whatever else Escape already does (e.g. closing a menu),
+  // rather than this handler swallowing every Escape press.
   useEffect(() => {
-    if (!isSelectingDocks || checkedDockIds.size === 0) {
+    if (!selectingKind || checkedIds.size === 0) {
       return
     }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setCheckedDockIds(new Set())
+        setCheckedIds(new Set())
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSelectingDocks, checkedDockIds.size])
+  }, [selectingKind, checkedIds.size])
 
   useEffect(() => {
     const sourceLoaded =
@@ -317,15 +367,17 @@ export function CheckpointsPage() {
   }
 
   const hasMatches = checkpoints.some((checkpoint) => checkpoint.isSearchMatch)
+  // Search narrows what is displayed, not what was chosen: a checked checkpoint that a search
+  // term hides stays selected (spec FR-036), unlike the status and resource-kind filters below,
+  // which change what is *eligible* and so do prune the selection.
   const updateSearch = (nextSearch: string) => {
-    setCheckedDockIds(new Set())
     void navigate({
       replace: true,
       search: (previous) => ({ ...previous, search: nextSearch }),
     })
   }
   const updateStatus = (nextStatus: typeof status) => {
-    setCheckedDockIds(new Set())
+    setCheckedIds(new Set())
     const selectedCheckpointInCollection = selection
       ? checkpointCollection.find(
           (checkpoint) => checkpoint.kind === selection.kind && checkpoint.id === selection.id,
@@ -346,7 +398,7 @@ export function CheckpointsPage() {
     })
   }
   const updateLayerVisibility = (nextVisibility: CheckpointLayerVisibility) => {
-    setCheckedDockIds(new Set())
+    setCheckedIds(new Set())
     void navigate({
       search: (previous) => ({
         ...previous,
@@ -429,29 +481,37 @@ export function CheckpointsPage() {
       }),
     })
   }
-  const startSelectingDocks = (initialDockId?: string) => {
-    setCheckedDockIds(initialDockId ? new Set([initialDockId]) : new Set())
+  const startSelecting = (kind: CheckpointKind, initialId?: string) => {
+    setCheckedIds(initialId ? new Set([initialId]) : new Set())
     void navigate({
       search: (previous) => ({
         ...previous,
         checkpoint: undefined,
         create: undefined,
         edit: undefined,
-        selecting: 'docks',
+        selecting: SELECTING_PARAM_BY_KIND[kind],
       }),
     })
   }
-  const stopSelectingDocks = () => {
+  const stopSelecting = () => {
     void navigate({
       replace: true,
       search: (previous) => ({ ...previous, selecting: undefined }),
     })
   }
-  const toggleDockChecked = (id: string) => {
-    if (!checkableDockIds.has(id)) {
+  const toggleSelectMode = (kind: CheckpointKind) => {
+    if (selectingKind === kind) {
+      stopSelecting()
       return
     }
-    setCheckedDockIds((current) => {
+    startSelecting(kind)
+  }
+  const toggleChecked = (_kind: CheckpointKind, id: string) => {
+    // Eligibility already accounts for kind, status and the selection's intent.
+    if (!checkableIds.has(id)) {
+      return
+    }
+    setCheckedIds((current) => {
       const next = new Set(current)
       if (next.has(id)) {
         next.delete(id)
@@ -461,15 +521,17 @@ export function CheckpointsPage() {
       return next
     })
   }
-  // Shift-clicking an available dock marker enters select mode on the fly and checks that dock,
-  // without needing the map control first. Once already selecting, it just toggles like a plain
-  // click — shift adds no further meaning there.
-  const handleShiftSelectDock = (id: string) => {
-    if (isSelectingDocks) {
-      toggleDockChecked(id)
+  // Shift-clicking an available marker of a selectable kind enters select mode on the fly and
+  // checks that checkpoint, without needing the map control first. Once already selecting that
+  // same kind, it just toggles like a plain click — shift adds no further meaning there. Shift-
+  // clicking a marker of the *other* selectable kind switches select mode to that kind instead,
+  // starting a fresh selection with just the shift-clicked checkpoint.
+  const handleShiftSelect = (kind: CheckpointKind, id: string) => {
+    if (selectingKind === kind) {
+      toggleChecked(kind, id)
       return
     }
-    startSelectingDocks(id)
+    startSelecting(kind, id)
   }
   const cancelEditing = () => {
     clearEditSession()
@@ -511,10 +573,32 @@ export function CheckpointsPage() {
       search: (previous) => ({ ...previous, checkpoint: undefined, edit: undefined }),
     })
   }
-  const handleBulkArchiveSuccess = (result: BulkDockLifecycleResult) => {
-    setCheckedDockIds(
+  // Falls back to ARCHIVE while nothing is checked, and is clamped to what the selecting kind
+  // actually supports so a weighing-area selection can never resolve to REACTIVATE (#206).
+  const bulkIntent: BulkLifecycleIntent =
+    selectingKind &&
+    selectionIntent &&
+    BULK_LIFECYCLE_INTENTS[selectingKind].includes(selectionIntent)
+      ? selectionIntent
+      : 'ARCHIVE'
+  // Routes the submission to the right mutation for the selected kind and intent, and normalizes
+  // each resource's own response shape onto the shared outcome the toolbar renders.
+  const submitBulkLifecycle = async (input: { ids: string[]; comment: string | null }) => {
+    if (selectingKind === 'WEIGHING_AREA') {
+      return toWeighingAreaBulkLifecycleOutcome(
+        (await weighingAreaMutations.archiveMany.mutateAsync({ body: input })).data,
+      )
+    }
+    return toDockBulkLifecycleOutcome(
+      bulkIntent === 'REACTIVATE'
+        ? (await dockMutations.reactivateMany.mutateAsync({ body: input })).data
+        : (await dockMutations.archiveMany.mutateAsync({ body: input })).data,
+    )
+  }
+  const handleBulkArchiveSuccess = (outcome: BulkLifecycleOutcome) => {
+    setCheckedIds(
       new Set(
-        result.blockedDocks
+        outcome.blocked
           .filter((blocked) => blocked.reason === 'IN_USE')
           .map((blocked) => blocked.id),
       ),
@@ -524,7 +608,7 @@ export function CheckpointsPage() {
   // becomes eligible on a retry, so the whole selection is cleared rather than keeping any
   // blocked dock checked (research D7).
   const handleBulkReactivateSuccess = () => {
-    setCheckedDockIds(new Set())
+    setCheckedIds(new Set())
   }
 
   // Hidden while any checkpoint is being edited or a bulk selection is in progress: starting a
@@ -532,7 +616,7 @@ export function CheckpointsPage() {
   // creation flows may still replace one another — switching between them is deliberate, and
   // `startCreating` discards the abandoned placement (spec FR-016, FR-017).
   const createActions =
-    canManageCheckpoints && !isEditing && !isSelectingDocks
+    canManageCheckpoints && !isEditing && !selectingKind
       ? CHECKPOINT_KINDS.map((kind) => ({
           key: kind,
           label: CREATE_LABEL_BY_KIND[kind],
@@ -671,17 +755,21 @@ export function CheckpointsPage() {
         ))}
         map={(onMapError) => (
           <CheckpointMap
-            canSelectDocks={canManageCheckpoints && layerVisibility.DOCK}
-            checkableDockIds={canManageCheckpoints ? checkableDockIds : undefined}
-            checkedIds={isSelectingDocks ? checkedDockIds : undefined}
+            checkableIds={canManageCheckpoints ? checkableIds : undefined}
+            checkedIds={selectingKind ? checkedIds : undefined}
             checkpoints={mapCheckpoints}
             createActions={createActions}
             onError={onMapError}
             onSelect={selectCheckpoint}
-            onShiftSelectDock={canManageCheckpoints ? handleShiftSelectDock : undefined}
-            onToggleChecked={isSelectingDocks ? toggleDockChecked : undefined}
-            onToggleSelectMode={isSelectingDocks ? stopSelectingDocks : () => startSelectingDocks()}
-            selectMode={isSelectingDocks ? 'docks' : undefined}
+            onShiftSelect={canManageCheckpoints ? handleShiftSelect : undefined}
+            onToggleChecked={selectingKind ? (id) => toggleChecked(selectingKind, id) : undefined}
+            onToggleSelectMode={toggleSelectMode}
+            selectMode={selectingKind}
+            selectableKinds={
+              canManageCheckpoints
+                ? BULK_LIFECYCLE_CAPABLE_KINDS.filter((kind) => layerVisibility[kind])
+                : []
+            }
             placement={
               creationKind
                 ? {
@@ -711,16 +799,21 @@ export function CheckpointsPage() {
         sourceError={layerVisibility.WEIGHING_AREA && weighingAreasQuery.isError}
         sourceMessage={showWeighingAreaMessage ? weighingAreaMessage : undefined}
       />
-      {canManageCheckpoints && (
-        <BulkDockLifecycleActions
-          intent={selectionIntent ?? 'ARCHIVE'}
-          onClear={() => setCheckedDockIds(new Set())}
+      {canManageCheckpoints && selectingKind && (
+        <BulkCheckpointLifecycleActions
+          intent={bulkIntent}
+          kind={selectingKind}
+          onClear={() => setCheckedIds(new Set())}
           onSuccess={
-            selectionIntent === 'REACTIVATE'
-              ? handleBulkReactivateSuccess
-              : handleBulkArchiveSuccess
+            bulkIntent === 'REACTIVATE' ? handleBulkReactivateSuccess : handleBulkArchiveSuccess
           }
-          selectedIds={[...checkedDockIds]}
+          refresh={
+            selectingKind === 'DOCK'
+              ? dockMutations.refreshDocks
+              : weighingAreaMutations.refreshWeighingAreas
+          }
+          selectedIds={[...checkedIds]}
+          submit={submitBulkLifecycle}
         />
       )}
       <CheckpointSheet
