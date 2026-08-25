@@ -8,12 +8,14 @@ import ListAvailableWeighingAreasUseCase from '#weighing_areas/available/list_av
 import CreateWeighingAreaUseCase from '#weighing_areas/create/create_weighing_area_use_case'
 import ListWeighingAreasUseCase from '#weighing_areas/list/list_weighing_areas_use_case'
 import ReactivateWeighingAreaUseCase from '#weighing_areas/reactivate/reactivate_weighing_area_use_case'
+import ReactivateWeighingAreasUseCase from '#weighing_areas/reactivate/reactivate_weighing_areas_use_case'
 import WeighingAreaPolicy from '#weighing_areas/shared/weighing_area_policy'
 import WeighingAreaTransformer from '#weighing_areas/shared/weighing_area_transformer'
 import {
   archiveWeighingAreasValidator,
   archiveWeighingAreaValidator,
   createWeighingAreaValidator,
+  reactivateWeighingAreasValidator,
   reactivateWeighingAreaValidator,
   updateWeighingAreaValidator,
 } from '#weighing_areas/shared/weighing_area_validator'
@@ -29,6 +31,7 @@ export default class WeighingAreasController {
     private archiveUseCase: ArchiveWeighingAreaUseCase,
     private archiveManyUseCase: ArchiveWeighingAreasUseCase,
     private reactivateUseCase: ReactivateWeighingAreaUseCase,
+    private reactivateManyUseCase: ReactivateWeighingAreasUseCase,
   ) {}
 
   async index({ bouncer, serialize }: HttpContext) {
@@ -120,5 +123,24 @@ export default class WeighingAreasController {
     })
 
     return serialize(WeighingAreaTransformer.transform(area))
+  }
+
+  async reactivateMany({ auth, bouncer, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(WeighingAreaPolicy).authorize('reactivate')
+
+    const payload = await request.validateUsing(reactivateWeighingAreasValidator)
+    const result = await this.reactivateManyUseCase.handle({
+      ids: payload.ids,
+      reactivatedByUserId: user.id,
+      reactivatedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize({
+      updatedWeighingAreas: WeighingAreaTransformer.transform(result.updatedWeighingAreas),
+      blockedWeighingAreas: result.blockedWeighingAreas,
+    })
   }
 }

@@ -511,6 +511,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'weighing_areas.reactivate_many': {
+    methods: ["POST"]
+    pattern: '/api/v1/weighing-areas/reactivate'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').reactivateWeighingAreasValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#weighing_areas/shared/weighing_area_validator').reactivateWeighingAreasValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['reactivateMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['reactivateMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'weighing_areas.reactivate': {
     methods: ["POST"]
     pattern: '/api/v1/weighing-areas/:id/reactivate'
