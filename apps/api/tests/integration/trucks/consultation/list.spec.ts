@@ -143,6 +143,11 @@ test.group('Truck consultation HTTP contracts', (group) => {
       'reactivatedByUserId',
       'reactivationComment',
       'registration',
+      'returnToServiceComment',
+      'returnedToServiceAt',
+      'returnedToServiceBy',
+      // biome-ignore lint/security/noSecrets: public DTO identifier field
+      'returnedToServiceByUserId',
       'status',
       'suspendedAt',
       'suspendedBy',

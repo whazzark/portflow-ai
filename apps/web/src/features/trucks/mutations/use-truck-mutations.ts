@@ -46,6 +46,12 @@ export function useTruckMutations() {
     }),
   )
 
+  const returnToService = useMutation(
+    tuyauQuery.trucks.returnToService.mutationOptions({
+      onSuccess: () => invalidateTrucks(),
+    }),
+  )
+
   const update = useMutation(
     tuyauQuery.trucks.update.mutationOptions({
       onSuccess: () => invalidateTrucks(),
@@ -58,6 +64,7 @@ export function useTruckMutations() {
     create,
     reactivate,
     reactivateMany,
+    returnToService,
     suspend,
     update,
     refreshTrucks: invalidateTrucks,

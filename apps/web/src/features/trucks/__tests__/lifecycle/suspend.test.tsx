@@ -57,6 +57,10 @@ test('suspends a truck with a comment and moves it to the suspended tab without 
         suspendedByUserId: 'operations-admin-1',
         suspendedBy: { id: 'operations-admin-1', firstName: 'Olivia', lastName: 'Observer' },
         suspensionComment: received.comment,
+        returnedToServiceAt: null,
+        returnedToServiceByUserId: null,
+        returnedToServiceBy: null,
+        returnToServiceComment: null,
       }
       currentComplete = currentComplete.map((truck) => (truck.id === target.id ? suspended : truck))
       currentAvailable = currentAvailable.filter((truck) => truck.id !== target.id)
@@ -85,7 +89,7 @@ test('suspends a truck with a comment and moves it to the suspended tab without 
   expect(truckTab(/Available/)).toHaveTextContent('(0)')
 })
 
-test('shows the suspension context and offers no lifecycle action for a suspended truck', async () => {
+test('shows the suspension context and offers only the return to service for a suspended truck', async () => {
   const user = userEvent.setup()
   const target = SUSPEND_TRUCKS[1]
 
@@ -107,9 +111,8 @@ test('shows the suspension context and offers no lifecycle action for a suspende
   expect(within(panel).queryByRole('button', { name: 'Suspend' })).not.toBeInTheDocument()
   expect(within(panel).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
   expect(within(panel).queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
-  expect(within(panel).getByTestId('truck-suspended-notice')).toHaveTextContent(
-    /returned to service/i,
-  )
+  // The one way out of the suspended state, delivered by #253.
+  expect(within(panel).getByRole('button', { name: 'Return to service' })).toBeInTheDocument()
 })
 
 test('keeps the workspace on the suspended tab when a suspended truck is selected', async () => {

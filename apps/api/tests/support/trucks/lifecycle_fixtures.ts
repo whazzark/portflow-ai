@@ -91,6 +91,20 @@ export async function createSuspendedTruckScenario() {
 }
 
 /**
+ * A suspended truck whose current transport company is `ARCHIVED` — the one condition that blocks
+ * returning it to service. A suspended truck is not counted as an available truck, so its company
+ * can legitimately be archived while the vehicle is out of service.
+ */
+export async function createSuspendedTruckWithArchivedCompanyScenario() {
+  const company = await TransportCompanyFactory.apply('archived').create()
+  const truck = await TruckFactory.apply('suspended')
+    .merge({ transportCompanyId: company.id })
+    .create()
+
+  return { truck, company }
+}
+
+/**
  * An available truck reserved by an unreleased assignment on a `PLANNED` or `ACTIVE` discharge
  * *and* assigned to a shift of that discharge — the shape that must still be suspendable, unlike
  * archival, and whose assignments suspension must leave untouched.
