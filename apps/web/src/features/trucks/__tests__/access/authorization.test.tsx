@@ -80,6 +80,37 @@ test('shows the archive-truck control for an operations administrator', async ()
   expect(await screen.findByRole('button', { name: 'Archive truck' })).toBeInTheDocument()
 })
 
+test.each([ACTIVE_OBSERVER, ACTIVE_OPERATIONS_LEAD])(
+  'never exposes a reactivate-truck control or the archived view for $role, even deep-linked',
+  async (user) => {
+    mockTrucks({ user })
+
+    const { router } = renderTrucks(
+      // biome-ignore lint/security/noSecrets: fixture truck id in a test URL, not a secret
+      '/transport-resources?resource=trucks&truckStatus=archived&truckId=00000000-0000-4000-8000-000000000103',
+    )
+
+    expect(await screen.findByRole('list', { name: 'Available trucks' })).toBeInTheDocument()
+    await expect
+      .poll(() => router.state.location.search)
+      .toMatchObject({ truckStatus: 'available' })
+    expect(screen.queryByRole('tab', { name: /Archived/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reactivate truck' })).not.toBeInTheDocument()
+  },
+)
+
+test('shows the reactivate-truck control for an operations administrator on an archived truck', async () => {
+  mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
+
+  renderTrucks()
+  await screen.findByRole('list', { name: 'Available trucks' })
+  fireEvent.click(screen.getByRole('tab', { name: /Archived/ }))
+  fireEvent.click(await screen.findByRole('button', { name: 'CC-303-PF, Coastal Haulage' }))
+
+  expect(await screen.findByRole('button', { name: 'Reactivate truck' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit truck' })).not.toBeInTheDocument()
+})
+
 test('uses the complete endpoint and exposes archived consultation to administrators', async () => {
   let completeRequests = 0
   let availableRequests = 0

@@ -28,38 +28,56 @@ export function TruckLifecycleActions({ className, truck }: TruckLifecycleAction
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
 
+  const archived = truck.status === 'ARCHIVED'
+
   const submit = async () => {
     try {
-      await mutations.archive.mutateAsync({
-        params: { id: truck.id },
-        body: { comment: comment || null },
-      })
+      if (archived) {
+        await mutations.reactivate.mutateAsync({
+          params: { id: truck.id },
+          body: { comment: comment || null },
+        })
+      } else {
+        await mutations.archive.mutateAsync({
+          params: { id: truck.id },
+          body: { comment: comment || null },
+        })
+      }
 
       setOpen(false)
       setComment('')
-      toast.success('Truck archived')
+      toast.success(archived ? 'Truck reactivated' : 'Truck archived')
     } catch (error) {
-      // A refusal (already-archived, in-use) may mean the truck's authoritative state has moved
-      // on since this view loaded; refresh so the consultation workspace shows it, not just the
-      // success path.
+      // A refusal (already-archived/available, in-use, archived transport company) may mean the
+      // truck's authoritative state has moved on since this view loaded; refresh so the
+      // consultation workspace shows it, not just the success path.
       void mutations.refreshTrucks()
-      toast.error(`Unable to archive truck “${truck.registration}”`, {
-        description: parseApiError(error).message,
-      })
+      toast.error(
+        archived
+          ? `Unable to reactivate truck “${truck.registration}”`
+          : `Unable to archive truck “${truck.registration}”`,
+        { description: parseApiError(error).message },
+      )
     }
   }
 
   return (
     <>
-      <Button className={className} onClick={() => setOpen(true)} variant="destructive">
-        Archive truck
+      <Button
+        className={className}
+        onClick={() => setOpen(true)}
+        variant={archived ? 'default' : 'destructive'}
+      >
+        {archived ? 'Reactivate truck' : 'Archive truck'}
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Archive truck?</AlertDialogTitle>
+            <AlertDialogTitle>{archived ? 'Reactivate truck?' : 'Archive truck?'}</AlertDialogTitle>
             <AlertDialogDescription>
-              This truck will remain readable but no longer offered for new operational work.
+              {archived
+                ? 'This truck will become selectable again for new operational work.'
+                : 'This truck will remain readable but no longer offered for new operational work.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <FieldGroup>
@@ -79,12 +97,12 @@ export function TruckLifecycleActions({ className, truck }: TruckLifecycleAction
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={mutations.archive.isPending}
+              disabled={mutations.archive.isPending || mutations.reactivate.isPending}
               onClick={() => {
                 void submit()
               }}
             >
-              Archive
+              {archived ? 'Reactivate' : 'Archive'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

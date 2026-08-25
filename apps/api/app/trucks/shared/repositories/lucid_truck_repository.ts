@@ -19,6 +19,9 @@ import TruckRepository, {
   type BulkTruckLifecycleResult,
   type CreateTruckCommand,
   type FindCompanyIdsWithAvailableTrucksInput,
+  type ReactivateTruckCommand,
+  type ReactivateTruckResult,
+  type ReactivateTrucksCommand,
   type TruckWriteResult,
   type UpdateTruckCommand,
 } from './truck_repository.ts'
@@ -239,7 +242,7 @@ export default class LucidTruckRepository extends TruckRepository {
         referenceIds: command.ids,
         client: trx,
       })
-      const blockers = findBulkBlockers(command.ids, trucksById, usedIds)
+      const blockers = findBulkBlockers(command.ids, trucksById, 'AVAILABLE', usedIds)
 
       const blockedIds = new Set(blockers.map((blocker) => blocker.id))
       const eligibleIds = command.ids.filter((id) => !blockedIds.has(id))
@@ -266,6 +269,128 @@ export default class LucidTruckRepository extends TruckRepository {
 
       return {
         updatedTrucks: orderTrucks(eligibleIds, indexTrucksById(archived)),
+        blockedTrucks: blockers,
+      }
+    })
+  }
+
+  reactivateArchived(command: ReactivateTruckCommand): Promise<ReactivateTruckResult> {
+    return Truck.transaction(async (trx) => {
+      const truck = await Truck.query({ client: trx }).where('id', command.id).forUpdate().first()
+
+      if (!truck) {
+        return { kind: 'NOT_FOUND' }
+      }
+      if (truck.status === 'AVAILABLE') {
+        return { kind: 'ALREADY_AVAILABLE' }
+      }
+
+      // Locked for the same reason `create` and `archiveAvailable` (transport-company side) lock
+      // this row: a transport company cannot be archived while it still provides available
+      // trucks, and this write is the third path that can produce an available truck. Reading
+      // the company under a lock, inside the same transaction as the truck's own lock and write,
+      // closes the check-then-act window a plain read would leave against a concurrent company
+      // archival. An archived truck's `transportCompanyId` cannot change (`updateAvailable` is
+      // guarded by `WHERE status = 'AVAILABLE'`), so the id read from the locked truck row above
+      // is authoritative for the rest of this transaction.
+      const transportCompany = await TransportCompany.query({ client: trx })
+        .where('id', truck.transportCompanyId)
+        .forUpdate()
+        .first()
+
+      if (transportCompany?.status !== 'AVAILABLE') {
+        return { kind: 'TRANSPORT_COMPANY_ARCHIVED' }
+      }
+
+      await Truck.query({ client: trx })
+        .where('id', command.id)
+        .update({
+          status: 'AVAILABLE',
+          reactivatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+          reactivatedByUserId: command.reactivatedByUserId,
+          reactivationComment: command.reactivationComment,
+          updatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+        })
+
+      const reactivated = await Truck.query({ client: trx })
+        .where('id', command.id)
+        .preload('archivedBy')
+        .preload('reactivatedBy')
+        .first()
+
+      if (!reactivated) {
+        return { kind: 'NOT_FOUND' }
+      }
+
+      return { kind: 'REACTIVATED', truck: reactivated }
+    })
+  }
+
+  reactivateArchivedMany(command: ReactivateTrucksCommand): Promise<BulkTruckLifecycleResult> {
+    return Truck.transaction(async (trx) => {
+      const trucks = await Truck.query({ client: trx })
+        .whereIn('id', command.ids)
+        .orderBy('id', 'asc')
+        .forUpdate()
+      const trucksById = indexTrucksById(trucks)
+
+      const archivedCompanyIds = [
+        ...new Set(
+          trucks
+            .filter((truck) => truck.status === 'ARCHIVED')
+            .map((truck) => truck.transportCompanyId),
+        ),
+      ].sort()
+
+      // Locked for the same reason the single-truck path locks the company row: a transport
+      // company cannot be archived while it still provides available trucks, and this write can
+      // produce several available trucks at once. Sorting both this query and the truck query
+      // above by id gives every reactivation (single or bulk) the same lock acquisition order,
+      // so overlapping submissions cannot deadlock against each other.
+      const companies =
+        archivedCompanyIds.length > 0
+          ? await TransportCompany.query({ client: trx })
+              .whereIn('id', archivedCompanyIds)
+              .orderBy('id', 'asc')
+              .forUpdate()
+          : []
+      const archivedCompanyIdSet = new Set(
+        companies.filter((company) => company.status === 'ARCHIVED').map((company) => company.id),
+      )
+
+      const blockers = findBulkBlockers(
+        command.ids,
+        trucksById,
+        'ARCHIVED',
+        undefined,
+        archivedCompanyIdSet,
+      )
+
+      const blockedIds = new Set(blockers.map((blocker) => blocker.id))
+      const eligibleIds = command.ids.filter((id) => !blockedIds.has(id))
+
+      const [affectedRows] = await Truck.query({ client: trx })
+        .whereIn('id', eligibleIds)
+        .where('status', 'ARCHIVED')
+        .update({
+          status: 'AVAILABLE',
+          reactivatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+          reactivatedByUserId: command.reactivatedByUserId,
+          reactivationComment: command.reactivationComment,
+          updatedAt: command.reactivatedAt.toSQL({ includeOffset: false }),
+        })
+
+      if (affectedRows !== eligibleIds.length) {
+        throw new Error('Truck bulk reactivation changed during transaction')
+      }
+
+      const reactivated = await Truck.query({ client: trx })
+        .whereIn('id', eligibleIds)
+        .preload('archivedBy')
+        .preload('reactivatedBy')
+
+      return {
+        updatedTrucks: orderTrucks(eligibleIds, indexTrucksById(reactivated)),
         blockedTrucks: blockers,
       }
     })

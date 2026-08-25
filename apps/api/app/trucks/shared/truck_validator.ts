@@ -69,3 +69,12 @@ export const archiveTrucksValidator = vine.create({
   ids: lifecycleIds(),
   comment: lifecycleComment(),
 })
+
+export const reactivateTruckValidator = vine.create({
+  comment: lifecycleComment(),
+})
+
+export const reactivateTrucksValidator = vine.create({
+  ids: lifecycleIds(),
+  comment: lifecycleComment(),
+})
