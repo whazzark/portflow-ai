@@ -1,4 +1,5 @@
 import type * as GeoJSON from 'geojson'
+import { useCallback, useRef } from 'react'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { useResourceMapPlacement } from '@/components/resource-map/resource-map-placement'
 import { MapGeoJSON, MapMarker, MarkerContent } from '@/components/ui/map'
@@ -61,7 +62,9 @@ export function PendingPolygonPlacement({
     return null
   }
 
-  const canComplete = !completed && points.length >= MINIMUM_RING_POINTS && onComplete !== undefined
+  // Held as the callback itself rather than a boolean so the first vertex can hand it straight to
+  // its button, with no second `onComplete !== undefined` check to keep in step.
+  const completeOutline = completed || points.length < MINIMUM_RING_POINTS ? undefined : onComplete
 
   const outline = toOutlineFeature(points)
 
@@ -91,14 +94,8 @@ export function PendingPolygonPlacement({
           }
         >
           <MarkerContent>
-            {index === 0 && canComplete ? (
-              <button
-                aria-label="Finish the outline"
-                className="block size-4 cursor-pointer rounded-full border-2 border-white bg-primary shadow-lg ring-primary/40 hover:ring-4 focus-visible:outline-none focus-visible:ring-4 dark:border-neutral-900"
-                data-pending-vertex={index}
-                onClick={onComplete}
-                type="button"
-              />
+            {index === 0 && completeOutline ? (
+              <FinishOutlineButton index={index} onComplete={completeOutline} />
             ) : (
               <span
                 aria-hidden="true"
@@ -110,5 +107,43 @@ export function PendingPolygonPlacement({
         </MapMarker>
       ))}
     </>
+  )
+}
+
+/**
+ * The first vertex, doubling as the control that closes the ring. Its click handler is attached
+ * natively rather than through React: MapLibre appends marker elements to the map's canvas
+ * container and listens for `click` on that same container, so its listener runs before React's
+ * delegated `onClick` and would append one last boundary point on top of finishing the outline —
+ * a redundant vertex, a hair away from the first, that no duplicate check would catch. Stopping
+ * propagation from a listener on the button itself keeps the click away from the map.
+ */
+function FinishOutlineButton({ index, onComplete }: { index: number; onComplete: () => void }) {
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
+
+  const attachFinishHandler = useCallback((element: HTMLButtonElement | null) => {
+    if (!element) {
+      return
+    }
+
+    const finish = (event: MouseEvent) => {
+      event.stopPropagation()
+      onCompleteRef.current()
+    }
+
+    element.addEventListener('click', finish)
+
+    return () => element.removeEventListener('click', finish)
+  }, [])
+
+  return (
+    <button
+      aria-label="Finish the outline"
+      className="block size-4 cursor-pointer rounded-full border-2 border-white bg-primary shadow-lg ring-primary/40 hover:ring-4 focus-visible:outline-none focus-visible:ring-4 dark:border-neutral-900"
+      data-pending-vertex={index}
+      ref={attachFinishHandler}
+      type="button"
+    />
   )
 }

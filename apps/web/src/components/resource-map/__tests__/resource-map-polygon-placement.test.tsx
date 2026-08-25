@@ -157,6 +157,60 @@ describe('PendingPolygonPlacement', () => {
     )
   })
 
+  it('finishes the outline without letting the click reach the map', () => {
+    const onComplete = vi.fn()
+    const onAddPoint = vi.fn()
+    // MapLibre listens for clicks on the container its markers live in, so a click that keeps
+    // bubbling would close the ring *and* drop one more boundary point.
+    const containerClick = vi.fn()
+    document.addEventListener('click', containerClick)
+
+    try {
+      render(
+        <PendingPolygonPlacement
+          armed={true}
+          onAddPoint={onAddPoint}
+          onComplete={onComplete}
+          onMovePoint={vi.fn()}
+          points={square}
+        />,
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: 'Finish the outline' }))
+
+      expect(onComplete).toHaveBeenCalledTimes(1)
+      expect(containerClick).not.toHaveBeenCalled()
+      expect(onAddPoint).not.toHaveBeenCalled()
+    } finally {
+      document.removeEventListener('click', containerClick)
+    }
+  })
+
+  it('offers no way to finish before three points, or once completed', () => {
+    const { rerender } = render(
+      <PendingPolygonPlacement
+        armed={true}
+        onAddPoint={vi.fn()}
+        onComplete={vi.fn()}
+        onMovePoint={vi.fn()}
+        points={square.slice(0, 2)}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: 'Finish the outline' })).not.toBeInTheDocument()
+
+    rerender(
+      <PendingPolygonPlacement
+        armed={true}
+        completed={true}
+        onAddPoint={vi.fn()}
+        onComplete={vi.fn()}
+        onMovePoint={vi.fn()}
+        points={square}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: 'Finish the outline' })).not.toBeInTheDocument()
+  })
+
   it('draws no outline from a single point but still marks it', () => {
     render(
       <PendingPolygonPlacement
