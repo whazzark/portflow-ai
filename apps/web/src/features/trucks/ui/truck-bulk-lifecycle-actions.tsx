@@ -23,6 +23,7 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 type TruckBulkLifecycleActionsProps = {
   blockedTrucks: BulkTruckLifecycleBlocker[]
   selectedIds: string[]
+  isArchived: boolean
   onClear: () => void
   onSuccess: (result: BulkTruckLifecycleResult) => void
 }
@@ -30,6 +31,7 @@ type TruckBulkLifecycleActionsProps = {
 export function TruckBulkLifecycleActions({
   blockedTrucks,
   selectedIds,
+  isArchived,
   onClear,
   onSuccess,
 }: TruckBulkLifecycleActionsProps) {
@@ -44,14 +46,15 @@ export function TruckBulkLifecycleActions({
     setError(null)
     setIsSubmitting(true)
     try {
-      const result = await mutations.archiveMany.mutateAsync({
-        body: { ids: selectedIds, comment: comment || null },
-      })
+      const body = { ids: selectedIds, comment: comment || null }
+      const result = isArchived
+        ? await mutations.reactivateMany.mutateAsync({ body })
+        : await mutations.archiveMany.mutateAsync({ body })
       setOpen(false)
       setComment('')
       onSuccess(result.data)
       void mutations.refreshTrucks()
-      notifyOutcome(result.data)
+      notifyOutcome(result.data, isArchived)
     } catch (cause) {
       setError(parseApiError(cause))
     } finally {
@@ -83,9 +86,13 @@ export function TruckBulkLifecycleActions({
               setOpen(true)
             }}
             size="sm"
-            variant="destructive"
+            variant={isArchived ? 'default' : 'destructive'}
           >
-            {blockedTrucks.length > 0 ? 'Retry blocked trucks' : 'Archive selected'}
+            {blockedTrucks.length > 0
+              ? 'Retry blocked trucks'
+              : isArchived
+                ? 'Reactivate selected'
+                : 'Archive selected'}
           </Button>
           <Button aria-label="Clear selection" onClick={onClear} size="icon-sm" variant="ghost">
             <XIcon aria-hidden="true" />
@@ -95,9 +102,13 @@ export function TruckBulkLifecycleActions({
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Archive selected trucks?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isArchived ? 'Reactivate selected trucks?' : 'Archive selected trucks?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              These trucks will remain readable but no longer offered for new operational work.
+              {isArchived
+                ? 'These trucks will become selectable again for new operational work.'
+                : 'These trucks will remain readable but no longer offered for new operational work.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {error && (
@@ -125,7 +136,7 @@ export function TruckBulkLifecycleActions({
                 void submit()
               }}
             >
-              Archive
+              {isArchived ? 'Reactivate' : 'Archive'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -140,6 +151,8 @@ function formatBlockerReason(reason: BulkTruckLifecycleBlocker['reason']) {
       IN_USE: 'used by an active or planned discharge',
       NOT_FOUND: 'not found',
       ALREADY_ARCHIVED: 'already archived',
+      ALREADY_AVAILABLE: 'already available',
+      TRANSPORT_COMPANY_ARCHIVED: 'archived transport company',
     }[reason] ?? reason
   )
 }
@@ -148,12 +161,13 @@ function pluralize(count: number, noun: string) {
   return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
-function notifyOutcome(result: BulkTruckLifecycleResult) {
-  const archivedCount = result.updatedTrucks.length
+function notifyOutcome(result: BulkTruckLifecycleResult, isArchived: boolean) {
+  const updatedCount = result.updatedTrucks.length
   const blocked = result.blockedTrucks
+  const verb = isArchived ? 'reactivated' : 'archived'
 
   if (blocked.length === 0) {
-    toast.success(`${pluralize(archivedCount, 'truck')} archived`)
+    toast.success(`${pluralize(updatedCount, 'truck')} ${verb}`)
     return
   }
 
@@ -164,10 +178,10 @@ function notifyOutcome(result: BulkTruckLifecycleResult) {
     .join(', ')
   // The toolbar stays compact (a count and a button); the per-truck breakdown that used to
   // sit permanently in that frame lives here instead, where it doesn't crowd the UI once read.
-  const toastFn = archivedCount > 0 ? toast.warning : toast.error
+  const toastFn = updatedCount > 0 ? toast.warning : toast.error
   toastFn(
-    archivedCount > 0
-      ? `${pluralize(archivedCount, 'truck')} archived; ${pluralize(blocked.length, 'truck')} unchanged`
+    updatedCount > 0
+      ? `${pluralize(updatedCount, 'truck')} ${verb}; ${pluralize(blocked.length, 'truck')} unchanged`
       : `${pluralize(blocked.length, 'truck')} unchanged`,
     { description: reasons, duration: 8000 },
   )

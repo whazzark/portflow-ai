@@ -67,6 +67,26 @@ export type BulkTruckLifecycleResult = {
   blockedTrucks: BulkTruckLifecycleBlocker[]
 }
 
+export type ReactivateTruckCommand = {
+  id: string
+  reactivatedAt: DateTime
+  reactivatedByUserId: string
+  reactivationComment: string | null
+}
+
+export type ReactivateTruckResult =
+  | { kind: 'REACTIVATED'; truck: Truck }
+  | { kind: 'ALREADY_AVAILABLE' }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'TRANSPORT_COMPANY_ARCHIVED' }
+
+export type ReactivateTrucksCommand = {
+  ids: string[]
+  reactivatedAt: DateTime
+  reactivatedByUserId: string
+  reactivationComment: string | null
+}
+
 export default abstract class TruckRepository {
   abstract list(): Promise<Truck[]>
   abstract listAvailable(): Promise<Truck[]>
@@ -78,4 +98,8 @@ export default abstract class TruckRepository {
   ): Promise<Set<string>>
   abstract archiveAvailable(command: ArchiveTruckCommand): Promise<ArchiveTruckResult>
   abstract archiveAvailableMany(command: ArchiveTrucksCommand): Promise<BulkTruckLifecycleResult>
+  abstract reactivateArchived(command: ReactivateTruckCommand): Promise<ReactivateTruckResult>
+  abstract reactivateArchivedMany(
+    command: ReactivateTrucksCommand,
+  ): Promise<BulkTruckLifecycleResult>
 }
