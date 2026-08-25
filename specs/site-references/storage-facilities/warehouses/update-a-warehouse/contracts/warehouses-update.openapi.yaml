@@ -1,0 +1,249 @@
+openapi: 3.1.0
+info:
+  title: Portflow Warehouse Update Contract
+  version: 1.0.0
+  description: >-
+    Write contract for Issue #209 Update a Warehouse. Extends the read contract introduced by #207
+    (specs/site-references/storage-facilities/warehouses/list-warehouses/contracts/warehouses.openapi.yaml)
+    and the creation contract introduced by #208, reusing their Warehouse, WarehouseFootprint, and
+    GeographicPoint schemas unchanged.
+paths:
+  /api/v1/warehouses/{id}:
+    patch:
+      operationId: updateWarehouse
+      summary: Correct a warehouse's name, its footprint, or both
+      description: >-
+        Updates one AVAILABLE warehouse. The name and the footprint are independently optional but at
+        least one must be present. A submitted footprint carries the complete resulting ordered
+        sequence of boundary points and replaces the stored one as a whole. The update is applied in
+        full or not at all, and is refused when the resulting outline would no longer contain one of
+        the warehouse's doors. Identity, status, creation time, lifecycle context, and doors are
+        never modified. Requires an authenticated, active organization or operations administrator.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identity of the warehouse to correct.
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWarehouseRequest"
+            examples:
+              renameOnly:
+                summary: Correct the name, leave the outline alone
+                value:
+                  name: North Shed
+              reshapeOnly:
+                summary: Replace the outline, leave the name alone
+                value:
+                  footprint:
+                    points:
+                      - { latitude: 49.4938, longitude: 0.1077 }
+                      - { latitude: 49.4938, longitude: 0.1092 }
+                      - { latitude: 49.4929, longitude: 0.1088 }
+                      - { latitude: 49.4930, longitude: 0.1079 }
+              both:
+                summary: Correct both in one all-or-nothing submission
+                value:
+                  name: North Shed
+                  footprint:
+                    points:
+                      - { latitude: 49.4938, longitude: 0.1077 }
+                      - { latitude: 49.4938, longitude: 0.1092 }
+                      - { latitude: 49.4929, longitude: 0.1088 }
+      responses:
+        "200":
+          description: >-
+            The warehouse was updated. Point order matches the submitted order exactly, and the
+            returned doors are unchanged.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WarehouseEnvelope"
+        "401":
+          description: The caller is not authenticated.
+        "403":
+          description: >-
+            The caller is authenticated but is not an active organization or operations
+            administrator. No warehouse data is disclosed.
+        "404":
+          description: No warehouse has this identity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: E_WAREHOUSE_NOT_FOUND
+                message: Warehouse not found
+        "409":
+          description: >-
+            The submission conflicts with stored state: the name is taken, the warehouse is archived
+            and therefore read-only, or the resulting outline would exclude existing doors.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                duplicateName:
+                  value:
+                    code: E_WAREHOUSE_NAME_CONFLICT
+                    message: Warehouse name is already in use
+                archived:
+                  value:
+                    code: E_WAREHOUSE_ARCHIVED
+                    message: Archived warehouses are read-only. Reactivate the warehouse first.
+                doorsOutside:
+                  summary: The offending doors are named so the outline can be adjusted around them
+                  value:
+                    code: E_WAREHOUSE_DOORS_OUTSIDE_FOOTPRINT
+                    message: "Doors D3, D4 would fall outside the new footprint"
+        "422":
+          description: >-
+            The submission is structurally or geometrically unacceptable: no member present, a blank
+            or over-long name, a coordinate out of range or not a number, fewer than three boundary
+            points, or an outline that crosses itself, repeats a consecutive point, or encloses no
+            area.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                invalidName:
+                  value:
+                    code: E_WAREHOUSE_NAME_INVALID
+                    message: Warehouse name must not be empty
+                selfCrossing:
+                  value:
+                    code: E_WAREHOUSE_INVALID_FOOTPRINT
+                    message: Warehouse footprint outline must not cross itself
+                flatOutline:
+                  value:
+                    code: E_WAREHOUSE_INVALID_FOOTPRINT
+                    message: Warehouse footprint outline must enclose an area
+                outOfRange:
+                  value:
+                    code: E_WAREHOUSE_INVALID_FOOTPRINT
+                    message: Warehouse footprint coordinates are out of range
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: adonis-session
+  schemas:
+    UpdateWarehouseRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      description: >-
+        Both members are optional, but at least one must be present. An absent member is left
+        untouched; a present `footprint` replaces the stored footprint as a whole.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: >-
+            Trimmed before validation, comparison, and storage. Must not be blank after trimming.
+            Must be unique among warehouses, compared without regard to letter case and whatever the
+            other warehouse's lifecycle status. Resubmitting this warehouse's own name is accepted.
+          example: North Shed
+        footprint:
+          $ref: "#/components/schemas/WarehouseFootprintInput"
+      anyOf:
+        - required: [name]
+        - required: [footprint]
+    WarehouseFootprintInput:
+      type: object
+      additionalProperties: false
+      required: [points]
+      properties:
+        points:
+          type: array
+          minItems: 3
+          maxItems: 500
+          description: >-
+            The complete resulting boundary, in order. The closing edge back to the first point is
+            implied and must not be repeated. The outline must be simple — no self-crossing, no
+            duplicate consecutive points — and must enclose an area. Stored `position` values are
+            reassigned from this order.
+          items:
+            $ref: "#/components/schemas/GeographicPoint"
+    GeographicPoint:
+      type: object
+      additionalProperties: false
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+    WarehouseEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Warehouse"
+    Warehouse:
+      type: object
+      description: >-
+        Unchanged from the #207 read contract. `id`, `status`, and `doors` are never modified by an
+        update.
+      required: [id, name, status, footprint, doors]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+        footprint:
+          type: object
+          required: [points]
+          properties:
+            points:
+              type: array
+              minItems: 3
+              items:
+                $ref: "#/components/schemas/GeographicPoint"
+        doors:
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDoor"
+    WarehouseDoor:
+      type: object
+      required: [id, name, status, latitude, longitude]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+        latitude:
+          type: number
+        longitude:
+          type: number
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
