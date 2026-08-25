@@ -22,8 +22,16 @@ export function useWeighingAreaMutations() {
       onSuccess: () => invalidateWeighingAreas(),
     }),
   )
+  const archive = useMutation(
+    tuyauQuery.weighingAreas.archive.mutationOptions({
+      onSuccess: () => invalidateWeighingAreas(),
+    }),
+  )
+  const archiveMany = useMutation(tuyauQuery.weighingAreas.archiveMany.mutationOptions())
 
   return {
+    archive,
+    archiveMany,
     create,
     refreshWeighingAreas: invalidateWeighingAreas,
     update,

@@ -222,6 +222,12 @@ const routes = {
     tokens: [{"old":"/api/v1/weighing-areas/:id","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas/:id","type":0,"val":"weighing-areas","end":""},{"old":"/api/v1/weighing-areas/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['weighing_areas.update']['types'],
   },
+  'weighing_areas.archive_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/weighing-areas/archive',
+    tokens: [{"old":"/api/v1/weighing-areas/archive","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas/archive","type":0,"val":"weighing-areas","end":""},{"old":"/api/v1/weighing-areas/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['weighing_areas.archive_many']['types'],
+  },
   'weighing_areas.archive': {
     methods: ["POST"],
     pattern: '/api/v1/weighing-areas/:id/archive',

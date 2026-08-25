@@ -14,33 +14,66 @@ import {
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
-import { useDockMutations } from '@/features/docks/mutations/use-dock-mutations'
-import type { BulkDockLifecycleBlocker, BulkDockLifecycleResult } from '@/features/docks/types'
+import {
+  BULK_LIFECYCLE_DESCRIPTIONS,
+  type BulkLifecycleIntent,
+  CHECKPOINT_KIND_PLURAL_LABELS,
+  CHECKPOINT_KIND_SINGULAR_LABELS,
+  CHECKPOINT_PARAM_BY_KIND,
+  type CheckpointKind,
+} from '@/features/checkpoints/types'
 import { classnames } from '@/libraries/shadcn/helpers'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
-type BulkDockLifecycleActionsProps = {
-  intent: 'ARCHIVE' | 'REACTIVATE'
-  selectedIds: string[]
-  onClear: () => void
-  onSuccess: (result: BulkDockLifecycleResult) => void
+export type BulkLifecycleBlocker = {
+  id: string
+  name?: string
+  reason: 'NOT_FOUND' | 'IN_USE' | 'ALREADY_ARCHIVED' | 'ALREADY_AVAILABLE'
 }
 
-const BLOCKER_REASON_LABELS: Record<BulkDockLifecycleBlocker['reason'], string> = {
+export type BulkLifecycleOutcome = {
+  updatedCount: number
+  blocked: BulkLifecycleBlocker[]
+}
+
+type BulkCheckpointLifecycleActionsProps = {
+  /** Which checkpoint kind this instance acts on — drives every label and the request it sends. */
+  kind: CheckpointKind
+  /** Which lifecycle transition the current selection is for. */
+  intent: BulkLifecycleIntent
+  selectedIds: string[]
+  onClear: () => void
+  onSuccess: (outcome: BulkLifecycleOutcome) => void
+  /** Submits the bulk request for this kind and intent, returning its normalized outcome. Each
+   * resource feature adapts its own response shape (e.g. `{ updatedDocks, blockedDocks }`) onto
+   * `BulkLifecycleOutcome`, so this component holds no resource-specific knowledge. */
+  submit: (input: { ids: string[]; comment: string | null }) => Promise<BulkLifecycleOutcome>
+  /** Invalidates the resource's own list query after a successful submission. */
+  refresh: () => void | Promise<void>
+}
+
+const BLOCKER_REASON_LABELS: Record<BulkLifecycleBlocker['reason'], string> = {
   IN_USE: 'used by an active or planned discharge',
   NOT_FOUND: 'not found',
   ALREADY_ARCHIVED: 'already archived',
   ALREADY_AVAILABLE: 'already available',
 }
 
-export function BulkDockLifecycleActions({
+export function BulkCheckpointLifecycleActions({
+  kind,
   intent,
   selectedIds,
   onClear,
   onSuccess,
-}: BulkDockLifecycleActionsProps) {
-  const mutations = useDockMutations()
+  submit: submitRequest,
+  refresh,
+}: BulkCheckpointLifecycleActionsProps) {
   const isReactivate = intent === 'REACTIVATE'
+  const singular = CHECKPOINT_KIND_SINGULAR_LABELS[kind]
+  const plural = CHECKPOINT_KIND_PLURAL_LABELS[kind]
+  const actionLabel = isReactivate ? 'Reactivate' : 'Archive'
+  const pastTense = isReactivate ? 'reactivated' : 'archived'
+  const countLabel = (count: number) => `${count} ${count === 1 ? singular : plural}`
 
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
@@ -49,24 +82,19 @@ export function BulkDockLifecycleActions({
   const submit = async () => {
     setIsSubmitting(true)
     try {
-      const body = { ids: selectedIds, comment: comment || null }
-      const result = isReactivate
-        ? await mutations.reactivateMany.mutateAsync({ body })
-        : await mutations.archiveMany.mutateAsync({ body })
-      const { updatedDocks, blockedDocks } = result.data
+      const outcome = await submitRequest({ ids: selectedIds, comment: comment || null })
 
       setOpen(false)
       setComment('')
-      onSuccess(result.data)
-      void mutations.refreshDocks()
-      const verb = isReactivate ? 'reactivated' : 'archived'
+      onSuccess(outcome)
+      void refresh()
       toast.success(
-        blockedDocks.length > 0
-          ? `${updatedDocks.length} dock${updatedDocks.length === 1 ? '' : 's'} ${verb}; ${blockedDocks.length} unchanged`
-          : `${selectedIds.length} dock${selectedIds.length === 1 ? '' : 's'} ${verb}`,
-        blockedDocks.length > 0
+        outcome.blocked.length > 0
+          ? `${countLabel(outcome.updatedCount)} ${pastTense}; ${outcome.blocked.length} unchanged`
+          : `${countLabel(selectedIds.length)} ${pastTense}`,
+        outcome.blocked.length > 0
           ? {
-              description: blockedDocks
+              description: outcome.blocked
                 .map(
                   (blocked) =>
                     `${blocked.name ?? blocked.id}: ${BLOCKER_REASON_LABELS[blocked.reason]}`,
@@ -76,7 +104,7 @@ export function BulkDockLifecycleActions({
           : undefined,
       )
     } catch (cause) {
-      toast.error(isReactivate ? 'Unable to reactivate docks' : 'Unable to archive docks', {
+      toast.error(`Unable to ${actionLabel.toLowerCase()} ${plural}`, {
         description: parseApiError(cause).message,
       })
     } finally {
@@ -90,7 +118,7 @@ export function BulkDockLifecycleActions({
     <>
       <div
         aria-hidden={!visible}
-        aria-label="Bulk dock actions"
+        aria-label={`Bulk ${singular} actions`}
         className={classnames(
           'pointer-events-none fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 flex justify-center transition-[opacity,transform] duration-200 ease-out md:absolute md:inset-x-6 md:bottom-6',
           visible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0',
@@ -107,7 +135,7 @@ export function BulkDockLifecycleActions({
             size="sm"
             variant={isReactivate ? 'default' : 'destructive'}
           >
-            {isReactivate ? 'Reactivate selected' : 'Archive selected'}
+            {actionLabel} selected
           </Button>
           <Button aria-label="Clear selection" onClick={onClear} size="icon-sm" variant="ghost">
             <XIcon aria-hidden="true" />
@@ -117,19 +145,17 @@ export function BulkDockLifecycleActions({
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {isReactivate ? 'Reactivate selected docks?' : 'Archive selected docks?'}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{`${actionLabel} selected ${plural}?`}</AlertDialogTitle>
             <AlertDialogDescription>
-              {isReactivate
-                ? 'These docks will become selectable for new discharges again.'
-                : 'These docks will remain readable but no longer selectable for new discharges.'}
+              {BULK_LIFECYCLE_DESCRIPTIONS[kind][intent]}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Field>
-            <FieldLabel htmlFor="bulk-dock-lifecycle-comment">Comment (optional)</FieldLabel>
+            <FieldLabel htmlFor={`bulk-${CHECKPOINT_PARAM_BY_KIND[kind]}-lifecycle-comment`}>
+              Comment (optional)
+            </FieldLabel>
             <Textarea
-              id="bulk-dock-lifecycle-comment"
+              id={`bulk-${CHECKPOINT_PARAM_BY_KIND[kind]}-lifecycle-comment`}
               maxLength={1000}
               onChange={(event) => setComment(event.target.value)}
               value={comment}
@@ -145,7 +171,7 @@ export function BulkDockLifecycleActions({
                 void submit()
               }}
             >
-              {isReactivate ? 'Reactivate' : 'Archive'}
+              {actionLabel}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

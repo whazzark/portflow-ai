@@ -20,7 +20,11 @@ import {
 import { mapStyleUrls } from '@/config/map'
 import { CheckpointMarker } from '@/features/checkpoints/map/checkpoint-marker'
 import { getCheckpointMarkerOffset } from '@/features/checkpoints/map/checkpoint-marker-offset'
-import type { PresentedCheckpoint } from '@/features/checkpoints/types'
+import {
+  CHECKPOINT_KIND_PLURAL_LABELS,
+  type CheckpointKind,
+  type PresentedCheckpoint,
+} from '@/features/checkpoints/types'
 
 export type CheckpointMapPlacement = {
   armed: boolean
@@ -112,11 +116,11 @@ export function CheckpointMap({
   createActions = [],
   selectMode,
   checkedIds,
-  checkableDockIds,
+  checkableIds,
   onToggleChecked,
-  canSelectDocks = false,
+  selectableKinds = [],
   onToggleSelectMode,
-  onShiftSelectDock,
+  onShiftSelect,
 }: {
   checkpoints: PresentedCheckpoint[]
   selected?: PresentedCheckpoint
@@ -124,19 +128,23 @@ export function CheckpointMap({
   onSelect: (checkpoint: PresentedCheckpoint) => void
   placement?: CheckpointMapPlacement
   createActions?: ResourceMapCreateAction[]
-  /** When `'docks'`, dock markers become checkable instead of opening the details sheet. */
-  selectMode?: 'docks'
+  /** When set to a kind, markers of that kind become checkable instead of opening the details
+   * sheet, while every other kind's markers keep their normal `onSelect` behavior. */
+  selectMode?: CheckpointKind
   checkedIds?: Set<string>
-  /** Dock ids eligible to become checked, whether or not select mode is currently active — also
-   * gates shift-click, which can enter select mode directly from any checkable dock marker. The
-   * caller (checkpoints-page.tsx) owns the eligibility rule; the map only renders it. */
-  checkableDockIds?: Set<string>
+  /** Checkpoint ids eligible to become checked, whether or not select mode is currently active —
+   * also gates shift-click, which can enter select mode directly from any checkable marker. The
+   * caller (checkpoints-page.tsx) owns the eligibility rule (kind, lifecycle status, and the
+   * selection's intent); the map only renders it. */
+  checkableIds?: Set<string>
   onToggleChecked?: (id: string) => void
-  /** Whether the map-control toggle for entering dock select mode is offered at all. */
-  canSelectDocks?: boolean
-  onToggleSelectMode?: () => void
-  /** Shift-clicking a checkable dock marker enters/adds to select mode directly, regardless of the current mode. */
-  onShiftSelectDock?: (id: string) => void
+  /** Which kinds offer a "Select {kind}" map-control toggle at all; one button is rendered per
+   * entry, and at most one kind is ever the active `selectMode`. */
+  selectableKinds?: CheckpointKind[]
+  onToggleSelectMode?: (kind: CheckpointKind) => void
+  /** Shift-clicking a checkable marker enters/adds to that kind's select mode directly,
+   * regardless of the current mode. */
+  onShiftSelect?: (kind: CheckpointKind, id: string) => void
 }) {
   const initialCenter = useMemo<[number, number]>(() => {
     const firstCheckpoint = checkpoints[0]
@@ -161,23 +169,23 @@ export function CheckpointMap({
     >
       <FitCheckpointBounds checkpoints={checkpoints} selected={selected} />
       {checkpoints.map((checkpoint) => {
-        const isCheckableDock =
-          checkpoint.kind === 'DOCK' && (checkableDockIds?.has(checkpoint.id) ?? false)
-        const isSelectableDock = selectMode === 'docks' && isCheckableDock
+        const isCheckable =
+          selectableKinds.includes(checkpoint.kind) && (checkableIds?.has(checkpoint.id) ?? false)
+        const isSelectableNow = selectMode === checkpoint.kind && isCheckable
 
         return (
           <CheckpointMarker
-            checked={isSelectableDock ? (checkedIds?.has(checkpoint.id) ?? false) : undefined}
+            checked={isSelectableNow ? (checkedIds?.has(checkpoint.id) ?? false) : undefined}
             checkpoint={checkpoint}
             key={`${checkpoint.kind}:${checkpoint.id}`}
             muted={isArmed}
             offset={getCheckpointMarkerOffset(checkpoint, checkpoints)}
             onSelect={(selectedCheckpoint, event) => {
-              if (isCheckableDock && event.shiftKey && onShiftSelectDock) {
-                onShiftSelectDock(checkpoint.id)
+              if (isCheckable && event.shiftKey && onShiftSelect) {
+                onShiftSelect(checkpoint.kind, checkpoint.id)
                 return
               }
-              if (isSelectableDock) {
+              if (isSelectableNow) {
                 onToggleChecked?.(checkpoint.id)
                 return
               }
@@ -196,17 +204,22 @@ export function CheckpointMap({
         position={isArmed ? 'bottom-left' : 'bottom-right'}
         showZoom
       >
-        {canSelectDocks && onToggleSelectMode && (
-          <ControlGroup>
-            <ControlButton
-              active={selectMode === 'docks'}
-              label={selectMode === 'docks' ? 'Stop selecting docks' : 'Select docks'}
-              onClick={onToggleSelectMode}
-            >
-              <SquareDashedMousePointer aria-hidden="true" className="size-4" />
-            </ControlButton>
-          </ControlGroup>
-        )}
+        {onToggleSelectMode &&
+          selectableKinds.map((kind) => (
+            <ControlGroup key={kind}>
+              <ControlButton
+                active={selectMode === kind}
+                label={
+                  selectMode === kind
+                    ? `Stop selecting ${CHECKPOINT_KIND_PLURAL_LABELS[kind]}`
+                    : `Select ${CHECKPOINT_KIND_PLURAL_LABELS[kind]}`
+                }
+                onClick={() => onToggleSelectMode(kind)}
+              >
+                <SquareDashedMousePointer aria-hidden="true" className="size-4" />
+              </ControlButton>
+            </ControlGroup>
+          ))}
         <ResourceMapCreateControl actions={createActions} />
       </MapControls>
     </MapCanvas>

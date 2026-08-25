@@ -11,7 +11,7 @@ const checkpointSearchSchema = z.object({
   edit: z.enum(['dock', 'weighing-area']).optional().catch(undefined),
   kinds: z.enum(['dock', 'weighing-area']).optional().catch(undefined),
   search: z.string().catch(''),
-  selecting: z.enum(['docks']).optional().catch(undefined),
+  selecting: z.enum(['docks', 'weighing-areas']).optional().catch(undefined),
   status: z.enum(['all', 'available', 'archived']).catch('available'),
 })
 

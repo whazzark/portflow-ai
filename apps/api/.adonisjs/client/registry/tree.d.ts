@@ -51,6 +51,7 @@ export interface ApiDefinition {
     store: typeof routes['weighing_areas.store']
     available: typeof routes['weighing_areas.available']
     update: typeof routes['weighing_areas.update']
+    archiveMany: typeof routes['weighing_areas.archive_many']
     archive: typeof routes['weighing_areas.archive']
     reactivate: typeof routes['weighing_areas.reactivate']
   }
