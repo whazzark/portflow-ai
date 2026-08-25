@@ -82,6 +82,9 @@ router
         router.patch('/:id', [controllers.WeighingAreas, 'update']).as('update')
         router.post('/archive', [controllers.WeighingAreas, 'archiveMany']).as('archive_many')
         router.post('/:id/archive', [controllers.WeighingAreas, 'archive']).as('archive')
+        router
+          .post('/reactivate', [controllers.WeighingAreas, 'reactivateMany'])
+          .as('reactivate_many')
         router.post('/:id/reactivate', [controllers.WeighingAreas, 'reactivate']).as('reactivate')
       })
       .prefix('/weighing-areas')

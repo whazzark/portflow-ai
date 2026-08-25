@@ -246,6 +246,12 @@ const routes = {
     tokens: [{"old":"/api/v1/weighing-areas/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas/:id/archive","type":0,"val":"weighing-areas","end":""},{"old":"/api/v1/weighing-areas/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/weighing-areas/:id/archive","type":0,"val":"archive","end":""}],
     types: placeholder as Registry['weighing_areas.archive']['types'],
   },
+  'weighing_areas.reactivate_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/weighing-areas/reactivate',
+    tokens: [{"old":"/api/v1/weighing-areas/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/weighing-areas/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/weighing-areas/reactivate","type":0,"val":"weighing-areas","end":""},{"old":"/api/v1/weighing-areas/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['weighing_areas.reactivate_many']['types'],
+  },
   'weighing_areas.reactivate': {
     methods: ["POST"],
     pattern: '/api/v1/weighing-areas/:id/reactivate',
