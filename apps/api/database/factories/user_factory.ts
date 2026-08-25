@@ -10,10 +10,18 @@ const hashedFactoryPassword = hash.make(USER_FACTORY_PASSWORD)
 
 export const UserFactory = factory
   .define(User, ({ faker }) => {
+    const firstName = faker.person.firstName()
+    const lastName = faker.person.lastName()
+
     return {
-      firstName: faker.person.firstName(),
-      lastName: faker.person.lastName(),
-      email: faker.internet.email(),
+      firstName,
+      lastName,
+      // Suffixed to avoid the case-insensitive unique email index colliding across the finite
+      // faker name pool once enough users are created in a run.
+      email: faker.internet.email({
+        firstName,
+        lastName: `${lastName}${faker.string.alphanumeric({ length: 6 })}`,
+      }),
       password: null,
       role: faker.helpers.arrayElement(USER_ROLES),
       accessStatus: 'PENDING' as const,

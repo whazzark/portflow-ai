@@ -8,6 +8,7 @@ import {
   sortDoors,
 } from '@/features/warehouse-doors/warehouse-door-presentation'
 import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
+import { formatDateTime } from '@/helpers/dates'
 import { classnames } from '@/libraries/shadcn/helpers'
 
 const labels: Record<WarehouseDoorStatusFilter, string> = {
@@ -78,6 +79,19 @@ export function WarehouseDoorsPanel({
                           {door.status === 'AVAILABLE' ? 'Available' : 'Archived'} · {door.latitude}
                           , {door.longitude}
                         </span>
+                        {door.status === 'ARCHIVED' && door.archivedAt && (
+                          <span className="truncate text-muted-foreground text-xs">
+                            {/* Naming the provenance is what keeps a door archived with its
+                                warehouse distinguishable from one retired on its own. Gated on the
+                                current status too: reactivation leaves `archivedAt` in place, so an
+                                available door would otherwise still claim it was archived. */}
+                            {door.archivedWithWarehouse
+                              ? 'Archived with this warehouse'
+                              : 'Archived on its own'}{' '}
+                            · {formatDateTime(door.archivedAt)}
+                            {door.archiveComment ? ` · ${door.archiveComment}` : ''}
+                          </span>
+                        )}
                       </span>
                     </Button>
                   </li>

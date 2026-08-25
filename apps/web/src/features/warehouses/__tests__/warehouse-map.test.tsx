@@ -20,6 +20,12 @@ vi.mock('@/components/ui/map', () => ({
   Map: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   MapControls: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   useMap: () => ({ isLoaded: true, map: mapMock }),
+  ControlGroup: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ControlButton: ({ children, label }: { children: React.ReactNode; label: string }) => (
+    <button aria-label={label} type="button">
+      {children}
+    </button>
+  ),
 }))
 
 vi.mock('@/features/warehouse-doors/map/warehouse-door-marker', () => ({

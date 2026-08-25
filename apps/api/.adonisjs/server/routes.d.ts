@@ -53,6 +53,8 @@ export type ScannedRoutes = {
     'warehouse_doors.available': { paramsTuple?: []; params?: {} }
     'warehouses.index': { paramsTuple?: []; params?: {} }
     'warehouses.store': { paramsTuple?: []; params?: {} }
+    'warehouses.archive_many': { paramsTuple?: []; params?: {} }
+    'warehouses.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   GET: {
     'health.show': { paramsTuple?: []; params?: {} }
@@ -118,6 +120,8 @@ export type ScannedRoutes = {
     'weighing_areas.reactivate_many': { paramsTuple?: []; params?: {} }
     'weighing_areas.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'warehouses.store': { paramsTuple?: []; params?: {} }
+    'warehouses.archive_many': { paramsTuple?: []; params?: {} }
+    'warehouses.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PATCH: {
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

@@ -300,6 +300,18 @@ const routes = {
     tokens: [{"old":"/api/v1/warehouses","type":0,"val":"api","end":""},{"old":"/api/v1/warehouses","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouses","type":0,"val":"warehouses","end":""}],
     types: placeholder as Registry['warehouses.store']['types'],
   },
+  'warehouses.archive_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/warehouses/archive',
+    tokens: [{"old":"/api/v1/warehouses/archive","type":0,"val":"api","end":""},{"old":"/api/v1/warehouses/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouses/archive","type":0,"val":"warehouses","end":""},{"old":"/api/v1/warehouses/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['warehouses.archive_many']['types'],
+  },
+  'warehouses.archive': {
+    methods: ["POST"],
+    pattern: '/api/v1/warehouses/:id/archive',
+    tokens: [{"old":"/api/v1/warehouses/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/warehouses/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouses/:id/archive","type":0,"val":"warehouses","end":""},{"old":"/api/v1/warehouses/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/warehouses/:id/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['warehouses.archive']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

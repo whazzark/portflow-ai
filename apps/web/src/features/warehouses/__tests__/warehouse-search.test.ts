@@ -1,11 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import type { WarehouseDto } from '@/features/warehouses/types'
 import { normalizeWarehouseSearch, presentWarehouses } from '@/features/warehouses/warehouse-search'
+import { warehouseLifecycle } from './support/fixtures'
 
 const warehouse = (name: string, status: WarehouseDto['status']): WarehouseDto => ({
   id: name,
   name,
   status,
+  ...warehouseLifecycle(),
   footprint: {
     points: [
       { latitude: 1, longitude: 2 },

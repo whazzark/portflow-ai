@@ -9,7 +9,8 @@ const { isMobileMock, navigateMock } = vi.hoisted(() => ({
 }))
 
 vi.mock('@tanstack/react-query', () => ({
-  useMutation: () => ({ mutateAsync: vi.fn() }),
+  // The page now owns lifecycle mutations, which reach for the client and the mutation hook.
+  useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useQuery: () => ({ data: { data: WAREHOUSES }, isError: false }),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }))
@@ -39,6 +40,12 @@ vi.mock('@/features/warehouses/map/warehouse-map', () => ({
 }))
 
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => isMobileMock() }))
+
+// The page reads the signed-in user to decide whether to offer archival; this suite renders it
+// outside the router's SessionProvider, so the hook is stubbed with an administrator.
+vi.mock('@/features/auth/context/use-authenticated-user', () => ({
+  useAuthenticatedUser: () => ({ id: 1, role: 'OPERATIONS_ADMIN', accessStatus: 'ACTIVE' }),
+}))
 
 describe('warehouse details sheet', () => {
   beforeEach(() => {

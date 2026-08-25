@@ -4,7 +4,9 @@ import Warehouse from '#models/warehouse'
 
 export const WarehouseFactory = factory
   .define(Warehouse, ({ faker }) => ({
-    name: `${faker.location.city()} Warehouse`,
+    // Suffixed to avoid the case-insensitive unique name index colliding across the
+    // finite faker.location.city() pool once enough warehouses are created in a run.
+    name: `${faker.location.city()} Warehouse ${faker.string.alphanumeric({ length: 6 })}`,
     status: 'AVAILABLE' as const,
     archivedAt: null,
     archivedByUserId: null,

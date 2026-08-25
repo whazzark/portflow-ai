@@ -11,6 +11,9 @@ const warehouseSearchSchema = z.object({
   doorStatus: z.enum(['available', 'archived']).optional().catch(undefined),
   warehouseId: z.string().optional().catch(undefined),
   search: z.string().catch(''),
+  // Mirrors the Checkpoints `selecting` param. Honoured only for administrators; for anyone else
+  // it resolves to no select mode and no bulk affordance renders.
+  selecting: z.enum(['warehouses']).optional().catch(undefined),
   status: z.enum(['all', 'available', 'archived']).catch('available'),
 })
 

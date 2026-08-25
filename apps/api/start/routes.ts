@@ -105,6 +105,9 @@ router
       .group(() => {
         router.get('/', [controllers.Warehouses, 'index']).as('index')
         router.post('/', [controllers.Warehouses, 'store']).as('store')
+        // Declared before `/:id/archive`, or `/warehouses/archive` resolves as `:id = 'archive'`.
+        router.post('/archive', [controllers.Warehouses, 'archiveMany']).as('archive_many')
+        router.post('/:id/archive', [controllers.Warehouses, 'archive']).as('archive')
       })
       .prefix('/warehouses')
       .as('warehouses')

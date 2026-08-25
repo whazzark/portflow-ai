@@ -9,7 +9,7 @@ import {
   filterWarehouseDoors,
   toggleDoorSelection,
 } from '@/features/warehouse-doors/warehouse-door-presentation'
-import { WAREHOUSES } from '@/features/warehouses/__tests__/support/fixtures'
+import { doorLifecycle, WAREHOUSES } from '@/features/warehouses/__tests__/support/fixtures'
 
 describe('warehouse door consultation', () => {
   test('renders the compact type and status legend', () => {
@@ -93,5 +93,68 @@ describe('warehouse door consultation', () => {
       'true',
     )
     expect(screen.getByRole('heading', { name: 'Doors' })).toBeInTheDocument()
+  })
+
+  test('names how each archived door was archived', () => {
+    render(
+      <WarehouseDoorsPanel
+        warehouse={WAREHOUSES[1]}
+        status="archived"
+        onStatusChange={vi.fn()}
+        onDoorSelect={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /Retired Door/ })).toHaveTextContent(
+      'Archived with this warehouse',
+    )
+
+    render(
+      <WarehouseDoorsPanel
+        warehouse={WAREHOUSES[0]}
+        status="archived"
+        onStatusChange={vi.fn()}
+        onDoorSelect={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /Old Door/ })).toHaveTextContent(
+      'Archived on its own',
+    )
+  })
+
+  // Reactivation leaves `archivedAt` populated, so an available door still carries the timestamps
+  // of the archival it came back from. Reading the status is what keeps it from claiming them.
+  test('drops the archive provenance once a door is available again', () => {
+    render(
+      <WarehouseDoorsPanel
+        warehouse={{
+          ...WAREHOUSES[0],
+          doors: [
+            {
+              id: '11111111-1111-4111-8111-111111111111',
+              name: 'North Door',
+              status: 'AVAILABLE',
+              latitude: 48.855,
+              longitude: 2.345,
+              ...doorLifecycle({
+                archivedAt: '2026-05-01T09:00:00.000Z',
+                archiveComment: 'Roof works',
+                reactivatedAt: '2026-07-01T09:00:00.000Z',
+              }),
+            },
+          ],
+        }}
+        status="available"
+        onStatusChange={vi.fn()}
+        onDoorSelect={vi.fn()}
+      />,
+    )
+
+    const door = screen.getByRole('button', { name: /North Door/ })
+
+    expect(door).toHaveTextContent('Available')
+    expect(door).not.toHaveTextContent('Archived on its own')
+    expect(door).not.toHaveTextContent('Roof works')
   })
 })

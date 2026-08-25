@@ -11,6 +11,14 @@ export default class WarehouseTransformer extends BaseTransformer<Warehouse> {
       id: this.resource.id,
       name: this.resource.name,
       status: this.resource.status,
+      archivedAt: this.resource.archivedAt,
+      archivedByUserId: this.resource.archivedByUserId,
+      archiveComment: this.resource.archiveComment,
+      reactivatedAt: this.resource.reactivatedAt,
+      reactivatedByUserId: this.resource.reactivatedByUserId,
+      reactivationComment: this.resource.reactivationComment,
+      createdAt: this.resource.createdAt,
+      updatedAt: this.resource.updatedAt,
       footprint: {
         points: this.resource.footprintPoints.map((point) => ({
           latitude: point.latitude,
@@ -23,6 +31,15 @@ export default class WarehouseTransformer extends BaseTransformer<Warehouse> {
         status: door.status,
         latitude: door.latitude,
         longitude: door.longitude,
+        archivedAt: door.archivedAt,
+        archivedByUserId: door.archivedByUserId,
+        archiveComment: door.archiveComment,
+        // Distinguishes a door archived by its warehouse's archival from one archived on its own,
+        // so warehouse reactivation (#211) restores exactly the cascaded set.
+        archivedWithWarehouse: door.archivedWithWarehouse,
+        reactivatedAt: door.reactivatedAt,
+        reactivatedByUserId: door.reactivatedByUserId,
+        reactivationComment: door.reactivationComment,
       })),
     }
   }
