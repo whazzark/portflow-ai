@@ -130,6 +130,35 @@ test('reports an all-blocked selection as nothing changed', async () => {
   expect(await screen.findByText('0 warehouses archived; 2 unchanged')).toBeInTheDocument()
 })
 
+// Only IN_USE is worth keeping checked: it is the one refusal an administrator can act on and
+// retry. A warehouse the server reports as already archived never becomes archivable, and leaving
+// it checked would mix the two lifecycle states in a selection that must stay homogeneous.
+test('keeps only the retriable blocked warehouse checked after a mixed refusal', async () => {
+  mockWarehouses(undefined, BULK_WAREHOUSES)
+  server.use(
+    http.post(BULK_URL, () =>
+      HttpResponse.json({
+        data: {
+          updatedWarehouses: [{ ...NORTH, status: 'ARCHIVED' }],
+          blockedWarehouses: [
+            { id: EAST.id, name: EAST.name, reason: 'IN_USE' },
+            { id: WEST.id, name: WEST.name, reason: 'ALREADY_ARCHIVED' },
+          ],
+        },
+      }),
+    ),
+  )
+  const user = userEvent.setup()
+  renderWarehouses()
+
+  await checkWarehouses(user, NORTH.name, EAST.name, WEST.name)
+  await user.click(within(await openBulkDialog(user)).getByRole('button', { name: 'Archive' }))
+
+  expect(await screen.findByText('1 warehouse archived; 2 unchanged')).toBeInTheDocument()
+  expect(await screen.findByText('1 selected')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archive selected' })).toBeInTheDocument()
+})
+
 test('retries only the blocked warehouses without reselecting them', async () => {
   const submissions: string[][] = []
   mockWarehouses(undefined, BULK_WAREHOUSES)

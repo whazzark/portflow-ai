@@ -21,6 +21,39 @@ export function countAvailableDoorsIn(warehouses: WarehouseWithDoorsDto[]) {
   )
 }
 
+/** The mirror for reactivation: doors archived *with* their warehouse across a selection, which is
+ * exactly the set a bulk reactivation restores. Advisory in the same way the cascade count is. */
+export function countRestorableDoorsIn(warehouses: WarehouseWithDoorsDto[]) {
+  return warehouses.reduce(
+    (total, warehouse) =>
+      total +
+      (warehouse.doors ?? []).filter(
+        (door) => door.status === 'ARCHIVED' && door.archivedWithWarehouse,
+      ).length,
+    0,
+  )
+}
+
+export function describeBulkDoorRestore(warehouseCount: number, restorableDoors: number) {
+  // Both counts vary independently and either can be 1, so every clause agrees on its own subject
+  // rather than borrowing the door count's number for the warehouse sentence.
+  const oneWarehouse = warehouseCount === 1
+  const subject = oneWarehouse ? 'This 1 warehouse' : `These ${warehouseCount} warehouses`
+  const lead = `${subject} ${oneWarehouse ? 'becomes' : 'become'} selectable again for new operational work.`
+  const them = oneWarehouse ? 'it' : 'them'
+
+  if (restorableDoors === 0) {
+    return `${lead} No door returns to service with ${them}.`
+  }
+
+  const doors =
+    restorableDoors === 1
+      ? `1 door archived with ${them} returns`
+      : `${restorableDoors} doors archived with ${them} return`
+
+  return `${lead} ${oneWarehouse ? 'Its' : 'Their'} ${doors} to service.`
+}
+
 export function describeBulkDoorCascade(warehouseCount: number, availableDoors: number) {
   // Both counts vary independently and either can be 1, so every clause agrees on its own subject
   // rather than borrowing the door count's number for the warehouse sentence.

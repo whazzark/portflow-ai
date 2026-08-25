@@ -24,6 +24,16 @@ export function countAvailableDoors(warehouse: WarehouseWithDoorsDto) {
   return (warehouse.doors ?? []).filter((door) => door.status === 'AVAILABLE').length
 }
 
+/** The mirror for reactivation. Only a door archived *with* this warehouse comes back with it, so
+ * a door retired on its own is excluded — and the status check matters as much as the record:
+ * reactivation leaves `archivedWithWarehouse` cleared, but an available door must never be counted
+ * as returning to service. Advisory in exactly the same way. */
+export function countRestorableDoors(warehouse: WarehouseWithDoorsDto) {
+  return (warehouse.doors ?? []).filter(
+    (door) => door.status === 'ARCHIVED' && door.archivedWithWarehouse,
+  ).length
+}
+
 export function describeDoorCascade(availableDoors: number) {
   if (availableDoors === 0) {
     return 'It has no available door to archive with it.'
@@ -34,6 +44,16 @@ export function describeDoorCascade(availableDoors: number) {
     : `Its ${availableDoors} available doors are archived with it and stay readable.`
 }
 
+export function describeDoorRestore(restorableDoors: number) {
+  if (restorableDoors === 0) {
+    return 'No door returns to service with it.'
+  }
+
+  return restorableDoors === 1
+    ? 'Its 1 door archived with it returns to service.'
+    : `Its ${restorableDoors} doors archived with it return to service.`
+}
+
 export function WarehouseLifecycleActions({
   className,
   warehouse,
@@ -42,55 +62,84 @@ export function WarehouseLifecycleActions({
   warehouse: WarehouseWithDoorsDto
 }) {
   const mutations = useWarehouseMutations()
-  const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
 
-  if (warehouse.status === 'ARCHIVED') {
-    return null
-  }
-
-  const availableDoors = countAvailableDoors(warehouse)
+  // One component for both directions: the dialog, the comment field and its limit, the
+  // stay-open-on-failure behaviour and the error parsing are identical, and only the wording, the
+  // door count and the mutation differ.
+  const isArchived = warehouse.status === 'ARCHIVED'
+  // The button follows the live status, but an open dialog must not. It deliberately survives a
+  // refusal, so a concurrent change refetched underneath it would otherwise retitle it and rewire
+  // its action to the opposite direction under the administrator's cursor. Opening snapshots the
+  // direction, and it holds until the dialog closes.
+  const [openIntent, setOpenIntent] = useState<'ARCHIVE' | 'REACTIVATE' | null>(null)
+  const reactivating = openIntent === 'REACTIVATE'
+  const mutation = reactivating ? mutations.reactivate : mutations.archive
+  const doorCount = reactivating ? countRestorableDoors(warehouse) : countAvailableDoors(warehouse)
+  const description = reactivating
+    ? `“${warehouse.name}” becomes selectable again for new operational work. ${describeDoorRestore(doorCount)}`
+    : `“${warehouse.name}” remains readable but is no longer selectable for new operational work. ${describeDoorCascade(doorCount)}`
 
   const submit = async () => {
     try {
-      const response = await mutations.archive.mutateAsync({
+      const response = await mutation.mutateAsync({
         params: { id: warehouse.id },
         body: { comment: comment || null },
       })
 
-      setOpen(false)
+      setOpenIntent(null)
       setComment('')
-      const archivedDoors = response.data.archivedDoorCount
+      // Narrowed on the payload rather than on `isArchived`: the two mutations return different
+      // envelopes, and only the response itself proves which one came back.
+      const changedDoors =
+        'reactivatedDoorCount' in response.data
+          ? response.data.reactivatedDoorCount
+          : response.data.archivedDoorCount
+      const verb = reactivating ? 'reactivated' : 'archived'
       toast.success(
-        archivedDoors === 0
-          ? 'Warehouse archived'
-          : `Warehouse archived with ${archivedDoors} ${archivedDoors === 1 ? 'door' : 'doors'}`,
+        changedDoors === 0
+          ? `Warehouse ${verb}`
+          : `Warehouse ${verb} with ${changedDoors} ${changedDoors === 1 ? 'door' : 'doors'}`,
       )
     } catch (cause) {
       // The dialog deliberately stays open so the typed comment survives a refusal and the
       // administrator can correct it and resubmit without reopening the warehouse.
       const error = parseApiError(cause)
 
-      toast.error(`Unable to archive warehouse “${warehouse.name}”`, {
-        // A validation failure's top-level message is only "Validation failure"; the field-level
-        // detail is what tells the administrator what to fix.
-        description: error.details?.[0]?.message ?? error.message,
-      })
+      toast.error(
+        `Unable to ${reactivating ? 'reactivate' : 'archive'} warehouse “${warehouse.name}”`,
+        {
+          // A validation failure's top-level message is only "Validation failure"; the field-level
+          // detail is what tells the administrator what to fix.
+          description: error.details?.[0]?.message ?? error.message,
+        },
+      )
     }
   }
 
   return (
     <>
-      <Button className={className} onClick={() => setOpen(true)} variant="destructive">
-        Archive warehouse
+      <Button
+        className={className}
+        onClick={() => setOpenIntent(isArchived ? 'REACTIVATE' : 'ARCHIVE')}
+        variant={isArchived ? 'default' : 'destructive'}
+      >
+        {isArchived ? 'Reactivate warehouse' : 'Archive warehouse'}
       </Button>
-      <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialog
+        open={openIntent !== null}
+        onOpenChange={(next) => {
+          if (!next) {
+            setOpenIntent(null)
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Archive warehouse?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {`“${warehouse.name}” remains readable but is no longer selectable for new operational work. ${describeDoorCascade(availableDoors)}`}
-            </AlertDialogDescription>
+            <AlertDialogTitle>
+              {reactivating ? 'Reactivate warehouse?' : 'Archive warehouse?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{description}</AlertDialogDescription>
           </AlertDialogHeader>
           <FieldGroup>
             <Field>
@@ -109,13 +158,13 @@ export function WarehouseLifecycleActions({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={mutations.archive.isPending}
+              disabled={mutation.isPending}
               onClick={(event) => {
                 event.preventDefault()
                 void submit()
               }}
             >
-              Archive
+              {reactivating ? 'Reactivate' : 'Archive'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

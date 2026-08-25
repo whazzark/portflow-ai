@@ -157,6 +157,60 @@ export const BULK_WAREHOUSES: WarehouseWithDoorsDto[] = [
   WAREHOUSES[1],
 ]
 
+/** An archived warehouse holding both kinds of archived door, which is the distinction
+ * reactivation turns on: `Cascaded Door` was archived by this warehouse's archival and comes back
+ * with it, while `Solo Door` was archived on its own and must stay archived (GH-211 FR-007/FR-008).
+ * Kept out of `WAREHOUSES` so the delivered consultation tests keep their exact door counts. */
+export const MIXED_ARCHIVED_WAREHOUSE: WarehouseWithDoorsDto = {
+  id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+  name: 'Mixed Shed',
+  status: 'ARCHIVED',
+  ...warehouseLifecycle({
+    archivedAt: '2026-07-01T09:00:00.000Z',
+    archiveComment: 'Zone closed for works',
+  }),
+  footprint: {
+    points: [
+      { latitude: 45.75, longitude: 4.85 },
+      { latitude: 45.76, longitude: 4.86 },
+      { latitude: 45.75, longitude: 4.87 },
+    ],
+  },
+  doors: [
+    {
+      id: '66666666-6666-4666-8666-666666666666',
+      name: 'Cascaded Door',
+      status: 'ARCHIVED',
+      latitude: 45.755,
+      longitude: 4.855,
+      ...doorLifecycle({
+        archivedAt: '2026-07-01T09:00:00.000Z',
+        archiveComment: 'Zone closed for works',
+        archivedWithWarehouse: true,
+      }),
+    },
+    {
+      id: '77777777-7777-4777-8777-777777777777',
+      name: 'Solo Door',
+      status: 'ARCHIVED',
+      latitude: 45.7552,
+      longitude: 4.8552,
+      ...doorLifecycle({
+        archivedAt: '2026-02-01T09:00:00.000Z',
+        archiveComment: 'Door retired on its own',
+      }),
+    },
+  ],
+}
+
+/** Selection set for reactivation tests: one available warehouse the reactivate intent must refuse
+ * to make checkable, and two archived ones a selection can span. */
+export const REACTIVATE_WAREHOUSES: WarehouseWithDoorsDto[] = [
+  WAREHOUSES[0],
+  MIXED_ARCHIVED_WAREHOUSE,
+  WAREHOUSES[1],
+]
+
 export const CREATED_WAREHOUSE: WarehouseWithDoorsDto = {
   id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   name: 'South Shed',

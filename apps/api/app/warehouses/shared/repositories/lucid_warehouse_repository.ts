@@ -17,6 +17,9 @@ import WarehouseRepository, {
   type BulkWarehouseLifecycleResult,
   type CreateWarehouseCommand,
   type CreateWarehouseResult,
+  type ReactivateWarehouseCommand,
+  type ReactivateWarehouseResult,
+  type ReactivateWarehousesCommand,
 } from './warehouse_repository.ts'
 
 type WarehouseQuery = ModelQueryBuilderContract<typeof Warehouse, Warehouse>
@@ -144,6 +147,64 @@ export default class LucidWarehouseRepository extends WarehouseRepository {
   }
 
   /**
+   * Reactivates an archived warehouse and restores the doors archived with it, in one transaction.
+   *
+   * Warehouses are locked before any door is written, the same order `archiveAvailable` takes, so a
+   * concurrent archival and reactivation of the same warehouse queue instead of deadlocking. There
+   * is no usage query on this path: an archived warehouse holds no door in a planned or active
+   * discharge by construction, so `IN_USE` cannot arise and doors need no `FOR UPDATE` scan.
+   */
+  reactivateArchived(command: ReactivateWarehouseCommand): Promise<ReactivateWarehouseResult> {
+    return Warehouse.transaction(async (trx) => {
+      const warehouses = await this.lockWarehouses(trx, [command.id])
+      const warehouse = warehouses.at(0)
+
+      if (!warehouse) {
+        return { kind: 'NOT_FOUND' }
+      }
+
+      if (warehouse.status !== 'ARCHIVED') {
+        return { kind: 'ALREADY_AVAILABLE' }
+      }
+
+      const reactivatedDoorCount = await this.applyReactivation(trx, [command.id], command)
+      const reactivated = await withRelations(
+        Warehouse.query({ client: trx }).where('id', command.id),
+      ).first()
+
+      return reactivated
+        ? { kind: 'REACTIVATED', warehouse: reactivated, reactivatedDoorCount }
+        : { kind: 'NOT_FOUND' }
+    })
+  }
+
+  reactivateArchivedMany(
+    command: ReactivateWarehousesCommand,
+  ): Promise<BulkWarehouseLifecycleResult> {
+    return Warehouse.transaction(async (trx) => {
+      const warehouses = await this.lockWarehouses(trx, command.ids)
+      const warehousesById = indexById(warehouses)
+      // No `usedIds`: reactivation has no usage blocker, so the reason set is exactly
+      // `NOT_FOUND` and `ALREADY_AVAILABLE`.
+      const blockers = findBulkBlockers(command.ids, warehousesById, 'ARCHIVED')
+
+      const blockedIds = new Set(blockers.map((blocker) => blocker.id))
+      const eligibleIds = command.ids.filter((id) => !blockedIds.has(id))
+
+      await this.applyReactivation(trx, eligibleIds, command)
+
+      const reactivated = await withRelations(
+        Warehouse.query({ client: trx }).whereIn('id', eligibleIds),
+      )
+
+      return {
+        updatedWarehouses: orderByIds(eligibleIds, indexById(reactivated)),
+        blockedWarehouses: blockers,
+      }
+    })
+  }
+
+  /**
    * Locked by id so concurrent submissions over overlapping sets always take the warehouse row
    * locks in the same order and can never deadlock each other. Doors are locked in
    * `findWarehousesWithDoorsInUse`, always after the warehouses — the table order is fixed too.
@@ -229,6 +290,63 @@ export default class LucidWarehouseRepository extends WarehouseRepository {
         archiveComment: command.archiveComment,
         archivedWithWarehouse: true,
         updatedAt: archivedAt,
+      })
+
+    return affectedDoors
+  }
+
+  /**
+   * The mirror of `applyArchival`, and the heart of this feature.
+   *
+   * The door predicate is what separates a door archived *by* this warehouse from one retired on
+   * its own: only `archived_with_warehouse = true` comes back. `archived_with_warehouse` is then
+   * cleared, or a door archived independently after this restore would be dragged back by the next
+   * one — the marker has to describe the door's current archival, not a past one.
+   *
+   * Neither update touches an `archived_*` column: the archive context is what makes the period
+   * spent archived consultable afterwards.
+   *
+   * The affected-row guard is asymmetric on purpose, exactly as archival's is. The eligible
+   * warehouse count is known before the write, so a mismatch proves a concurrent writer slipped in
+   * and the transaction must abort. How many doors carry the marker is only discoverable by the
+   * update itself, so there is no expected value to compare against — it is returned instead.
+   */
+  private async applyReactivation(
+    trx: TransactionClientContract,
+    eligibleIds: string[],
+    command: ReactivateWarehouseCommand | ReactivateWarehousesCommand,
+  ) {
+    if (eligibleIds.length === 0) {
+      return 0
+    }
+
+    const reactivatedAt = command.reactivatedAt.toSQL({ includeOffset: false })
+    const [affectedWarehouses] = await Warehouse.query({ client: trx })
+      .whereIn('id', eligibleIds)
+      .where('status', 'ARCHIVED')
+      .update({
+        status: 'AVAILABLE',
+        reactivatedAt,
+        reactivatedByUserId: command.reactivatedByUserId,
+        reactivationComment: command.reactivationComment,
+        updatedAt: reactivatedAt,
+      })
+
+    if (affectedWarehouses !== eligibleIds.length) {
+      throw new Error('Warehouse reactivation changed during transaction')
+    }
+
+    const [affectedDoors] = await WarehouseDoor.query({ client: trx })
+      .whereIn('warehouseId', eligibleIds)
+      .where('status', 'ARCHIVED')
+      .where('archivedWithWarehouse', true)
+      .update({
+        status: 'AVAILABLE',
+        archivedWithWarehouse: false,
+        reactivatedAt,
+        reactivatedByUserId: command.reactivatedByUserId,
+        reactivationComment: command.reactivationComment,
+        updatedAt: reactivatedAt,
       })
 
     return affectedDoors

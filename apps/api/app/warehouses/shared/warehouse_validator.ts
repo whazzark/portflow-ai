@@ -28,3 +28,12 @@ export const archiveWarehousesValidator = vine.create({
   ids: lifecycleIds(),
   comment: lifecycleComment(),
 })
+
+export const reactivateWarehouseValidator = vine.create({
+  comment: lifecycleComment(),
+})
+
+export const reactivateWarehousesValidator = vine.create({
+  ids: lifecycleIds(),
+  comment: lifecycleComment(),
+})

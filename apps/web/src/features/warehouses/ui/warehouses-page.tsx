@@ -2,7 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { PlusIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { BulkResourceLifecycleActions } from '@/components/resource-map/bulk-resource-lifecycle-actions'
+import {
+  type BulkLifecycleIntent,
+  BulkResourceLifecycleActions,
+} from '@/components/resource-map/bulk-resource-lifecycle-actions'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { countResources } from '@/components/resource-map/resource-map-search'
 import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
@@ -26,19 +29,28 @@ import { WarehouseLegend } from '@/features/warehouses/map/warehouse-legend'
 import { WarehouseMap } from '@/features/warehouses/map/warehouse-map'
 import { useWarehouseMutations } from '@/features/warehouses/mutations/use-warehouse-mutations'
 import { warehouseQueries } from '@/features/warehouses/queries/warehouse-queries'
+import type { WarehouseStatus } from '@/features/warehouses/types'
 import { CreateWarehousePanel } from '@/features/warehouses/ui/create-warehouse-panel'
 import { WarehouseDetails } from '@/features/warehouses/ui/warehouse-details'
 import { WarehouseMapControls } from '@/features/warehouses/ui/warehouse-map-controls'
 import { WarehousesError } from '@/features/warehouses/ui/warehouses-error'
 import {
   countAvailableDoorsIn,
+  countRestorableDoorsIn,
   describeBulkDoorCascade,
+  describeBulkDoorRestore,
   toBulkLifecycleOutcome,
 } from '@/features/warehouses/warehouse-lifecycle-adapter'
 import { presentWarehouses } from '@/features/warehouses/warehouse-search'
 import { useIsMobile } from '@/hooks/use-mobile'
 
 const warehousesRoute = getRouteApi('/_authenticated/warehouses')
+
+/** The lifecycle status a warehouse must hold to take part in a selection of this intent. Declared
+ * here rather than imported from the checkpoints feature, which owns an equivalent map for its own
+ * resources; warehouses do not otherwise depend on checkpoints. */
+const statusForIntent = (intent: BulkLifecycleIntent): WarehouseStatus =>
+  intent === 'REACTIVATE' ? 'ARCHIVED' : 'AVAILABLE'
 
 export function WarehousesPage() {
   const { create, doorId, doorStatus, search, selecting, status, warehouseId } =
@@ -79,14 +91,35 @@ export function WarehousesPage() {
     ? findAdmittedDoor(selected, doorId, effectiveDoorStatus)
     : undefined
 
-  // Only available warehouses can be archived, and only an administrator may check anything.
-  // Derived from `visible`, which the status filter scopes but the search term only annotates —
-  // so switching lifecycle view drops what it no longer lists, while typing a search never prunes
-  // what the administrator already chose. Keyed on the ids so the set stays referentially stable
-  // across renders that changed nothing.
+  // The status of any currently checked warehouse fixes what a selection is for — Available means
+  // an archive is in progress, Archived means a reactivation is — since the selection is
+  // homogeneous by construction (see checkableIds below). Undefined while nothing is checked, so
+  // any warehouse may still start either kind of selection.
+  const selectionIntent: BulkLifecycleIntent | undefined = useMemo(() => {
+    if (checkedIds.size === 0) {
+      return undefined
+    }
+    const [firstCheckedId] = checkedIds
+
+    return warehouses.find((warehouse) => warehouse.id === firstCheckedId)?.status === 'ARCHIVED'
+      ? 'REACTIVATE'
+      : 'ARCHIVE'
+  }, [checkedIds, warehouses])
+  // With nothing checked the lifecycle filter breaks the tie, so opening select mode from the
+  // archived view offers a reactivation rather than an archival.
+  const bulkIntent: BulkLifecycleIntent =
+    selectionIntent ?? (status === 'archived' ? 'REACTIVATE' : 'ARCHIVE')
+  // Only an administrator may check anything, and only a warehouse whose status matches the
+  // selection's intent — or, with nothing checked yet, either status. Derived from `visible`,
+  // which the status filter scopes but the search term only annotates — so switching lifecycle
+  // view drops what it no longer lists, while typing a search never prunes what the administrator
+  // already chose. Keyed on the ids so the set stays referentially stable across renders that
+  // changed nothing.
   const checkableIdsKey = canManageWarehouses
     ? visible
-        .filter((warehouse) => warehouse.status === 'AVAILABLE')
+        .filter(
+          (warehouse) => !selectionIntent || warehouse.status === statusForIntent(selectionIntent),
+        )
         .map((warehouse) => warehouse.id)
         .join(',')
     : ''
@@ -120,11 +153,20 @@ export function WarehousesPage() {
 
   const selectAllVisible = useCallback(
     (event: KeyboardEvent) => {
-      if (checkableIds.size === 0) {
+      // With nothing checked, `checkableIds` spans both lifecycle states so either kind of
+      // selection can be started. Select-all has to commit to one, or it would build the mixed
+      // selection every other rule exists to prevent.
+      const targetIds = visible
+        .filter(
+          (warehouse) =>
+            checkableIds.has(warehouse.id) && warehouse.status === statusForIntent(bulkIntent),
+        )
+        .map((warehouse) => warehouse.id)
+      if (targetIds.length === 0) {
         return
       }
       event.preventDefault()
-      setCheckedIds(new Set(checkableIds))
+      setCheckedIds(new Set(targetIds))
       void navigate({
         search: (previous) => ({
           ...previous,
@@ -135,7 +177,7 @@ export function WarehousesPage() {
         }),
       })
     },
-    [checkableIds, navigate],
+    [bulkIntent, checkableIds, navigate, visible],
   )
   useSelectAllShortcut({ enabled: canManageWarehouses, onSelectAll: selectAllVisible })
 
@@ -359,20 +401,42 @@ export function WarehousesPage() {
       />
       {isSelecting && (
         <BulkResourceLifecycleActions
-          blockerReasonLabels={{
-            IN_USE: 'a door is used by an active or planned discharge',
-          }}
-          description={describeBulkDoorCascade(
-            checkedWarehouses.length,
-            countAvailableDoorsIn(checkedWarehouses),
-          )}
+          // The door-in-use wording belongs to archival only: reactivation has no usage blocker,
+          // so overriding the label there would describe a reason that cannot occur.
+          blockerReasonLabels={
+            bulkIntent === 'ARCHIVE'
+              ? { IN_USE: 'a door is used by an active or planned discharge' }
+              : undefined
+          }
+          description={
+            bulkIntent === 'REACTIVATE'
+              ? describeBulkDoorRestore(
+                  checkedWarehouses.length,
+                  countRestorableDoorsIn(checkedWarehouses),
+                )
+              : describeBulkDoorCascade(
+                  checkedWarehouses.length,
+                  countAvailableDoorsIn(checkedWarehouses),
+                )
+          }
           idPrefix="warehouse"
-          intent="ARCHIVE"
+          intent={bulkIntent}
           onClear={clearChecked}
           onSuccess={(outcome) => {
-            // Narrowed to the blocked ids rather than cleared, so the administrator can resolve the
-            // blocker and retry exactly those without reselecting them on the map.
-            setCheckedIds(new Set(outcome.blocked.map((blocked) => blocked.id)))
+            // Only an archival leaves anything worth keeping checked: IN_USE is the one blocker an
+            // administrator can resolve and retry, so the selection narrows to exactly those and
+            // stays homogeneously Available. Every other blocker — and both reactivation blockers,
+            // NOT_FOUND and ALREADY_AVAILABLE — is final on a retry, and keeping one checked would
+            // leave a warehouse whose refreshed status flips `selectionIntent` under the toolbar.
+            setCheckedIds(
+              bulkIntent === 'ARCHIVE'
+                ? new Set(
+                    outcome.blocked
+                      .filter((blocked) => blocked.reason === 'IN_USE')
+                      .map((blocked) => blocked.id),
+                  )
+                : new Set(),
+            )
           }}
           plural="warehouses"
           refresh={mutations.refreshWarehouses}
@@ -380,7 +444,12 @@ export function WarehousesPage() {
           singular="warehouse"
           submit={async ({ ids, comment }) =>
             toBulkLifecycleOutcome(
-              (await mutations.archiveMany.mutateAsync({ body: { ids, comment } })).data,
+              (
+                await (bulkIntent === 'REACTIVATE'
+                  ? mutations.reactivateMany
+                  : mutations.archiveMany
+                ).mutateAsync({ body: { ids, comment } })
+              ).data,
             )
           }
         />
@@ -434,7 +503,7 @@ export function WarehousesPage() {
           ) : (
             selected && (
               <div className="flex min-h-0 flex-1 flex-col">
-                <WarehouseDetails canArchive={canManageWarehouses} warehouse={selected} />
+                <WarehouseDetails canManageLifecycle={canManageWarehouses} warehouse={selected} />
                 <WarehouseDoorsPanel
                   warehouse={selected}
                   status={effectiveDoorStatus}

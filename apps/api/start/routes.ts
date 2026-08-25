@@ -111,6 +111,10 @@ router
         // Declared before `/:id/archive`, or `/warehouses/archive` resolves as `:id = 'archive'`.
         router.post('/archive', [controllers.Warehouses, 'archiveMany']).as('archive_many')
         router.post('/:id/archive', [controllers.Warehouses, 'archive']).as('archive')
+        // Same ordering constraint: `/warehouses/reactivate` must not resolve as
+        // `:id = 'reactivate'`.
+        router.post('/reactivate', [controllers.Warehouses, 'reactivateMany']).as('reactivate_many')
+        router.post('/:id/reactivate', [controllers.Warehouses, 'reactivate']).as('reactivate')
       })
       .prefix('/warehouses')
       .as('warehouses')
