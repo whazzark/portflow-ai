@@ -70,6 +70,27 @@ describe('warehouse footprint validation', () => {
       ]),
     ).toBeNull())
 
+  test('reports three collinear points, which enclose no area', () => {
+    const flat = [
+      { latitude: 0, longitude: 0 },
+      { latitude: 0, longitude: 1 },
+      { latitude: 0, longitude: 2 },
+    ]
+
+    expect(checkFootprint(flat)).toBe('FLAT_OUTLINE')
+    expect(isSubmittableFootprint(flat)).toBe(false)
+  })
+
+  test('reports a flat outline of more than three collinear points', () =>
+    expect(
+      checkFootprint([
+        { latitude: 1, longitude: 1 },
+        { latitude: 2, longitude: 2 },
+        { latitude: 3, longitude: 3 },
+        { latitude: 4, longitude: 4 },
+      ]),
+    ).not.toBeNull())
+
   test('reports a non-adjacent vertex lying on another segment', () =>
     expect(
       checkFootprint([

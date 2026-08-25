@@ -2,6 +2,8 @@ import { InvalidWarehouseFootprintException } from './warehouse_exceptions.ts'
 
 export type FootprintPoint = { latitude: number; longitude: number }
 
+export const FLAT_FOOTPRINT_MESSAGE = 'Warehouse footprint outline must enclose an area'
+
 /** Longitude is the x axis and latitude the y axis. The footprint is a small planar ring — a few
  * to a few dozen vertices on one site — so plane geometry is exact enough here and no projection
  * or spherical model is warranted. */
@@ -11,6 +13,14 @@ const cross = (origin: FootprintPoint, a: FootprintPoint, b: FootprintPoint) =>
 
 const samePoint = (a: FootprintPoint, b: FootprintPoint) =>
   a.latitude === b.latitude && a.longitude === b.longitude
+
+/** Twice the signed area of the ring (the shoelace sum, kept undivided so it stays exact on
+ * integer inputs). Zero means every vertex sits on one line, so the outline encloses nothing. */
+const doubleSignedArea = (points: FootprintPoint[]) =>
+  points.reduce((total, point, index) => {
+    const next = points[(index + 1) % points.length]
+    return total + (point.longitude * next.latitude - next.longitude * point.latitude)
+  }, 0)
 
 const isBetween = (point: FootprintPoint, start: FootprintPoint, end: FootprintPoint) =>
   Math.min(start.longitude, end.longitude) <= point.longitude &&
@@ -44,9 +54,9 @@ function segmentsIntersect(
 }
 
 /**
- * Asserts that an ordered footprint describes a simple (non-self-crossing) ring. The closing edge
- * from the last point back to the first is implied and MUST NOT be repeated by the caller, so a
- * last point equal to the first reads as a duplicate rather than as a closed ring.
+ * Asserts that an ordered footprint describes a simple (non-self-crossing) ring enclosing an area.
+ * The closing edge from the last point back to the first is implied and MUST NOT be repeated by the
+ * caller, so a last point equal to the first reads as a duplicate rather than as a closed ring.
  *
  * Pure and dependency-free by design (`research.md` R2): the update slice reuses it without going
  * through HTTP or persistence. O(n²) over a handful of vertices.
@@ -80,5 +90,12 @@ export function assertSimpleFootprint(points: FootprintPoint[]) {
         throw new InvalidWarehouseFootprintException()
       }
     }
+  }
+
+  // Last, so a genuine crossing is still reported as one: a flat ring is the residue the crossing
+  // test cannot see on its own. With exactly three vertices every segment pair shares an endpoint
+  // and is skipped, so three points on a line would otherwise pass as a zero-area warehouse.
+  if (doubleSignedArea(points) === 0) {
+    throw new InvalidWarehouseFootprintException(FLAT_FOOTPRINT_MESSAGE)
   }
 }

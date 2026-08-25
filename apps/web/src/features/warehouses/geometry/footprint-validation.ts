@@ -2,7 +2,11 @@ import type { WarehousePoint } from '@/features/warehouses/types'
 
 export const MINIMUM_FOOTPRINT_POINTS = 3
 
-export type FootprintProblem = 'TOO_FEW_POINTS' | 'DUPLICATE_POINT' | 'SELF_INTERSECTING'
+export type FootprintProblem =
+  | 'TOO_FEW_POINTS'
+  | 'DUPLICATE_POINT'
+  | 'SELF_INTERSECTING'
+  | 'FLAT_OUTLINE'
 
 /** Longitude is the x axis and latitude the y axis. Mirrors the authoritative server-side rule in
  * `apps/api/app/warehouses/shared/footprint_geometry.ts`; the API remains the enforcement point and
@@ -13,6 +17,14 @@ const cross = (origin: WarehousePoint, a: WarehousePoint, b: WarehousePoint) =>
 
 const samePoint = (a: WarehousePoint, b: WarehousePoint) =>
   a.latitude === b.latitude && a.longitude === b.longitude
+
+/** Twice the signed area of the ring (the shoelace sum). Zero means every vertex sits on one line,
+ * so the outline encloses nothing. */
+const doubleSignedArea = (points: WarehousePoint[]) =>
+  points.reduce((total, point, index) => {
+    const next = points[(index + 1) % points.length]
+    return total + (point.longitude * next.latitude - next.longitude * point.latitude)
+  }, 0)
 
 const isBetween = (point: WarehousePoint, start: WarehousePoint, end: WarehousePoint) =>
   Math.min(start.longitude, end.longitude) <= point.longitude &&
@@ -75,6 +87,13 @@ export function checkFootprint(points: WarehousePoint[]): FootprintProblem | nul
     }
   }
 
+  // Last, so a genuine crossing is still reported as one: a flat ring is the residue the crossing
+  // test cannot see on its own. With exactly three vertices every segment pair shares an endpoint
+  // and is skipped, so three points on a line would otherwise read as a valid footprint.
+  if (doubleSignedArea(points) === 0) {
+    return 'FLAT_OUTLINE'
+  }
+
   return null
 }
 
@@ -84,4 +103,5 @@ export const FOOTPRINT_PROBLEM_MESSAGES: Record<FootprintProblem, string> = {
   TOO_FEW_POINTS: 'A warehouse footprint needs at least three boundary points.',
   DUPLICATE_POINT: 'Two consecutive boundary points are identical. Move or remove one of them.',
   SELF_INTERSECTING: 'The footprint outline must not cross itself.',
+  FLAT_OUTLINE: 'The boundary points are all in line, so the outline encloses no area.',
 }

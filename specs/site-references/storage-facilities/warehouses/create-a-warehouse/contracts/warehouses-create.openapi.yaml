@@ -87,7 +87,8 @@ paths:
           description: >-
             The payload is structurally invalid (blank name, fewer than three points, coordinate out
             of range or non-numeric) or the outline is geometrically invalid (duplicate consecutive
-            points, or a boundary that crosses itself). No warehouse is created.
+            points, a boundary that crosses itself, or points that are all in line and so enclose no
+            area). No warehouse is created.
           content:
             application/json:
               schema:
@@ -106,6 +107,11 @@ paths:
                     error:
                       code: E_WAREHOUSE_INVALID_FOOTPRINT
                       message: Warehouse footprint outline must not cross itself
+                flatOutline:
+                  value:
+                    error:
+                      code: E_WAREHOUSE_INVALID_FOOTPRINT
+                      message: Warehouse footprint outline must enclose an area
 components:
   securitySchemes:
     sessionCookie:

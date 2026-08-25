@@ -111,6 +111,27 @@ test('reports an out-of-range coordinate on the affected boundary point', async 
   expect(submitButton()).toBeDisabled()
 })
 
+test('blocks a footprint whose boundary points are all in line', async () => {
+  const user = userEvent.setup()
+  await startDrawing(user)
+  await user.click(screen.getByText('Coordinates (advanced)'))
+
+  // Points 1 and 2 run from (10.5, 20.5) to (11.5, 21.5); putting point 3 on that same line leaves
+  // a triangle with no area at all.
+  const third = screen.getByRole('group', { name: 'Boundary point 3' })
+  const latitude = within(third).getByRole('textbox', { name: 'Latitude' })
+  await user.clear(latitude)
+  await user.type(latitude, '12.5')
+  const longitude = within(third).getByRole('textbox', { name: 'Longitude' })
+  await user.clear(longitude)
+  await user.type(longitude, '22.5')
+
+  expect(
+    screen.getByText('The boundary points are all in line, so the outline encloses no area.'),
+  ).toBeInTheDocument()
+  expect(submitButton()).toBeDisabled()
+})
+
 test('blocks a self-crossing outline before it reaches the server', async () => {
   const user = userEvent.setup()
   await startDrawing(user, 4)

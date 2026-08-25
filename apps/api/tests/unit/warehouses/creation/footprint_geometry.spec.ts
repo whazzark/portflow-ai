@@ -1,5 +1,9 @@
 import { test } from '@japa/runner'
-import { assertSimpleFootprint, type FootprintPoint } from '#warehouses/shared/footprint_geometry'
+import {
+  assertSimpleFootprint,
+  FLAT_FOOTPRINT_MESSAGE,
+  type FootprintPoint,
+} from '#warehouses/shared/footprint_geometry'
 import { InvalidWarehouseFootprintException } from '#warehouses/shared/warehouse_exceptions'
 
 const TRIANGLE: FootprintPoint[] = [
@@ -90,6 +94,31 @@ test.group('Warehouse footprint geometry', () => {
         { latitude: 2, longitude: 2 },
         { latitude: 2, longitude: 0 },
       ]),
+    )
+  })
+
+  test('rejects three collinear points, which enclose no area', ({ assert }) => {
+    assert.throws(
+      () =>
+        assertSimpleFootprint([
+          { latitude: 0, longitude: 0 },
+          { latitude: 0, longitude: 1 },
+          { latitude: 0, longitude: 2 },
+        ]),
+      FLAT_FOOTPRINT_MESSAGE,
+    )
+  })
+
+  test('rejects a flat outline of more than three collinear points', ({ assert }) => {
+    assert.throws(
+      () =>
+        assertSimpleFootprint([
+          { latitude: 1, longitude: 1 },
+          { latitude: 2, longitude: 2 },
+          { latitude: 3, longitude: 3 },
+          { latitude: 4, longitude: 4 },
+        ]),
+      new InvalidWarehouseFootprintException().message,
     )
   })
 
