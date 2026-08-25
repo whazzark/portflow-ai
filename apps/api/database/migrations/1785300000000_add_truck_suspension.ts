@@ -37,7 +37,8 @@ export default class extends BaseSchema {
   // enforcement is on — and SQLite silently ignores `PRAGMA foreign_keys` inside a transaction.
   // Running outside a transaction lets the pragma be toggled around the rebuild, the same reason
   // `1785200000000_add_transport_companies_contact_details.ts` documents. PostgreSQL alters in
-  // place and only loses the (single-statement) DDL atomicity.
+  // place, and keeps its constraint swap in a single ALTER TABLE so that losing the surrounding
+  // transaction costs it no atomicity.
   static disableTransactions = true
 
   private get isPostgres() {
@@ -60,12 +61,15 @@ export default class extends BaseSchema {
       this.defer(async (db) => {
         const constraintName = await this.findStatusEnumConstraint()
 
-        await db.rawQuery(`ALTER TABLE trucks DROP CONSTRAINT "${constraintName}"`)
+        // One statement, not three. Transactions are disabled for the SQLite path below, so a
+        // failure between a DROP and its replacement ADD would leave `trucks` accepting any status
+        // with no migration row recorded, and a re-run would then fail on the already-added
+        // columns. PostgreSQL applies the subcommands of a single ALTER TABLE atomically.
         await db.rawQuery(
-          "ALTER TABLE trucks ADD CONSTRAINT trucks_status_check CHECK (status IN ('AVAILABLE', 'ARCHIVED', 'SUSPENDED'))",
-        )
-        await db.rawQuery(
-          "ALTER TABLE trucks ADD CONSTRAINT trucks_suspended_at_check CHECK (status <> 'SUSPENDED' OR suspended_at IS NOT NULL)",
+          `ALTER TABLE trucks
+             DROP CONSTRAINT "${constraintName}",
+             ADD CONSTRAINT trucks_status_check CHECK (status IN ('AVAILABLE', 'ARCHIVED', 'SUSPENDED')),
+             ADD CONSTRAINT trucks_suspended_at_check CHECK (status <> 'SUSPENDED' OR suspended_at IS NOT NULL)`,
         )
       })
 
@@ -133,10 +137,12 @@ export default class extends BaseSchema {
         // state they were suspended from is the only reversal available; the suspension context
         // columns are dropped with them.
         await db.rawQuery("UPDATE trucks SET status = 'AVAILABLE' WHERE status = 'SUSPENDED'")
-        await db.rawQuery('ALTER TABLE trucks DROP CONSTRAINT trucks_suspended_at_check')
-        await db.rawQuery('ALTER TABLE trucks DROP CONSTRAINT trucks_status_check')
+        // Dropped and re-added in one statement, for the same atomicity reason as `up()`.
         await db.rawQuery(
-          "ALTER TABLE trucks ADD CONSTRAINT trucks_status_check CHECK (status IN ('AVAILABLE', 'ARCHIVED'))",
+          `ALTER TABLE trucks
+             DROP CONSTRAINT trucks_suspended_at_check,
+             DROP CONSTRAINT trucks_status_check,
+             ADD CONSTRAINT trucks_status_check CHECK (status IN ('AVAILABLE', 'ARCHIVED'))`,
         )
       })
 

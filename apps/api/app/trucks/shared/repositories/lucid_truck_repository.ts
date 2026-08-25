@@ -447,7 +447,7 @@ export default class LucidTruckRepository extends TruckRepository {
       // Deliberately no transport-company lock either. `reactivateArchived` locks that row because
       // it *produces* an available truck and could race a company archival. Suspension removes one,
       // so it can only make the "no available truck under an archived company" invariant more true.
-      await Truck.query({ client: trx })
+      const [affectedRows] = await Truck.query({ client: trx })
         .where('id', command.id)
         .where('status', 'AVAILABLE')
         .update({
@@ -457,6 +457,28 @@ export default class LucidTruckRepository extends TruckRepository {
           suspensionComment: command.suspensionComment,
           updatedAt: command.suspendedAt.toSQL({ includeOffset: false }),
         })
+
+      if (affectedRows === 0) {
+        // The row read above was AVAILABLE, so a zero-row UPDATE means it moved on in between.
+        // PostgreSQL cannot reach this — the `forUpdate()` above holds the row — but knex emits no
+        // `FOR UPDATE` on SQLite, where a concurrent archive would otherwise be reported as a
+        // successful suspension of a truck that never changed.
+        const current = await Truck.query({ client: trx }).where('id', command.id).first()
+
+        if (!current) {
+          return { kind: 'NOT_FOUND' }
+        }
+        if (current.status === 'SUSPENDED') {
+          return { kind: 'ALREADY_SUSPENDED' }
+        }
+        if (current.status === 'ARCHIVED') {
+          return { kind: 'ARCHIVED' }
+        }
+
+        // Available again already: the caller's read was stale, the same way `updateAvailable`
+        // treats a concurrent reactivation.
+        return { kind: 'NOT_FOUND' }
+      }
 
       const suspended = await Truck.query({ client: trx })
         .where('id', command.id)
