@@ -137,7 +137,7 @@ test('shows a distinct archived-transport-company error naming the remedy and ke
           error: {
             code: 'E_TRUCK_TRANSPORT_COMPANY_ARCHIVED',
             message:
-              'Truck transport company is archived; reactivate the company or reassign the truck before returning it to service',
+              'Truck transport company is archived; reactivate the transport company before making this truck available again',
           },
         },
         { status: 409 },
@@ -153,7 +153,7 @@ test('shows a distinct archived-transport-company error naming the remedy and ke
 
   expect(
     await screen.findByText(
-      'Truck transport company is archived; reactivate the company or reassign the truck before returning it to service',
+      'Truck transport company is archived; reactivate the transport company before making this truck available again',
     ),
   ).toBeInTheDocument()
   expect(screen.getByRole('alertdialog')).toBeInTheDocument()

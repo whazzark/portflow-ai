@@ -31,7 +31,11 @@ export function TrucksPage() {
   const { transportCompanyId, truckStatus, truckSearch, truckId, truckMode } =
     transportResourcesRoute.useSearch()
   const navigate = transportResourcesRoute.useNavigate()
-  const trucksQuery = useQuery(administrator ? truckQueries.all() : truckQueries.available())
+  // The two collections carry different DTOs — the available one withholds the lifecycle
+  // actors — so they are two queries kept apart rather than one branching call.
+  const allTrucksQuery = useQuery({ ...truckQueries.all(), enabled: administrator })
+  const availableTrucksQuery = useQuery({ ...truckQueries.available(), enabled: !administrator })
+  const trucksQuery = administrator ? allTrucksQuery : availableTrucksQuery
   // Administrators already receive suspended trucks in the complete collection, with their
   // lifecycle actors; everyone else reads them here, without.
   const suspendedTrucksQuery = useQuery({
@@ -43,7 +47,7 @@ export function TrucksPage() {
   const companies = companiesQuery.data?.data ?? []
   const availableCompanies = availableCompaniesQuery.data?.data
   const trucks = [
-    ...((trucksQuery.data?.data ?? []) as TruckDto[]),
+    ...((trucksQuery.data?.data ?? []) as unknown as TruckDto[]),
     ...((suspendedTrucksQuery.data?.data ?? []) as unknown as TruckDto[]),
   ]
   const [isCreateOpen, setIsCreateOpen] = useState(false)

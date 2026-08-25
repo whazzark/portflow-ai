@@ -49,11 +49,20 @@ export class TruckAlreadyAvailableException extends Exception {
   static message = 'Truck is already available'
 }
 
+/**
+ * Raised by both paths that can turn a non-available truck into an available one: reactivating an
+ * archived truck (`#226`) and returning a suspended one to service (`#253`). Neither may produce an
+ * available truck under an archived transport company.
+ *
+ * The message names company reactivation alone. Reassigning the truck to another company would also
+ * resolve it in principle, but it cannot be done from either state: reassignment goes through
+ * `updateAvailable`, which is guarded by `WHERE status = 'AVAILABLE'`.
+ */
 export class TruckTransportCompanyArchivedException extends Exception {
   static status = 409
   static code = 'E_TRUCK_TRANSPORT_COMPANY_ARCHIVED'
   static message =
-    'Truck transport company is archived; reactivate the company or reassign the truck before returning it to service'
+    'Truck transport company is archived; reactivate the transport company before making this truck available again'
 }
 
 export class TruckAlreadySuspendedException extends Exception {
@@ -72,4 +81,10 @@ export class SuspendedTruckReadOnlyException extends Exception {
   static status = 409
   static code = 'E_TRUCK_SUSPENDED'
   static message = 'Truck is suspended; return it to service first'
+}
+
+export class TruckArchivedCannotReturnException extends Exception {
+  static status = 409
+  static code = 'E_TRUCK_ARCHIVED_CANNOT_RETURN'
+  static message = 'Archived trucks cannot be returned to service; reactivate the truck instead'
 }

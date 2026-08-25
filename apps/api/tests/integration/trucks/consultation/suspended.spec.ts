@@ -74,6 +74,40 @@ test.group('Suspended truck consultation HTTP contracts', (group) => {
     assert.notProperty(truck, 'suspendedByUserId')
     assert.notProperty(truck, 'archivedBy')
     assert.notProperty(truck, 'reactivatedBy')
+    assert.notProperty(truck, 'returnedToServiceBy')
+    // biome-ignore lint/security/noSecrets: DTO identifier field, not a secret
+    assert.notProperty(truck, 'returnedToServiceByUserId')
+  })
+
+  test('carries an earlier return to service without naming who performed it', async ({
+    assert,
+    client,
+  }) => {
+    const company = await TransportCompanyFactory.create()
+    const administrator = await UserFactory.apply('active')
+      .merge({ role: 'OPERATIONS_ADMIN' })
+      .create()
+    // Suspended again after an earlier cycle: the previous return stays readable beside it.
+    await TruckFactory.apply('suspended')
+      .merge({
+        registration: 'SUSPENDED-004',
+        transportCompanyId: company.id,
+        returnedToServiceAt: DateTime.fromISO('2026-07-02T09:00:00.000Z'),
+        returnedToServiceByUserId: administrator.id,
+        returnToServiceComment: 'Brakes replaced after the previous immobilisation',
+      })
+      .create()
+
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const response = await client.get('/api/v1/trucks/suspended').loginAs(observer)
+
+    response.assertStatus(200)
+    const [truck] = response.body().data
+    assert.equal(truck.returnToServiceComment, 'Brakes replaced after the previous immobilisation')
+    assert.isNotNull(truck.returnedToServiceAt)
+    assert.notProperty(truck, 'returnedToServiceBy')
+    // biome-ignore lint/security/noSecrets: DTO identifier field, not a secret
+    assert.notProperty(truck, 'returnedToServiceByUserId')
   })
 
   test('keeps the complete collection carrying the responsible administrator', async ({

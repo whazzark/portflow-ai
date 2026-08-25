@@ -33,8 +33,9 @@ export function TruckRowActions({ onEdit, onView, truck }: TruckRowActionsProps)
   // Editing is refused for anything but an available truck, exactly as the detail pane gates it.
   const editable = onEdit !== undefined && truck.status === 'AVAILABLE'
 
-  // A suspended truck carries no lifecycle action until returning it to service is delivered,
-  // but its details still record why and by whom it was taken out of service.
+  // Defensive: with the return to service delivered, every status yields at least one action, so
+  // this cannot fire for any caller today. It stays as a guard against rendering an empty menu if a
+  // future caller withholds `onView` for a status that has no action of its own.
   if (onView === undefined && !editable && actions.length === 0) {
     return null
   }

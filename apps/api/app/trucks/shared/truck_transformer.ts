@@ -23,6 +23,8 @@ export default class TruckTransformer extends BaseTransformer<Truck> {
       'reactivationComment',
       'suspendedAt',
       'suspensionComment',
+      'returnedToServiceAt',
+      'returnToServiceComment',
       'createdAt',
       'updatedAt',
     ])
@@ -47,6 +49,10 @@ export default class TruckTransformer extends BaseTransformer<Truck> {
       'suspendedAt',
       'suspendedByUserId',
       'suspensionComment',
+      'returnedToServiceAt',
+      // biome-ignore lint/security/noSecrets: identifier field, not a secret
+      'returnedToServiceByUserId',
+      'returnToServiceComment',
       'createdAt',
       'updatedAt',
     ])
@@ -62,6 +68,9 @@ export default class TruckTransformer extends BaseTransformer<Truck> {
         : null,
       suspendedBy: this.resource.suspendedBy
         ? UserTransformer.transform(this.resource.suspendedBy).useVariant('toSummary')
+        : null,
+      returnedToServiceBy: this.resource.returnedToServiceBy
+        ? UserTransformer.transform(this.resource.returnedToServiceBy).useVariant('toSummary')
         : null,
     }
   }

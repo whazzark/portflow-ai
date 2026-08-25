@@ -41,6 +41,7 @@ export interface ApiDefinition {
     reactivateMany: typeof routes['trucks.reactivate_many']
     reactivate: typeof routes['trucks.reactivate']
     suspend: typeof routes['trucks.suspend']
+    returnToService: typeof routes['trucks.return_to_service']
   }
   docks: {
     index: typeof routes['docks.index']

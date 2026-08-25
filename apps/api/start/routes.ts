@@ -60,6 +60,9 @@ router
         router.post('/reactivate', [controllers.Trucks, 'reactivateMany']).as('reactivate_many')
         router.post('/:id/reactivate', [controllers.Trucks, 'reactivate']).as('reactivate')
         router.post('/:id/suspend', [controllers.Trucks, 'suspend']).as('suspend')
+        router
+          .post('/:id/return-to-service', [controllers.Trucks, 'returnToService'])
+          .as('return_to_service')
       })
       .prefix('/trucks')
       .as('trucks')
