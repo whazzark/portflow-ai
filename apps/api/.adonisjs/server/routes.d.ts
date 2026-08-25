@@ -54,6 +54,7 @@ export type ScannedRoutes = {
     'warehouse_doors.available': { paramsTuple?: []; params?: {} }
     'warehouses.index': { paramsTuple?: []; params?: {} }
     'warehouses.store': { paramsTuple?: []; params?: {} }
+    'warehouses.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'warehouses.archive_many': { paramsTuple?: []; params?: {} }
     'warehouses.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'warehouses.reactivate_many': { paramsTuple?: []; params?: {} }
@@ -135,6 +136,7 @@ export type ScannedRoutes = {
     'trucks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighing_areas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'warehouses.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

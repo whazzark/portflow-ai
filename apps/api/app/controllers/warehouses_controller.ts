@@ -16,13 +16,16 @@ import {
   createWarehouseValidator,
   reactivateWarehousesValidator,
   reactivateWarehouseValidator,
+  updateWarehouseValidator,
 } from '#warehouses/shared/warehouse_validator'
+import UpdateWarehouseUseCase from '#warehouses/update/update_warehouse_use_case'
 
 @inject()
 export default class WarehousesController {
   constructor(
     private listWarehousesUseCase: ListWarehousesUseCase,
     private createWarehouseUseCase: CreateWarehouseUseCase,
+    private updateWarehouseUseCase: UpdateWarehouseUseCase,
     private archiveUseCase: ArchiveWarehouseUseCase,
     private archiveManyUseCase: ArchiveWarehousesUseCase,
     private reactivateUseCase: ReactivateWarehouseUseCase,
@@ -46,6 +49,20 @@ export default class WarehousesController {
     })
 
     response.status(201)
+
+    return serialize(WarehouseTransformer.transform(warehouse))
+  }
+
+  async update({ bouncer, params, request, serialize }: HttpContext) {
+    await bouncer.with(WarehousePolicy).authorize('update')
+
+    const payload = await request.validateUsing(updateWarehouseValidator)
+
+    const warehouse = await this.updateWarehouseUseCase.handle({
+      id: params.id,
+      ...(payload.name === undefined ? {} : { name: payload.name }),
+      ...(payload.footprint === undefined ? {} : { points: payload.footprint.points }),
+    })
 
     return serialize(WarehouseTransformer.transform(warehouse))
   }

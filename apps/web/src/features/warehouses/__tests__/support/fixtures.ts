@@ -225,3 +225,32 @@ export const CREATED_WAREHOUSE: WarehouseWithDoorsDto = {
   },
   doors: [],
 }
+
+/** A warehouse with no doors, so a reshape is bounded only by the geometry rules. */
+export const DOORLESS_WAREHOUSE: WarehouseWithDoorsDto = {
+  id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+  name: 'East Shed',
+  status: 'AVAILABLE',
+  ...warehouseLifecycle(),
+  footprint: {
+    points: [
+      { latitude: 45.75, longitude: 4.85 },
+      { latitude: 45.76, longitude: 4.86 },
+      { latitude: 45.75, longitude: 4.87 },
+    ],
+  },
+  doors: [],
+}
+
+/** What the API returns once North Shed has been corrected. */
+export const UPDATED_WAREHOUSE: WarehouseWithDoorsDto = {
+  ...WAREHOUSES[0],
+  name: 'North Shed Renamed',
+  footprint: {
+    points: [
+      { latitude: 48.85, longitude: 2.34 },
+      { latitude: 48.87, longitude: 2.35 },
+      { latitude: 48.85, longitude: 2.36 },
+    ],
+  },
+}

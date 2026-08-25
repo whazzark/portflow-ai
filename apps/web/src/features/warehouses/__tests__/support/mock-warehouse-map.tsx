@@ -1,7 +1,10 @@
 import type { MouseEvent } from 'react'
 import type { ResourceMapCreateAction } from '@/components/resource-map/resource-map-create-control'
 import type { WarehouseDoorDto } from '@/features/warehouse-doors/types'
-import type { WarehouseMapPlacement } from '@/features/warehouses/map/warehouse-map'
+import type {
+  WarehouseMapEditing,
+  WarehouseMapPlacement,
+} from '@/features/warehouses/map/warehouse-map'
 import type { PresentedWarehouse } from '@/features/warehouses/types'
 
 /** Deterministic coordinates handed out by successive "map clicks", so a drawing test can build a
@@ -25,6 +28,7 @@ export function WarehouseMap({
   doors = [],
   onDoorSelect,
   placement,
+  editing,
   createActions = [],
   selectMode = false,
   checkedIds,
@@ -42,6 +46,7 @@ export function WarehouseMap({
   selectedDoorId?: string
   onDoorSelect?: (door: WarehouseDoorDto) => void
   placement?: WarehouseMapPlacement
+  editing?: WarehouseMapEditing
   createActions?: ResourceMapCreateAction[]
   selectMode?: boolean
   checkedIds?: Set<string>
@@ -52,6 +57,8 @@ export function WarehouseMap({
 }) {
   const isArmed = placement?.armed ?? false
   const points = placement?.points ?? []
+  const editedPoints = editing?.points ?? []
+  const canRemove = editedPoints.length > (editing?.minimumPoints ?? 3)
 
   return (
     <section aria-label="Warehouse map">
@@ -83,7 +90,9 @@ export function WarehouseMap({
             data-status={warehouse.status}
             // While a footprint is being drawn the map swallows clicks, so no warehouse is
             // selectable — mirrors `useResourceMapPlacement` arming the real canvas.
-            disabled={isArmed}
+            // A warehouse under correction owns the map too: its own ring is being edited, so no
+            // other warehouse is selectable either.
+            disabled={isArmed || editing !== undefined}
             key={warehouse.id}
             onClick={(event: MouseEvent<HTMLButtonElement>) => {
               if (isCheckable && event.shiftKey && onShiftSelect) {
@@ -142,6 +151,52 @@ export function WarehouseMap({
             </button>
           </div>
         ))}
+      {editing && (
+        <>
+          {/* A click landing anywhere but on a handle must leave the ring alone. */}
+          <button onClick={() => {}} type="button">
+            Simulate map click away from the outline
+          </button>
+          {editedPoints.map((point, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: boundary points are positional.
+            <div key={`boundary-point-${index}`}>
+              <span data-testid={`boundary-point-${index}`}>
+                {point.latitude}, {point.longitude}
+              </span>
+              <button
+                onClick={() =>
+                  editing.onMovePoint(index, {
+                    latitude: point.latitude + 1,
+                    longitude: point.longitude + 1,
+                  })
+                }
+                type="button"
+              >
+                Simulate dragging boundary point {index + 1}
+              </button>
+              <button
+                onClick={() => {
+                  const next = editedPoints[(index + 1) % editedPoints.length]
+                  editing.onInsertPoint(index + 1, {
+                    latitude: (point.latitude + next.latitude) / 2,
+                    longitude: (point.longitude + next.longitude) / 2,
+                  })
+                }}
+                type="button"
+              >
+                Simulate inserting on edge {index + 1}
+              </button>
+              <button
+                disabled={!canRemove}
+                onClick={() => editing.onRemovePoint(index)}
+                type="button"
+              >
+                Simulate removing boundary point {index + 1}
+              </button>
+            </div>
+          ))}
+        </>
+      )}
     </section>
   )
 }

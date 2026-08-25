@@ -41,3 +41,25 @@ export class WarehouseInUseException extends Exception {
   static code = 'E_WAREHOUSE_IN_USE'
   static message = 'A door of this warehouse is used by a planned or active discharge'
 }
+
+export class ArchivedWarehouseReadOnlyException extends Exception {
+  static status = 409
+  static code = 'E_WAREHOUSE_ARCHIVED'
+  static message = 'Archived warehouses are read-only. Reactivate the warehouse first.'
+}
+
+export class WarehouseDoorsOutsideFootprintException extends Exception {
+  static status = 409
+  static code = 'E_WAREHOUSE_DOORS_OUTSIDE_FOOTPRINT'
+  static message = 'Warehouse doors would fall outside the new footprint'
+
+  /** The offending doors are named so the administrator can shape the outline around them rather
+   * than guess which one is in the way. */
+  constructor(doorNames: string[]) {
+    super(
+      doorNames.length === 0
+        ? WarehouseDoorsOutsideFootprintException.message
+        : `Doors ${doorNames.join(', ')} would fall outside the new footprint`,
+    )
+  }
+}

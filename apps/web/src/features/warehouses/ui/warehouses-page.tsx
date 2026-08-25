@@ -25,15 +25,18 @@ import {
   findAdmittedDoor,
   toggleDoorSelection,
 } from '@/features/warehouse-doors/warehouse-door-presentation'
+import { MINIMUM_FOOTPRINT_POINTS } from '@/features/warehouses/geometry/footprint-validation'
 import { WarehouseLegend } from '@/features/warehouses/map/warehouse-legend'
 import { WarehouseMap } from '@/features/warehouses/map/warehouse-map'
 import { useWarehouseMutations } from '@/features/warehouses/mutations/use-warehouse-mutations'
 import { warehouseQueries } from '@/features/warehouses/queries/warehouse-queries'
 import type { WarehouseStatus } from '@/features/warehouses/types'
 import { CreateWarehousePanel } from '@/features/warehouses/ui/create-warehouse-panel'
+import { UpdateWarehousePanel } from '@/features/warehouses/ui/update-warehouse-panel'
 import { WarehouseDetails } from '@/features/warehouses/ui/warehouse-details'
 import { WarehouseMapControls } from '@/features/warehouses/ui/warehouse-map-controls'
 import { WarehousesError } from '@/features/warehouses/ui/warehouses-error'
+import { useWarehouseEditSession } from '@/features/warehouses/use-warehouse-edit-session'
 import {
   countAvailableDoorsIn,
   countRestorableDoorsIn,
@@ -41,7 +44,7 @@ import {
   describeBulkDoorRestore,
   toBulkLifecycleOutcome,
 } from '@/features/warehouses/warehouse-lifecycle-adapter'
-import { presentWarehouses } from '@/features/warehouses/warehouse-search'
+import { presentWarehouses, warehouseMatchesSearch } from '@/features/warehouses/warehouse-search'
 import { useIsMobile } from '@/hooks/use-mobile'
 
 const warehousesRoute = getRouteApi('/_authenticated/warehouses')
@@ -53,7 +56,7 @@ const statusForIntent = (intent: BulkLifecycleIntent): WarehouseStatus =>
   intent === 'REACTIVATE' ? 'ARCHIVED' : 'AVAILABLE'
 
 export function WarehousesPage() {
-  const { create, doorId, doorStatus, search, selecting, status, warehouseId } =
+  const { create, doorId, doorStatus, edit, search, selecting, status, warehouseId } =
     warehousesRoute.useSearch()
   const navigate = warehousesRoute.useNavigate()
   const user = useAuthenticatedUser()
@@ -65,6 +68,9 @@ export function WarehousesPage() {
   const query = useQuery(warehouseQueries.list())
   // A `create` param a non-administrator cannot act on stays inert: no panel, no armed map.
   const isCreating = canManageWarehouses && create === 'warehouse'
+  // Same for `edit`: without the permission it never opens a session, and the session itself
+  // refuses an archived warehouse because those are read-only until reactivated.
+  const isEditRequested = canManageWarehouses && edit === 'warehouse' && !isCreating
   const [pendingPoints, setPendingPoints] = useState<LatLng[]>([])
   // A finished outline stops taking new points; removing one reopens it for further drawing.
   const [isOutlineComplete, setIsOutlineComplete] = useState(false)
@@ -90,6 +96,16 @@ export function WarehousesPage() {
   const admittedDoor = selected
     ? findAdmittedDoor(selected, doorId, effectiveDoorStatus)
     : undefined
+  const {
+    isEditing,
+    session: editSession,
+    draftPoints,
+    movePoint,
+    insertPoint,
+    removePoint,
+    restoreOrigin,
+    clear: clearEditSession,
+  } = useWarehouseEditSession({ requested: isEditRequested, selected })
 
   // The status of any currently checked warehouse fixes what a selection is for — Available means
   // an archive is in progress, Archived means a reactivation is — since the selection is
@@ -192,11 +208,20 @@ export function WarehousesPage() {
           ...previous,
           doorId: undefined,
           doorStatus: undefined,
+          edit: undefined,
           warehouseId: undefined,
         }),
       })
     }
   }, [navigate, query.data, selected, warehouseId])
+
+  // `edit` is scoped to the selection it was opened for, so it never outlives it: left behind, it
+  // would arm the update mode for whichever warehouse is selected next.
+  useEffect(() => {
+    if (edit && !warehouseId) {
+      void navigate({ replace: true, search: (previous) => ({ ...previous, edit: undefined }) })
+    }
+  }, [edit, navigate, warehouseId])
 
   useEffect(() => {
     if (query.data && selected && doorId && !admittedDoor) {
@@ -222,6 +247,7 @@ export function WarehousesPage() {
         warehouseId: undefined,
         doorId: undefined,
         doorStatus: undefined,
+        edit: undefined,
       }),
     })
   const selectWarehouse = (warehouse: (typeof visible)[number]) =>
@@ -231,6 +257,7 @@ export function WarehousesPage() {
         warehouseId: previous.warehouseId === warehouse.id ? undefined : warehouse.id,
         doorId: undefined,
         doorStatus: undefined,
+        edit: undefined,
       }),
     })
   const startSelecting = (initialId?: string) => {
@@ -289,18 +316,62 @@ export function WarehousesPage() {
 
   // Activating the mode closes any open detail, so a footprint is never drawn "inside" a selected
   // warehouse's sheet and the two can never both own the sheet.
-  const startCreating = () =>
+  const startCreating = () => {
+    // Activating creation ends an update in progress without saving it: at most one map mode.
+    clearEditSession()
     void navigate({
       search: (previous) => ({
         ...previous,
         create: 'warehouse' as const,
+        edit: undefined,
         warehouseId: undefined,
         doorId: undefined,
         doorStatus: undefined,
       }),
     })
+  }
   const cancelCreating = () =>
     void navigate({ search: (previous) => ({ ...previous, create: undefined }) })
+
+  const startUpdating = () =>
+    void navigate({
+      search: (previous) => ({ ...previous, create: undefined, edit: 'warehouse' as const }),
+    })
+  const cancelUpdating = () => {
+    clearEditSession()
+    void navigate({ search: (previous) => ({ ...previous, edit: undefined }) })
+  }
+  const handleUpdateNotFound = () => {
+    clearEditSession()
+    void navigate({
+      replace: true,
+      search: (previous) => ({ ...previous, edit: undefined, warehouseId: undefined }),
+    })
+  }
+  const updateWarehouse = async (value: { name: string; points: LatLng[] }) => {
+    const result = await mutations.update.mutateAsync({
+      params: { id: selected?.id ?? '' },
+      body: { name: value.name, footprint: { points: value.points } },
+    })
+
+    return result.data
+  }
+  // The corrected warehouse stays prominent: a rename that no longer matches the active search
+  // would otherwise leave it dimmed on the map the moment the administrator finished working on it.
+  // The test is the list's own matcher, so a rename the search still accepts — accents and all —
+  // never costs the administrator their filter.
+  const handleUpdated = (warehouse: { id: string; name: string }) => {
+    clearEditSession()
+
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        edit: undefined,
+        search: warehouseMatchesSearch(warehouse, search) ? previous.search : '',
+        warehouseId: warehouse.id,
+      }),
+    })
+  }
   const createWarehouse = async (value: { name: string; points: LatLng[] }) => {
     const result = await mutations.create.mutateAsync({
       body: { name: value.name, footprint: { points: value.points } },
@@ -376,6 +447,18 @@ export function WarehousesPage() {
                   current.map((existing, position) => (position === index ? point : existing)),
                 ),
             }}
+            editing={
+              isEditing && editSession
+                ? {
+                    warehouseId: editSession.warehouseId,
+                    points: draftPoints,
+                    onMovePoint: movePoint,
+                    onInsertPoint: insertPoint,
+                    onRemovePoint: removePoint,
+                    minimumPoints: MINIMUM_FOOTPRINT_POINTS,
+                  }
+                : undefined
+            }
             selected={selected}
             warehouses={visible}
             onSelect={selectWarehouse}
@@ -464,6 +547,10 @@ export function WarehousesPage() {
             cancelCreating()
             return
           }
+          if (isEditing) {
+            cancelUpdating()
+            return
+          }
           void navigate({
             replace: true,
             search: (previous) => ({
@@ -471,6 +558,7 @@ export function WarehousesPage() {
               warehouseId: undefined,
               doorStatus: undefined,
               doorId: undefined,
+              edit: undefined,
             }),
           })
         }}
@@ -500,6 +588,21 @@ export function WarehousesPage() {
               onSuccess={handleCreated}
               points={pendingPoints}
             />
+          ) : isEditing && selected && editSession ? (
+            <UpdateWarehousePanel
+              onCancel={cancelUpdating}
+              onInsertPoint={insertPoint}
+              onMovePoint={movePoint}
+              onNotFound={handleUpdateNotFound}
+              onRemovePoint={removePoint}
+              onRestoreOutline={restoreOrigin}
+              onSuccess={handleUpdated}
+              onUpdate={updateWarehouse}
+              originName={editSession.originName}
+              originPoints={editSession.originPoints}
+              points={draftPoints}
+              warehouse={selected}
+            />
           ) : (
             selected && (
               <div className="flex min-h-0 flex-1 flex-col">
@@ -519,6 +622,13 @@ export function WarehousesPage() {
                   }
                   onDoorSelect={selectDoor}
                 />
+                {/* Archived warehouses are read-only until they are reactivated (#211), so the
+                    action is absent rather than disabled — as it is for archived trucks. */}
+                {canManageWarehouses && selected.status === 'AVAILABLE' && (
+                  <footer className="flex shrink-0 gap-2 border-t bg-popover px-5 py-4 md:px-6">
+                    <Button onClick={startUpdating}>Edit</Button>
+                  </footer>
+                )}
               </div>
             )
           )}

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ResourceMapCreateAction } from '@/components/resource-map/resource-map-create-control'
 import { ResourceMapCreateControl } from '@/components/resource-map/resource-map-create-control'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
+import { EditablePolygonPlacement } from '@/components/resource-map/resource-map-polygon-editing'
 import { PendingPolygonPlacement } from '@/components/resource-map/resource-map-polygon-placement'
 import {
   ControlButton,
@@ -33,6 +34,16 @@ export type WarehouseMapPlacement = {
   onMovePoint: (index: number, point: LatLng) => void
   onComplete: () => void
   completed: boolean
+}
+
+export type WarehouseMapEditing = {
+  /** The warehouse whose ring is being corrected — excluded from the selection layer meanwhile. */
+  warehouseId: string
+  points: LatLng[]
+  onMovePoint: (index: number, point: LatLng) => void
+  onInsertPoint: (index: number, point: LatLng) => void
+  onRemovePoint: (index: number) => void
+  minimumPoints: number
 }
 
 function getFitPadding(
@@ -141,6 +152,7 @@ export function WarehouseMap({
   selectedDoorId,
   onDoorSelect,
   placement,
+  editing,
   createActions = [],
   selectMode = false,
   checkedIds,
@@ -158,6 +170,7 @@ export function WarehouseMap({
   selectedDoorId?: string
   onDoorSelect?: (door: WarehouseDoorDto) => void
   placement?: WarehouseMapPlacement
+  editing?: WarehouseMapEditing
   createActions?: ResourceMapCreateAction[]
   selectMode?: boolean
   checkedIds?: Set<string>
@@ -168,7 +181,9 @@ export function WarehouseMap({
   onShiftSelect?: (id: string) => void
 }) {
   const [hoveredDoorId, setHoveredDoorId] = useState<string>()
-  const isArmed = placement?.armed ?? false
+  // A ring under correction owns the map exactly like an armed drawing does: nothing else is
+  // selectable, and the view must not re-fit under the administrator on every vertex they move.
+  const isArmed = (placement?.armed ?? false) || editing !== undefined
   const initialCenter = useMemo<[number, number]>(() => {
     const point = warehouses[0]?.footprint.points[0]
     return point ? [point.longitude, point.latitude] : [-1.2264, 46.1591]
@@ -201,7 +216,17 @@ export function WarehouseMap({
           checkableIds={checkableIds}
           onToggleChecked={onToggleChecked}
           onShiftSelect={onShiftSelect}
+          excludedId={editing?.warehouseId}
         />
+        {editing && (
+          <EditablePolygonPlacement
+            minimumPoints={editing.minimumPoints}
+            onInsertPoint={editing.onInsertPoint}
+            onMovePoint={editing.onMovePoint}
+            onRemovePoint={editing.onRemovePoint}
+            points={editing.points}
+          />
+        )}
         {placement && (
           <PendingPolygonPlacement
             armed={placement.armed}
@@ -212,6 +237,8 @@ export function WarehouseMap({
             points={placement.points}
           />
         )}
+        {/* Doors stay rendered while the ring is corrected: they are the constraint the
+            administrator is shaping around, so hiding them would make a refusal feel arbitrary. */}
         {selected &&
           onDoorSelect &&
           doors.map((door) => (
