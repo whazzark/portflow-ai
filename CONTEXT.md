@@ -149,7 +149,7 @@ The restoration of an archived site reference for use in new operations, while p
 _Avoid_: resource recreation, unarchive
 
 **Warehouse**:
-A storage destination on the site where bulk material is deposited after being transported from a vessel, with quantities derived from validated rotations. A warehouse may serve several active discharges through distinct doors, and it cannot be archived while it still has available warehouse doors.
+A storage destination on the site where bulk material is deposited after being transported from a vessel, with quantities derived from validated rotations. A warehouse may serve several active discharges through distinct doors. Archiving a warehouse archives its available doors with it, in the same action and with the same archive time, actor, and comment; doors already archived keep their own context, and each cascaded door records that it was archived through its warehouse so a later reactivation restores exactly those. A warehouse cannot be archived while any of its doors is currently in use by a planned or active discharge. This differs from a Transport Company, which cannot be archived while it still provides available trucks: a truck can move to another company, whereas a door belongs permanently to one warehouse and has no meaning without it.
 _Avoid_: store, shop, magasin
 
 **Warehouse Footprint**:

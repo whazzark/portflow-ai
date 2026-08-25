@@ -1,10 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { PlusIcon } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { BulkResourceLifecycleActions } from '@/components/resource-map/bulk-resource-lifecycle-actions'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { countResources } from '@/components/resource-map/resource-map-search'
 import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
+import {
+  useClearSelectionShortcut,
+  useSelectAllShortcut,
+} from '@/components/resource-map/use-bulk-selection-shortcuts'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
@@ -25,19 +30,27 @@ import { CreateWarehousePanel } from '@/features/warehouses/ui/create-warehouse-
 import { WarehouseDetails } from '@/features/warehouses/ui/warehouse-details'
 import { WarehouseMapControls } from '@/features/warehouses/ui/warehouse-map-controls'
 import { WarehousesError } from '@/features/warehouses/ui/warehouses-error'
+import {
+  countAvailableDoorsIn,
+  describeBulkDoorCascade,
+  toBulkLifecycleOutcome,
+} from '@/features/warehouses/warehouse-lifecycle-adapter'
 import { presentWarehouses } from '@/features/warehouses/warehouse-search'
 import { useIsMobile } from '@/hooks/use-mobile'
 
 const warehousesRoute = getRouteApi('/_authenticated/warehouses')
 
 export function WarehousesPage() {
-  const { create, doorId, doorStatus, search, status, warehouseId } = warehousesRoute.useSearch()
+  const { create, doorId, doorStatus, search, selecting, status, warehouseId } =
+    warehousesRoute.useSearch()
   const navigate = warehousesRoute.useNavigate()
-  const isMobile = useIsMobile()
-  const query = useQuery(warehouseQueries.list())
   const user = useAuthenticatedUser()
-  const warehouseMutations = useWarehouseMutations()
   const canManageWarehouses = isAdministrator(user)
+  const isMobile = useIsMobile()
+  const isSelecting = canManageWarehouses && selecting === 'warehouses'
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
+  const mutations = useWarehouseMutations()
+  const query = useQuery(warehouseQueries.list())
   // A `create` param a non-administrator cannot act on stays inert: no panel, no armed map.
   const isCreating = canManageWarehouses && create === 'warehouse'
   const [pendingPoints, setPendingPoints] = useState<LatLng[]>([])
@@ -65,6 +78,69 @@ export function WarehousesPage() {
   const admittedDoor = selected
     ? findAdmittedDoor(selected, doorId, effectiveDoorStatus)
     : undefined
+
+  // Only available warehouses can be archived, and only an administrator may check anything.
+  // Derived from `visible`, which the status filter scopes but the search term only annotates —
+  // so switching lifecycle view drops what it no longer lists, while typing a search never prunes
+  // what the administrator already chose. Keyed on the ids so the set stays referentially stable
+  // across renders that changed nothing.
+  const checkableIdsKey = canManageWarehouses
+    ? visible
+        .filter((warehouse) => warehouse.status === 'AVAILABLE')
+        .map((warehouse) => warehouse.id)
+        .join(',')
+    : ''
+  const checkableIds = useMemo(
+    () => new Set(checkableIdsKey ? checkableIdsKey.split(',') : []),
+    [checkableIdsKey],
+  )
+  const checkedWarehouses = useMemo(
+    () => warehouses.filter((warehouse) => checkedIds.has(warehouse.id)),
+    [checkedIds, warehouses],
+  )
+
+  useEffect(() => {
+    if (!isSelecting) {
+      setCheckedIds(new Set())
+    }
+  }, [isSelecting])
+
+  // Drops ids that are no longer checkable — the status filter moved, or a refetch removed them —
+  // while leaving search-hidden warehouses checked.
+  useEffect(() => {
+    setCheckedIds((current) => {
+      if (current.size === 0) {
+        return current
+      }
+      const next = new Set([...current].filter((id) => checkableIds.has(id)))
+
+      return next.size === current.size ? current : next
+    })
+  }, [checkableIds])
+
+  const selectAllVisible = useCallback(
+    (event: KeyboardEvent) => {
+      if (checkableIds.size === 0) {
+        return
+      }
+      event.preventDefault()
+      setCheckedIds(new Set(checkableIds))
+      void navigate({
+        search: (previous) => ({
+          ...previous,
+          doorId: undefined,
+          doorStatus: undefined,
+          selecting: 'warehouses' as const,
+          warehouseId: undefined,
+        }),
+      })
+    },
+    [checkableIds, navigate],
+  )
+  useSelectAllShortcut({ enabled: canManageWarehouses, onSelectAll: selectAllVisible })
+
+  const clearChecked = useCallback(() => setCheckedIds(new Set()), [])
+  useClearSelectionShortcut({ enabled: isSelecting && checkedIds.size > 0, onClear: clearChecked })
 
   useEffect(() => {
     if (query.data && warehouseId && !selected) {
@@ -115,6 +191,52 @@ export function WarehousesPage() {
         doorStatus: undefined,
       }),
     })
+  const startSelecting = (initialId?: string) => {
+    setCheckedIds(initialId ? new Set([initialId]) : new Set())
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        doorId: undefined,
+        doorStatus: undefined,
+        selecting: 'warehouses' as const,
+        warehouseId: undefined,
+      }),
+    })
+  }
+  const toggleSelectMode = () => {
+    if (isSelecting) {
+      void navigate({
+        replace: true,
+        search: (previous) => ({ ...previous, selecting: undefined }),
+      })
+      return
+    }
+    startSelecting()
+  }
+  const toggleChecked = (id: string) => {
+    if (!checkableIds.has(id)) {
+      return
+    }
+    setCheckedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+
+      return next
+    })
+  }
+  // Shift-clicking a checkable warehouse enters select mode and checks it, so the administrator
+  // never has to reach for the map control first — the Checkpoints behaviour, unchanged.
+  const handleShiftSelect = (id: string) => {
+    if (isSelecting) {
+      toggleChecked(id)
+      return
+    }
+    startSelecting(id)
+  }
   const selectDoor = (nextDoorId: string) =>
     void navigate({
       search: (previous) => ({
@@ -138,7 +260,7 @@ export function WarehousesPage() {
   const cancelCreating = () =>
     void navigate({ search: (previous) => ({ ...previous, create: undefined }) })
   const createWarehouse = async (value: { name: string; points: LatLng[] }) => {
-    const result = await warehouseMutations.create.mutateAsync({
+    const result = await mutations.create.mutateAsync({
       body: { name: value.name, footprint: { points: value.points } },
     })
 
@@ -218,6 +340,12 @@ export function WarehousesPage() {
             doors={admittedDoors}
             selectedDoorId={admittedDoor?.id}
             onDoorSelect={(door) => selectDoor(door.id)}
+            selectMode={isSelecting}
+            checkedIds={checkedIds}
+            checkableIds={checkableIds}
+            onToggleChecked={toggleChecked}
+            onToggleSelectMode={canManageWarehouses ? toggleSelectMode : undefined}
+            onShiftSelect={canManageWarehouses ? handleShiftSelect : undefined}
           />
         )}
         // Without a configured basemap the map — and its control cluster with it — never renders,
@@ -229,6 +357,34 @@ export function WarehousesPage() {
         ))}
         resourceLabel="Warehouses"
       />
+      {isSelecting && (
+        <BulkResourceLifecycleActions
+          blockerReasonLabels={{
+            IN_USE: 'a door is used by an active or planned discharge',
+          }}
+          description={describeBulkDoorCascade(
+            checkedWarehouses.length,
+            countAvailableDoorsIn(checkedWarehouses),
+          )}
+          idPrefix="warehouse"
+          intent="ARCHIVE"
+          onClear={clearChecked}
+          onSuccess={(outcome) => {
+            // Narrowed to the blocked ids rather than cleared, so the administrator can resolve the
+            // blocker and retry exactly those without reselecting them on the map.
+            setCheckedIds(new Set(outcome.blocked.map((blocked) => blocked.id)))
+          }}
+          plural="warehouses"
+          refresh={mutations.refreshWarehouses}
+          selectedIds={[...checkedIds]}
+          singular="warehouse"
+          submit={async ({ ids, comment }) =>
+            toBulkLifecycleOutcome(
+              (await mutations.archiveMany.mutateAsync({ body: { ids, comment } })).data,
+            )
+          }
+        />
+      )}
       <Sheet
         open={Boolean(selected) || isCreating}
         onOpenChange={(open) => {
@@ -278,7 +434,7 @@ export function WarehousesPage() {
           ) : (
             selected && (
               <div className="flex min-h-0 flex-1 flex-col">
-                <WarehouseDetails warehouse={selected} />
+                <WarehouseDetails canArchive={canManageWarehouses} warehouse={selected} />
                 <WarehouseDoorsPanel
                   warehouse={selected}
                   status={effectiveDoorStatus}

@@ -1,4 +1,4 @@
-import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
+import type { WarehouseDoorDto, WarehouseWithDoorsDto } from '@/features/warehouses/types'
 
 export const API_BASE_URL = 'http://localhost:3333'
 
@@ -17,11 +17,42 @@ export const WAREHOUSE_OBSERVER = {
   role: 'OBSERVER',
 }
 
+/** The lifecycle context every warehouse carries. Spread rather than repeated, so a later
+ * lifecycle field widens one place instead of every fixture. */
+export const warehouseLifecycle = (
+  overrides: Partial<WarehouseWithDoorsDto> = {},
+): Omit<WarehouseWithDoorsDto, 'id' | 'name' | 'status' | 'footprint' | 'doors'> => ({
+  archivedAt: null,
+  archivedByUserId: null,
+  archiveComment: null,
+  reactivatedAt: null,
+  reactivatedByUserId: null,
+  reactivationComment: null,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+  ...overrides,
+})
+
+/** The same for a door, plus the archive provenance introduced by GH-210. */
+export const doorLifecycle = (
+  overrides: Partial<WarehouseDoorDto> = {},
+): Omit<WarehouseDoorDto, 'id' | 'name' | 'status' | 'latitude' | 'longitude'> => ({
+  archivedAt: null,
+  archivedByUserId: null,
+  archiveComment: null,
+  reactivatedAt: null,
+  reactivatedByUserId: null,
+  reactivationComment: null,
+  archivedWithWarehouse: false,
+  ...overrides,
+})
+
 export const WAREHOUSES: WarehouseWithDoorsDto[] = [
   {
     id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     name: 'North Shed',
     status: 'AVAILABLE',
+    ...warehouseLifecycle(),
     footprint: {
       points: [
         { latitude: 48.85, longitude: 2.34 },
@@ -36,6 +67,7 @@ export const WAREHOUSES: WarehouseWithDoorsDto[] = [
         status: 'AVAILABLE',
         latitude: 48.855,
         longitude: 2.345,
+        ...doorLifecycle(),
       },
       {
         id: '22222222-2222-4222-8222-222222222222',
@@ -43,6 +75,7 @@ export const WAREHOUSES: WarehouseWithDoorsDto[] = [
         status: 'ARCHIVED',
         latitude: 48.8552,
         longitude: 2.3452,
+        ...doorLifecycle({ archivedAt: '2026-05-01T09:00:00.000Z' }),
       },
     ],
   },
@@ -50,6 +83,7 @@ export const WAREHOUSES: WarehouseWithDoorsDto[] = [
     id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     name: 'Retired Shed',
     status: 'ARCHIVED',
+    ...warehouseLifecycle({ archivedAt: '2026-06-01T09:00:00.000Z' }),
     footprint: {
       points: [
         { latitude: 43.29, longitude: 5.36 },
@@ -64,15 +98,70 @@ export const WAREHOUSES: WarehouseWithDoorsDto[] = [
         status: 'ARCHIVED',
         latitude: 43.295,
         longitude: 5.365,
+        ...doorLifecycle({ archivedAt: '2026-06-01T09:00:00.000Z', archivedWithWarehouse: true }),
       },
     ],
   },
+]
+
+/** A wider set for bulk-selection tests: three available warehouses with differing door counts,
+ * plus the archived one, so a selection can mix eligible and ineligible warehouses. Kept separate
+ * from `WAREHOUSES` so the delivered consultation tests keep their exact counts. */
+export const BULK_WAREHOUSES: WarehouseWithDoorsDto[] = [
+  WAREHOUSES[0],
+  {
+    id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    name: 'East Shed',
+    status: 'AVAILABLE',
+    ...warehouseLifecycle(),
+    footprint: {
+      points: [
+        { latitude: 47.21, longitude: -1.55 },
+        { latitude: 47.22, longitude: -1.54 },
+        { latitude: 47.21, longitude: -1.53 },
+      ],
+    },
+    doors: [
+      {
+        id: '44444444-4444-4444-8444-444444444444',
+        name: 'East Door',
+        status: 'AVAILABLE',
+        latitude: 47.215,
+        longitude: -1.545,
+        ...doorLifecycle(),
+      },
+      {
+        id: '55555555-5555-4555-8555-555555555555',
+        name: 'East Side Door',
+        status: 'AVAILABLE',
+        latitude: 47.216,
+        longitude: -1.544,
+        ...doorLifecycle(),
+      },
+    ],
+  },
+  {
+    id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    name: 'West Shed',
+    status: 'AVAILABLE',
+    ...warehouseLifecycle(),
+    footprint: {
+      points: [
+        { latitude: 44.83, longitude: -0.57 },
+        { latitude: 44.84, longitude: -0.56 },
+        { latitude: 44.83, longitude: -0.55 },
+      ],
+    },
+    doors: [],
+  },
+  WAREHOUSES[1],
 ]
 
 export const CREATED_WAREHOUSE: WarehouseWithDoorsDto = {
   id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   name: 'South Shed',
   status: 'AVAILABLE',
+  ...warehouseLifecycle(),
   footprint: {
     points: [
       { latitude: 10.5, longitude: 20.5 },
