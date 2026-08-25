@@ -43,6 +43,7 @@ export interface ApiDefinition {
     update: typeof routes['docks.update']
     archiveMany: typeof routes['docks.archive_many']
     archive: typeof routes['docks.archive']
+    reactivateMany: typeof routes['docks.reactivate_many']
     reactivate: typeof routes['docks.reactivate']
   }
   weighingAreas: {

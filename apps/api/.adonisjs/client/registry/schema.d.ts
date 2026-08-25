@@ -367,6 +367,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'docks.reactivate_many': {
+    methods: ["POST"]
+    pattern: '/api/v1/docks/reactivate'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#docks/shared/dock_validator').reactivateDocksValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#docks/shared/dock_validator').reactivateDocksValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['reactivateMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/docks_controller').default['reactivateMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'docks.reactivate': {
     methods: ["POST"]
     pattern: '/api/v1/docks/:id/reactivate'

@@ -52,9 +52,9 @@ export function DockDetails({
           </dl>
         </section>
       </ResourceDetailBody>
-      {canEdit && dock.status === 'AVAILABLE' && (
+      {canEdit && (
         <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
-          <Button onClick={onEdit}>Edit dock</Button>
+          {dock.status === 'AVAILABLE' && <Button onClick={onEdit}>Edit dock</Button>}
           <DockLifecycleActions dock={dock} />
         </SheetFooter>
       )}

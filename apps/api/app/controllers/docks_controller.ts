@@ -8,12 +8,14 @@ import ListAvailableDocksUseCase from '#docks/available/list_available_docks_use
 import CreateDockUseCase from '#docks/create/create_dock_use_case'
 import ListDocksUseCase from '#docks/list/list_docks_use_case'
 import ReactivateDockUseCase from '#docks/reactivate/reactivate_dock_use_case'
+import ReactivateDocksUseCase from '#docks/reactivate/reactivate_docks_use_case'
 import DockPolicy from '#docks/shared/dock_policy'
 import DockTransformer from '#docks/shared/dock_transformer'
 import {
   archiveDocksValidator,
   archiveDockValidator,
   createDockValidator,
+  reactivateDocksValidator,
   reactivateDockValidator,
   updateDockValidator,
 } from '#docks/shared/dock_validator'
@@ -29,6 +31,7 @@ export default class DocksController {
     private archiveDockUseCase: ArchiveDockUseCase,
     private reactivateDockUseCase: ReactivateDockUseCase,
     private archiveDocksUseCase: ArchiveDocksUseCase,
+    private reactivateDocksUseCase: ReactivateDocksUseCase,
   ) {}
 
   async index({ bouncer, serialize }: HttpContext) {
@@ -120,5 +123,24 @@ export default class DocksController {
     })
 
     return serialize(DockTransformer.transform(dock))
+  }
+
+  async reactivateMany({ auth, bouncer, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(DockPolicy).authorize('reactivate')
+
+    const payload = await request.validateUsing(reactivateDocksValidator)
+    const result = await this.reactivateDocksUseCase.handle({
+      ids: payload.ids,
+      reactivatedByUserId: user.id,
+      reactivatedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize({
+      updatedDocks: DockTransformer.transform(result.updatedDocks),
+      blockedDocks: result.blockedDocks,
+    })
   }
 }
