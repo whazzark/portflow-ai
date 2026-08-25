@@ -8,7 +8,7 @@ import {
   BULK_AVAILABLE_TRUCKS,
   BULK_TRUCKS,
 } from '../support/fixtures'
-import { mockTrucks, renderTrucks } from '../support/test-helpers'
+import { mockTrucks, renderTrucks, truckTab } from '../support/test-helpers'
 
 test('offers no selection controls to a non-administrator active role', async () => {
   mockTrucks({ user: ACTIVE_OBSERVER, complete: BULK_TRUCKS, available: BULK_AVAILABLE_TRUCKS })
@@ -33,7 +33,7 @@ test('drops the selection from the floating toolbar when leaving the available t
   fireEvent.click(within(list).getByRole('checkbox', { name: 'Select truck GG-701-PF' }))
   expect(screen.getByText('1 selected')).toBeInTheDocument()
 
-  await user.click(screen.getByRole('tab', { name: /Archived/ }))
+  await user.click(truckTab(/Archived/))
 
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument(),

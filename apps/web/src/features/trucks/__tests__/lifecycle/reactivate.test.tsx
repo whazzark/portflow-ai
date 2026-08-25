@@ -11,7 +11,7 @@ import {
   REACTIVATE_AVAILABLE_TRUCKS,
   REACTIVATE_TRUCKS,
 } from '../support/fixtures'
-import { mockTrucks, renderTrucks } from '../support/test-helpers'
+import { mockTrucks, renderTrucks, truckTab } from '../support/test-helpers'
 
 function details() {
   return screen.getByRole('region', { hidden: true, name: 'Truck details' })
@@ -23,7 +23,7 @@ async function openArchivedTruck(
   companyName = 'Atlantic Transport',
 ) {
   await screen.findByRole('list', { name: 'Available trucks' })
-  await user.click(screen.getByRole('tab', { name: /Archived/ }))
+  await user.click(truckTab(/Archived/))
   await user.click(
     await screen.findByRole('button', { name: `${target.registration}, ${companyName}` }),
   )

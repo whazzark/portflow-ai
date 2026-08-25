@@ -48,7 +48,9 @@ test('lets an administrator open, pre-fill, and save a correction in the detail 
   fireEvent.click(await screen.findByRole('button', { name: 'Edit truck' }))
 
   expect(await screen.findByRole('heading', { name: 'Edit truck' })).toBeInTheDocument()
-  expect(screen.getByRole('textbox', { name: 'Registration' })).toHaveValue(target.registration)
+  expect(await screen.findByRole('textbox', { name: 'Registration' })).toHaveValue(
+    target.registration,
+  )
   expect(screen.getByRole('textbox', { name: 'Capacity (tonnes)' })).toHaveValue(
     String(target.capacityTonnes),
   )
@@ -77,10 +79,12 @@ test('lets an administrator open, pre-fill, and save a correction in the detail 
 test('survives a reload while the edit form is open', async () => {
   mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
 
-  renderTrucks(`/transport-resources?resource=trucks&truckId=${target.id}&truckMode=edit`)
+  renderTrucks(`/transport-resources?truckId=${target.id}&truckMode=edit`)
 
   expect(await screen.findByRole('heading', { name: 'Edit truck' })).toBeInTheDocument()
-  expect(screen.getByRole('textbox', { name: 'Registration' })).toHaveValue(target.registration)
+  expect(await screen.findByRole('textbox', { name: 'Registration' })).toHaveValue(
+    target.registration,
+  )
 })
 
 test('lets an administrator cancel an edit without changing the truck', async () => {
@@ -179,8 +183,12 @@ test('reassigns a truck to another available transport company', async () => {
   await waitFor(() =>
     expect(screen.queryByRole('heading', { name: 'Edit truck' })).not.toBeInTheDocument(),
   )
+  // The details sheet stays open after saving, marking the directory behind it aria-hidden.
   expect(
-    screen.getByRole('button', { name: `${target.registration}, Bêta Logistique` }),
+    screen.getByRole('button', {
+      name: `${target.registration}, Bêta Logistique`,
+      hidden: true,
+    }),
   ).toBeInTheDocument()
 })
 

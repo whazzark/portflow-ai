@@ -343,6 +343,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'trucks.suspend': {
+    methods: ["POST"]
+    pattern: '/api/v1/trucks/:id/suspend'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#trucks/shared/truck_validator').suspendTruckValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#trucks/shared/truck_validator').suspendTruckValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['suspend']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/trucks_controller').default['suspend']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'docks.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/docks'

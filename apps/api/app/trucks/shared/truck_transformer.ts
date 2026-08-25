@@ -18,6 +18,9 @@ export default class TruckTransformer extends BaseTransformer<Truck> {
       'reactivatedAt',
       'reactivatedByUserId',
       'reactivationComment',
+      'suspendedAt',
+      'suspendedByUserId',
+      'suspensionComment',
       'createdAt',
       'updatedAt',
     ])
@@ -30,6 +33,9 @@ export default class TruckTransformer extends BaseTransformer<Truck> {
         : null,
       reactivatedBy: this.resource.reactivatedBy
         ? UserTransformer.transform(this.resource.reactivatedBy).useVariant('toSummary')
+        : null,
+      suspendedBy: this.resource.suspendedBy
+        ? UserTransformer.transform(this.resource.suspendedBy).useVariant('toSummary')
         : null,
     }
   }

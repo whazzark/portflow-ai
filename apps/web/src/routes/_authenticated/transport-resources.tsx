@@ -10,13 +10,12 @@ import { ensureSessionUser } from '@/libraries/tuyau/session'
 
 const transportResourcesSearchSchema = z
   .object({
-    resource: z.enum(['trucks', 'workspace']).catch('workspace'),
     companyStatus: z.enum(['available', 'archived']).catch('available'),
     companySearch: z.string().catch(''),
     transportCompanyId: z.string().optional().catch(undefined),
     companyDetailsId: z.string().optional().catch(undefined),
     companyDetailsMode: z.enum(['view', 'edit', 'create']).catch('view'),
-    truckStatus: z.enum(['available', 'archived']).catch('available'),
+    truckStatus: z.enum(['available', 'suspended', 'archived']).catch('available'),
     truckSearch: z.string().catch(''),
     truckId: z.string().optional().catch(undefined),
     truckMode: z.enum(['view', 'edit']).catch('view'),

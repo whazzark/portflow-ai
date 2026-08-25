@@ -17,8 +17,10 @@ import {
   createTruckValidator,
   reactivateTrucksValidator,
   reactivateTruckValidator,
+  suspendTruckValidator,
   updateTruckValidator,
 } from '#trucks/shared/truck_validator'
+import SuspendTruckUseCase from '#trucks/suspend/suspend_truck_use_case'
 import UpdateTruckUseCase from '#trucks/update/update_truck_use_case'
 
 @inject()
@@ -32,6 +34,7 @@ export default class TrucksController {
     private archiveTrucksUseCase: ArchiveTrucksUseCase,
     private reactivateTruckUseCase: ReactivateTruckUseCase,
     private reactivateTrucksUseCase: ReactivateTrucksUseCase,
+    private suspendTruckUseCase: SuspendTruckUseCase,
   ) {}
 
   async store({ bouncer, request, response, serialize }: HttpContext) {
@@ -153,5 +156,22 @@ export default class TrucksController {
       updatedTrucks: TruckTransformer.transform(result.updatedTrucks),
       blockedTrucks: result.blockedTrucks,
     })
+  }
+
+  async suspend({ auth, bouncer, params, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(TruckPolicy).authorize('suspend')
+
+    const payload = await request.validateUsing(suspendTruckValidator)
+
+    const truck = await this.suspendTruckUseCase.handle({
+      id: params.id,
+      suspendedByUserId: user.id,
+      suspendedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize(TruckTransformer.transform(truck))
   }
 }

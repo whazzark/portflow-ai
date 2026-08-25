@@ -174,6 +174,12 @@ const routes = {
     tokens: [{"old":"/api/v1/trucks/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/:id/reactivate","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/trucks/:id/reactivate","type":0,"val":"reactivate","end":""}],
     types: placeholder as Registry['trucks.reactivate']['types'],
   },
+  'trucks.suspend': {
+    methods: ["POST"],
+    pattern: '/api/v1/trucks/:id/suspend',
+    tokens: [{"old":"/api/v1/trucks/:id/suspend","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/:id/suspend","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/:id/suspend","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/:id/suspend","type":1,"val":"id","end":""},{"old":"/api/v1/trucks/:id/suspend","type":0,"val":"suspend","end":""}],
+    types: placeholder as Registry['trucks.suspend']['types'],
+  },
   'docks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/docks',

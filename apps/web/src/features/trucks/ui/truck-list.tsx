@@ -33,6 +33,8 @@ export function TruckList({
   selectedIds = new Set(),
   onSelectionChange,
 }: TruckListProps) {
+  const lifecycleLabel =
+    lifecycle === 'archived' ? 'Archived' : lifecycle === 'suspended' ? 'Suspended' : 'Available'
   const ordered = [...trucks].sort((left, right) => {
     const byRegistration = left.registration.localeCompare(right.registration, undefined, {
       sensitivity: 'base',
@@ -65,7 +67,7 @@ export function TruckList({
             </div>
           )}
           <ul
-            aria-label={`${lifecycle === 'archived' ? 'Archived' : 'Available'} trucks`}
+            aria-label={`${lifecycleLabel} trucks`}
             className="min-h-0 flex-1 overflow-y-auto p-2"
           >
             {ordered.map((truck) => {

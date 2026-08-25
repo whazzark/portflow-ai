@@ -27,4 +27,8 @@ export default class TruckPolicy extends BasePolicy {
   reactivate(user: User): AuthorizerResponse {
     return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
   }
+
+  suspend(user: User): AuthorizerResponse {
+    return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
+  }
 }

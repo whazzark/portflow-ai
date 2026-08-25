@@ -55,3 +55,21 @@ export class TruckTransportCompanyArchivedException extends Exception {
   static message =
     'Truck transport company is archived; reactivate the company or reassign the truck before returning it to service'
 }
+
+export class TruckAlreadySuspendedException extends Exception {
+  static status = 409
+  static code = 'E_TRUCK_ALREADY_SUSPENDED'
+  static message = 'Truck is already suspended'
+}
+
+export class TruckArchivedCannotSuspendException extends Exception {
+  static status = 409
+  static code = 'E_TRUCK_ARCHIVED_CANNOT_SUSPEND'
+  static message = 'Archived trucks cannot be suspended; reactivate the truck first'
+}
+
+export class SuspendedTruckReadOnlyException extends Exception {
+  static status = 409
+  static code = 'E_TRUCK_SUSPENDED'
+  static message = 'Truck is suspended; return it to service first'
+}

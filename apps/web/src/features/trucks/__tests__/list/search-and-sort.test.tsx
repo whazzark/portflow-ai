@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 
 import { ACTIVE_OPERATIONS_ADMIN, TRUCKS } from '../support/fixtures'
-import { mockTrucks, renderTrucks } from '../support/test-helpers'
+import { mockTrucks, renderTrucks, truckTab } from '../support/test-helpers'
 
 test('searches registration and company with normalized highlighted matches', async () => {
   const user = userEvent.setup()
@@ -31,7 +31,7 @@ test('scopes search to the selected permitted lifecycle and treats whitespace as
   const search = screen.getByRole('textbox', { name: 'Search trucks' })
   await user.type(search, '   ')
   expect(screen.getByText('AA-101-PF')).toBeInTheDocument()
-  await user.click(screen.getByRole('tab', { name: /Archived \(1\)/ }))
+  await user.click(truckTab(/Archived \(1\)/))
   const archived = await screen.findByRole('list', { name: 'Archived trucks' })
   expect(within(archived).getByText('CC-303-PF')).toBeInTheDocument()
   expect(within(archived).queryByText('AA-101-PF')).not.toBeInTheDocument()

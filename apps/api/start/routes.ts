@@ -58,6 +58,7 @@ router
         router.post('/:id/archive', [controllers.Trucks, 'archive']).as('archive')
         router.post('/reactivate', [controllers.Trucks, 'reactivateMany']).as('reactivate_many')
         router.post('/:id/reactivate', [controllers.Trucks, 'reactivate']).as('reactivate')
+        router.post('/:id/suspend', [controllers.Trucks, 'suspend']).as('suspend')
       })
       .prefix('/trucks')
       .as('trucks')

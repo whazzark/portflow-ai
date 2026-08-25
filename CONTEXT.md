@@ -137,12 +137,12 @@ The interface category grouping the site's docks and weighing areas, where truck
 _Avoid_: checkpoint entity, operational checkpoint record
 
 **Available Site Reference**:
-A site reference that is not archived and can be selected for new operational usages.
+A site reference that can be selected for new operational usages. Being unarchived is not sufficient: a suspended truck is neither archived nor available.
 _Avoid_: active resource, enabled resource
 
 **Archived Resource**:
-A read-only site reference that is no longer available for new operations but remains visible in administration, historical discharges, and reports. Site references are never permanently deleted, and a reference cannot be archived while it is referenced by a planned or active discharge.
-_Avoid_: deleted resource, inactive resource
+A read-only site reference retired from the site's working set, no longer available for new operations but still visible in administration, historical discharges, and reports. Site references are never permanently deleted, and a reference cannot be archived while it is referenced by a planned or active discharge. Archival is a deliberate retirement and is distinct from the temporary immobilisation a Suspended Truck records.
+_Avoid_: deleted resource, inactive resource, suspended resource
 
 **Site Reference Reactivation**:
 The restoration of an archived site reference for use in new operations, while preserving its identity and history. The reference retains who last reactivated it and when.
@@ -189,8 +189,12 @@ A traceable change of the dock serving an active discharge. Previous rotations r
 _Avoid_: dock edit, shift dock change
 
 **Truck**:
-A vehicle registered for the site, provided by exactly one transport company at a time, and used for rotations during a shift. A truck can be assigned to at most one planned or active discharge, can have at most one in-progress rotation across the site, and its transport company cannot change while the truck is used by a planned or active discharge.
+A vehicle registered for the site, provided by exactly one transport company at a time, and used for rotations during a shift. It is available, suspended, or archived. A truck can be assigned to at most one planned or active discharge, can have at most one in-progress rotation across the site, and its transport company cannot change while the truck is used by a planned or active discharge.
 _Avoid_: driver, vehicle
+
+**Suspended Truck**:
+A truck temporarily out of service — a breakdown, a maintenance slot, a technical inspection — that remains a live site reference under the same identity, registration, and transport company, with its registration still reserved. It is excluded from every collection offering trucks for new operational work, while the discharges, shifts, and rotations it is already part of continue untouched. Suspension records its time, responsible administrator, and an optional comment, and is entered only from available: an archived truck must be reactivated first, and a suspended truck must return to service before it can be archived, reactivated, or updated.
+_Avoid_: broken truck, inactive truck, archived truck, out-of-service resource
 
 **Discharge Truck Assignment**:
 The reservation of a truck, its current registration, and its current transport company for one discharge. Each shift uses a subset of the assigned trucks; completing a shift does not release them, and later reference changes do not alter historical assignments.
@@ -221,7 +225,7 @@ An immutable, human-readable identifier generated for a rotation and unique acro
 _Avoid_: rotation database ID, shift rotation number
 
 **Rotation-Eligible Truck**:
-An available truck assigned to the active discharge and active shift that has no in-progress rotation anywhere on the site. During continuation, the current truck becomes eligible through the same operation that completes its preceding rotation and starts the next one.
+An available truck assigned to the active discharge and active shift that has no in-progress rotation anywhere on the site. During continuation, the current truck becomes eligible through the same operation that completes its preceding rotation and starts the next one. Suspending a truck removes its eligibility without interrupting a rotation already in progress: that rotation runs through to its empty return confirmation, but a continuation may not start a new rotation for a suspended truck.
 _Avoid_: any discharge truck, selectable truck
 
 **Weighing Area**:

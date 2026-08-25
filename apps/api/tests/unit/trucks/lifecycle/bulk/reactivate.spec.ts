@@ -99,4 +99,30 @@ test.group('ReactivateTrucksUseCase', (group) => {
     assert.equal(result.blockedTrucks.length, 2)
     assert.isTrue(result.blockedTrucks.every((blocker) => blocker.reason === 'ALREADY_AVAILABLE'))
   })
+
+  test('reports a suspended truck with its own reason and still reactivates the rest', async ({
+    assert,
+  }) => {
+    const actor = await UserFactory.apply('active').create()
+    const archived = await TruckFactory.apply('archived').create()
+    const suspended = await TruckFactory.apply('suspended').create()
+
+    const result = await (await app.container.make(ReactivateTrucksUseCase)).handle({
+      ids: [archived.id, suspended.id],
+      reactivatedByUserId: actor.id,
+      reactivatedAt: DateTime.now(),
+      comment: null,
+    })
+
+    assert.deepEqual(
+      result.updatedTrucks.map((truck) => truck.id),
+      [archived.id],
+    )
+    assert.deepEqual(
+      result.blockedTrucks.map((blocker) => [blocker.id, blocker.reason]),
+      [[suspended.id, 'SUSPENDED']],
+    )
+    await suspended.refresh()
+    assert.equal(suspended.status, 'SUSPENDED')
+  })
 })

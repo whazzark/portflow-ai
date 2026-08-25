@@ -10,7 +10,7 @@ import {
   BULK_ARCHIVED_TRUCKS,
   BULK_TRUCKS,
 } from '../support/fixtures'
-import { mockTrucks, renderTrucks } from '../support/test-helpers'
+import { mockTrucks, renderTrucks, truckTab } from '../support/test-helpers'
 
 test('reports unchanged trucks in a toast and allows retrying only those', async () => {
   const [first, second] = BULK_ARCHIVED_TRUCKS
@@ -55,7 +55,7 @@ test('reports unchanged trucks in a toast and allows retrying only those', async
 
   renderTrucks()
   await screen.findByRole('list', { name: 'Available trucks' })
-  fireEvent.click(screen.getByRole('tab', { name: /Archived/ }))
+  fireEvent.click(truckTab(/Archived/))
   await screen.findByRole('list', { name: 'Archived trucks' })
   fireEvent.click(screen.getByRole('checkbox', { name: 'Select all archived trucks' }))
   fireEvent.click(screen.getByRole('button', { name: 'Reactivate selected' }))
@@ -108,7 +108,7 @@ test('hides the retry toolbar for blocked trucks after leaving the archived tab'
 
   renderTrucks()
   await screen.findByRole('list', { name: 'Available trucks' })
-  fireEvent.click(screen.getByRole('tab', { name: /Archived/ }))
+  fireEvent.click(truckTab(/Archived/))
   await screen.findByRole('list', { name: 'Archived trucks' })
   fireEvent.click(screen.getByRole('checkbox', { name: 'Select all archived trucks' }))
   fireEvent.click(screen.getByRole('button', { name: 'Reactivate selected' }))
@@ -118,7 +118,7 @@ test('hides the retry toolbar for blocked trucks after leaving the archived tab'
 
   expect(await screen.findByRole('button', { name: 'Retry blocked trucks' })).toBeInTheDocument()
 
-  await user.click(screen.getByRole('tab', { name: /Available/ }))
+  await user.click(truckTab(/Available/))
 
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Retry blocked trucks' })).not.toBeInTheDocument(),
@@ -153,7 +153,7 @@ test('reports every truck as unchanged and reactivates nothing when the whole se
 
   renderTrucks()
   await screen.findByRole('list', { name: 'Available trucks' })
-  fireEvent.click(screen.getByRole('tab', { name: /Archived/ }))
+  fireEvent.click(truckTab(/Archived/))
   const list = await screen.findByRole('list', { name: 'Archived trucks' })
   fireEvent.click(
     within(list).getByRole('checkbox', { name: `Select truck ${second.registration}` }),

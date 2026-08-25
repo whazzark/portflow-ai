@@ -26,6 +26,8 @@ export function TruckSection({
   selectedIds,
   onSelectionChange,
 }: TruckSectionProps) {
+  const lifecycleLabel =
+    lifecycle === 'archived' ? 'Archived' : lifecycle === 'suspended' ? 'Suspended' : 'Available'
   const matches = trucks.filter((truck) =>
     truckMatchesSearch(
       truck,
@@ -36,10 +38,7 @@ export function TruckSection({
   const hasSearch = search.trim().length > 0
 
   return (
-    <section
-      aria-label={`${lifecycle === 'archived' ? 'Archived' : 'Available'} trucks`}
-      className="flex h-full min-h-0"
-    >
+    <section aria-label={`${lifecycleLabel} trucks`} className="flex h-full min-h-0">
       <TruckList
         trucks={matches}
         companies={companies}

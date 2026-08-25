@@ -39,6 +39,7 @@ export interface ApiDefinition {
     archive: typeof routes['trucks.archive']
     reactivateMany: typeof routes['trucks.reactivate_many']
     reactivate: typeof routes['trucks.reactivate']
+    suspend: typeof routes['trucks.suspend']
   }
   docks: {
     index: typeof routes['docks.index']

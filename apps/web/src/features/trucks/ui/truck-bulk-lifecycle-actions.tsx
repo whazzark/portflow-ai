@@ -152,6 +152,7 @@ function formatBlockerReason(reason: BulkTruckLifecycleBlocker['reason']) {
       NOT_FOUND: 'not found',
       ALREADY_ARCHIVED: 'already archived',
       ALREADY_AVAILABLE: 'already available',
+      SUSPENDED: 'out of service',
       TRANSPORT_COMPANY_ARCHIVED: 'archived transport company',
     }[reason] ?? reason
   )

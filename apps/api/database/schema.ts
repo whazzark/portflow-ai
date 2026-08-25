@@ -265,7 +265,7 @@ export class TransportCompanySchema extends BaseModel {
 }
 
 export class TruckSchema extends BaseModel {
-  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'capacityTonnes', 'createdAt', 'id', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'registration', 'status', 'transportCompanyId', 'updatedAt', 'vehicleModel'] as const
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'capacityTonnes', 'createdAt', 'id', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'registration', 'status', 'suspendedAt', 'suspendedByUserId', 'suspensionComment', 'transportCompanyId', 'updatedAt', 'vehicleModel'] as const
   $columns = TruckSchema.$columns
   @column()
   declare archiveComment: string | null
@@ -289,6 +289,12 @@ export class TruckSchema extends BaseModel {
   declare registration: string
   @column()
   declare status: string
+  @column.dateTime()
+  declare suspendedAt: DateTime | null
+  @column()
+  declare suspendedByUserId: string | null
+  @column()
+  declare suspensionComment: string | null
   @column()
   declare transportCompanyId: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
@@ -362,7 +368,7 @@ export class WarehouseDoorProductLotAssignmentSchema extends BaseModel {
 }
 
 export class WarehouseDoorSchema extends BaseModel {
-  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt', 'warehouseId'] as const
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'archivedWithWarehouse', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt', 'warehouseId'] as const
   $columns = WarehouseDoorSchema.$columns
   @column()
   declare archiveComment: string | null
@@ -370,6 +376,8 @@ export class WarehouseDoorSchema extends BaseModel {
   declare archivedAt: DateTime | null
   @column()
   declare archivedByUserId: string | null
+  @column()
+  declare archivedWithWarehouse: boolean
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })

@@ -52,8 +52,12 @@ test('creates a truck and shows it in the workspace without a manual refresh', a
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   expect(await screen.findByRole('heading', { name: created.registration })).toBeInTheDocument()
+  // The new truck's details sheet opens on success, marking the directory behind it aria-hidden.
   expect(
-    screen.getByRole('button', { name: `${created.registration}, Atlantic Transport` }),
+    screen.getByRole('button', {
+      name: `${created.registration}, Atlantic Transport`,
+      hidden: true,
+    }),
   ).toBeInTheDocument()
 })
 
@@ -173,7 +177,7 @@ test('offers only the scoped company when the directory is filtered to one compa
   mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
 
   const [atlantic] = TRANSPORT_COMPANIES
-  renderTrucks(`/transport-resources?resource=trucks&transportCompanyId=${atlantic.id}`)
+  renderTrucks(`/transport-resources?transportCompanyId=${atlantic.id}`)
   fireEvent.click(await screen.findByRole('button', { name: 'Create truck' }))
   fireEvent.click(await screen.findByRole('combobox', { name: 'Transport company' }))
 
@@ -185,7 +189,7 @@ test('explains why no truck can be created when the scoped company is archived',
   mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
 
   const archived = TRANSPORT_COMPANIES.find((company) => company.status === 'ARCHIVED')
-  renderTrucks(`/transport-resources?resource=trucks&transportCompanyId=${archived?.id}`)
+  renderTrucks(`/transport-resources?transportCompanyId=${archived?.id}`)
   fireEvent.click(await screen.findByRole('button', { name: 'Create truck' }))
 
   expect(await screen.findByText('No available transport company')).toBeInTheDocument()

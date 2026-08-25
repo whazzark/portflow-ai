@@ -22,62 +22,112 @@ type TruckLifecycleActionsProps = {
   truck: TruckDto
 }
 
+type LifecycleAction = 'archive' | 'reactivate' | 'suspend'
+
+const COPY: Record<
+  LifecycleAction,
+  { trigger: string; title: string; description: string; confirm: string; success: string }
+> = {
+  archive: {
+    trigger: 'Archive truck',
+    title: 'Archive truck?',
+    description: 'This truck will remain readable but no longer offered for new operational work.',
+    confirm: 'Archive',
+    success: 'Truck archived',
+  },
+  reactivate: {
+    trigger: 'Reactivate truck',
+    title: 'Reactivate truck?',
+    description: 'This truck will become selectable again for new operational work.',
+    confirm: 'Reactivate',
+    success: 'Truck reactivated',
+  },
+  suspend: {
+    trigger: 'Suspend truck',
+    title: 'Suspend truck?',
+    description:
+      'This truck will be temporarily out of service. It stops being offered for new work, ' +
+      'while the discharges, shifts, and rotations it is already part of are left untouched.',
+    confirm: 'Suspend',
+    success: 'Truck suspended',
+  },
+}
+
 export function TruckLifecycleActions({ className, truck }: TruckLifecycleActionsProps) {
   const mutations = useTruckMutations()
 
-  const [open, setOpen] = useState(false)
+  const [openAction, setOpenAction] = useState<LifecycleAction | null>(null)
   const [comment, setComment] = useState('')
 
-  const archived = truck.status === 'ARCHIVED'
+  // A suspended truck has no lifecycle action yet: returning it to service is its own delivery
+  // slice, and archiving it requires it to be available first.
+  if (truck.status === 'SUSPENDED') {
+    return (
+      <p className={className} data-testid="truck-suspended-notice">
+        This truck is out of service. It must be returned to service before it can be archived, and
+        returning a truck to service is not available yet.
+      </p>
+    )
+  }
 
-  const submit = async () => {
+  const archived = truck.status === 'ARCHIVED'
+  const actions: LifecycleAction[] = archived ? ['reactivate'] : ['suspend', 'archive']
+
+  const close = () => {
+    setOpenAction(null)
+    setComment('')
+  }
+
+  const submit = async (action: LifecycleAction) => {
+    const body = { comment: comment || null }
+
     try {
-      if (archived) {
-        await mutations.reactivate.mutateAsync({
-          params: { id: truck.id },
-          body: { comment: comment || null },
-        })
+      if (action === 'reactivate') {
+        await mutations.reactivate.mutateAsync({ params: { id: truck.id }, body })
+      } else if (action === 'suspend') {
+        await mutations.suspend.mutateAsync({ params: { id: truck.id }, body })
       } else {
-        await mutations.archive.mutateAsync({
-          params: { id: truck.id },
-          body: { comment: comment || null },
-        })
+        await mutations.archive.mutateAsync({ params: { id: truck.id }, body })
       }
 
-      setOpen(false)
-      setComment('')
-      toast.success(archived ? 'Truck reactivated' : 'Truck archived')
+      close()
+      toast.success(COPY[action].success)
     } catch (error) {
-      // A refusal (already-archived/available, in-use, archived transport company) may mean the
-      // truck's authoritative state has moved on since this view loaded; refresh so the
+      // A refusal (already suspended/archived/available, in-use, archived transport company) may
+      // mean the truck's authoritative state has moved on since this view loaded; refresh so the
       // consultation workspace shows it, not just the success path.
       void mutations.refreshTrucks()
-      toast.error(
-        archived
-          ? `Unable to reactivate truck “${truck.registration}”`
-          : `Unable to archive truck “${truck.registration}”`,
-        { description: parseApiError(error).message },
-      )
+      toast.error(`Unable to ${action} truck “${truck.registration}”`, {
+        description: parseApiError(error).message,
+      })
     }
   }
 
+  const isPending =
+    mutations.archive.isPending || mutations.reactivate.isPending || mutations.suspend.isPending
+
   return (
-    <>
-      <Button
-        className={className}
-        onClick={() => setOpen(true)}
-        variant={archived ? 'default' : 'destructive'}
-      >
-        {archived ? 'Reactivate truck' : 'Archive truck'}
-      </Button>
-      <AlertDialog open={open} onOpenChange={setOpen}>
+    <div className={className}>
+      <div className="flex flex-wrap items-center gap-2">
+        {actions.map((action) => (
+          <Button
+            key={action}
+            onClick={() => setOpenAction(action)}
+            type="button"
+            variant={
+              action === 'archive' ? 'destructive' : action === 'suspend' ? 'outline' : 'default'
+            }
+          >
+            {COPY[action].trigger}
+          </Button>
+        ))}
+      </div>
+      <AlertDialog open={openAction !== null} onOpenChange={(open) => !open && close()}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{archived ? 'Reactivate truck?' : 'Archive truck?'}</AlertDialogTitle>
+            <AlertDialogTitle>{openAction ? COPY[openAction].title : ''}</AlertDialogTitle>
             <AlertDialogDescription>
-              {archived
-                ? 'This truck will become selectable again for new operational work.'
-                : 'This truck will remain readable but no longer offered for new operational work.'}
+              {openAction ? COPY[openAction].description : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <FieldGroup>
@@ -97,16 +147,18 @@ export function TruckLifecycleActions({ className, truck }: TruckLifecycleAction
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={mutations.archive.isPending || mutations.reactivate.isPending}
+              disabled={isPending}
               onClick={() => {
-                void submit()
+                if (openAction) {
+                  void submit(openAction)
+                }
               }}
             >
-              {archived ? 'Reactivate' : 'Archive'}
+              {openAction ? COPY[openAction].confirm : ''}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   )
 }

@@ -3,7 +3,7 @@ import { indexById, orderByIds } from '#shared/lifecycle/bulk_lifecycle_records'
 export type TruckLifecycleRecord = {
   id: string
   registration: string
-  status: 'AVAILABLE' | 'ARCHIVED'
+  status: 'AVAILABLE' | 'ARCHIVED' | 'SUSPENDED'
   transportCompanyId: string
 }
 
@@ -15,6 +15,7 @@ export type BulkTruckLifecycleBlocker = {
     | 'IN_USE'
     | 'ALREADY_ARCHIVED'
     | 'ALREADY_AVAILABLE'
+    | 'SUSPENDED'
     | 'TRANSPORT_COMPANY_ARCHIVED'
 }
 
@@ -36,6 +37,13 @@ export function findBulkBlockers(
     }
 
     if (truck.status !== expectedStatus) {
+      // A suspended truck is neither archived nor available, so reporting it as one of those
+      // would misname why it was skipped — and the caller's status-guarded UPDATE would then
+      // match fewer rows than it expected and abort the whole batch.
+      if (truck.status === 'SUSPENDED') {
+        return [{ id, registration: truck.registration, reason: 'SUSPENDED' }]
+      }
+
       return [
         {
           id,
