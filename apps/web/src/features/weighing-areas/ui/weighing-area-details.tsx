@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SheetFooter } from '@/components/ui/sheet'
 import type { WeighingAreaDto } from '@/features/weighing-areas/types'
+import { WeighingAreaLifecycleActions } from '@/features/weighing-areas/ui/weighing-area-lifecycle-actions'
 import { formatDateTime } from '@/helpers/dates'
 
 export function WeighingAreaDetails({
@@ -52,8 +53,9 @@ export function WeighingAreaDetails({
         </section>
       </ResourceDetailBody>
       {canEdit && area.status === 'AVAILABLE' && (
-        <SheetFooter className="shrink-0 border-t bg-popover">
+        <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
           <Button onClick={onEdit}>Edit weighing area</Button>
+          <WeighingAreaLifecycleActions area={area} />
         </SheetFooter>
       )}
     </div>

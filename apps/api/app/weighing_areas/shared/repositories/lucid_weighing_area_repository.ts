@@ -1,11 +1,17 @@
+import { inject } from '@adonisjs/core'
 import { DateTime } from 'luxon'
 
 import WeighingArea from '#models/weighing_area'
 import isUniqueViolation from '#shared/database/is_unique_violation'
+import { indexById, orderByIds } from '#shared/lifecycle/bulk_lifecycle_records'
+import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
+import { findBulkBlockers } from '#weighing_areas/shared/weighing_area_lifecycle_blockers'
 
 import WeighingAreaRepository, {
   type ArchiveWeighingAreaCommand,
   type ArchiveWeighingAreaResult,
+  type ArchiveWeighingAreasCommand,
+  type BulkWeighingAreaLifecycleResult,
   type CreateWeighingAreaCommand,
   type CreateWeighingAreaResult,
   type ReactivateWeighingAreaCommand,
@@ -14,7 +20,12 @@ import WeighingAreaRepository, {
   type UpdateWeighingAreaResult,
 } from './weighing_area_repository.ts'
 
+@inject()
 export default class LucidWeighingAreaRepository extends WeighingAreaRepository {
+  constructor(private usageChecker: SiteReferenceUsageChecker) {
+    super()
+  }
+
   async create(command: CreateWeighingAreaCommand): Promise<CreateWeighingAreaResult> {
     try {
       return {
@@ -139,5 +150,45 @@ export default class LucidWeighingAreaRepository extends WeighingAreaRepository 
     const area = await WeighingArea.find(command.id)
 
     return area ? { kind: 'REACTIVATED', weighingArea: area } : { kind: 'NOT_FOUND' }
+  }
+
+  archiveAvailableMany(
+    command: ArchiveWeighingAreasCommand,
+  ): Promise<BulkWeighingAreaLifecycleResult> {
+    return WeighingArea.transaction(async (trx) => {
+      const areas = await WeighingArea.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      const areasById = indexById(areas)
+      const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
+        referenceType: 'WEIGHING_AREA',
+        referenceIds: command.ids,
+        client: trx,
+      })
+      const blockers = findBulkBlockers(command.ids, areasById, 'AVAILABLE', usedIds)
+
+      const blockedIds = new Set(blockers.map((blocker) => blocker.id))
+      const eligibleIds = command.ids.filter((id) => !blockedIds.has(id))
+
+      const [affectedRows] = await WeighingArea.query({ client: trx })
+        .whereIn('id', eligibleIds)
+        .where('status', 'AVAILABLE')
+        .update({
+          status: 'ARCHIVED',
+          archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
+          archivedByUserId: command.archivedByUserId,
+          archiveComment: command.archiveComment,
+          updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
+        })
+
+      if (affectedRows !== eligibleIds.length) {
+        throw new Error('Weighing area bulk archive changed during transaction')
+      }
+
+      const archived = await WeighingArea.query({ client: trx }).whereIn('id', eligibleIds)
+
+      return {
+        updatedWeighingAreas: orderByIds(eligibleIds, indexById(archived)),
+        blockedWeighingAreas: blockers,
+      }
+    })
   }
 }

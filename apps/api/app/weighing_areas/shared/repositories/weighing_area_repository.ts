@@ -1,6 +1,8 @@
 import type { DateTime } from 'luxon'
-
 import type WeighingArea from '#models/weighing_area'
+import type { BulkWeighingAreaLifecycleBlocker } from '#weighing_areas/shared/weighing_area_lifecycle_blockers'
+
+export type { BulkWeighingAreaLifecycleBlocker } from '#weighing_areas/shared/weighing_area_lifecycle_blockers'
 
 export type CreateWeighingAreaCommand = { name: string; latitude: number; longitude: number }
 export type UpdateWeighingAreaCommand = {
@@ -44,6 +46,18 @@ export type ReactivateWeighingAreaResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'ALREADY_AVAILABLE' }
 
+export type ArchiveWeighingAreasCommand = {
+  ids: string[]
+  archivedAt: DateTime
+  archivedByUserId: string
+  archiveComment: string | null
+}
+
+export type BulkWeighingAreaLifecycleResult = {
+  updatedWeighingAreas: WeighingArea[]
+  blockedWeighingAreas: BulkWeighingAreaLifecycleBlocker[]
+}
+
 export default abstract class WeighingAreaRepository {
   abstract create(command: CreateWeighingAreaCommand): Promise<CreateWeighingAreaResult>
 
@@ -60,4 +74,8 @@ export default abstract class WeighingAreaRepository {
   abstract reactivateArchived(
     command: ReactivateWeighingAreaCommand,
   ): Promise<ReactivateWeighingAreaResult>
+
+  abstract archiveAvailableMany(
+    command: ArchiveWeighingAreasCommand,
+  ): Promise<BulkWeighingAreaLifecycleResult>
 }

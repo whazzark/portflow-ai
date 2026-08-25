@@ -2,6 +2,7 @@ import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { DOCKS } from '@/features/docks/__tests__/support/fixtures'
+import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixtures'
 import { mockDocks, renderCheckpoints } from '../support/test-helpers'
 
 vi.mock(
@@ -12,6 +13,8 @@ vi.mock(
 const BETA_DOCK = DOCKS[0]
 const NORTH_DOCK = DOCKS[1]
 const RETIRED_DOCK = DOCKS[2]
+const ALPHA_SCALE = WEIGHING_AREAS[0]
+const BETA_SCALE = WEIGHING_AREAS[2]
 
 test('shift-clicking an available dock marker enters select mode and checks it directly', async () => {
   mockDocks()
@@ -102,4 +105,75 @@ test('Escape clears an in-progress selection without leaving select mode', async
   expect(screen.getByText('0 selected')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Stop selecting docks' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: `Select dock ${NORTH_DOCK.name}` })).toBeInTheDocument()
+})
+
+// Weighing-area half of the same shortcuts (spec FR-038).
+
+test('shift-clicking an available weighing-area marker enters select mode and checks it directly', async () => {
+  mockDocks()
+  renderCheckpoints()
+
+  const marker = await screen.findByRole('button', {
+    name: `View weighing area ${ALPHA_SCALE.name} (Available)`,
+  })
+  fireEvent.click(marker, { shiftKey: true })
+
+  expect(
+    await screen.findByRole('button', { name: `Deselect weighing area ${ALPHA_SCALE.name}` }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText('1 selected')).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: ALPHA_SCALE.name })).not.toBeInTheDocument()
+})
+
+test('shift-clicking a second weighing area while already selecting weighing areas just toggles it', async () => {
+  mockDocks()
+  const user = userEvent.setup()
+  renderCheckpoints()
+
+  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await user.click(screen.getByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` }))
+  fireEvent.click(screen.getByRole('button', { name: `Select weighing area ${BETA_SCALE.name}` }), {
+    shiftKey: true,
+  })
+
+  expect(screen.getByText('2 selected')).toBeInTheDocument()
+})
+
+test('Ctrl+A keeps targeting weighing areas once already selecting them, leaving docks alone', async () => {
+  mockDocks()
+  const user = userEvent.setup()
+  renderCheckpoints('/checkpoints?status=all')
+
+  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await screen.findByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` })
+
+  await user.keyboard('{Control>}a{/Control}')
+
+  expect(
+    screen.getByRole('button', { name: `Deselect weighing area ${ALPHA_SCALE.name}` }),
+  ).toBeInTheDocument()
+  expect(
+    screen.getByRole('button', { name: `Deselect weighing area ${BETA_SCALE.name}` }),
+  ).toBeInTheDocument()
+  // Docks stay untouched: Ctrl+A only ever operates on the currently active selecting kind.
+  expect(
+    screen.getByRole('button', { name: `View dock ${NORTH_DOCK.name} (Available)` }),
+  ).toBeInTheDocument()
+})
+
+test('Ctrl+A selects weighing areas by default once the dock layer is hidden', async () => {
+  mockDocks()
+  const user = userEvent.setup()
+  renderCheckpoints('/checkpoints?kinds=weighing-area')
+
+  await screen.findByRole('button', {
+    name: `View weighing area ${ALPHA_SCALE.name} (Available)`,
+  })
+
+  await user.keyboard('{Control>}a{/Control}')
+
+  expect(screen.getByText('2 selected')).toBeInTheDocument()
+  expect(
+    screen.getByRole('button', { name: `Deselect weighing area ${ALPHA_SCALE.name}` }),
+  ).toBeInTheDocument()
 })

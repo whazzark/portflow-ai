@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
 
 import { UserFactory } from '#database/factories/user_factory'
 import { WeighingAreaFactory } from '#database/factories/weighing_area_factory'
@@ -224,6 +225,196 @@ test.group('Weighing areas administration', () => {
 
     response.assertStatus(200)
     assert.equal(response.body().data.status, 'ARCHIVED')
+  })
+
+  test('allows archival when the discharge is closed, even without an ended membership', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const { weighingArea } = await createPersistedWeighingAreaUsageScenario({ status: 'CLOSED' })
+    const response = await client
+      .post(`/api/v1/weighing-areas/${weighingArea.id}/archive`)
+      .loginAs(admin)
+      .json({})
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.status, 'ARCHIVED')
+  })
+
+  test('archives a weighing area without a comment, leaving archiveComment null', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.create()
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${area.id}/archive`)
+      .loginAs(admin)
+      .json({})
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.status, 'ARCHIVED')
+    assert.isNull(response.body().data.archiveComment)
+  })
+
+  test('trims a submitted archive comment before storing it', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.create()
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${area.id}/archive`)
+      .loginAs(admin)
+      .json({ comment: '  Decommissioned  ' })
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.archiveComment, 'Decommissioned')
+  })
+
+  test('stores a whitespace-only archive comment as null', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.create()
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${area.id}/archive`)
+      .loginAs(admin)
+      .json({ comment: '   ' })
+
+    response.assertStatus(200)
+    assert.isNull(response.body().data.archiveComment)
+  })
+
+  test('rejects an archive comment over 1000 characters and leaves the area untouched', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.create()
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${area.id}/archive`)
+      .loginAs(admin)
+      .json({ comment: 'a'.repeat(1001) })
+
+    response.assertStatus(422)
+    assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+    await area.refresh()
+    assert.equal(area.status, 'AVAILABLE')
+    assert.isNull(area.archivedAt)
+  })
+
+  test('archiving a previously reactivated weighing area preserves its reactivation context', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const responsible = await UserFactory.apply('active').create()
+    const area = await WeighingAreaFactory.apply('reactivated')
+      .merge({ reactivatedByUserId: responsible.id, reactivationComment: 'Back in service' })
+      .create()
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${area.id}/archive`)
+      .loginAs(admin)
+      .json({ comment: 'Retired again' })
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.status, 'ARCHIVED')
+    assert.isNotNull(response.body().data.reactivatedAt)
+    assert.equal(response.body().data.reactivatedByUserId, responsible.id)
+    assert.equal(response.body().data.reactivationComment, 'Back in service')
+  })
+
+  test('rejects unauthenticated and non-admin archival attempts on the archive route', async ({
+    assert,
+    client,
+  }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const area = await WeighingAreaFactory.create()
+
+    const unauthenticated = await client.post(`/api/v1/weighing-areas/${area.id}/archive`).json({})
+    const unauthorized = await client
+      .post(`/api/v1/weighing-areas/${area.id}/archive`)
+      .loginAs(observer)
+      .json({})
+
+    unauthenticated.assertStatus(401)
+    assert.equal(unauthenticated.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    unauthorized.assertStatus(403)
+    assert.equal(unauthorized.body().error.code, 'E_AUTHORIZATION_FAILURE')
+    await area.refresh()
+    assert.equal(area.status, 'AVAILABLE')
+  })
+
+  test('rejects archiving a weighing area that does not exist', async ({ assert, client }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const missingAreaId = '00000000-0000-4000-8000-000000000000'
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${missingAreaId}/archive`)
+      .loginAs(admin)
+      .json({})
+
+    response.assertStatus(404)
+    assert.equal(response.body().error.code, 'E_WEIGHING_AREA_NOT_FOUND')
+  })
+
+  test('rejects archiving an already archived weighing area and leaves its context unchanged', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const archiver = await UserFactory.apply('active').create()
+    const originalArchivedAt = DateTime.fromISO('2026-01-01T00:00:00.000Z')
+    const area = await WeighingAreaFactory.apply('archived')
+      .merge({
+        archivedAt: originalArchivedAt,
+        archivedByUserId: archiver.id,
+        archiveComment: 'Original reason',
+      })
+      .create()
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${area.id}/archive`)
+      .loginAs(admin)
+      .json({ comment: 'Attempted second archival' })
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_WEIGHING_AREA_ALREADY_ARCHIVED')
+    await area.refresh()
+    assert.equal(area.archivedByUserId, archiver.id)
+    assert.equal(area.archiveComment, 'Original reason')
+    assert.isTrue(area.archivedAt?.equals(originalArchivedAt))
+  })
+
+  test('archives exactly one weighing area when two requests race for it', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.create()
+
+    const [first, second] = await Promise.all([
+      client
+        .post(`/api/v1/weighing-areas/${area.id}/archive`)
+        .loginAs(admin)
+        .json({ comment: 'First' }),
+      client
+        .post(`/api/v1/weighing-areas/${area.id}/archive`)
+        .loginAs(admin)
+        .json({ comment: 'Second' }),
+    ])
+
+    const statuses = [first.status(), second.status()].sort()
+    assert.deepEqual(statuses, [200, 409])
+    const winner = first.status() === 200 ? first : second
+    const loser = first.status() === 200 ? second : first
+    assert.equal(loser.body().error.code, 'E_WEIGHING_AREA_ALREADY_ARCHIVED')
+
+    await area.refresh()
+    assert.equal(area.status, 'ARCHIVED')
+    assert.equal(area.archiveComment, winner.body().data.archiveComment)
   })
 
   test('rejects whitespace-only names during update with the shared validation envelope', async ({

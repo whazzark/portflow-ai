@@ -74,6 +74,7 @@ router
         router.post('/', [controllers.WeighingAreas, 'store']).as('store')
         router.get('/available', [controllers.WeighingAreas, 'available']).as('available')
         router.patch('/:id', [controllers.WeighingAreas, 'update']).as('update')
+        router.post('/archive', [controllers.WeighingAreas, 'archiveMany']).as('archive_many')
         router.post('/:id/archive', [controllers.WeighingAreas, 'archive']).as('archive')
         router.post('/:id/reactivate', [controllers.WeighingAreas, 'reactivate']).as('reactivate')
       })
