@@ -111,6 +111,29 @@ test('reports an out-of-range coordinate on the affected boundary point', async 
   expect(submitButton()).toBeDisabled()
 })
 
+test('adds one draft point at a time and only flags the axis being edited', async () => {
+  const user = userEvent.setup()
+  await startDrawing(user)
+  await user.click(screen.getByText('Coordinates (advanced)'))
+
+  await user.click(screen.getByRole('button', { name: 'Add boundary point' }))
+
+  // A second draft could be filled before the first, writing to the wrong boundary point.
+  expect(screen.getByRole('button', { name: 'Add boundary point' })).toBeDisabled()
+  expect(screen.queryByRole('group', { name: 'Boundary point 5' })).not.toBeInTheDocument()
+
+  const draft = screen.getByRole('group', { name: 'Boundary point 4' })
+  await user.type(within(draft).getByRole('textbox', { name: 'Latitude' }), '13.5')
+
+  expect(within(draft).queryByText('Longitude is required.')).not.toBeInTheDocument()
+  expect(submitButton()).toBeDisabled()
+
+  await user.type(within(draft).getByRole('textbox', { name: 'Longitude' }), '22.5')
+
+  expect(screen.getByTestId('pending-vertex-3')).toHaveTextContent('13.5, 22.5')
+  expect(screen.getByRole('button', { name: 'Add boundary point' })).toBeEnabled()
+})
+
 test('blocks a footprint whose boundary points are all in line', async () => {
   const user = userEvent.setup()
   await startDrawing(user)

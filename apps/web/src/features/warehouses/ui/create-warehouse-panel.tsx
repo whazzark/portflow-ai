@@ -22,21 +22,41 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 
 const ERROR_TITLE = 'Unable to create warehouse'
 
-type Row = { latitude: string; longitude: string; touched: boolean }
+/** Touch is tracked per axis, not per row: a field only shows its error once it has been edited,
+ * and typing a latitude must not flag the longitude beside it as missing. */
+type Row = {
+  latitude: string
+  longitude: string
+  latitudeTouched: boolean
+  longitudeTouched: boolean
+}
 
 const rowFor = (point: LatLng): Row => ({
   latitude: String(point.latitude),
   longitude: String(point.longitude),
-  touched: false,
+  latitudeTouched: false,
+  longitudeTouched: false,
 })
 
-const emptyRow = (): Row => ({ latitude: '', longitude: '', touched: false })
+const emptyRow = (): Row => ({
+  latitude: '',
+  longitude: '',
+  latitudeTouched: false,
+  longitudeTouched: false,
+})
+
+const rowError = (row: Row, axis: CoordinateAxis) => {
+  const touched = axis === 'latitude' ? row.latitudeTouched : row.longitudeTouched
+
+  return touched ? coordinateError(axis, row[axis]) : undefined
+}
 
 /**
  * Keeps a text row per boundary point, driven by the pending footprint (the external source of
- * truth) in one direction and writing back to it — once both axes parse — in the other. Rows past
- * `points.length` are drafts: a keyboard-only administrator adds a row first and it becomes a real
- * boundary point as soon as both of its coordinates parse.
+ * truth) in one direction and writing back to it — once both axes parse — in the other. The row
+ * past `points.length` is a draft: a keyboard-only administrator adds a row first and it becomes a
+ * real boundary point as soon as both of its coordinates parse. Only ever one draft at a time,
+ * since a row's position is what tells a draft from a placed point.
  */
 function useFootprintRows(
   points: LatLng[],
@@ -63,7 +83,8 @@ function useFootprintRows(
             parseCoordinate('longitude', row.longitude) === point.longitude
               ? row.longitude
               : String(point.longitude),
-          touched: row.touched,
+          latitudeTouched: row.latitudeTouched,
+          longitudeTouched: row.longitudeTouched,
         }
       })
 
@@ -73,8 +94,14 @@ function useFootprintRows(
   }, [points])
 
   const change = (index: number, axis: CoordinateAxis, value: string) => {
-    const updated: Row = { ...(rows[index] ?? emptyRow()), [axis]: value, touched: true }
-    setRows((current) => current.map((row, position) => (position === index ? updated : row)))
+    const row = rows[index] ?? emptyRow()
+    const updated: Row =
+      axis === 'latitude'
+        ? { ...row, latitude: value, latitudeTouched: true }
+        : { ...row, longitude: value, longitudeTouched: true }
+    setRows((current) =>
+      current.map((existing, position) => (position === index ? updated : existing)),
+    )
 
     const latitude = parseCoordinate('latitude', updated.latitude)
     const longitude = parseCoordinate('longitude', updated.longitude)
@@ -93,7 +120,11 @@ function useFootprintRows(
   return {
     rows,
     change,
-    addDraftRow: () => setRows((current) => [...current, emptyRow()]),
+    // At most one draft at a time. `change` tells a draft from a placed point by its position, so
+    // a second empty row could be filled out of order: it would write to the wrong point and then
+    // append another one on every keystroke.
+    addDraftRow: () =>
+      setRows((current) => (current.length > points.length ? current : [...current, emptyRow()])),
     dropLastRow: () => setRows((current) => current.slice(0, -1)),
     hasDraftRow: rows.length > points.length,
   }
@@ -135,9 +166,7 @@ export function CreateWarehousePanel({
   )
   const problem = checkFootprint(points)
   const hasCoordinateError = rows.some(
-    (row) =>
-      row.touched &&
-      (coordinateError('latitude', row.latitude) || coordinateError('longitude', row.longitude)),
+    (row) => rowError(row, 'latitude') || rowError(row, 'longitude'),
   )
   const canSubmit = problem === null && !hasCoordinateError && !hasDraftRow
   const nameSchema = z.object({
@@ -235,23 +264,29 @@ export function CreateWarehousePanel({
                       </legend>
                       <CoordinateField
                         axis="latitude"
-                        error={row.touched ? coordinateError('latitude', row.latitude) : undefined}
+                        error={rowError(row, 'latitude')}
                         idPrefix={`warehouse-point-${index}`}
                         onChange={(value) => change(index, 'latitude', value)}
                         text={row.latitude}
                       />
                       <CoordinateField
                         axis="longitude"
-                        error={
-                          row.touched ? coordinateError('longitude', row.longitude) : undefined
-                        }
+                        error={rowError(row, 'longitude')}
                         idPrefix={`warehouse-point-${index}`}
                         onChange={(value) => change(index, 'longitude', value)}
                         text={row.longitude}
                       />
                     </fieldset>
                   ))}
-                  <Button onClick={addDraftRow} size="sm" type="button" variant="outline">
+                  {/* One draft at a time: the row only becomes a boundary point once both of its
+                      coordinates parse, and a second empty row could be filled out of order. */}
+                  <Button
+                    disabled={hasDraftRow}
+                    onClick={addDraftRow}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
                     Add boundary point
                   </Button>
                 </div>
