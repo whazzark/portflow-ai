@@ -48,9 +48,12 @@ export function DockLifecycleActions({ className, dock }: DockLifecycleActionsPr
       setComment('')
       toast.success(archived ? 'Dock reactivated' : 'Dock archived')
     } catch (error) {
-      toast.error(archived ? 'Unable to reactivate dock' : 'Unable to archive dock', {
-        description: parseApiError(error).message,
-      })
+      toast.error(
+        archived
+          ? `Unable to reactivate dock “${dock.name}”`
+          : `Unable to archive dock “${dock.name}”`,
+        { description: parseApiError(error).message },
+      )
     }
   }
 

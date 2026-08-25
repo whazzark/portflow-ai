@@ -43,7 +43,7 @@ export function TruckLifecycleActions({ className, truck }: TruckLifecycleAction
       // on since this view loaded; refresh so the consultation workspace shows it, not just the
       // success path.
       void mutations.refreshTrucks()
-      toast.error('Unable to archive truck', {
+      toast.error(`Unable to archive truck “${truck.registration}”`, {
         description: parseApiError(error).message,
       })
     }

@@ -135,6 +135,8 @@ test('shows a failure toast with the parsed API message when reactivation fails'
   await screen.findByRole('heading', { name: 'Reactivate dock?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('Unable to reactivate dock')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Unable to reactivate dock “${RETIRED_DOCK.name}”`),
+  ).toBeInTheDocument()
   expect(screen.getByText('Dock is already available')).toBeInTheDocument()
 })
