@@ -6,12 +6,16 @@ import ArchiveWarehouseUseCase from '#warehouses/archive/archive_warehouse_use_c
 import ArchiveWarehousesUseCase from '#warehouses/archive/archive_warehouses_use_case'
 import CreateWarehouseUseCase from '#warehouses/create/create_warehouse_use_case'
 import ListWarehousesUseCase from '#warehouses/list/list_warehouses_use_case'
+import ReactivateWarehouseUseCase from '#warehouses/reactivate/reactivate_warehouse_use_case'
+import ReactivateWarehousesUseCase from '#warehouses/reactivate/reactivate_warehouses_use_case'
 import WarehousePolicy from '#warehouses/shared/warehouse_policy'
 import WarehouseTransformer from '#warehouses/shared/warehouse_transformer'
 import {
   archiveWarehousesValidator,
   archiveWarehouseValidator,
   createWarehouseValidator,
+  reactivateWarehousesValidator,
+  reactivateWarehouseValidator,
 } from '#warehouses/shared/warehouse_validator'
 
 @inject()
@@ -21,6 +25,8 @@ export default class WarehousesController {
     private createWarehouseUseCase: CreateWarehouseUseCase,
     private archiveUseCase: ArchiveWarehouseUseCase,
     private archiveManyUseCase: ArchiveWarehousesUseCase,
+    private reactivateUseCase: ReactivateWarehouseUseCase,
+    private reactivateManyUseCase: ReactivateWarehousesUseCase,
   ) {}
 
   async index({ bouncer, serialize }: HttpContext) {
@@ -79,6 +85,48 @@ export default class WarehousesController {
       ids: payload.ids,
       archivedByUserId: user.id,
       archivedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize({
+      updatedWarehouses: WarehouseTransformer.transform(result.updatedWarehouses),
+      blockedWarehouses: result.blockedWarehouses,
+    })
+  }
+
+  async reactivate({ auth, bouncer, params, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(WarehousePolicy).authorize('reactivate')
+
+    const payload = await request.validateUsing(reactivateWarehouseValidator)
+
+    const result = await this.reactivateUseCase.handle({
+      id: params.id,
+      reactivatedByUserId: user.id,
+      reactivatedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    // Mirrors the archive envelope: `reactivatedDoorCount` reports what the restore actually did at
+    // submission time, which need not be the advisory count the confirmation showed.
+    return serialize({
+      warehouse: WarehouseTransformer.transform(result.warehouse),
+      reactivatedDoorCount: result.reactivatedDoorCount,
+    })
+  }
+
+  async reactivateMany({ auth, bouncer, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(WarehousePolicy).authorize('reactivate')
+
+    const payload = await request.validateUsing(reactivateWarehousesValidator)
+
+    const result = await this.reactivateManyUseCase.handle({
+      ids: payload.ids,
+      reactivatedByUserId: user.id,
+      reactivatedAt: DateTime.now(),
       comment: payload.comment,
     })
 

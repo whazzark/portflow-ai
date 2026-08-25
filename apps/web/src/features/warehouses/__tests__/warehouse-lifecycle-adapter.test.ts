@@ -1,14 +1,18 @@
 import { describe, expect, test } from 'vitest'
 import {
   countAvailableDoors,
+  countRestorableDoors,
   describeDoorCascade,
+  describeDoorRestore,
 } from '@/features/warehouses/ui/warehouse-lifecycle-actions'
 import {
   countAvailableDoorsIn,
+  countRestorableDoorsIn,
   describeBulkDoorCascade,
+  describeBulkDoorRestore,
   toBulkLifecycleOutcome,
 } from '@/features/warehouses/warehouse-lifecycle-adapter'
-import { WAREHOUSES } from './support/fixtures'
+import { MIXED_ARCHIVED_WAREHOUSE, WAREHOUSES } from './support/fixtures'
 
 describe('warehouse bulk lifecycle adapter', () => {
   test('maps the bulk result onto the shared outcome shape', () => {
@@ -81,6 +85,60 @@ describe('door cascade counting', () => {
     )
     expect(describeBulkDoorCascade(2, 5)).toBe(
       'These 2 warehouses remain readable but are no longer selectable for new operational work. Their 5 available doors are archived with them.',
+    )
+  })
+})
+
+describe('door restore counting', () => {
+  test('counts only the doors archived with their warehouse', () => {
+    // Mixed Shed holds one door archived by the cascade and one archived on its own.
+    expect(countRestorableDoors(MIXED_ARCHIVED_WAREHOUSE)).toBe(1)
+    // Retired Shed's only door came down with the building.
+    expect(countRestorableDoors(WAREHOUSES[1])).toBe(1)
+  })
+
+  // An available door never carries a live cascade record, so it must not be counted as returning
+  // to service — it never left.
+  test('ignores available doors even if they still carry a stale record', () => {
+    expect(
+      countRestorableDoors({
+        ...WAREHOUSES[1],
+        doors: WAREHOUSES[1].doors?.map((door) => ({ ...door, status: 'AVAILABLE' as const })),
+      }),
+    ).toBe(0)
+  })
+
+  test('counts nothing for a warehouse with no cascaded door', () => {
+    expect(countRestorableDoors(WAREHOUSES[0])).toBe(0)
+    expect(countRestorableDoors({ ...WAREHOUSES[0], doors: undefined })).toBe(0)
+  })
+
+  test('sums restorable doors across a selection', () => {
+    expect(countRestorableDoorsIn([MIXED_ARCHIVED_WAREHOUSE, WAREHOUSES[1]])).toBe(2)
+    expect(countRestorableDoorsIn([])).toBe(0)
+  })
+
+  test('describes the single restore in agreeing numbers', () => {
+    expect(describeDoorRestore(0)).toContain('No door returns to service')
+    expect(describeDoorRestore(1)).toContain('Its 1 door archived with it returns to service')
+    expect(describeDoorRestore(3)).toContain('Its 3 doors archived with it return to service')
+  })
+
+  test('keeps every bulk restore clause agreeing when either count is one or zero', () => {
+    expect(describeBulkDoorRestore(3, 0)).toBe(
+      'These 3 warehouses become selectable again for new operational work. No door returns to service with them.',
+    )
+    expect(describeBulkDoorRestore(1, 0)).toBe(
+      'This 1 warehouse becomes selectable again for new operational work. No door returns to service with it.',
+    )
+    expect(describeBulkDoorRestore(1, 1)).toBe(
+      'This 1 warehouse becomes selectable again for new operational work. Its 1 door archived with it returns to service.',
+    )
+    expect(describeBulkDoorRestore(3, 1)).toBe(
+      'These 3 warehouses become selectable again for new operational work. Their 1 door archived with them returns to service.',
+    )
+    expect(describeBulkDoorRestore(2, 5)).toBe(
+      'These 2 warehouses become selectable again for new operational work. Their 5 doors archived with them return to service.',
     )
   })
 })

@@ -9,10 +9,12 @@ import { WarehouseLifecycleActions } from '@/features/warehouses/ui/warehouse-li
 import { formatDateTime } from '@/helpers/dates'
 
 export function WarehouseDetails({
-  canArchive = false,
+  canManageLifecycle = false,
   warehouse,
 }: {
-  canArchive?: boolean
+  /** Gates both lifecycle directions — an available warehouse can be archived, an archived one
+   * reactivated — so it is named for the right rather than for one of the two actions. */
+  canManageLifecycle?: boolean
   warehouse: WarehouseWithDoorsDto
 }) {
   const hasLifecycleContext = Boolean(warehouse.archivedAt ?? warehouse.reactivatedAt)
@@ -51,7 +53,7 @@ export function WarehouseDetails({
           </dl>
         </section>
       )}
-      {canArchive && warehouse.status === 'AVAILABLE' && (
+      {canManageLifecycle && (
         <SheetFooter className="shrink-0 sm:flex-row sm:items-center sm:justify-end">
           <WarehouseLifecycleActions warehouse={warehouse} />
         </SheetFooter>

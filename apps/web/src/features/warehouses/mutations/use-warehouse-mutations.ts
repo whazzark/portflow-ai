@@ -30,5 +30,21 @@ export function useWarehouseMutations() {
   // after reading the outcome rather than on every settled request.
   const archiveMany = useMutation(tuyauQuery.warehouses.archiveMany.mutationOptions())
 
-  return { archive, archiveMany, create, refreshWarehouses: invalidateWarehouses }
+  const reactivate = useMutation(
+    tuyauQuery.warehouses.reactivate.mutationOptions({
+      onSuccess: () => invalidateWarehouses(),
+    }),
+  )
+
+  // Same reasoning as `archiveMany`: the outcome has to be read before the list is refreshed.
+  const reactivateMany = useMutation(tuyauQuery.warehouses.reactivateMany.mutationOptions())
+
+  return {
+    archive,
+    archiveMany,
+    create,
+    reactivate,
+    reactivateMany,
+    refreshWarehouses: invalidateWarehouses,
+  }
 }

@@ -631,4 +631,28 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'warehouses.reactivate_many': {
+    methods: ["POST"]
+    pattern: '/api/v1/warehouses/reactivate'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#warehouses/shared/warehouse_validator').reactivateWarehousesValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#warehouses/shared/warehouse_validator').reactivateWarehousesValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['reactivateMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['reactivateMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'warehouses.reactivate': {
+    methods: ["POST"]
+    pattern: '/api/v1/warehouses/:id/reactivate'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#warehouses/shared/warehouse_validator').reactivateWarehouseValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#warehouses/shared/warehouse_validator').reactivateWarehouseValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['reactivate']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouses_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
 }
