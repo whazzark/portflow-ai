@@ -11,6 +11,7 @@ import UnusedChecker from '#site_references/shared/unused_checker'
 import UsedChecker from '#site_references/shared/used_checker'
 import ArchiveTruckUseCase from '#trucks/archive/archive_truck_use_case'
 import {
+  SuspendedTruckReadOnlyException,
   TruckAlreadyArchivedException,
   TruckInUseException,
   TruckNotFoundException,
@@ -154,5 +155,30 @@ test.group('ArchiveTruckUseCase', (group) => {
     })
 
     assert.equal(archived.status, 'ARCHIVED')
+  })
+
+  test('refuses to archive a suspended truck and leaves it suspended', async ({ assert }) => {
+    const actor = await UserFactory.apply('active').create()
+    const truck = await TruckFactory.apply('suspended')
+      .merge({ suspensionComment: 'In the workshop' })
+      .create()
+    app.container.swap(SiteReferenceUsageChecker, () => app.container.make(UnusedChecker))
+
+    await assert.rejects(
+      () =>
+        (async () =>
+          (await app.container.make(ArchiveTruckUseCase)).handle({
+            id: truck.id,
+            archivedByUserId: actor.id,
+            archivedAt: DateTime.now(),
+            comment: null,
+          }))(),
+      SuspendedTruckReadOnlyException.message,
+    )
+
+    await truck.refresh()
+    assert.equal(truck.status, 'SUSPENDED')
+    assert.equal(truck.suspensionComment, 'In the workshop')
+    assert.isNull(truck.archivedAt)
   })
 })

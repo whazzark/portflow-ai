@@ -96,4 +96,31 @@ test.group('ArchiveTrucksUseCase', (group) => {
     assert.equal(result.blockedTrucks.length, 2)
     assert.isTrue(result.blockedTrucks.every((blocker) => blocker.reason === 'ALREADY_ARCHIVED'))
   })
+
+  test('reports a suspended truck with its own reason and still archives the rest', async ({
+    assert,
+  }) => {
+    const actor = await UserFactory.apply('active').create()
+    const available = await TruckFactory.create()
+    const suspended = await TruckFactory.apply('suspended').create()
+    app.container.swap(SiteReferenceUsageChecker, () => app.container.make(UnusedChecker))
+
+    const result = await (await app.container.make(ArchiveTrucksUseCase)).handle({
+      ids: [available.id, suspended.id],
+      archivedByUserId: actor.id,
+      archivedAt: DateTime.now(),
+      comment: null,
+    })
+
+    assert.deepEqual(
+      result.updatedTrucks.map((truck) => truck.id),
+      [available.id],
+    )
+    assert.deepEqual(
+      result.blockedTrucks.map((blocker) => [blocker.id, blocker.reason]),
+      [[suspended.id, 'SUSPENDED']],
+    )
+    await suspended.refresh()
+    assert.equal(suspended.status, 'SUSPENDED')
+  })
 })

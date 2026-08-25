@@ -1,0 +1,243 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { HttpResponse, http } from 'msw'
+import { expect, test } from 'vitest'
+
+import type { TruckDto } from '@/features/trucks/types'
+import { server } from '@/test/msw/server'
+import {
+  ACTIVE_OPERATIONS_ADMIN,
+  ACTIVE_OPERATIONS_LEAD,
+  API_BASE_URL,
+  SUSPEND_AVAILABLE_TRUCKS,
+  SUSPEND_TRUCKS,
+} from '../support/fixtures'
+import { mockTrucks, queryTruckTab, renderTrucks, truckTab } from '../support/test-helpers'
+
+const COMPANY_NAME = 'Atlantic Transport'
+const SUSPENDED_TRUCK = SUSPEND_TRUCKS[1]
+
+function details() {
+  return screen.getByRole('region', { hidden: true, name: 'Truck details' })
+}
+
+async function openTruck(user: ReturnType<typeof userEvent.setup>, target: TruckDto, tab?: RegExp) {
+  await screen.findByRole('list', { name: 'Available trucks' })
+  if (tab) {
+    await user.click(truckTab(tab))
+  }
+  await user.click(
+    await screen.findByRole('button', { name: `${target.registration}, ${COMPANY_NAME}` }),
+  )
+}
+
+test('suspends a truck with a comment and moves it to the suspended tab without a manual refresh', async () => {
+  const user = userEvent.setup()
+  const target = SUSPEND_TRUCKS[0]
+  let currentComplete = SUSPEND_TRUCKS
+  let currentAvailable = SUSPEND_AVAILABLE_TRUCKS
+  let received: { comment: string | null } | null = null
+
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_ADMIN,
+    complete: SUSPEND_TRUCKS,
+    available: SUSPEND_AVAILABLE_TRUCKS,
+  })
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/trucks`, () => HttpResponse.json({ data: currentComplete })),
+    http.get(`${API_BASE_URL}/api/v1/trucks/available`, () =>
+      HttpResponse.json({ data: currentAvailable }),
+    ),
+    http.post(`${API_BASE_URL}/api/v1/trucks/${target.id}/suspend`, async ({ request }) => {
+      received = (await request.json()) as { comment: string | null }
+      const suspended: TruckDto = {
+        ...target,
+        status: 'SUSPENDED',
+        suspendedAt: '2026-08-25T09:00:00.000Z',
+        suspendedByUserId: 'operations-admin-1',
+        suspendedBy: { id: 'operations-admin-1', firstName: 'Olivia', lastName: 'Observer' },
+        suspensionComment: received.comment,
+      }
+      currentComplete = currentComplete.map((truck) => (truck.id === target.id ? suspended : truck))
+      currentAvailable = currentAvailable.filter((truck) => truck.id !== target.id)
+      return HttpResponse.json({ data: suspended })
+    }),
+  )
+
+  renderTrucks()
+  await openTruck(user, target)
+
+  await user.click(within(details()).getByRole('button', { name: 'Suspend' }))
+  await user.type(
+    await screen.findByLabelText('Comment (optional)'),
+    'Gearbox failure, in the workshop',
+  )
+  await user.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Suspend' }),
+  )
+
+  await waitFor(() => {
+    expect(received).toEqual({ comment: 'Gearbox failure, in the workshop' })
+  })
+  await waitFor(() => {
+    expect(truckTab(/Suspended/)).toHaveTextContent('(2)')
+  })
+  expect(truckTab(/Available/)).toHaveTextContent('(0)')
+})
+
+test('shows the suspension context and offers no lifecycle action for a suspended truck', async () => {
+  const user = userEvent.setup()
+  const target = SUSPEND_TRUCKS[1]
+
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_ADMIN,
+    complete: SUSPEND_TRUCKS,
+    available: SUSPEND_AVAILABLE_TRUCKS,
+  })
+
+  renderTrucks()
+  await openTruck(user, target, /Suspended/)
+
+  const panel = details()
+  // The badge and the "Truck status" field both read "Suspended".
+  expect(within(panel).getAllByText('Suspended').length).toBeGreaterThan(0)
+  expect(within(panel).getByText('Suspension context')).toBeInTheDocument()
+  expect(within(panel).getByText('Gearbox failure, awaiting workshop slot')).toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Suspend' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
+  expect(within(panel).getByTestId('truck-suspended-notice')).toHaveTextContent(
+    /returned to service/i,
+  )
+})
+
+test('keeps the workspace on the suspended tab when a suspended truck is selected', async () => {
+  const user = userEvent.setup()
+  const target = SUSPEND_TRUCKS[1]
+
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_ADMIN,
+    complete: SUSPEND_TRUCKS,
+    available: SUSPEND_AVAILABLE_TRUCKS,
+  })
+
+  renderTrucks()
+  await openTruck(user, target, /Suspended/)
+
+  // Before the tri-state fix this bounced to the available tab, where the truck is not listed,
+  // and the "selection no longer valid" effect then cleared it.
+  await waitFor(() => {
+    expect(truckTab(/Suspended/)).toHaveAttribute('aria-selected', 'true')
+  })
+  // The open details sheet marks the directory behind it aria-hidden.
+  expect(
+    await screen.findByRole('button', {
+      name: `${target.registration}, ${COMPANY_NAME}`,
+      hidden: true,
+    }),
+  ).toBeInTheDocument()
+})
+
+test('offers no selection or bulk toolbar in the suspended tab', async () => {
+  const user = userEvent.setup()
+
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_ADMIN,
+    complete: SUSPEND_TRUCKS,
+    available: SUSPEND_AVAILABLE_TRUCKS,
+  })
+
+  renderTrucks()
+  await screen.findByRole('list', { name: 'Available trucks' })
+  await user.click(truckTab(/Suspended/))
+
+  const list = await screen.findByRole('list', { name: 'Suspended trucks' })
+  expect(within(list).queryByRole('checkbox')).not.toBeInTheDocument()
+})
+
+test('refreshes to the authoritative state when suspension is refused', async () => {
+  const user = userEvent.setup()
+  const target = SUSPEND_TRUCKS[0]
+  let completeRequests = 0
+
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_ADMIN,
+    complete: SUSPEND_TRUCKS,
+    available: SUSPEND_AVAILABLE_TRUCKS,
+    onCompleteRequest: () => {
+      completeRequests += 1
+    },
+  })
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/trucks/${target.id}/suspend`, () =>
+      HttpResponse.json(
+        {
+          error: { code: 'E_TRUCK_ALREADY_SUSPENDED', message: 'Truck is already suspended' },
+        },
+        { status: 409 },
+      ),
+    ),
+  )
+
+  renderTrucks()
+  await openTruck(user, target)
+  const requestsBefore = completeRequests
+
+  await user.click(within(details()).getByRole('button', { name: 'Suspend' }))
+  await user.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Suspend' }),
+  )
+
+  expect(await screen.findByText(/Unable to suspend truck/)).toBeInTheDocument()
+  await waitFor(() => {
+    expect(completeRequests).toBeGreaterThan(requestsBefore)
+  })
+})
+
+test('shows the suspended tab to a non-administrator, without the archived one', async () => {
+  const user = userEvent.setup()
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_LEAD,
+    complete: SUSPEND_TRUCKS,
+    available: SUSPEND_AVAILABLE_TRUCKS,
+  })
+
+  renderTrucks()
+  await screen.findByRole('list', { name: 'Available trucks' })
+
+  // FR-016: an operational user must be able to tell that a truck they were using is out of
+  // service, which is not the same as being allowed into the archived collection.
+  expect(truckTab(/Suspended \(1\)/)).toBeInTheDocument()
+  expect(queryTruckTab(/Archived/)).not.toBeInTheDocument()
+  // A suspended truck is not offered for new work: it stays out of the available list.
+  expect(screen.queryByText('TT-802-PF')).not.toBeInTheDocument()
+
+  await user.click(truckTab(/Suspended/))
+  expect(await screen.findByText('TT-802-PF')).toBeInTheDocument()
+})
+
+test('withholds the responsible administrator from a non-administrator', async () => {
+  const user = userEvent.setup()
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_LEAD,
+    complete: SUSPEND_TRUCKS,
+    available: SUSPEND_AVAILABLE_TRUCKS,
+  })
+
+  renderTrucks()
+  await screen.findByRole('list', { name: 'Available trucks' })
+  await user.click(truckTab(/Suspended/))
+  await user.click(
+    await screen.findByRole('button', {
+      name: `${SUSPENDED_TRUCK.registration}, Atlantic Transport`,
+    }),
+  )
+
+  const panel = await screen.findByRole('region', { hidden: true, name: 'Truck details' })
+  // The date and the comment explain why the truck is no longer offered; who suspended it is
+  // administration context (FR-015).
+  expect(within(panel).getByText(SUSPENDED_TRUCK.suspensionComment as string)).toBeInTheDocument()
+  expect(within(panel).queryByText('Suspended by')).not.toBeInTheDocument()
+  expect(within(panel).getByText('Suspended at')).toBeInTheDocument()
+})

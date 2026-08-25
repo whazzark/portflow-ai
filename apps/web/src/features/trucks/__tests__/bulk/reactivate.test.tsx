@@ -9,7 +9,7 @@ import {
   BULK_ARCHIVED_TRUCKS,
   BULK_TRUCKS,
 } from '../support/fixtures'
-import { mockTrucks, renderTrucks } from '../support/test-helpers'
+import { mockTrucks, renderTrucks, truckTab } from '../support/test-helpers'
 
 test('reactivates the selected trucks with one shared request', async () => {
   let requestBody: unknown
@@ -44,7 +44,7 @@ test('reactivates the selected trucks with one shared request', async () => {
 
   renderTrucks()
   await screen.findByRole('list', { name: 'Available trucks' })
-  fireEvent.click(screen.getByRole('tab', { name: /Archived/ }))
+  fireEvent.click(truckTab(/Archived/))
   const list = await screen.findByRole('list', { name: 'Archived trucks' })
   within(list)
   fireEvent.click(screen.getByRole('checkbox', { name: 'Select all archived trucks' }))
@@ -80,7 +80,7 @@ test('clears the bulk selection from the floating action bar in the archived tab
 
   renderTrucks()
   await screen.findByRole('list', { name: 'Available trucks' })
-  fireEvent.click(screen.getByRole('tab', { name: /Archived/ }))
+  fireEvent.click(truckTab(/Archived/))
   const list = await screen.findByRole('list', { name: 'Archived trucks' })
   fireEvent.click(within(list).getByRole('checkbox', { name: 'Select truck JJ-004-PF' }))
 
@@ -100,7 +100,7 @@ test('does not open the truck details panel when selecting an archived truck', a
 
   renderTrucks()
   await screen.findByRole('list', { name: 'Available trucks' })
-  fireEvent.click(screen.getByRole('tab', { name: /Archived/ }))
+  fireEvent.click(truckTab(/Archived/))
   const list = await screen.findByRole('list', { name: 'Archived trucks' })
   fireEvent.click(within(list).getByRole('checkbox', { name: 'Select truck JJ-004-PF' }))
 

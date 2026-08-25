@@ -1,3 +1,4 @@
+import { screen, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 
 import type { SessionUser } from '@/features/auth/context/session-context'
@@ -15,6 +16,7 @@ type MockTrucksOptions = {
   companies?: Array<Pick<TransportCompanyDto, 'id' | 'name' | 'status'>>
   onCompleteRequest?: () => void
   onAvailableRequest?: () => void
+  onSuspendedRequest?: () => void
 }
 
 export function mockTrucks({
@@ -24,6 +26,7 @@ export function mockTrucks({
   companies = TRANSPORT_COMPANIES,
   onCompleteRequest,
   onAvailableRequest,
+  onSuspendedRequest,
 }: MockTrucksOptions = {}) {
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
@@ -43,9 +46,44 @@ export function mockTrucks({
       onAvailableRequest?.()
       return HttpResponse.json({ data: available })
     }),
+    // Read by non-administrators only, and without the lifecycle actors the complete
+    // collection carries — the endpoint withholds them.
+    http.get(`${API_BASE_URL}/api/v1/trucks/suspended`, () => {
+      onSuspendedRequest?.()
+      return HttpResponse.json({
+        data: complete
+          .filter((truck) => truck.status === 'SUSPENDED')
+          .map(({ archivedBy, reactivatedBy, suspendedBy, ...truck }) => truck),
+      })
+    }),
   )
 }
 
-export function renderTrucks(initialPath = '/transport-resources?resource=trucks') {
+export function renderTrucks(initialPath = '/transport-resources') {
   return renderApp(initialPath)
+}
+
+/**
+ * Scopes tab queries to the truck directory.
+ *
+ * Two things make an unscoped `getByRole('tab', ...)` wrong here. The transport-resources
+ * workspace renders a transport-company tablist with the same Available/Archived labels, so the
+ * query is ambiguous; and opening truck details opens a sheet, which marks the directory behind it
+ * `aria-hidden`, so the tabs drop out of the default accessibility tree.
+ */
+const truckTablist = () =>
+  within(screen.getByRole('tablist', { name: 'Truck status', hidden: true }))
+
+export function truckTab(name: string | RegExp) {
+  return truckTablist().getByRole('tab', { name, hidden: true })
+}
+
+export function queryTruckTab(name: string | RegExp) {
+  return truckTablist().queryByRole('tab', { name, hidden: true })
+}
+
+export async function findTruckTab(name: string | RegExp) {
+  const tablist = await screen.findByRole('tablist', { name: 'Truck status', hidden: true })
+
+  return within(tablist).findByRole('tab', { name, hidden: true })
 }

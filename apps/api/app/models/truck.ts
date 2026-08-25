@@ -8,7 +8,7 @@ import { TruckSchema } from '#database/schema'
 import TransportCompany from '#models/transport_company'
 import User from '#models/user'
 
-export const TRUCK_STATUSES = ['AVAILABLE', 'ARCHIVED'] as const
+export const TRUCK_STATUSES = ['AVAILABLE', 'ARCHIVED', 'SUSPENDED'] as const
 export type TruckStatus = (typeof TRUCK_STATUSES)[number]
 
 export default class Truck extends TruckSchema {
@@ -21,6 +21,9 @@ export default class Truck extends TruckSchema {
   declare reactivatedAt: DateTime | null
   declare reactivatedByUserId: string | null
   declare reactivationComment: string | null
+  declare suspendedAt: DateTime | null
+  declare suspendedByUserId: string | null
+  declare suspensionComment: string | null
 
   @column({
     consume: (value) => new Decimal(value),
@@ -38,6 +41,9 @@ export default class Truck extends TruckSchema {
 
   @belongsTo(() => User, { foreignKey: 'reactivatedByUserId' })
   declare reactivatedBy: BelongsTo<typeof User>
+
+  @belongsTo(() => User, { foreignKey: 'suspendedByUserId' })
+  declare suspendedBy: BelongsTo<typeof User>
 
   @beforeCreate()
   static assignId(truck: Truck) {

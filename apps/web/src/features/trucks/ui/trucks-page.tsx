@@ -20,28 +20,32 @@ import { CreateTruckPanel } from '@/features/trucks/ui/create-truck-panel'
 import { EditTruckPanel } from '@/features/trucks/ui/edit-truck-panel'
 import { TruckBulkLifecycleActions } from '@/features/trucks/ui/truck-bulk-lifecycle-actions'
 import { TruckDetails } from '@/features/trucks/ui/truck-details'
-import { TruckOverview } from '@/features/trucks/ui/truck-overview'
 import { TruckSection } from '@/features/trucks/ui/truck-section'
 import { TrucksError } from '@/features/trucks/ui/trucks-error'
 
 const transportResourcesRoute = getRouteApi('/_authenticated/transport-resources')
 
-type TrucksPageProps = {
-  embedded?: boolean
-}
-
-export function TrucksPage({ embedded = false }: TrucksPageProps) {
+export function TrucksPage() {
   const user = useAuthenticatedUser()
   const administrator = isAdministrator(user)
   const { transportCompanyId, truckStatus, truckSearch, truckId, truckMode } =
     transportResourcesRoute.useSearch()
   const navigate = transportResourcesRoute.useNavigate()
   const trucksQuery = useQuery(administrator ? truckQueries.all() : truckQueries.available())
+  // Administrators already receive suspended trucks in the complete collection, with their
+  // lifecycle actors; everyone else reads them here, without.
+  const suspendedTrucksQuery = useQuery({
+    ...truckQueries.suspended(),
+    enabled: !administrator,
+  })
   const companiesQuery = useQuery(transportCompanyQueries.all())
   const availableCompaniesQuery = useQuery(transportCompanyQueries.available())
   const companies = companiesQuery.data?.data ?? []
   const availableCompanies = availableCompaniesQuery.data?.data
-  const trucks = (trucksQuery.data?.data ?? []) as TruckDto[]
+  const trucks = [
+    ...((trucksQuery.data?.data ?? []) as TruckDto[]),
+    ...((suspendedTrucksQuery.data?.data ?? []) as unknown as TruckDto[]),
+  ]
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const truckMutations = useTruckMutations()
   const scopedTrucks = transportCompanyId
@@ -94,11 +98,17 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
 
   const [selectedTruckIds, setSelectedTruckIds] = useState<Set<string>>(new Set())
   const [blockedTrucks, setBlockedTrucks] = useState<BulkTruckLifecycleBlocker[]>([])
-  const activeLifecycleStatus = truckStatus === 'archived' ? 'ARCHIVED' : 'AVAILABLE'
-  // Selection is offered in both tabs (archive here, reactivate in the archived tab), scoped to
-  // the trucks currently listed in the active lifecycle tab and transport-company filter: a
-  // truck's own lifecycle status determines which single tab lists it, so pruning by the visible
+  const activeLifecycleStatus =
+    truckStatus === 'archived'
+      ? 'ARCHIVED'
+      : truckStatus === 'suspended'
+        ? 'SUSPENDED'
+        : 'AVAILABLE'
+  // Selection is offered in the available and archived tabs (archive and reactivate respectively),
+  // scoped to the trucks currently listed in the active lifecycle tab and transport-company filter:
+  // a truck's own lifecycle status determines which single tab lists it, so pruning by the visible
   // list also prevents a selection made in one tab from leaking into the other direction's action.
+  // The suspended tab carries no bulk action, so it offers no selection at all.
   const visibleSelectedTruckIds = useMemo(() => {
     const visibleIds = new Set(
       scopedTrucks
@@ -151,7 +161,12 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
       return
     }
 
-    const selectedStatus = selected.status === 'ARCHIVED' ? 'archived' : 'available'
+    const selectedStatus =
+      selected.status === 'ARCHIVED'
+        ? 'archived'
+        : selected.status === 'SUSPENDED'
+          ? 'suspended'
+          : 'available'
     if (selectedStatus !== truckStatus) {
       void navigate({
         replace: true,
@@ -172,7 +187,13 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
 
   const available = scopedTrucks.filter((truck) => truck.status === 'AVAILABLE')
   const archived = administrator ? scopedTrucks.filter((truck) => truck.status === 'ARCHIVED') : []
-  const selectedTrucks = truckStatus === 'archived' && administrator ? archived : available
+  const suspended = scopedTrucks.filter((truck) => truck.status === 'SUSPENDED')
+  const selectedTrucks =
+    truckStatus === 'suspended'
+      ? suspended
+      : administrator && truckStatus === 'archived'
+        ? archived
+        : available
   const toggleTruck = (id: string) => {
     void navigate({
       search: (previous) => ({
@@ -184,15 +205,16 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
   const selectTruck = (id: string) => {
     void navigate({ search: (previous) => ({ ...previous, truckId: id }) })
   }
+  // The row menu edits a truck that is not necessarily the selected one, so it carries the
+  // selection and the mode in a single navigation.
+  const editTruck = (id: string) => {
+    void navigate({ search: (previous) => ({ ...previous, truckId: id, truckMode: 'edit' }) })
+  }
 
   const directory = (
     <Card
       aria-label="Truck directory"
-      className={
-        embedded
-          ? 'h-[min(42rem,70svh)] min-h-[28rem] gap-0 py-0 lg:h-auto lg:min-h-0'
-          : 'h-[min(42rem,70svh)] min-h-[28rem] gap-0 py-0 lg:h-auto lg:min-h-0'
-      }
+      className="h-[min(42rem,70svh)] min-h-[28rem] gap-0 py-0 lg:h-auto lg:min-h-0"
     >
       <CardContent className="flex min-h-0 flex-1 flex-col px-0">
         <div className="flex items-center gap-2 border-b p-3">
@@ -228,7 +250,11 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
         <Tabs
           className="min-h-0 flex-1 gap-0"
           onValueChange={(value) => {
-            if (value === 'available' || (administrator && value === 'archived')) {
+            if (
+              value === 'available' ||
+              value === 'suspended' ||
+              (administrator && value === 'archived')
+            ) {
               void navigate({
                 search: (previous) => ({
                   ...previous,
@@ -238,12 +264,16 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
               })
             }
           }}
-          value={administrator ? truckStatus : 'available'}
+          value={truckStatus}
         >
           <TabsList aria-label="Truck status" className="mx-3 mt-3" variant="line">
             <TabsTrigger value="available">
               Available{' '}
               <span className="text-muted-foreground tabular-nums">({available.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="suspended">
+              Suspended{' '}
+              <span className="text-muted-foreground tabular-nums">({suspended.length})</span>
             </TabsTrigger>
             {administrator && (
               <TabsTrigger value="archived">
@@ -253,9 +283,11 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
             )}
           </TabsList>
           <TabsContent className="min-h-0" value="available">
-            {(truckStatus === 'available' || !administrator) && (
+            {truckStatus === 'available' && (
               <TruckSection
+                canAdminister={administrator}
                 lifecycle="available"
+                onEdit={editTruck}
                 onSelect={toggleTruck}
                 onSelectionChange={(checked, ids) => {
                   setSelectedTruckIds((previous) => {
@@ -271,6 +303,7 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
                   })
                   setBlockedTrucks([])
                 }}
+                onView={selectTruck}
                 search={truckSearch}
                 selectable={administrator}
                 selectedId={truckId}
@@ -280,11 +313,29 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
               />
             )}
           </TabsContent>
+          <TabsContent className="min-h-0" value="suspended">
+            {truckStatus === 'suspended' && (
+              <TruckSection
+                canAdminister={administrator}
+                lifecycle="suspended"
+                onEdit={editTruck}
+                onSelect={toggleTruck}
+                onView={selectTruck}
+                search={truckSearch}
+                selectable={false}
+                selectedId={truckId}
+                trucks={selectedTrucks}
+                companies={companies}
+              />
+            )}
+          </TabsContent>
           {administrator && (
             <TabsContent className="min-h-0" value="archived">
               {truckStatus === 'archived' && (
                 <TruckSection
+                  canAdminister={administrator}
                   lifecycle="archived"
+                  onEdit={editTruck}
                   onSelect={toggleTruck}
                   onSelectionChange={(checked, ids) => {
                     setSelectedTruckIds((previous) => {
@@ -300,6 +351,7 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
                     })
                     setBlockedTrucks([])
                   }}
+                  onView={selectTruck}
                   search={truckSearch}
                   selectable={administrator}
                   selectedId={truckId}
@@ -377,7 +429,8 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
     />
   )
 
-  const bulkLifecycleActions = administrator && (
+  // Suspension is a one-truck-at-a-time action, so the suspended tab has no bulk toolbar.
+  const bulkLifecycleActions = administrator && truckStatus !== 'suspended' && (
     <TruckBulkLifecycleActions
       blockedTrucks={blockedTrucks}
       isArchived={truckStatus === 'archived'}
@@ -393,53 +446,23 @@ export function TrucksPage({ embedded = false }: TrucksPageProps) {
     />
   )
 
-  if (embedded) {
-    return (
-      <div className="relative">
-        {directory}
-        {createSheet}
-        <Sheet
-          onOpenChange={(open) => {
-            if (!open) {
-              void navigate({
-                search: (previous) => ({ ...previous, truckId: undefined, truckMode: 'view' }),
-              })
-            }
-          }}
-          open={Boolean(selected)}
-        >
-          <SheetContent aria-label="Truck details" className="overflow-y-auto">
-            {isEditingTruck ? editTruckPanel : truckDetails}
-          </SheetContent>
-        </Sheet>
-        {bulkLifecycleActions}
-      </div>
-    )
-  }
-
   return (
-    <div className="relative grid min-h-0 flex-1 gap-4 lg:h-full lg:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)] lg:overflow-hidden">
+    <div className="relative">
       {directory}
       {createSheet}
-      <Card className="min-h-[24rem] gap-0 py-0 lg:min-h-0">
-        {selected ? (
-          truckDetails
-        ) : (
-          <TruckOverview
-            archivedCount={administrator ? archived.length : undefined}
-            availableCount={available.length}
-          />
-        )}
-      </Card>
       <Sheet
         onOpenChange={(open) => {
           if (!open) {
-            stopEditingTruck()
+            void navigate({
+              search: (previous) => ({ ...previous, truckId: undefined, truckMode: 'view' }),
+            })
           }
         }}
-        open={Boolean(isEditingTruck)}
+        open={Boolean(selected)}
       >
-        <SheetContent className="overflow-hidden sm:max-w-lg">{editTruckPanel}</SheetContent>
+        <SheetContent aria-label="Truck details" className="overflow-y-auto">
+          {isEditingTruck ? editTruckPanel : truckDetails}
+        </SheetContent>
       </Sheet>
       {bulkLifecycleActions}
     </div>

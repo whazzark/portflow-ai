@@ -3,6 +3,7 @@ import { DateTime } from 'luxon'
 
 import TruckRepository from '#trucks/shared/repositories/truck_repository'
 import {
+  SuspendedTruckReadOnlyException,
   TruckAlreadyAvailableException,
   TruckNotFoundException,
   TruckTransportCompanyArchivedException,
@@ -35,6 +36,9 @@ export default class ReactivateTruckUseCase {
     }
     if (result.kind === 'TRANSPORT_COMPANY_ARCHIVED') {
       throw new TruckTransportCompanyArchivedException()
+    }
+    if (result.kind === 'SUSPENDED') {
+      throw new SuspendedTruckReadOnlyException()
     }
     return result.truck
   }

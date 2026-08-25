@@ -296,7 +296,7 @@ export function TransportResourcesWorkspace() {
         )}
       </Card>
 
-      <TrucksPage embedded={true} />
+      <TrucksPage />
 
       <Sheet
         onOpenChange={(open) => {

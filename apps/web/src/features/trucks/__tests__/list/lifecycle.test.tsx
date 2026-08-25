@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 
 import { ACTIVE_OPERATIONS_ADMIN, TRUCKS } from '../support/fixtures'
-import { mockTrucks, renderTrucks } from '../support/test-helpers'
+import { mockTrucks, queryTruckTab, renderTrucks, truckTab } from '../support/test-helpers'
 
 test('shows available trucks and their companies to every active role', async () => {
   mockTrucks()
@@ -13,11 +13,8 @@ test('shows available trucks and their companies to every active role', async ()
 
   expect(within(available).getByText('AA-101-PF')).toBeInTheDocument()
   expect(within(available).getByText('Atlantic Transport')).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Available \(2\)/ })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  )
-  expect(screen.queryByRole('tab', { name: /Archived/ })).not.toBeInTheDocument()
+  expect(truckTab(/Available \(2\)/)).toHaveAttribute('aria-selected', 'true')
+  expect(queryTruckTab(/Archived/)).not.toBeInTheDocument()
 })
 
 test('shows distinct archived rows and independent company status to administrators', async () => {
@@ -26,7 +23,7 @@ test('shows distinct archived rows and independent company status to administrat
 
   renderTrucks()
   await screen.findByRole('list', { name: 'Available trucks' })
-  await user.click(screen.getByRole('tab', { name: /Archived \(1\)/ }))
+  await user.click(truckTab(/Archived \(1\)/))
 
   const archived = await screen.findByRole('list', { name: 'Archived trucks' })
   expect(within(archived).getByText('CC-303-PF')).toBeInTheDocument()
@@ -45,7 +42,7 @@ test('keeps empty permitted lifecycle collections explicit and selectable', asyn
 
   renderTrucks()
   expect(await screen.findByText('No available trucks')).toBeInTheDocument()
-  await user.click(screen.getByRole('tab', { name: /Archived \(0\)/ }))
+  await user.click(truckTab(/Archived \(0\)/))
   expect(await screen.findByText('No archived trucks')).toBeInTheDocument()
 })
 

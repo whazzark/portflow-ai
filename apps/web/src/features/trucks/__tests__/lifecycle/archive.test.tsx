@@ -43,7 +43,7 @@ test('archives a truck with a comment and moves it to the archived tab without a
   fireEvent.click(
     await screen.findByRole('button', { name: `${target.registration}, Atlantic Transport` }),
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.change(within(dialog).getByRole('textbox', { name: 'Comment (optional)' }), {
     target: { value: 'Returned to the leasing company' },
@@ -83,7 +83,7 @@ test('archives a truck without a comment', async () => {
   fireEvent.click(
     await screen.findByRole('button', { name: `${target.registration}, Atlantic Transport` }),
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
@@ -106,7 +106,7 @@ test('cancelling the confirmation dialog performs no mutation and leaves the tru
   fireEvent.click(
     await screen.findByRole('button', { name: `${target.registration}, Atlantic Transport` }),
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
 
@@ -136,7 +136,7 @@ test('shows a distinct in-use error and keeps the truck available', async () => 
   fireEvent.click(
     await screen.findByRole('button', { name: `${target.registration}, Atlantic Transport` }),
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
@@ -183,7 +183,7 @@ test('shows a distinct already-archived error and refreshes to the authoritative
   fireEvent.click(
     await screen.findByRole('button', { name: `${target.registration}, Atlantic Transport` }),
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
@@ -227,7 +227,7 @@ test('retrying after a transient failure archives the truck exactly once', async
   fireEvent.click(
     await screen.findByRole('button', { name: `${target.registration}, Atlantic Transport` }),
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
   await screen.findByText('Try again')

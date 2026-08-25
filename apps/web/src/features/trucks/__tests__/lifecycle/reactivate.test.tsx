@@ -11,7 +11,7 @@ import {
   REACTIVATE_AVAILABLE_TRUCKS,
   REACTIVATE_TRUCKS,
 } from '../support/fixtures'
-import { mockTrucks, renderTrucks } from '../support/test-helpers'
+import { mockTrucks, renderTrucks, truckTab } from '../support/test-helpers'
 
 function details() {
   return screen.getByRole('region', { hidden: true, name: 'Truck details' })
@@ -23,7 +23,7 @@ async function openArchivedTruck(
   companyName = 'Atlantic Transport',
 ) {
   await screen.findByRole('list', { name: 'Available trucks' })
-  await user.click(screen.getByRole('tab', { name: /Archived/ }))
+  await user.click(truckTab(/Archived/))
   await user.click(
     await screen.findByRole('button', { name: `${target.registration}, ${companyName}` }),
   )
@@ -66,9 +66,9 @@ test('reactivates a truck with a comment and moves it to the available tab witho
   renderTrucks()
   await openArchivedTruck(user, target)
 
-  expect(screen.queryByRole('button', { name: 'Edit truck' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.change(within(dialog).getByRole('textbox', { name: 'Comment (optional)' }), {
     target: { value: 'Back from the gearbox overhaul' },
@@ -113,7 +113,7 @@ test('reactivates a truck without a comment', async () => {
 
   renderTrucks()
   await openArchivedTruck(user, target)
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
@@ -147,7 +147,7 @@ test('shows a distinct archived-transport-company error naming the remedy and ke
 
   renderTrucks()
   await openArchivedTruck(user, target, 'Coastal Haulage')
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
@@ -203,7 +203,7 @@ test('shows a distinct already-available error and refreshes to the authoritativ
 
   renderTrucks()
   await openArchivedTruck(user, target)
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
@@ -239,7 +239,7 @@ test('rejects an overlong comment before submitting', async () => {
 
   renderTrucks()
   await openArchivedTruck(user, target)
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.change(within(dialog).getByRole('textbox', { name: 'Comment (optional)' }), {
     target: { value: 'a'.repeat(1001) },
@@ -293,7 +293,7 @@ test('retrying after a transient failure reactivates the truck exactly once', as
 
   renderTrucks()
   await openArchivedTruck(user, target)
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
   await screen.findByText('Try again')
@@ -323,7 +323,7 @@ test('cancelling the confirmation dialog performs no mutation and leaves the tru
 
   renderTrucks()
   await openArchivedTruck(user, target)
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
 

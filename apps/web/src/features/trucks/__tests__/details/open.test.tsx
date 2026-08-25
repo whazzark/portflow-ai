@@ -1,4 +1,4 @@
-import { cleanup, screen, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 
@@ -20,16 +20,24 @@ test('opens exact available details and toggles the selection closed', async () 
     truckId: '00000000-0000-4000-8000-000000000101',
   })
 
-  await user.click(screen.getByRole('button', { name: /AA-101-PF, Atlantic Transport/ }))
+  // The open details sheet marks the directory behind it aria-hidden.
+  await user.click(
+    screen.getByRole('button', { name: /AA-101-PF, Atlantic Transport/, hidden: true }),
+  )
   await expect.poll(() => router.state.location.search).not.toHaveProperty('truckId')
-  expect(await screen.findByRole('heading', { name: 'Truck directory' })).toBeInTheDocument()
+  await waitFor(() => {
+    expect(
+      screen.queryByRole('region', { name: 'Truck details', hidden: true }),
+    ).not.toBeInTheDocument()
+  })
+  expect(screen.getByRole('list', { name: 'Available trucks' })).toBeInTheDocument()
 })
 
 test('restores and aligns archived details with independent company status and context', async () => {
   mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
   const { router } = renderTrucks(
     // biome-ignore lint/security/noSecrets: URL state fixture, not a secret
-    '/transport-resources?resource=trucks&truckStatus=available&truckId=00000000-0000-4000-8000-000000000103',
+    '/transport-resources?truckStatus=available&truckId=00000000-0000-4000-8000-000000000103',
   )
 
   const details = await screen.findByRole('region', { name: 'Truck details' })
@@ -53,7 +61,7 @@ test('shows optional values accurately and clears a stale identity with explicit
 
   cleanup()
   mockTrucks()
-  const stale = renderTrucks('/transport-resources?resource=trucks&truckId=missing')
+  const stale = renderTrucks('/transport-resources?truckId=missing')
   await screen.findByRole('list', { name: 'Available trucks' })
   await expect.poll(() => stale.router.state.location.search).not.toHaveProperty('truckId')
 })

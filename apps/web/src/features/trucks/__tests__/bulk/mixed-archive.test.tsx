@@ -10,7 +10,7 @@ import {
   BULK_AVAILABLE_TRUCKS,
   BULK_TRUCKS,
 } from '../support/fixtures'
-import { mockTrucks, renderTrucks } from '../support/test-helpers'
+import { mockTrucks, renderTrucks, truckTab } from '../support/test-helpers'
 
 test('reports unchanged trucks in a toast and allows retrying only those', async () => {
   const [first, second, third] = BULK_AVAILABLE_TRUCKS
@@ -113,7 +113,7 @@ test('hides the retry toolbar for blocked trucks after leaving the available tab
 
   expect(await screen.findByRole('button', { name: 'Retry blocked trucks' })).toBeInTheDocument()
 
-  await user.click(screen.getByRole('tab', { name: /Archived/ }))
+  await user.click(truckTab(/Archived/))
 
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Retry blocked trucks' })).not.toBeInTheDocument(),

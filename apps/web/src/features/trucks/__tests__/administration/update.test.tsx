@@ -45,10 +45,12 @@ test('lets an administrator open, pre-fill, and save a correction in the detail 
 
   renderTrucks()
   await openTruckDetails(target.registration, 'Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Edit truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
 
   expect(await screen.findByRole('heading', { name: 'Edit truck' })).toBeInTheDocument()
-  expect(screen.getByRole('textbox', { name: 'Registration' })).toHaveValue(target.registration)
+  expect(await screen.findByRole('textbox', { name: 'Registration' })).toHaveValue(
+    target.registration,
+  )
   expect(screen.getByRole('textbox', { name: 'Capacity (tonnes)' })).toHaveValue(
     String(target.capacityTonnes),
   )
@@ -77,10 +79,12 @@ test('lets an administrator open, pre-fill, and save a correction in the detail 
 test('survives a reload while the edit form is open', async () => {
   mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
 
-  renderTrucks(`/transport-resources?resource=trucks&truckId=${target.id}&truckMode=edit`)
+  renderTrucks(`/transport-resources?truckId=${target.id}&truckMode=edit`)
 
   expect(await screen.findByRole('heading', { name: 'Edit truck' })).toBeInTheDocument()
-  expect(screen.getByRole('textbox', { name: 'Registration' })).toHaveValue(target.registration)
+  expect(await screen.findByRole('textbox', { name: 'Registration' })).toHaveValue(
+    target.registration,
+  )
 })
 
 test('lets an administrator cancel an edit without changing the truck', async () => {
@@ -88,7 +92,7 @@ test('lets an administrator cancel an edit without changing the truck', async ()
 
   renderTrucks()
   await openTruckDetails(target.registration, 'Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Edit truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   expect(await screen.findByRole('heading', { name: 'Edit truck' })).toBeInTheDocument()
 
   fireEvent.click(screen.getByRole('button', { name: 'Back to truck details' }))
@@ -117,7 +121,7 @@ test('shows the corrected truck in the embedded workspace layout', async () => {
 
   renderTrucks('/transport-resources')
   await openTruckDetails(target.registration, 'Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Edit truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   fireEvent.change(await screen.findByRole('textbox', { name: 'Registration' }), {
     target: { value: updated.registration },
   })
@@ -144,7 +148,7 @@ test('offers the available companies and the truck own current company, pre-sele
   mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
   renderTrucks()
   await openTruckDetails(archivedCompanyTruck.registration, company?.name ?? '')
-  fireEvent.click(await screen.findByRole('button', { name: 'Edit truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   fireEvent.click(await screen.findByRole('combobox', { name: 'Transport company' }))
 
   expect(await screen.findByRole('option', { name: 'Atlantic Transport' })).toBeInTheDocument()
@@ -171,7 +175,7 @@ test('reassigns a truck to another available transport company', async () => {
 
   renderTrucks()
   await openTruckDetails(target.registration, 'Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Edit truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   fireEvent.click(await screen.findByRole('combobox', { name: 'Transport company' }))
   fireEvent.click(await screen.findByRole('option', { name: 'Bêta Logistique' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
@@ -179,8 +183,12 @@ test('reassigns a truck to another available transport company', async () => {
   await waitFor(() =>
     expect(screen.queryByRole('heading', { name: 'Edit truck' })).not.toBeInTheDocument(),
   )
+  // The details sheet stays open after saving, marking the directory behind it aria-hidden.
   expect(
-    screen.getByRole('button', { name: `${target.registration}, Bêta Logistique` }),
+    screen.getByRole('button', {
+      name: `${target.registration}, Bêta Logistique`,
+      hidden: true,
+    }),
   ).toBeInTheDocument()
 })
 
@@ -203,7 +211,7 @@ test('shows a distinct error when a provider change is locked by a discharge com
 
   renderTrucks()
   await openTruckDetails(target.registration, 'Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Edit truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   fireEvent.click(await screen.findByRole('combobox', { name: 'Transport company' }))
   fireEvent.click(await screen.findByRole('option', { name: 'Bêta Logistique' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
@@ -230,7 +238,7 @@ test('shows a distinct error when the submitted transport company is invalid', a
 
   renderTrucks()
   await openTruckDetails(target.registration, 'Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Edit truck' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   fireEvent.click(await screen.findByRole('combobox', { name: 'Transport company' }))
   fireEvent.click(await screen.findByRole('option', { name: 'Bêta Logistique' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
