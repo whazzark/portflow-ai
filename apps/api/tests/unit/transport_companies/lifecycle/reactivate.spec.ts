@@ -12,7 +12,6 @@ import {
   TransportCompanyNotFoundException,
 } from '#transport_companies/shared/transport_company_exceptions'
 
-// biome-ignore lint/security/noSecrets: test group name, not a secret
 test.group('ReactivateTransportCompanyUseCase', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
 

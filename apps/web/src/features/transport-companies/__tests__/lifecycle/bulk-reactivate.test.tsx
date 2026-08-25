@@ -15,8 +15,10 @@ import {
 // multi-company selection is possible without changing shared fixture data — see plan.md's project
 // structure notes on scoping fixture changes to the slice that needs them.
 const SECOND_ARCHIVED_COMPANY: TransportCompanyDto = {
-  id: '00000000-0000-4000-8000-000000000004',
+  id: '00000000-0000-4000-8000-000000000005',
   name: 'Delta Fret',
+  contactPhone: '+33 2 51 88 77 66',
+  contactEmail: 'exploitation@delta-fret.test',
   status: 'ARCHIVED',
   archivedAt: '2026-06-15T10:00:00.000Z',
   archivedByUserId: 'user-1',

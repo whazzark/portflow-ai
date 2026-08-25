@@ -4,6 +4,13 @@ import { TransportCompanyFactory } from '#database/factories/transport_company_f
 import { TruckFactory } from '#database/factories/truck_factory'
 import { UserFactory } from '#database/factories/user_factory'
 
+// Creating and updating a company both require contact details, so the calls below carry a valid
+// pair: these tests assert on lifecycle outcomes, not on contact validation.
+const VALID_CONTACT = {
+  contactPhone: '+33 1 23 45 67 89',
+  contactEmail: 'contact@example.test',
+}
+
 test.group('POST /api/v1/transport-companies/:id/reactivate', () => {
   test('rejects unauthenticated reactivation', async ({ assert, client }) => {
     const company = await TransportCompanyFactory.apply('archived').create()
@@ -217,7 +224,11 @@ test.group('POST /api/v1/transport-companies/:id/reactivate', () => {
     const updateResponse = await client
       .patch(`/api/v1/transport-companies/${company.id}`)
       .loginAs(admin)
-      .json({ name: 'Renamed after reactivation' })
+      .json({
+        name: 'Renamed after reactivation',
+        contactPhone: company.contactPhone,
+        contactEmail: company.contactEmail,
+      })
     updateResponse.assertStatus(200)
     assert.equal(updateResponse.body().data.name, 'Renamed after reactivation')
 
@@ -249,7 +260,7 @@ test.group('POST /api/v1/transport-companies/:id/reactivate', () => {
     const conflictResponse = await client
       .post('/api/v1/transport-companies')
       .loginAs(admin)
-      .json({ name: company.name })
+      .json({ name: company.name, ...VALID_CONTACT })
     conflictResponse.assertStatus(409)
     assert.equal(conflictResponse.body().error.code, 'E_TRANSPORT_COMPANY_NAME_CONFLICT')
 

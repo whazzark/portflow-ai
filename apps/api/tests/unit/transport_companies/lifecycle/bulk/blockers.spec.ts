@@ -5,7 +5,6 @@ import {
   indexCompaniesById,
 } from '#transport_companies/shared/transport_company_lifecycle_blockers'
 
-// biome-ignore lint/security/noSecrets: test group name, not a secret
 test.group('findBulkBlockers — expecting AVAILABLE (archival)', () => {
   test('classifies an unknown id as NOT_FOUND without a name', ({ assert }) => {
     const companiesById = indexCompaniesById([])
@@ -95,7 +94,6 @@ test.group('findBulkBlockers — expecting AVAILABLE (archival)', () => {
   })
 })
 
-// biome-ignore lint/security/noSecrets: test group name, not a secret
 test.group('findBulkBlockers — expecting ARCHIVED (reactivation)', () => {
   test('classifies an unknown id as NOT_FOUND without a name', ({ assert }) => {
     const companiesById = indexCompaniesById([])

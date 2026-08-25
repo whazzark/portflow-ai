@@ -8,7 +8,6 @@ import { TruckFactory } from '#database/factories/truck_factory'
 import { UserFactory } from '#database/factories/user_factory'
 import ReactivateTransportCompaniesUseCase from '#transport_companies/reactivate/reactivate_transport_companies_use_case'
 
-// biome-ignore lint/security/noSecrets: test group name, not a secret
 test.group('ReactivateTransportCompaniesUseCase', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
 

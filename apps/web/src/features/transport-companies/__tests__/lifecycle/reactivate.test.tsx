@@ -95,7 +95,7 @@ test('reactivating moves the company to the Available tab with its lifecycle con
   const tabs = await companyTabs()
   expect(
     await within(tabs).findByRole('tab', {
-      name: /Available \(3\)/,
+      name: /Available \(4\)/,
       selected: true,
       hidden: true,
     }),
