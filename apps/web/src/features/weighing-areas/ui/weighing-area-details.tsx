@@ -52,9 +52,9 @@ export function WeighingAreaDetails({
           </dl>
         </section>
       </ResourceDetailBody>
-      {canEdit && area.status === 'AVAILABLE' && (
+      {canEdit && (
         <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
-          <Button onClick={onEdit}>Edit weighing area</Button>
+          {area.status === 'AVAILABLE' && <Button onClick={onEdit}>Edit weighing area</Button>}
           <WeighingAreaLifecycleActions area={area} />
         </SheetFooter>
       )}

@@ -81,11 +81,11 @@ export const CHECKPOINT_KIND_PLURAL_LABELS: Record<CheckpointKind, string> = {
 
 export type BulkLifecycleIntent = 'ARCHIVE' | 'REACTIVATE'
 
-/** Which bulk lifecycle operations each checkpoint kind supports. Weighing-area reactivation is
- * #206's, so it is deliberately absent until that slice ships. */
+/** Which bulk lifecycle operations each checkpoint kind supports. Both kinds support both
+ * directions; the table stays so a future kind can opt out of one. */
 export const BULK_LIFECYCLE_INTENTS: Record<CheckpointKind, BulkLifecycleIntent[]> = {
   DOCK: ['ARCHIVE', 'REACTIVATE'],
-  WEIGHING_AREA: ['ARCHIVE'],
+  WEIGHING_AREA: ['ARCHIVE', 'REACTIVATE'],
 }
 
 /** The status a checkpoint must have to be eligible for a given bulk intent. */
@@ -108,5 +108,6 @@ export const BULK_LIFECYCLE_DESCRIPTIONS: Record<
   WEIGHING_AREA: {
     ARCHIVE:
       'These weighing areas will remain readable but no longer offered for new operational work.',
+    REACTIVATE: 'These weighing areas will be offered again for new operational work.',
   },
 }

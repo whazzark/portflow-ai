@@ -29,6 +29,14 @@ test('adapts available and archived collection DTOs with exact coordinates', () 
       name: 'Beta Scale',
       status: 'AVAILABLE',
     },
+    {
+      id: WEIGHING_AREAS[3].id,
+      kind: 'WEIGHING_AREA',
+      latitude: 45.76,
+      longitude: 4.86,
+      name: 'Gamma Scale',
+      status: 'ARCHIVED',
+    },
   ])
 })
 

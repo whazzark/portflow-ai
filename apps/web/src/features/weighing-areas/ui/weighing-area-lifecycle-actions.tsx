@@ -31,42 +31,59 @@ export function WeighingAreaLifecycleActions({
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
 
+  const archived = area.status === 'ARCHIVED'
+
   const submit = async () => {
     try {
-      await mutations.archive.mutateAsync({
+      const mutation = archived ? mutations.reactivate : mutations.archive
+
+      await mutation.mutateAsync({
         params: { id: area.id },
         body: { comment: comment || null },
       })
 
       setOpen(false)
       setComment('')
-      toast.success('Weighing area archived')
+      toast.success(archived ? 'Weighing area reactivated' : 'Weighing area archived')
     } catch (cause) {
       // The dialog deliberately stays open (`setOpen(false)` only runs on success), so the typed
       // comment survives a refusal and the administrator can correct it and resubmit without
-      // reopening the weighing area (spec US3 scenario 6) — matching the dock component.
+      // reopening the weighing area (spec US3 scenario 3) — the confirm handler's
+      // `event.preventDefault()` below is what keeps Radix from closing it on click.
       const error = parseApiError(cause)
 
-      toast.error(`Unable to archive weighing area “${area.name}”`, {
-        // A validation failure's top-level message is only "Validation failure"; the field-level
-        // detail is what tells the administrator what to fix.
-        description: error.details?.[0]?.message ?? error.message,
-      })
+      toast.error(
+        archived
+          ? `Unable to reactivate weighing area “${area.name}”`
+          : `Unable to archive weighing area “${area.name}”`,
+        {
+          // A validation failure's top-level message is only "Validation failure"; the field-level
+          // detail is what tells the administrator what to fix.
+          description: error.details?.[0]?.message ?? error.message,
+        },
+      )
     }
   }
 
   return (
     <>
-      <Button className={className} onClick={() => setOpen(true)} variant="destructive">
-        Archive weighing area
+      <Button
+        className={className}
+        onClick={() => setOpen(true)}
+        variant={archived ? 'default' : 'destructive'}
+      >
+        {archived ? 'Reactivate weighing area' : 'Archive weighing area'}
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Archive weighing area?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {archived ? 'Reactivate weighing area?' : 'Archive weighing area?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This weighing area will remain readable but no longer offered for new operational
-              work.
+              {archived
+                ? 'This weighing area will be offered again for new operational work.'
+                : 'This weighing area will remain readable but no longer offered for new operational work.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <FieldGroup>
@@ -86,13 +103,13 @@ export function WeighingAreaLifecycleActions({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={mutations.archive.isPending}
+              disabled={archived ? mutations.reactivate.isPending : mutations.archive.isPending}
               onClick={(event) => {
                 event.preventDefault()
                 void submit()
               }}
             >
-              Archive
+              {archived ? 'Reactivate' : 'Archive'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

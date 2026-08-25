@@ -67,10 +67,8 @@ const SELECTING_PARAM_BY_KIND: Record<CheckpointKind, 'docks' | 'weighing-areas'
   DOCK: 'docks',
   WEIGHING_AREA: 'weighing-areas',
 }
-/** Kinds whose bulk archive capability (backend + mutation) exists. Both kinds are capable now
- * that the weighing-area bulk endpoint and mutation have landed (tasks.md T035-T046). */
-/** Kinds whose bulk lifecycle endpoints exist. Both kinds can be bulk-archived; only docks can
- * additionally be bulk-reactivated until #206 ships weighing-area reactivation. */
+/** Kinds whose bulk lifecycle endpoints exist. Both kinds can be bulk-archived and
+ * bulk-reactivated; which directions each one supports is `BULK_LIFECYCLE_INTENTS`. */
 const BULK_LIFECYCLE_CAPABLE_KINDS: CheckpointKind[] = ['DOCK', 'WEIGHING_AREA']
 
 /** The `kinds` filter value that would hide a just-created checkpoint of this kind, so a
@@ -153,8 +151,7 @@ export function CheckpointsPage() {
   // map also uses this to gate shift-click, which can enter select mode directly. Eligibility is
   // three things at once: the kind must support bulk lifecycle actions and be the one being
   // selected (if any), and the status must match the selection's intent — or, with nothing checked
-  // yet, any intent that kind supports. Weighing areas only support archival until #206, so their
-  // archived markers never become checkable.
+  // yet, any intent that kind supports.
   const checkableIds = useMemo(
     () =>
       new Set(
@@ -251,15 +248,30 @@ export function CheckpointsPage() {
     }
   }, [selectingKind])
 
+  // A checked checkpoint that drops out of the collection entirely — a failed list refetch empties
+  // its source (see weighingAreas above) — would leave selectionIntent falling back to ARCHIVE
+  // over what may be an archived selection, offering and sending the wrong bulk action. Such ids
+  // are dropped instead. Search-hidden checkpoints are untouched: this looks at the whole
+  // collection, not the presented list, so a search term never prunes the selection (spec FR-036).
+  useEffect(() => {
+    setCheckedIds((current) => {
+      if (current.size === 0) {
+        return current
+      }
+      const resolvableIds = new Set(checkpointCollection.map((checkpoint) => checkpoint.id))
+      const next = new Set([...current].filter((id) => resolvableIds.has(id)))
+      return next.size === current.size ? current : next
+    })
+  }, [checkpointCollection])
+
   // Ctrl/Cmd+A selects every currently visible checkpoint of the active selecting kind matching
   // the selection's intent, entering select mode on the fly just like a shift-click — the
   // administrator never has to reach for the map control first. With no kind being selected it
   // defaults to the first capable visible kind (docks before weighing areas); with nothing checked
   // the intent falls back to the status filter (Archived reactivates, anything else archives), so
   // Ctrl+A always grabs what the administrator is actually looking at. That fallback is clamped to
-  // the intents the kind supports, so it never targets archived weighing areas, which have no bulk
-  // reactivation until #206. Ignored while typing in a field, so the browser's native "select all
-  // text" keeps working there.
+  // the intents the kind supports, so a kind that only archives never gets a reactivate selection.
+  // Ignored while typing in a field, so the browser's native "select all text" keeps working there.
   useEffect(() => {
     if (!canManageCheckpoints) {
       return
@@ -574,7 +586,7 @@ export function CheckpointsPage() {
     })
   }
   // Falls back to ARCHIVE while nothing is checked, and is clamped to what the selecting kind
-  // actually supports so a weighing-area selection can never resolve to REACTIVATE (#206).
+  // actually supports, so a kind that only archives can never resolve to REACTIVATE.
   const bulkIntent: BulkLifecycleIntent =
     selectingKind &&
     selectionIntent &&
@@ -586,7 +598,9 @@ export function CheckpointsPage() {
   const submitBulkLifecycle = async (input: { ids: string[]; comment: string | null }) => {
     if (selectingKind === 'WEIGHING_AREA') {
       return toWeighingAreaBulkLifecycleOutcome(
-        (await weighingAreaMutations.archiveMany.mutateAsync({ body: input })).data,
+        bulkIntent === 'REACTIVATE'
+          ? (await weighingAreaMutations.reactivateMany.mutateAsync({ body: input })).data
+          : (await weighingAreaMutations.archiveMany.mutateAsync({ body: input })).data,
       )
     }
     return toDockBulkLifecycleOutcome(
@@ -606,7 +620,7 @@ export function CheckpointsPage() {
   }
   // Unlike archiving's IN_USE, neither reactivation blocker (NOT_FOUND, ALREADY_AVAILABLE)
   // becomes eligible on a retry, so the whole selection is cleared rather than keeping any
-  // blocked dock checked (research D7).
+  // blocked checkpoint checked — the same rule for docks and weighing areas.
   const handleBulkReactivateSuccess = () => {
     setCheckedIds(new Set())
   }

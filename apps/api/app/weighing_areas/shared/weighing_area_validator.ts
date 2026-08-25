@@ -42,5 +42,10 @@ export const archiveWeighingAreasValidator = vine.create({
 })
 
 export const reactivateWeighingAreaValidator = vine.create({
-  comment: vine.string().nullable().optional(),
+  comment: lifecycleComment(),
+})
+
+export const reactivateWeighingAreasValidator = vine.create({
+  ids: lifecycleIds(),
+  comment: lifecycleComment(),
 })

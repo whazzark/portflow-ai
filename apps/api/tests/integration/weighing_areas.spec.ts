@@ -667,4 +667,183 @@ test.group('Weighing areas administration', () => {
     assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
     assert.equal(response.body().error.details[0].field, 'latitude')
   })
+
+  test('refuses to reactivate an unknown weighing area without touching any other area', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const bystander = await WeighingAreaFactory.apply('archived').create()
+
+    const response = await client
+      .post('/api/v1/weighing-areas/2c1d9a4e-6f3b-4c8a-9d5e-1b7f0a2c3d4e/reactivate')
+      .loginAs(admin)
+      .json({})
+
+    response.assertStatus(404)
+    assert.equal(response.body().error.code, 'E_WEIGHING_AREA_NOT_FOUND')
+    await bystander.refresh()
+    assert.equal(bystander.status, 'ARCHIVED')
+    assert.isNull(bystander.reactivatedAt)
+  })
+
+  test('refuses to reactivate an already available weighing area and leaves its context intact', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const responsible = await UserFactory.apply('active').create()
+    const area = await WeighingAreaFactory.apply('reactivated')
+      .merge({ reactivatedByUserId: responsible.id, reactivationComment: 'Back in service' })
+      .create()
+    // Read the stored value back before asserting on it: the in-memory DateTime keeps
+    // milliseconds the column does not, so comparing against it would fail on precision alone.
+    await area.refresh()
+    const previousReactivatedAt = area.reactivatedAt
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${area.id}/reactivate`)
+      .loginAs(admin)
+      .json({ comment: 'Again' })
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_WEIGHING_AREA_ALREADY_AVAILABLE')
+    await area.refresh()
+    assert.equal(area.status, 'AVAILABLE')
+    assert.equal(area.reactivatedByUserId, responsible.id)
+    assert.equal(area.reactivationComment, 'Back in service')
+    assert.equal(area.reactivatedAt?.toMillis(), previousReactivatedAt?.toMillis())
+  })
+
+  test('rejects unauthenticated, non-active, and non-admin reactivation attempts', async ({
+    assert,
+    client,
+  }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const deactivatedAdmin = await UserFactory.apply('deactivated')
+      .merge({ role: 'OPERATIONS_ADMIN' })
+      .create()
+    const area = await WeighingAreaFactory.apply('archived').create()
+
+    const unauthenticated = await client
+      .post(`/api/v1/weighing-areas/${area.id}/reactivate`)
+      .json({})
+    const unauthorized = await client
+      .post(`/api/v1/weighing-areas/${area.id}/reactivate`)
+      .loginAs(observer)
+      .json({})
+    const nonActive = await client
+      .post(`/api/v1/weighing-areas/${area.id}/reactivate`)
+      .loginAs(deactivatedAdmin)
+      .json({})
+
+    unauthenticated.assertStatus(401)
+    unauthorized.assertStatus(403)
+    assert.equal(unauthenticated.body().error.code, 'E_UNAUTHORIZED_ACCESS')
+    assert.equal(unauthorized.body().error.code, 'E_AUTHORIZATION_FAILURE')
+    assert.isAtLeast(nonActive.status(), 400)
+    await area.refresh()
+    assert.equal(area.status, 'ARCHIVED')
+    assert.isNull(area.reactivatedAt)
+  })
+
+  test('records reactivation context, preserves archive context, and leaves identity untouched', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const archivedBy = await UserFactory.apply('active').create()
+    const archivedAt = DateTime.fromISO('2026-01-05T08:30:00.000Z')
+    const area = await WeighingAreaFactory.apply('archived')
+      .merge({
+        name: 'Calibration Scale',
+        latitude: 48.11,
+        longitude: 2.31,
+        archivedAt,
+        archivedByUserId: archivedBy.id,
+        archiveComment: 'Out for calibration',
+      })
+      .create()
+    await area.refresh()
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${area.id}/reactivate`)
+      .loginAs(admin)
+      .json({ comment: '  Back in service after calibration  ' })
+
+    response.assertStatus(200)
+    const body = response.body().data
+    assert.equal(body.status, 'AVAILABLE')
+    assert.equal(body.reactivatedByUserId, admin.id)
+    assert.isNotNull(body.reactivatedAt)
+    assert.equal(body.reactivationComment, 'Back in service after calibration')
+    assert.equal(body.archivedByUserId, archivedBy.id)
+    assert.equal(body.archiveComment, 'Out for calibration')
+    assert.isNotNull(body.archivedAt)
+    assert.equal(body.id, area.id)
+    assert.equal(body.name, 'Calibration Scale')
+    assert.equal(body.latitude, 48.11)
+    assert.equal(body.longitude, 2.31)
+    assert.equal(body.createdAt, area.createdAt.toISO())
+  })
+
+  test('stores no reactivation comment when the supplied comment is whitespace only', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.apply('archived').create()
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${area.id}/reactivate`)
+      .loginAs(admin)
+      .json({ comment: '   ' })
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.status, 'AVAILABLE')
+    assert.isNull(response.body().data.reactivationComment)
+  })
+
+  test('returns a reactivated weighing area to the available collection', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.apply('archived').create()
+
+    const before = await client.get('/api/v1/weighing-areas/available').loginAs(admin)
+    assert.notInclude(
+      before.body().data.map((item: { id: string }) => item.id),
+      area.id,
+    )
+
+    await client.post(`/api/v1/weighing-areas/${area.id}/reactivate`).loginAs(admin).json({})
+
+    const after = await client.get('/api/v1/weighing-areas/available').loginAs(admin)
+    assert.include(
+      after.body().data.map((item: { id: string }) => item.id),
+      area.id,
+    )
+  })
+
+  test('rejects a reactivation comment over 1000 characters and leaves the area archived', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const area = await WeighingAreaFactory.apply('archived').create()
+
+    const response = await client
+      .post(`/api/v1/weighing-areas/${area.id}/reactivate`)
+      .loginAs(admin)
+      .json({ comment: 'a'.repeat(1001) })
+
+    response.assertStatus(422)
+    assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+    await area.refresh()
+    assert.equal(area.status, 'ARCHIVED')
+    assert.isNull(area.reactivatedAt)
+    assert.isNull(area.reactivatedByUserId)
+    assert.isNull(area.reactivationComment)
+  })
 })

@@ -154,12 +154,16 @@ test('leaves dock marker clicks opening the details sheet while selecting weighi
   expect(await screen.findByRole('heading', { name: NORTH_DOCK.name })).toBeInTheDocument()
 })
 
-test('keeps an archived weighing-area marker opening details instead of offering it as checkable', async () => {
+test('keeps an archived weighing-area marker opening details once the selection is archiving', async () => {
+  // Mirrors the dock case above: checking an available weighing area fixes the selection to
+  // archiving, so an archived one stays a details trigger rather than becoming checkable. With
+  // nothing checked it *is* checkable, because it could start a reactivation instead.
   mockDocks()
   const user = userEvent.setup()
   renderCheckpoints('/checkpoints?status=all')
 
   await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await user.click(screen.getByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` }))
 
   expect(
     screen.queryByRole('button', { name: `Select weighing area ${RETIRED_SCALE.name}` }),

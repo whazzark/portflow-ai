@@ -28,11 +28,19 @@ export function useWeighingAreaMutations() {
     }),
   )
   const archiveMany = useMutation(tuyauQuery.weighingAreas.archiveMany.mutationOptions())
+  const reactivate = useMutation(
+    tuyauQuery.weighingAreas.reactivate.mutationOptions({
+      onSuccess: () => invalidateWeighingAreas(),
+    }),
+  )
+  const reactivateMany = useMutation(tuyauQuery.weighingAreas.reactivateMany.mutationOptions())
 
   return {
     archive,
     archiveMany,
     create,
+    reactivate,
+    reactivateMany,
     refreshWeighingAreas: invalidateWeighingAreas,
     update,
   }

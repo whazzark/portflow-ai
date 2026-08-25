@@ -53,6 +53,13 @@ export type ArchiveWeighingAreasCommand = {
   archiveComment: string | null
 }
 
+export type ReactivateWeighingAreasCommand = {
+  ids: string[]
+  reactivatedAt: DateTime
+  reactivatedByUserId: string
+  reactivationComment: string | null
+}
+
 export type BulkWeighingAreaLifecycleResult = {
   updatedWeighingAreas: WeighingArea[]
   blockedWeighingAreas: BulkWeighingAreaLifecycleBlocker[]
@@ -77,5 +84,9 @@ export default abstract class WeighingAreaRepository {
 
   abstract archiveAvailableMany(
     command: ArchiveWeighingAreasCommand,
+  ): Promise<BulkWeighingAreaLifecycleResult>
+
+  abstract reactivateArchivedMany(
+    command: ReactivateWeighingAreasCommand,
   ): Promise<BulkWeighingAreaLifecycleResult>
 }
