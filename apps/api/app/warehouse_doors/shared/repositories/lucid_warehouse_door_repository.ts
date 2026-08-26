@@ -68,10 +68,17 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
       if (!door) {
         // The guarded read excluded the warehouse either because it is gone or because it is
         // archived; only a second read can say which, and the distinction is what lets an archived
-        // warehouse answer with the "reactivate it first" guidance instead of a bare 404.
+        // warehouse answer with the "reactivate it first" guidance instead of a bare 404. The
+        // status is read again rather than assumed: a warehouse reactivated between the two reads
+        // is reported as not found, because "reactivate it first" would be guidance the
+        // administrator cannot act on, whereas a retry resolves it.
         const warehouse = await Warehouse.find(command.warehouseId)
 
-        return warehouse ? { kind: 'WAREHOUSE_ARCHIVED' } : { kind: 'WAREHOUSE_NOT_FOUND' }
+        if (!warehouse || warehouse.status === 'AVAILABLE') {
+          return { kind: 'WAREHOUSE_NOT_FOUND' }
+        }
+
+        return { kind: 'WAREHOUSE_ARCHIVED' }
       }
 
       return { kind: 'CREATED', door }
