@@ -22,10 +22,10 @@ export function EditCustomerPanel({
       <SheetHeader>
         <Button className="self-start" onClick={onBack} size="sm" variant="ghost">
           <ArrowLeftIcon aria-hidden="true" />
-          Back to customer details
+          Back to details
         </Button>
         <SheetTitle>Edit customer</SheetTitle>
-        <SheetDescription>Update the current Customer identity.</SheetDescription>
+        <SheetDescription>Update the current customer identity.</SheetDescription>
       </SheetHeader>
       <div className="px-4">
         <CustomerForm

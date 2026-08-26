@@ -33,17 +33,17 @@ test('lets administrators inspect and update an available customer in the sheet'
   expect(within(dialog).getByText('ACME-01')).toBeInTheDocument()
   expect(within(dialog).getByText('Created')).toBeInTheDocument()
   expect(within(dialog).getByText('Last updated')).toBeInTheDocument()
-  expect(within(dialog).getByRole('button', { name: 'Edit customer' })).toBeInTheDocument()
-  expect(within(dialog).getByRole('button', { name: 'Archive customer' })).toBeInTheDocument()
+  expect(within(dialog).getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+  expect(within(dialog).getByRole('button', { name: 'Archive' })).toBeInTheDocument()
   expect((await within(dialog).findAllByText('Acme Logistics')).length).toBeGreaterThan(0)
 
-  fireEvent.click(screen.getByRole('button', { name: 'Edit customer' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
   expect(await screen.findByRole('heading', { name: 'Edit customer' })).toBeInTheDocument()
-  fireEvent.click(await screen.findByRole('button', { name: 'Back to customer details' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Back to details' }))
   expect(await screen.findByRole('heading', { name: 'Acme Logistics' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Edit customer' })).not.toBeInTheDocument()
 
-  fireEvent.click(await screen.findByRole('button', { name: 'Edit customer' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   fireEvent.change(await screen.findByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Acme Maritime' },
   })

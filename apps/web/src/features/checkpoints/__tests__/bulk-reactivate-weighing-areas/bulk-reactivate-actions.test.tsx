@@ -53,7 +53,7 @@ test('reactivates a fully eligible selection with a shared comment and clears it
   await user.click(screen.getByRole('button', { name: 'Reactivate selected' }))
   await screen.findByRole('heading', { name: 'Reactivate selected weighing areas?' })
   expect(
-    screen.getByText('These weighing areas will be offered again for new operational work.'),
+    screen.getByText('These 2 weighing areas become available again for new operations.'),
   ).toBeInTheDocument()
   await user.type(screen.getByRole('textbox', { name: /comment/i }), 'Weighing lane reopened')
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
@@ -91,7 +91,9 @@ test('reports each blocked weighing area with its reason and still clears the wh
   await screen.findByRole('heading', { name: 'Reactivate selected weighing areas?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('1 weighing area reactivated; 1 unchanged')).toBeInTheDocument()
+  expect(
+    await screen.findByText('1 weighing area reactivated; 1 weighing area unchanged'),
+  ).toBeInTheDocument()
   expect(screen.getByText(`${GAMMA_SCALE.name}: already available`)).toBeInTheDocument()
   // Neither reactivation blocker becomes eligible on a retry, so nothing stays checked — not even
   // the blocked entry, unlike the archive path's IN_USE handling.
@@ -125,7 +127,7 @@ test('an all-blocked submission reports every reason rather than an error', asyn
   await screen.findByRole('heading', { name: 'Reactivate selected weighing areas?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('0 weighing areas reactivated; 2 unchanged')).toBeInTheDocument()
+  expect(await screen.findByText('2 weighing areas unchanged')).toBeInTheDocument()
   expect(
     screen.getByText(`${RETIRED_SCALE.name}: already available, ${GAMMA_SCALE.id}: not found`),
   ).toBeInTheDocument()

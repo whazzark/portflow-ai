@@ -36,7 +36,9 @@ test('keeps blocked selections after a mixed archive result', async () => {
     within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Archive' }),
   )
 
-  expect(await screen.findByText('Some customers were unchanged')).toBeInTheDocument()
+  // The outcome is reported in a toast; the toolbar stays compact and keeps only the blocked
+  // customer selected, so its own button is the retry.
+  expect(await screen.findByText('1 customer archived; 1 customer unchanged')).toBeInTheDocument()
   expect(screen.getByText(/active or planned/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Archive selected' })).toBeInTheDocument()
   expect(screen.getByRole('tab', { name: 'Available (1)' })).toBeInTheDocument()

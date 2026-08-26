@@ -32,7 +32,7 @@ As an authorized administrator, I want to reactivate an archived transport compa
 2. **Given** a company was just reactivated, **When** any active user consults transport companies, **Then** the company appears again among available companies under the same identity and name, and no longer appears in the archived collection.
 3. **Given** a company was just reactivated, **When** its details are inspected, **Then** they show that it is available, when it was reactivated, by whom, and the comment supplied at reactivation when one was given.
 4. **Given** a company was just reactivated, **When** a truck is being created or its provider is being chosen, **Then** the company is offered again as a selectable provider.
-5. **Given** an administrator opens the reactivation confirmation, **When** the confirmation is displayed, **Then** it states that the company will become selectable again for new operational use, and it offers an optional comment.
+5. **Given** an administrator opens the reactivation confirmation, **When** the confirmation is displayed, **Then** it names the company and states that it becomes available again for new operations, and it offers an optional comment.
 6. **Given** an administrator opens the reactivation confirmation, **When** the administrator abandons it, **Then** the company remains archived and entirely unchanged.
 7. **Given** an archived company that provides archived trucks, **When** it is reactivated, **Then** the company becomes available and every one of its trucks keeps its own lifecycle state unchanged.
 
@@ -114,7 +114,7 @@ As an authorized administrator restoring the transport-company reference after a
 - **FR-014**: A reactivated transport company MUST appear again among available companies and MUST NOT appear among archived companies.
 - **FR-015**: The system MUST preserve every existing association between the company and its trucks across a reactivation, and MUST NOT modify any truck record, in particular MUST NOT change any truck's lifecycle state.
 - **FR-016**: A refused reactivation MUST leave the stored transport company, its lifecycle context, and its trucks entirely unchanged.
-- **FR-017**: The reactivate experience MUST require an explicit confirmation, MUST state that the company becomes selectable again for new operational use, and MUST be offered only to users authorized to perform it, and only for archived companies.
+- **FR-017**: The reactivate experience MUST require an explicit confirmation, MUST name the company and state that it becomes available again for new operations, and MUST be offered only to users authorized to perform it, and only for archived companies. This wording is the one every site reference uses for reactivation; it is owned by `apps/web/src/components/lifecycle/lifecycle-copy.ts`.
 - **FR-018**: The administrator MUST be able to abandon a reactivation in progress, leaving every targeted company unchanged.
 - **FR-019**: The system MUST report the outcome of a reactivation attempt to the administrator, distinguishing success, already available, company not found, comment validation failure, unauthorized access, and retryable save failure.
 - **FR-020**: Authorization and lifecycle decisions MUST be enforced authoritatively by the system regardless of what the user experience offers.

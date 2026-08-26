@@ -26,7 +26,7 @@ async function openEditDock(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     await screen.findByRole('button', { name: `View dock ${NORTH_DOCK.name} (Available)` }),
   )
-  await user.click(screen.getByRole('button', { name: 'Edit dock' }))
+  await user.click(screen.getByRole('button', { name: 'Edit' }))
   await screen.findByRole('heading', { name: 'Edit dock' })
 }
 
@@ -99,7 +99,7 @@ test('hides the create control while an edit session is armed', async () => {
 
   expect(screen.queryByRole('button', { name: 'New dock' })).not.toBeInTheDocument()
 
-  await user.click(screen.getByRole('button', { name: 'Back to dock details' }))
+  await user.click(screen.getByRole('button', { name: 'Back to details' }))
   await user.click(screen.getByRole('button', { name: 'Close' }))
 
   expect(await screen.findByRole('button', { name: 'New dock' })).toBeInTheDocument()

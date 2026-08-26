@@ -11,8 +11,8 @@ test('does not expose customer mutations to observers in the detail sheet', asyn
 
   const dialog = await screen.findByRole('dialog')
   expect((await within(dialog).findAllByText('Acme Logistics')).length).toBeGreaterThan(0)
-  expect(within(dialog).queryByRole('button', { name: 'Edit customer' })).not.toBeInTheDocument()
-  expect(within(dialog).queryByRole('button', { name: 'Archive customer' })).not.toBeInTheDocument()
+  expect(within(dialog).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+  expect(within(dialog).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }))
 })
 

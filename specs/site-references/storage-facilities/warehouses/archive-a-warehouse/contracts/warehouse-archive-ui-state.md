@@ -1,5 +1,14 @@
 # Contract: Warehouse Archive UI State
 
+> **Superseded in part (2026-08-25)** — the lifecycle UI this contract describes has been unified.
+> The component names and the exact confirmation copy below are historical: every site reference now
+> renders `ResourceLifecycleActions` / `BulkResourceLifecycleActions`, and every lifecycle string
+> comes from `apps/web/src/components/lifecycle/lifecycle-copy.ts`. Archival now reads "…remains
+> readable but is no longer available for new operations", and lifecycle buttons carry the action
+> alone (`Archive`, not `Archive dock`). The behavioral requirements in the sibling `spec.md` still
+> hold; only their rendering moved.
+
+
 **Feature**: [../spec.md](../spec.md) | **Research**: [../research.md](../research.md)
 
 Everything below lives in the `/warehouses` map workspace introduced by `#207`. No new route, no new
@@ -50,7 +59,7 @@ must render, or a previously-opened warehouse becomes uncheckable (research **D6
 
 ## Confirmation dialogs
 
-Both state that the warehouse remains readable but is no longer selectable for new operational work,
+Both state that the warehouse remains readable but is no longer available for new operations,
 **and how many of its available doors are archived with it** (FR-023). Both offer an optional comment
 (`maxLength={1000}`, "Maximum 1,000 characters"). Both are abandonable, leaving everything unchanged
 (FR-024).

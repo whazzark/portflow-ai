@@ -132,7 +132,7 @@ test('a mixed result clears the whole selection, blocked docks included, and lis
   await screen.findByRole('heading', { name: 'Reactivate selected docks?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('1 dock reactivated; 1 unchanged')).toBeInTheDocument()
+  expect(await screen.findByText('1 dock reactivated; 1 dock unchanged')).toBeInTheDocument()
   expect(screen.getByText('99999999-9999-4999-8999-999999999999: not found')).toBeInTheDocument()
   // Unlike archiving's IN_USE, neither reactivation blocker is retryable — the whole selection
   // is cleared rather than leaving the blocked entry checked.

@@ -1,3 +1,4 @@
+import { ResourceLifecycleSummary } from '@/components/lifecycle/resource-lifecycle-summary'
 import {
   ResourceDetailBody,
   ResourceDetailField,
@@ -7,7 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SheetFooter } from '@/components/ui/sheet'
 import type { WeighingAreaDto } from '@/features/weighing-areas/types'
-import { WeighingAreaLifecycleActions } from '@/features/weighing-areas/ui/weighing-area-lifecycle-actions'
+import {
+  WeighingAreaLifecycleActions,
+  weighingAreaLifecycleBlocks,
+} from '@/features/weighing-areas/weighing-area-lifecycle'
 import { formatDateTime } from '@/helpers/dates'
 
 export function WeighingAreaDetails({
@@ -19,6 +23,8 @@ export function WeighingAreaDetails({
   area: WeighingAreaDto
   onEdit: () => void
 }) {
+  const lifecycleBlocks = weighingAreaLifecycleBlocks(area)
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ResourceDetailHeader
@@ -34,27 +40,11 @@ export function WeighingAreaDetails({
           <ResourceDetailField label="Last updated" value={formatDateTime(area.updatedAt)} />
         </dl>
         <Separator className="my-6" />
-        <section aria-labelledby="weighing-area-lifecycle-heading" className="flex flex-col gap-3">
-          <h3 className="font-medium" id="weighing-area-lifecycle-heading">
-            Lifecycle
-          </h3>
-          <dl className="grid gap-4 text-sm">
-            <ResourceDetailField
-              label="Archived"
-              value={area.archivedAt ? formatDateTime(area.archivedAt) : null}
-            />
-            <ResourceDetailField label="Archive comment" value={area.archiveComment} />
-            <ResourceDetailField
-              label="Reactivated"
-              value={area.reactivatedAt ? formatDateTime(area.reactivatedAt) : null}
-            />
-            <ResourceDetailField label="Reactivation comment" value={area.reactivationComment} />
-          </dl>
-        </section>
+        <ResourceLifecycleSummary blocks={lifecycleBlocks} />
       </ResourceDetailBody>
       {canEdit && (
         <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
-          {area.status === 'AVAILABLE' && <Button onClick={onEdit}>Edit weighing area</Button>}
+          {area.status === 'AVAILABLE' && <Button onClick={onEdit}>Edit</Button>}
           <WeighingAreaLifecycleActions area={area} />
         </SheetFooter>
       )}

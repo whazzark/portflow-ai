@@ -17,7 +17,7 @@ async function openArchiveDialog(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     await screen.findByRole('button', { name: `View warehouse ${NORTH_SHED.name} (Available)` }),
   )
-  await user.click(await screen.findByRole('button', { name: 'Archive warehouse' }))
+  await user.click(await screen.findByRole('button', { name: 'Archive' }))
 
   return screen.findByRole('alertdialog')
 }
@@ -32,7 +32,7 @@ test('states how many available doors are archived with the warehouse', async ()
   expect(within(dialog).getByRole('heading', { name: 'Archive warehouse?' })).toBeInTheDocument()
   // North Shed holds one available door and one already archived door.
   expect(dialog).toHaveTextContent('1 available door')
-  expect(dialog).toHaveTextContent('no longer selectable for new operational work')
+  expect(dialog).toHaveTextContent('no longer available for new operations')
 })
 
 test('archives the warehouse and reports the cascade', async () => {

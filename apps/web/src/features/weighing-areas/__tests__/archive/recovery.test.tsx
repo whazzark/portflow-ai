@@ -23,7 +23,7 @@ async function openAndStartArchiving(user: ReturnType<typeof userEvent.setup>) {
     }),
   )
   await screen.findByRole('heading', { name: ALPHA_SCALE.name })
-  await user.click(screen.getByRole('button', { name: 'Archive weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Archive' }))
   await screen.findByRole('heading', { name: 'Archive weighing area?' })
 }
 

@@ -2,17 +2,19 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { OnChangeFn, SortingState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
+import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import { Button } from '@/components/ui/button'
 import { InputSearch } from '@/components/ui/input-search'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
+import {
+  CUSTOMER_PLURAL,
+  CUSTOMER_SINGULAR,
+  toBulkCustomerLifecycleOutcome,
+} from '@/features/customers/customer-lifecycle'
+import { useCustomerMutations } from '@/features/customers/mutations/use-customer-mutations'
 import { customerQueries } from '@/features/customers/queries/customer-queries'
-import type {
-  BulkCustomerLifecycleBlocker,
-  BulkCustomerLifecycleResult,
-} from '@/features/customers/types'
-import { BulkLifecycleActions } from '@/features/customers/ui/bulk-lifecycle-actions'
 import { CustomerSection } from '@/features/customers/ui/customer-section'
 import { CustomerSheet } from '@/features/customers/ui/customer-sheet'
 
@@ -33,17 +35,10 @@ export function CustomersPage() {
 
   const user = useAuthenticatedUser()
   const customersQuery = useQuery(customerQueries.list())
+  const mutations = useCustomerMutations()
 
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set())
-  const [blockedCustomers, setBlockedCustomers] = useState<BulkCustomerLifecycleBlocker[]>([])
-  const selectedCustomerIdList = useMemo(() => [...selectedCustomerIds], [selectedCustomerIds])
-  const lifecycleActionIds = useMemo(
-    () =>
-      blockedCustomers.length > 0
-        ? blockedCustomers.map((customer) => customer.id)
-        : selectedCustomerIdList,
-    [blockedCustomers, selectedCustomerIdList],
-  )
+  const lifecycleActionIds = useMemo(() => [...selectedCustomerIds], [selectedCustomerIds])
   const visibleSelectedCustomerIds = useMemo(() => {
     const selectedStatus = status === 'available' ? 'AVAILABLE' : 'ARCHIVED'
     const visibleIds = new Set(
@@ -73,7 +68,6 @@ export function CustomersPage() {
 
   const updateSearch = (value: string) => {
     setSelectedCustomerIds(new Set())
-    setBlockedCustomers([])
     void navigate({ search: (previous) => ({ ...previous, search: value }) })
   }
 
@@ -83,7 +77,6 @@ export function CustomersPage() {
     }
 
     setSelectedCustomerIds(new Set())
-    setBlockedCustomers([])
     void navigate({ search: (previous) => ({ ...previous, status: nextStatus }) })
   }
 
@@ -157,6 +150,9 @@ export function CustomersPage() {
             <CustomerSection
               customers={activeCustomers}
               isArchived={isArchived}
+              onEdit={(customerId) =>
+                navigate({ search: (previous) => ({ ...previous, customerId, mode: 'edit' }) })
+              }
               onSelect={(customerId) =>
                 navigate({ search: (previous) => ({ ...previous, customerId, mode: 'view' }) })
               }
@@ -165,10 +161,7 @@ export function CustomersPage() {
               onSortingChange={updateSorting(status)}
               canAdminister={canAdminister}
               selectedIds={visibleSelectedCustomerIds}
-              onSelectionChange={(customerIds) => {
-                setSelectedCustomerIds(new Set(customerIds))
-                setBlockedCustomers([])
-              }}
+              onSelectionChange={(customerIds) => setSelectedCustomerIds(new Set(customerIds))}
             />
           )}
         </TabsContent>
@@ -177,6 +170,9 @@ export function CustomersPage() {
             <CustomerSection
               customers={activeCustomers}
               isArchived={isArchived}
+              onEdit={(customerId) =>
+                navigate({ search: (previous) => ({ ...previous, customerId, mode: 'edit' }) })
+              }
               onSelect={(customerId) =>
                 navigate({ search: (previous) => ({ ...previous, customerId, mode: 'view' }) })
               }
@@ -185,33 +181,33 @@ export function CustomersPage() {
               onSortingChange={updateSorting(status)}
               canAdminister={canAdminister}
               selectedIds={visibleSelectedCustomerIds}
-              onSelectionChange={(customerIds) => {
-                setSelectedCustomerIds(new Set(customerIds))
-                setBlockedCustomers([])
-              }}
+              onSelectionChange={(customerIds) => setSelectedCustomerIds(new Set(customerIds))}
             />
           )}
         </TabsContent>
       </Tabs>
       {canAdminister && (
-        <BulkLifecycleActions
-          blockedCustomers={blockedCustomers}
+        <BulkResourceLifecycleActions
+          action={isArchived ? 'reactivate' : 'archive'}
+          idPrefix="customer"
+          onClear={() => setSelectedCustomerIds(new Set())}
+          // Narrowed to the blocked ids rather than cleared, so the administrator can resolve the
+          // blocker and retry exactly those without reselecting them.
+          onSuccess={(outcome) =>
+            setSelectedCustomerIds(new Set(outcome.blocked.map((blocked) => blocked.id)))
+          }
+          plural={CUSTOMER_PLURAL}
+          refresh={mutations.refreshCustomers}
           selectedIds={lifecycleActionIds}
-          isArchived={isArchived}
-          onClear={() => {
-            setSelectedCustomerIds(new Set())
-            setBlockedCustomers([])
-          }}
-          onSuccess={(result: BulkCustomerLifecycleResult) => {
-            setBlockedCustomers(result.blockedCustomers)
-            setSelectedCustomerIds(
-              new Set(
-                result.blockedCustomers
-                  .filter((customer) => customer.reason === 'IN_USE')
-                  .map((customer) => customer.id),
-              ),
+          singular={CUSTOMER_SINGULAR}
+          submit={async ({ ids, comment }) =>
+            toBulkCustomerLifecycleOutcome(
+              (isArchived
+                ? await mutations.reactivateMany.mutateAsync({ body: { ids, comment } })
+                : await mutations.archiveMany.mutateAsync({ body: { ids, comment } })
+              ).data,
             )
-          }}
+          }
         />
       )}
       <CustomerSheet

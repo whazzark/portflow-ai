@@ -26,7 +26,7 @@ As an authorized administrator, I want to archive an available transport company
 
 **Why this priority**: Retiring an obsolete provider without losing its history is the primary business outcome of the slice; without it, unusable companies stay selectable and pollute every operational choice.
 
-**Independent Test**: Sign in as an authorized administrator, open an available transport company whose trucks are all archived or that has no truck at all, confirm the archive with a comment, and verify that the company leaves the available collection, appears in the archived collection with its archival context, and is no longer offered for new operational use.
+**Independent Test**: Sign in as an authorized administrator, open an available transport company whose trucks are all archived or that has no truck at all, confirm the archive with a comment, and verify that the company leaves the available collection, appears in the archived collection with its archival context, and is no longer available for new operations.
 
 **Acceptance Scenarios**:
 
@@ -134,7 +134,7 @@ As an authorized administrator cleaning up the transport-company reference after
 - **FR-016**: The system MUST preserve every existing association between the company and its trucks across an archival; no truck record may be modified by this feature.
 - **FR-017**: The system MUST NOT permanently delete a transport company.
 - **FR-018**: A refused archival MUST leave the stored transport company, its lifecycle context, and its trucks entirely unchanged.
-- **FR-019**: The archive experience MUST require an explicit confirmation, MUST state that the company remains readable but is no longer selectable for new operational use, and MUST be offered only to users authorized to perform it.
+- **FR-019**: The archive experience MUST require an explicit confirmation, MUST name the company and state that it remains readable but is no longer available for new operations, and MUST be offered only to users authorized to perform it. This wording is the one every site reference uses for archival; it is owned by `apps/web/src/components/lifecycle/lifecycle-copy.ts`.
 - **FR-020**: The administrator MUST be able to abandon an archival in progress, leaving every targeted company unchanged.
 - **FR-021**: The system MUST report the outcome of an archival attempt to the administrator, distinguishing success, available-truck conflict, already archived, company not found, comment validation failure, unauthorized access, and retryable save failure.
 - **FR-022**: Authorization and lifecycle decisions MUST be enforced authoritatively by the system regardless of what the user experience offers.
