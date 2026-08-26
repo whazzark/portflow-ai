@@ -571,6 +571,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/weighing_areas_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'warehouse_doors.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/warehouse-doors'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#warehouse_doors/shared/warehouse_door_validator').createWarehouseDoorValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#warehouse_doors/shared/warehouse_door_validator').createWarehouseDoorValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'warehouse_doors.available': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/warehouse-doors/available'

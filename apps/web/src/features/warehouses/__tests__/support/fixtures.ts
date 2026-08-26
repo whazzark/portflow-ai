@@ -1,3 +1,4 @@
+import type { Route } from '@tuyau/core/types'
 import type { WarehouseDoorDto, WarehouseWithDoorsDto } from '@/features/warehouses/types'
 
 export const API_BASE_URL = 'http://localhost:3333'
@@ -254,3 +255,37 @@ export const UPDATED_WAREHOUSE: WarehouseWithDoorsDto = {
     ],
   },
 }
+
+/** What `POST /api/v1/warehouse-doors` returns: the standalone door DTO, which carries its
+ * containing warehouse and its creation time and none of the lifecycle context an embedded door
+ * has. Derived from the write contract rather than hand-written. */
+export type CreatedWarehouseDoorDto = Route.Response<'warehouse_doors.store'>['data']
+
+export const CREATED_DOOR: CreatedWarehouseDoorDto = {
+  id: '55555555-5555-4555-8555-555555555555',
+  warehouseId: WAREHOUSES[0].id,
+  name: 'South Door',
+  status: 'AVAILABLE',
+  latitude: 48.853,
+  longitude: 2.35,
+  createdAt: '2026-08-26T09:12:44.000Z',
+}
+
+/** The same door as the warehouse collection embeds it, for the refetch that follows creation. */
+export const WAREHOUSES_WITH_CREATED_DOOR: WarehouseWithDoorsDto[] = [
+  {
+    ...WAREHOUSES[0],
+    doors: [
+      ...(WAREHOUSES[0].doors ?? []),
+      {
+        id: CREATED_DOOR.id,
+        name: CREATED_DOOR.name,
+        status: 'AVAILABLE',
+        latitude: CREATED_DOOR.latitude,
+        longitude: CREATED_DOOR.longitude,
+        ...doorLifecycle(),
+      },
+    ],
+  },
+  WAREHOUSES[1],
+]

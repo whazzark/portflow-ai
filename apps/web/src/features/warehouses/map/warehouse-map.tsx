@@ -1,9 +1,13 @@
-import { SquareDashedMousePointer } from 'lucide-react'
+import { DoorOpenIcon, SquareDashedMousePointer } from 'lucide-react'
 import { LngLatBounds } from 'maplibre-gl'
 import { useEffect, useMemo, useState } from 'react'
 import type { ResourceMapCreateAction } from '@/components/resource-map/resource-map-create-control'
 import { ResourceMapCreateControl } from '@/components/resource-map/resource-map-create-control'
-import type { LatLng } from '@/components/resource-map/resource-map-placement'
+import {
+  type LatLng,
+  PendingPlacementMarker,
+  useResourceMapPlacement,
+} from '@/components/resource-map/resource-map-placement'
 import { EditablePolygonPlacement } from '@/components/resource-map/resource-map-polygon-editing'
 import { PendingPolygonPlacement } from '@/components/resource-map/resource-map-polygon-placement'
 import {
@@ -34,6 +38,35 @@ export type WarehouseMapPlacement = {
   onMovePoint: (index: number, point: LatLng) => void
   onComplete: () => void
   completed: boolean
+}
+
+export type WarehouseMapDoorPlacement = {
+  armed: boolean
+  pending: LatLng | null
+  onPlace: (point: LatLng) => void
+  onMove: (point: LatLng) => void
+}
+
+/** Composes the shared click-to-place hook with the shared pending marker, exactly as
+ * `CheckpointPlacementLayer` does: what is shared is the hook and the marker, while the icon, the
+ * label, and what arms them are this feature's business. Must be used inside a `<Map>`. */
+function WarehouseDoorPlacementLayer({ placement }: { placement: WarehouseMapDoorPlacement }) {
+  useResourceMapPlacement({ armed: placement.armed, onPlace: placement.onPlace })
+
+  if (!placement.pending) {
+    return null
+  }
+
+  return (
+    <PendingPlacementMarker label="New door" onMove={placement.onMove} position={placement.pending}>
+      <span
+        className="grid size-8 place-items-center rounded-full border-2 border-white bg-primary text-primary-foreground shadow-lg dark:border-neutral-900"
+        data-pending-placement-marker
+      >
+        <DoorOpenIcon aria-hidden="true" className="size-4" />
+      </span>
+    </PendingPlacementMarker>
+  )
 }
 
 export type WarehouseMapEditing = {
@@ -152,6 +185,7 @@ export function WarehouseMap({
   selectedDoorId,
   onDoorSelect,
   placement,
+  doorPlacement,
   editing,
   createActions = [],
   selectMode = false,
@@ -170,6 +204,7 @@ export function WarehouseMap({
   selectedDoorId?: string
   onDoorSelect?: (door: WarehouseDoorDto) => void
   placement?: WarehouseMapPlacement
+  doorPlacement?: WarehouseMapDoorPlacement
   editing?: WarehouseMapEditing
   createActions?: ResourceMapCreateAction[]
   selectMode?: boolean
@@ -183,7 +218,12 @@ export function WarehouseMap({
   const [hoveredDoorId, setHoveredDoorId] = useState<string>()
   // A ring under correction owns the map exactly like an armed drawing does: nothing else is
   // selectable, and the view must not re-fit under the administrator on every vertex they move.
+  // Only a ring being drawn or corrected suppresses the fit: those change the bounds under the
+  // administrator on every vertex. Door placement changes no polygon — the bounds stay the selected
+  // warehouse's stored footprint — so it keeps the fit and only stops other things being selected.
   const isArmed = (placement?.armed ?? false) || editing !== undefined
+  const isDoorPlacementArmed = doorPlacement?.armed ?? false
+  const suppressesSelection = isArmed || isDoorPlacementArmed
   const initialCenter = useMemo<[number, number]>(() => {
     const point = warehouses[0]?.footprint.points[0]
     return point ? [point.longitude, point.latitude] : [-1.2264, 46.1591]
@@ -210,7 +250,7 @@ export function WarehouseMap({
           selectedId={selected?.id}
           onSelect={onSelect}
           hideTooltip={hoveredDoorId !== undefined}
-          disabled={isArmed}
+          disabled={suppressesSelection}
           selectMode={selectMode}
           checkedIds={checkedIds}
           checkableIds={checkableIds}
@@ -237,6 +277,7 @@ export function WarehouseMap({
             points={placement.points}
           />
         )}
+        {doorPlacement && <WarehouseDoorPlacementLayer placement={doorPlacement} />}
         {/* Doors stay rendered while the ring is corrected: they are the constraint the
             administrator is shaping around, so hiding them would make a refusal feel arbitrary. */}
         {selected &&
@@ -246,7 +287,9 @@ export function WarehouseMap({
               key={door.id}
               door={door}
               doors={doors}
-              onSelect={onDoorSelect}
+              // While a door is being placed, a click on an existing marker must place the pending
+              // point rather than select that door — the map only places in this mode.
+              onSelect={isDoorPlacementArmed ? undefined : onDoorSelect}
               selected={door.id === selectedDoorId}
               onHoverChange={(hovered) => setHoveredDoorId(hovered ? door.id : undefined)}
             />
@@ -269,7 +312,7 @@ export function WarehouseMap({
       <section aria-label="Warehouses on map" className="sr-only">
         {warehouses.map((warehouse) => (
           <button
-            disabled={isArmed}
+            disabled={suppressesSelection}
             key={warehouse.id}
             onClick={() => onSelect(warehouse)}
             title={`${warehouse.name} — ${warehouse.status === 'AVAILABLE' ? 'Available' : 'Archived'}`}

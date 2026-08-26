@@ -2,6 +2,7 @@ import type { MouseEvent } from 'react'
 import type { ResourceMapCreateAction } from '@/components/resource-map/resource-map-create-control'
 import type { WarehouseDoorDto } from '@/features/warehouse-doors/types'
 import type {
+  WarehouseMapDoorPlacement,
   WarehouseMapEditing,
   WarehouseMapPlacement,
 } from '@/features/warehouses/map/warehouse-map'
@@ -9,6 +10,13 @@ import type { PresentedWarehouse } from '@/features/warehouses/types'
 
 /** Deterministic coordinates handed out by successive "map clicks", so a drawing test can build a
  * valid three-point footprint without MapLibre. */
+/** Two points inside the first fixture warehouse's footprint, so a door placement test can place
+ * and then move the pending door without leaving the warehouse it belongs to. */
+export const MOCK_DOOR_CLICK_POINTS = [
+  { latitude: 48.853, longitude: 2.35 },
+  { latitude: 48.854, longitude: 2.351 },
+]
+
 export const MOCK_CLICK_POINTS = [
   { latitude: 10.5, longitude: 20.5 },
   { latitude: 11.5, longitude: 21.5 },
@@ -28,6 +36,7 @@ export function WarehouseMap({
   doors = [],
   onDoorSelect,
   placement,
+  doorPlacement,
   editing,
   createActions = [],
   selectMode = false,
@@ -46,6 +55,7 @@ export function WarehouseMap({
   selectedDoorId?: string
   onDoorSelect?: (door: WarehouseDoorDto) => void
   placement?: WarehouseMapPlacement
+  doorPlacement?: WarehouseMapDoorPlacement
   editing?: WarehouseMapEditing
   createActions?: ResourceMapCreateAction[]
   selectMode?: boolean
@@ -56,6 +66,7 @@ export function WarehouseMap({
   onShiftSelect?: (id: string) => void
 }) {
   const isArmed = placement?.armed ?? false
+  const isPlacingDoor = doorPlacement?.armed ?? false
   const points = placement?.points ?? []
   const editedPoints = editing?.points ?? []
   const canRemove = editedPoints.length > (editing?.minimumPoints ?? 3)
@@ -92,7 +103,7 @@ export function WarehouseMap({
             // selectable — mirrors `useResourceMapPlacement` arming the real canvas.
             // A warehouse under correction owns the map too: its own ring is being edited, so no
             // other warehouse is selectable either.
-            disabled={isArmed || editing !== undefined}
+            disabled={isArmed || isPlacingDoor || editing !== undefined}
             key={warehouse.id}
             onClick={(event: MouseEvent<HTMLButtonElement>) => {
               if (isCheckable && event.shiftKey && onShiftSelect) {
@@ -112,10 +123,52 @@ export function WarehouseMap({
         )
       })}
       {doors.map((door) => (
-        <button key={door.id} onClick={() => onDoorSelect?.(door)} type="button">
+        <button
+          disabled={isPlacingDoor}
+          key={door.id}
+          onClick={() => onDoorSelect?.(door)}
+          type="button"
+        >
           {door.name} door marker
         </button>
       ))}
+      {isPlacingDoor && (
+        <>
+          <button
+            onClick={() =>
+              doorPlacement?.onPlace(MOCK_DOOR_CLICK_POINTS[doorPlacement.pending ? 1 : 0])
+            }
+            type="button"
+          >
+            Simulate map click to place the door
+          </button>
+          {doorPlacement?.pending && (
+            <>
+              <span data-testid="pending-door">
+                {doorPlacement.pending.latitude}, {doorPlacement.pending.longitude}
+              </span>
+              <span>New door</span>
+              <button
+                onClick={() =>
+                  doorPlacement.onMove({
+                    latitude: (doorPlacement.pending?.latitude ?? 0) + 0.0005,
+                    longitude: (doorPlacement.pending?.longitude ?? 0) + 0.0005,
+                  })
+                }
+                type="button"
+              >
+                Simulate dragging the pending door
+              </button>
+              <button
+                onClick={() => doorPlacement.onMove({ latitude: 10, longitude: 10 })}
+                type="button"
+              >
+                Simulate dragging the pending door outside the footprint
+              </button>
+            </>
+          )}
+        </>
+      )}
       {isArmed && !placement?.completed && (
         <button
           onClick={() =>

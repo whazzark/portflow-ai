@@ -6,7 +6,10 @@ import { WarehousesPage } from '@/features/warehouses/ui/warehouses-page'
 import { WarehousesPending } from '@/features/warehouses/ui/warehouses-pending'
 
 const warehouseSearchSchema = z.object({
-  create: z.literal('warehouse').optional().catch(undefined),
+  // `door` is honoured only alongside a `warehouseId` naming an available warehouse: door creation
+  // is scoped to one warehouse, not to the page. One param holding one value is also what keeps the
+  // two creation modes from ever being armed together.
+  create: z.enum(['warehouse', 'door']).optional().catch(undefined),
   doorId: z.string().optional().catch(undefined),
   doorStatus: z.enum(['available', 'archived']).optional().catch(undefined),
   edit: z.literal('warehouse').optional().catch(undefined),

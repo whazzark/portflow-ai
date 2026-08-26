@@ -64,6 +64,7 @@ export interface ApiDefinition {
     reactivate: typeof routes['weighing_areas.reactivate']
   }
   warehouseDoors: {
+    store: typeof routes['warehouse_doors.store']
     available: typeof routes['warehouse_doors.available']
   }
   warehouses: {
