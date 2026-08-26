@@ -169,9 +169,24 @@ test('restores an open record from the initial URL', async () => {
 test('drops a userId naming no user of the visible view', async () => {
   mockUsers(undefined, USERS)
 
+  const { router } = renderUsers('/users?status=active&userId=pending-1')
+
+  await screen.findByRole('table', { name: 'Active users' })
+
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  // Dropped from the URL, not merely ignored: left there it would reopen on its own below.
+  await waitFor(() => expect(router.state.location.search).not.toHaveProperty('userId'))
+})
+
+test('does not reopen a dropped record when its user comes back into view', async () => {
+  const user = userEvent.setup()
+  mockUsers(undefined, USERS)
+
   renderUsers('/users?status=active&userId=pending-1')
 
   await screen.findByRole('table', { name: 'Active users' })
+  await user.click(screen.getByRole('tab', { name: /Pending/ }))
+  await screen.findByRole('table', { name: 'Pending users' })
 
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })

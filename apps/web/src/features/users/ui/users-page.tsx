@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { OnChangeFn, SortingState } from '@tanstack/react-table'
 import { FilterIcon } from 'lucide-react'
+import { useEffect } from 'react'
 import { InputSearch } from '@/components/ui/input-search'
 import {
   Select,
@@ -45,11 +46,7 @@ export function UsersPage() {
   const viewer = useAuthenticatedUser()
   const usersQuery = useQuery(userQueries.list())
 
-  if (!usersQuery.data) {
-    return null
-  }
-
-  const users = usersQuery.data.data
+  const users = usersQuery.data?.data ?? []
   // An operations admin consults the active set and nothing else, so no status view is offered:
   // an empty "Pending" or "Deactivated" tab would itself disclose a collection they may not read.
   const consultsEveryStatus = viewer.role === 'ORGANIZATION_ADMIN'
@@ -75,7 +72,6 @@ export function UsersPage() {
   // closes as soon as its user leaves the visible view.
   const visibleUsers = usersOf(consultsEveryStatus ? status : 'active')
   const openUser = userId ? visibleUsers.find((user) => user.id === userId) : undefined
-  const openUserId = openUser ? userId : undefined
 
   const openRecord = (nextUserId: string) =>
     void navigate({ search: (previous) => ({ ...previous, userId: nextUserId }) })
@@ -116,6 +112,19 @@ export function UsersPage() {
         order: nextSort?.desc ? 'desc' : 'asc',
       }),
     })
+  }
+
+  // A userId naming no visible user is dropped from the URL rather than merely ignored: left in
+  // place, it would reopen the record on its own as soon as a status change or a cleared filter
+  // brought its user back into view.
+  useEffect(() => {
+    if (userId && usersQuery.data && !openUser) {
+      void navigate({ replace: true, search: (previous) => ({ ...previous, userId: undefined }) })
+    }
+  }, [navigate, openUser, userId, usersQuery.data])
+
+  if (!usersQuery.data) {
+    return null
   }
 
   const tableFor = (view: UserStatusView) => (
@@ -195,7 +204,7 @@ export function UsersPage() {
         </section>
       )}
 
-      <UserSheet onClose={closeRecord} user={openUser} userId={openUserId} />
+      <UserSheet onClose={closeRecord} user={openUser} />
     </main>
   )
 }

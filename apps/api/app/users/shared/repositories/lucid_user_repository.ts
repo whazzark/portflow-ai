@@ -20,6 +20,7 @@ export default class LucidUserRepository extends UserRepository {
       .preload('reactivatedBy')
       .orderBy('lastName', 'asc')
       .orderBy('firstName', 'asc')
+      .orderBy('id', 'asc')
   }
 
   // No preload: the lifecycle actors are withheld from the viewers this read serves.
@@ -28,5 +29,6 @@ export default class LucidUserRepository extends UserRepository {
       .where('accessStatus', 'ACTIVE')
       .orderBy('lastName', 'asc')
       .orderBy('firstName', 'asc')
+      .orderBy('id', 'asc')
   }
 }

@@ -11,38 +11,28 @@ type AccessEvent = {
   by: LifecycleActor
 }
 
+/** An event the organization actually recorded: it carries the date the record presents. */
+type RecordedEvent = AccessEvent & { at: string }
+
 /**
  * Oldest first: the record reads as how the current access status was reached, and read as a story
  * it runs forward. Site references order newest first because their pane answers a different
  * question — the transition the record currently sits in.
  */
-function recordedEvents(user: UserDto): AccessEvent[] {
-  const entry = user as UserDto & Record<string, unknown>
+function recordedEvents(user: UserDto): RecordedEvent[] {
+  // Read straight off the DTO, uncast: dropping or renaming a lifecycle key in the API projection
+  // must break the build here rather than silently empty the history.
+  const events: AccessEvent[] = [
+    { key: 'invited', label: 'Invited', at: user.invitedAt, by: user.invitedBy },
+    { key: 'activated', label: 'Activated', at: user.activatedAt, by: user.activatedBy },
+    { key: 'cancelled', label: 'Cancelled', at: user.cancelledAt, by: user.cancelledBy },
+    { key: 'deactivated', label: 'Deactivated', at: user.deactivatedAt, by: user.deactivatedBy },
+    { key: 'reactivated', label: 'Reactivated', at: user.reactivatedAt, by: user.reactivatedBy },
+  ]
 
-  return (
-    [
-      { key: 'invited', label: 'Invited', at: entry.invitedAt, by: entry.invitedBy },
-      { key: 'activated', label: 'Activated', at: entry.activatedAt, by: entry.activatedBy },
-      { key: 'cancelled', label: 'Cancelled', at: entry.cancelledAt, by: entry.cancelledBy },
-      {
-        key: 'deactivated',
-        label: 'Deactivated',
-        at: entry.deactivatedAt,
-        by: entry.deactivatedBy,
-      },
-      {
-        key: 'reactivated',
-        label: 'Reactivated',
-        at: entry.reactivatedAt,
-        by: entry.reactivatedBy,
-      },
-    ] as AccessEvent[]
-  )
-    .filter((event) => Boolean(event.at))
-    .sort(
-      (left, right) =>
-        new Date(left.at as string).getTime() - new Date(right.at as string).getTime(),
-    )
+  return events
+    .filter((event): event is RecordedEvent => Boolean(event.at))
+    .sort((left, right) => new Date(left.at).getTime() - new Date(right.at).getTime())
 }
 
 export function UserAccessHistory({ user }: { user: UserDto }) {
@@ -61,7 +51,7 @@ export function UserAccessHistory({ user }: { user: UserDto }) {
         {events.map((event) => (
           <li className="grid gap-1" key={event.key}>
             <span className="font-medium">{event.label}</span>
-            <span className="text-muted-foreground">{formatDateTime(event.at ?? null)}</span>
+            <span className="text-muted-foreground">{formatDateTime(event.at)}</span>
             {event.by && (
               <span className="text-muted-foreground">by {formatFullName(event.by)}</span>
             )}

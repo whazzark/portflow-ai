@@ -13,12 +13,10 @@ export default class UsersController {
     await bouncer.with(UserPolicy).authorize('list')
 
     const viewer = auth.getUserOrFail()
-    const users = await this.listUsersUseCase.handle(viewer)
+    const { users, includeAccessHistory } = await this.listUsersUseCase.handle(viewer)
 
     return serialize(
-      UserTransformer.transform(users, {
-        includeAccessHistory: viewer.role === 'ORGANIZATION_ADMIN',
-      }).useVariant('toAdministration'),
+      UserTransformer.transform(users, { includeAccessHistory }).useVariant('toAdministration'),
     )
   }
 }

@@ -31,7 +31,8 @@ test.group('ListUsersUseCase', (group) => {
 
     const result = await (await app.container.make(ListUsersUseCase)).handle(viewer)
 
-    assert.strictEqual(result, users)
+    assert.strictEqual(result.users, users)
+    assert.isTrue(result.includeAccessHistory)
     assert.isFalse(listActiveCalled)
   })
 
@@ -54,8 +55,10 @@ test.group('ListUsersUseCase', (group) => {
 
     const result = await (await app.container.make(ListUsersUseCase)).handle(viewer)
 
-    assert.strictEqual(result, activeUsers)
-    // The whole-organization read is never reached, so the lifecycle actors are never even loaded.
+    assert.strictEqual(result.users, activeUsers)
+    // The whole-organization read is never reached, so the lifecycle actors are never even loaded,
+    // and the access history is withheld for exactly that reason.
+    assert.isFalse(result.includeAccessHistory)
     assert.isFalse(listCalled)
   })
 
@@ -68,6 +71,6 @@ test.group('ListUsersUseCase', (group) => {
 
     const result = await (await app.container.make(ListUsersUseCase)).handle(viewer)
 
-    assert.isEmpty(result)
+    assert.isEmpty(result.users)
   })
 })
