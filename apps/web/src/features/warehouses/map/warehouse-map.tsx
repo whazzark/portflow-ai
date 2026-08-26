@@ -84,11 +84,11 @@ export type WarehouseMapEditing = {
 }
 
 function getFitPadding(
-  selected: PresentedWarehouse | undefined,
+  hasSelection: boolean,
   detailsPanelSide: DetailsPanelSide | undefined,
   viewportHeight: number,
 ) {
-  if (!selected || !detailsPanelSide) {
+  if (!hasSelection || !detailsPanelSide) {
     return MAP_EDGE_PADDING
   }
 
@@ -124,29 +124,30 @@ function FitWarehouseBounds({
   const [viewportHeight, setViewportHeight] = useState(() =>
     typeof window === 'undefined' ? 0 : window.innerHeight,
   )
+  const hasSelection = selected !== undefined
+  // The page presents its warehouses afresh on every render, so the frames are keyed by value the
+  // way the checkpoint map keys its own: keyed by identity, the fit would replay on every state
+  // change — each door point placed, each coordinate typed — and haul the view back from wherever
+  // the administrator had panned or zoomed it.
+  const framesKey = (selected ? [selected] : warehouses)
+    .map((warehouse) => getFootprintBounds(warehouse.footprint.points))
+    .filter((frame): frame is NonNullable<typeof frame> => frame !== null)
+    .map((frame) =>
+      [frame.minLongitude, frame.minLatitude, frame.maxLongitude, frame.maxLatitude].join(':'),
+    )
+    .sort()
+    .join('|')
   const bounds = useMemo(() => {
-    const items = selected ? [selected] : warehouses
-    const frames = items
-      .map((warehouse) => getFootprintBounds(warehouse.footprint.points))
-      .filter((frame): frame is NonNullable<typeof frame> => frame !== null)
-
-    if (frames.length === 0) {
+    if (!framesKey) {
       return null
     }
 
-    return frames
-      .slice(1)
-      .reduce(
-        (current, frame) =>
-          current
-            .extend([frame.minLongitude, frame.minLatitude])
-            .extend([frame.maxLongitude, frame.maxLatitude]),
-        new LngLatBounds(
-          [frames[0].minLongitude, frames[0].minLatitude],
-          [frames[0].maxLongitude, frames[0].maxLatitude],
-        ),
-      )
-  }, [selected, warehouses])
+    return framesKey.split('|').reduce((current, frame) => {
+      const [minLongitude, minLatitude, maxLongitude, maxLatitude] = frame.split(':').map(Number)
+
+      return current.extend([minLongitude, minLatitude]).extend([maxLongitude, maxLatitude])
+    }, new LngLatBounds())
+  }, [framesKey])
 
   useEffect(() => {
     if (detailsPanelSide !== 'bottom') {
@@ -169,15 +170,15 @@ function FitWarehouseBounds({
     if (northEast.lng === southWest.lng && northEast.lat === southWest.lat) {
       map.easeTo({
         center: bounds.getCenter(),
-        zoom: selected ? SELECTED_MAX_ZOOM : COLLECTION_MAX_ZOOM,
+        zoom: hasSelection ? SELECTED_MAX_ZOOM : COLLECTION_MAX_ZOOM,
       })
       return
     }
     map.fitBounds(bounds, {
-      maxZoom: selected ? SELECTED_MAX_ZOOM : COLLECTION_MAX_ZOOM,
-      padding: getFitPadding(selected, detailsPanelSide, viewportHeight),
+      maxZoom: hasSelection ? SELECTED_MAX_ZOOM : COLLECTION_MAX_ZOOM,
+      padding: getFitPadding(hasSelection, detailsPanelSide, viewportHeight),
     })
-  }, [bounds, detailsPanelSide, isLoaded, map, selected, viewportHeight])
+  }, [bounds, detailsPanelSide, hasSelection, isLoaded, map, viewportHeight])
 
   return null
 }

@@ -84,6 +84,34 @@ describe('warehouse map framing', () => {
     )
   })
 
+  // The page presents its warehouses afresh on every render, so a fit keyed by prop identity would
+  // replay on every state change — every point a door placement puts down, every coordinate typed —
+  // and haul the view back from wherever the administrator had panned or zoomed it.
+  test('leaves the view alone when a render only rebuilds the same warehouses', async () => {
+    const { rerender } = render(
+      <WarehouseMap
+        detailsPanelSide="right"
+        onSelect={vi.fn()}
+        selected={warehouses[0]}
+        warehouses={warehouses}
+      />,
+    )
+
+    await waitFor(() => expect(fitBoundsMock).toHaveBeenCalledTimes(1))
+
+    const presentedAgain = presentWarehouses(WAREHOUSES, 'all', '')
+    rerender(
+      <WarehouseMap
+        detailsPanelSide="right"
+        onSelect={vi.fn()}
+        selected={presentedAgain[0]}
+        warehouses={presentedAgain}
+      />,
+    )
+
+    expect(fitBoundsMock).toHaveBeenCalledTimes(1)
+  })
+
   test('retains balanced overview framing without a selected warehouse', async () => {
     render(<WarehouseMap onSelect={vi.fn()} warehouses={warehouses} />)
 
