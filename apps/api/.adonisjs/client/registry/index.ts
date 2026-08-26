@@ -192,6 +192,12 @@ const routes = {
     tokens: [{"old":"/api/v1/trucks/:id/return-to-service","type":0,"val":"api","end":""},{"old":"/api/v1/trucks/:id/return-to-service","type":0,"val":"v1","end":""},{"old":"/api/v1/trucks/:id/return-to-service","type":0,"val":"trucks","end":""},{"old":"/api/v1/trucks/:id/return-to-service","type":1,"val":"id","end":""},{"old":"/api/v1/trucks/:id/return-to-service","type":0,"val":"return-to-service","end":""}],
     types: placeholder as Registry['trucks.return_to_service']['types'],
   },
+  'users.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/users',
+    tokens: [{"old":"/api/v1/users","type":0,"val":"api","end":""},{"old":"/api/v1/users","type":0,"val":"v1","end":""},{"old":"/api/v1/users","type":0,"val":"users","end":""}],
+    types: placeholder as Registry['users.index']['types'],
+  },
   'docks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/docks',

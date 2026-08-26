@@ -43,6 +43,9 @@ export interface ApiDefinition {
     suspend: typeof routes['trucks.suspend']
     returnToService: typeof routes['trucks.return_to_service']
   }
+  users: {
+    index: typeof routes['users.index']
+  }
   docks: {
     index: typeof routes['docks.index']
     store: typeof routes['docks.store']

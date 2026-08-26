@@ -12,6 +12,7 @@ export const controllers = {
   Me: () => import('#controllers/me_controller'),
   TransportCompanies: () => import('#controllers/transport_companies_controller'),
   Trucks: () => import('#controllers/trucks_controller'),
+  Users: () => import('#controllers/users_controller'),
   WarehouseDoors: () => import('#controllers/warehouse_doors_controller'),
   Warehouses: () => import('#controllers/warehouses_controller'),
   WeighingAreas: () => import('#controllers/weighing_areas_controller'),
