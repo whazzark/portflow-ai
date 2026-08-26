@@ -277,7 +277,12 @@ export default class LucidTruckRepository extends TruckRepository {
 
   archiveAvailableMany(command: ArchiveTrucksCommand): Promise<BulkTruckLifecycleResult> {
     return Truck.transaction(async (trx) => {
-      const trucks = await Truck.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      // Ordered by id so concurrent bulk archives and reactivations over overlapping id sets
+      // always take the row locks in the same order, and can never deadlock each other.
+      const trucks = await Truck.query({ client: trx })
+        .whereIn('id', command.ids)
+        .orderBy('id', 'asc')
+        .forUpdate()
       const trucksById = indexTrucksById(trucks)
       const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
         referenceType: 'TRUCK',

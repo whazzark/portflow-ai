@@ -186,8 +186,11 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
     command: ArchiveTransportCompaniesCommand,
   ): Promise<BulkTransportCompanyLifecycleResult> {
     return TransportCompany.transaction(async (trx) => {
+      // Ordered by id so concurrent bulk archives and reactivations over overlapping id sets
+      // always take the row locks in the same order, and can never deadlock each other.
       const companies = await TransportCompany.query({ client: trx })
         .whereIn('id', command.ids)
+        .orderBy('id')
         .forUpdate()
       const companiesById = indexCompaniesById(companies)
       const companyIdsWithAvailableTrucks =
@@ -280,8 +283,11 @@ export default class LucidTransportCompanyRepository extends TransportCompanyRep
     command: ReactivateTransportCompaniesCommand,
   ): Promise<BulkTransportCompanyLifecycleResult> {
     return TransportCompany.transaction(async (trx) => {
+      // Ordered by id so concurrent bulk archives and reactivations over overlapping id sets
+      // always take the row locks in the same order, and can never deadlock each other.
       const companies = await TransportCompany.query({ client: trx })
         .whereIn('id', command.ids)
+        .orderBy('id')
         .forUpdate()
       const companiesById = indexCompaniesById(companies)
       // No truck read here, unlike archiveAvailableMany: reactivation has no blocking rule, so

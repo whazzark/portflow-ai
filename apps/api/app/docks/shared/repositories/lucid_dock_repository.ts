@@ -148,7 +148,12 @@ export default class LucidDockRepository extends DockRepository {
 
   archiveAvailableMany(command: ArchiveDocksCommand): Promise<BulkDockLifecycleResult> {
     return Dock.transaction(async (trx) => {
-      const docks = await Dock.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      // Ordered by id so concurrent bulk archives and reactivations over overlapping id sets
+      // always take the row locks in the same order, and can never deadlock each other.
+      const docks = await Dock.query({ client: trx })
+        .whereIn('id', command.ids)
+        .orderBy('id')
+        .forUpdate()
       const docksById = indexDocksById(docks)
       const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
         referenceType: 'DOCK',
@@ -186,7 +191,12 @@ export default class LucidDockRepository extends DockRepository {
 
   reactivateArchivedMany(command: ReactivateDocksCommand): Promise<BulkDockLifecycleResult> {
     return Dock.transaction(async (trx) => {
-      const docks = await Dock.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      // Ordered by id so concurrent bulk archives and reactivations over overlapping id sets
+      // always take the row locks in the same order, and can never deadlock each other.
+      const docks = await Dock.query({ client: trx })
+        .whereIn('id', command.ids)
+        .orderBy('id')
+        .forUpdate()
       const docksById = indexDocksById(docks)
       const blockers = findBulkBlockers(command.ids, docksById, 'ARCHIVED')
 

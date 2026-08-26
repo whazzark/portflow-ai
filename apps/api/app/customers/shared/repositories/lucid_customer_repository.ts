@@ -186,7 +186,12 @@ export default class LucidCustomerRepository extends CustomerRepository {
 
   archiveAvailableMany(command: ArchiveCustomersCommand): Promise<BulkCustomerLifecycleResult> {
     return Customer.transaction(async (trx) => {
-      const customers = await Customer.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      // Ordered by id so concurrent bulk archives and reactivations over overlapping id sets
+      // always take the row locks in the same order, and can never deadlock each other.
+      const customers = await Customer.query({ client: trx })
+        .whereIn('id', command.ids)
+        .orderBy('id')
+        .forUpdate()
       const customersById = indexCustomersById(customers)
       const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
         referenceType: 'CUSTOMER',
@@ -226,7 +231,12 @@ export default class LucidCustomerRepository extends CustomerRepository {
     command: ReactivateCustomersCommand,
   ): Promise<BulkCustomerLifecycleResult> {
     return Customer.transaction(async (trx) => {
-      const customers = await Customer.query({ client: trx }).whereIn('id', command.ids).forUpdate()
+      // Ordered by id so concurrent bulk archives and reactivations over overlapping id sets
+      // always take the row locks in the same order, and can never deadlock each other.
+      const customers = await Customer.query({ client: trx })
+        .whereIn('id', command.ids)
+        .orderBy('id')
+        .forUpdate()
       const customersById = indexCustomersById(customers)
       const blockers = findBulkBlockers(command.ids, customersById, 'ARCHIVED')
       const blockedIds = new Set(blockers.map((blocker) => blocker.id))
