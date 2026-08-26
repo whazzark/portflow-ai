@@ -49,6 +49,7 @@ import {
   WAREHOUSE_BLOCKER_REASON_LABELS,
   WAREHOUSE_PLURAL,
   WAREHOUSE_SINGULAR,
+  WarehouseLifecycleActions,
 } from '@/features/warehouses/warehouse-lifecycle'
 import { presentWarehouses, warehouseMatchesSearch } from '@/features/warehouses/warehouse-search'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -691,7 +692,7 @@ export function WarehousesPage() {
           ) : (
             selected && (
               <div className="flex min-h-0 flex-1 flex-col">
-                <WarehouseDetails canManageLifecycle={canManageWarehouses} warehouse={selected} />
+                <WarehouseDetails warehouse={selected} />
                 <WarehouseDoorsPanel
                   warehouse={selected}
                   status={effectiveDoorStatus}
@@ -712,11 +713,16 @@ export function WarehousesPage() {
                       : undefined
                   }
                 />
-                {/* Archived warehouses are read-only until they are reactivated (#211), so the
-                    action is absent rather than disabled — as it is for archived trucks. */}
-                {canManageWarehouses && selected.status === 'AVAILABLE' && (
-                  <footer className="flex shrink-0 gap-2 border-t bg-popover px-5 py-4 md:px-6">
-                    <Button onClick={startUpdating}>Edit</Button>
+                {/* One footer for every action on the warehouse. Editing is absent rather than
+                    disabled for an archived warehouse, which is read-only until it is reactivated
+                    (#211) — as it is for archived trucks — while the lifecycle action itself is
+                    what offers that reactivation. */}
+                {canManageWarehouses && (
+                  <footer className="flex shrink-0 items-center gap-2 border-t bg-popover px-5 py-4 md:px-6">
+                    {selected.status === 'AVAILABLE' && (
+                      <Button onClick={startUpdating}>Edit</Button>
+                    )}
+                    <WarehouseLifecycleActions className="ml-auto" warehouse={selected} />
                   </footer>
                 )}
               </div>
