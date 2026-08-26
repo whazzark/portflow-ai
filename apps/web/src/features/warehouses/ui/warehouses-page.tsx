@@ -62,6 +62,12 @@ const warehousesRoute = getRouteApi('/_authenticated/warehouses')
 const statusForIntent = (intent: BulkLifecycleIntent): WarehouseStatus =>
   intent === 'REACTIVATE' ? 'ARCHIVED' : 'AVAILABLE'
 
+/** Door creation is scoped to the one warehouse it was opened for, so it is dropped whenever that
+ * selection changes or goes away. A `create=warehouse` is page-scoped — an armed drawing that owns
+ * the map — and survives those same navigations untouched. */
+const withoutDoorCreation = (create: 'warehouse' | 'door' | undefined) =>
+  create === 'door' ? undefined : create
+
 export function WarehousesPage() {
   const { create, doorId, doorStatus, edit, search, selecting, status, warehouseId } =
     warehousesRoute.useSearch()
@@ -241,13 +247,21 @@ export function WarehousesPage() {
     }
   }, [navigate, query.data, selected, warehouseId])
 
-  // `edit` is scoped to the selection it was opened for, so it never outlives it: left behind, it
-  // would arm the update mode for whichever warehouse is selected next.
+  // `edit` and a door-scoped `create` are scoped to the selection they were opened for, so neither
+  // ever outlives it: left behind, they would arm the update or the door-creation mode for
+  // whichever warehouse is selected next — including one arrived at from a shared URL.
   useEffect(() => {
-    if (edit && !warehouseId) {
-      void navigate({ replace: true, search: (previous) => ({ ...previous, edit: undefined }) })
+    if ((edit || create === 'door') && !warehouseId) {
+      void navigate({
+        replace: true,
+        search: (previous) => ({
+          ...previous,
+          create: withoutDoorCreation(previous.create),
+          edit: undefined,
+        }),
+      })
     }
-  }, [edit, navigate, warehouseId])
+  }, [create, edit, navigate, warehouseId])
 
   useEffect(() => {
     if (query.data && selected && doorId && !admittedDoor) {
@@ -273,6 +287,7 @@ export function WarehousesPage() {
         warehouseId: undefined,
         doorId: undefined,
         doorStatus: undefined,
+        create: withoutDoorCreation(previous.create),
         edit: undefined,
       }),
     })
@@ -283,6 +298,7 @@ export function WarehousesPage() {
         warehouseId: previous.warehouseId === warehouse.id ? undefined : warehouse.id,
         doorId: undefined,
         doorStatus: undefined,
+        create: withoutDoorCreation(previous.create),
         edit: undefined,
       }),
     })
