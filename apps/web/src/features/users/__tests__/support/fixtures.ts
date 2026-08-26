@@ -1,0 +1,136 @@
+import type { UserDto } from '@/features/users/types'
+
+export const API_BASE_URL = 'http://localhost:3333'
+
+export const ORGANIZATION_ADMIN = {
+  id: 'viewer-organization-admin',
+  firstName: 'Claire',
+  lastName: 'Martin',
+  email: 'claire.martin@portflow.test',
+  role: 'ORGANIZATION_ADMIN',
+  accessStatus: 'ACTIVE',
+}
+
+export const OPERATIONS_ADMIN = {
+  ...ORGANIZATION_ADMIN,
+  id: 'viewer-operations-admin',
+  role: 'OPERATIONS_ADMIN',
+  email: 'operations.admin@portflow.test',
+}
+
+export const OPERATIONS_LEAD = {
+  ...ORGANIZATION_ADMIN,
+  id: 'viewer-operations-lead',
+  role: 'OPERATIONS_LEAD',
+  email: 'operations.lead@portflow.test',
+}
+
+export const OBSERVER = {
+  ...ORGANIZATION_ADMIN,
+  id: 'viewer-observer',
+  role: 'OBSERVER',
+  email: 'observer@portflow.test',
+}
+
+const RESPONSIBLE_ADMIN = { id: 'admin-1', firstName: 'Yann', lastName: 'Le Goff' }
+
+const NO_LIFECYCLE = {
+  invitedAt: null,
+  invitedBy: null,
+  activatedAt: null,
+  activatedBy: null,
+  cancelledAt: null,
+  cancelledBy: null,
+  deactivatedAt: null,
+  deactivatedBy: null,
+  reactivatedAt: null,
+  reactivatedBy: null,
+}
+
+/**
+ * One user per access status, spanning every role, with recorded and unrecorded lifecycle events —
+ * including an event whose responsible administrator was never recorded.
+ */
+export const USERS: UserDto[] = [
+  {
+    id: 'active-1',
+    firstName: 'Amélie',
+    lastName: 'Bernard',
+    email: 'amelie.bernard@portflow.test',
+    role: 'ORGANIZATION_ADMIN',
+    accessStatus: 'ACTIVE',
+    ...NO_LIFECYCLE,
+    invitedAt: '2026-01-12T09:00:00.000Z',
+    invitedBy: RESPONSIBLE_ADMIN,
+    activatedAt: '2026-01-12T14:31:00.000Z',
+    // Recorded without a responsible administrator: the event must still be presented.
+    activatedBy: null,
+  },
+  {
+    id: 'active-2',
+    firstName: 'Bruno',
+    lastName: 'Costa',
+    email: 'bruno.costa@portflow.test',
+    role: 'OPERATIONS_LEAD',
+    accessStatus: 'ACTIVE',
+    ...NO_LIFECYCLE,
+    activatedAt: '2026-02-03T08:15:00.000Z',
+    activatedBy: RESPONSIBLE_ADMIN,
+  },
+  {
+    id: 'pending-1',
+    firstName: 'Chloé',
+    lastName: 'Durand',
+    email: 'chloe.durand@portflow.test',
+    role: 'OBSERVER',
+    accessStatus: 'PENDING',
+    ...NO_LIFECYCLE,
+    invitedAt: '2026-03-01T10:00:00.000Z',
+    invitedBy: RESPONSIBLE_ADMIN,
+  },
+  {
+    id: 'deactivated-1',
+    firstName: 'David',
+    lastName: 'Évrard',
+    email: 'david.evrard@portflow.test',
+    role: 'OPERATIONS_ADMIN',
+    accessStatus: 'DEACTIVATED',
+    ...NO_LIFECYCLE,
+    invitedAt: '2025-11-02T09:00:00.000Z',
+    invitedBy: RESPONSIBLE_ADMIN,
+    activatedAt: '2025-11-03T09:00:00.000Z',
+    activatedBy: RESPONSIBLE_ADMIN,
+    deactivatedAt: '2026-04-18T16:45:00.000Z',
+    deactivatedBy: RESPONSIBLE_ADMIN,
+  },
+  {
+    id: 'cancelled-1',
+    firstName: 'Élodie',
+    lastName: 'Fabre',
+    email: 'elodie.fabre@portflow.test',
+    role: 'OBSERVER',
+    accessStatus: 'CANCELLED',
+    ...NO_LIFECYCLE,
+    invitedAt: '2026-05-05T11:00:00.000Z',
+    invitedBy: RESPONSIBLE_ADMIN,
+    cancelledAt: '2026-05-09T11:30:00.000Z',
+    cancelledBy: RESPONSIBLE_ADMIN,
+  },
+]
+
+export const ACTIVE_USERS = USERS.filter((user) => user.accessStatus === 'ACTIVE')
+
+/**
+ * What an operations admin receives: the active users, identity block only, with no lifecycle key
+ * present at all.
+ */
+export const ACTIVE_USERS_WITHOUT_LIFECYCLE = ACTIVE_USERS.map(
+  ({ id, firstName, lastName, email, role, accessStatus }) => ({
+    id,
+    firstName,
+    lastName,
+    email,
+    role,
+    accessStatus,
+  }),
+) as UserDto[]

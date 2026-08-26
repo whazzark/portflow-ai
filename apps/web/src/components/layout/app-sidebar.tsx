@@ -82,7 +82,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
             <NavigationGroup
               group={{
                 label: 'Administration',
-                items: [{ label: 'Users', icon: UsersIcon }],
+                items: [{ label: 'Users', icon: UsersIcon, href: '/users' }],
               }}
             />
           )}
