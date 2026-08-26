@@ -1,9 +1,13 @@
-import { SquareDashedMousePointer } from 'lucide-react'
+import { DoorOpenIcon, SquareDashedMousePointer } from 'lucide-react'
 import { LngLatBounds } from 'maplibre-gl'
 import { useEffect, useMemo, useState } from 'react'
 import type { ResourceMapCreateAction } from '@/components/resource-map/resource-map-create-control'
 import { ResourceMapCreateControl } from '@/components/resource-map/resource-map-create-control'
-import type { LatLng } from '@/components/resource-map/resource-map-placement'
+import {
+  type LatLng,
+  PendingPlacementMarker,
+  useResourceMapPlacement,
+} from '@/components/resource-map/resource-map-placement'
 import { EditablePolygonPlacement } from '@/components/resource-map/resource-map-polygon-editing'
 import { PendingPolygonPlacement } from '@/components/resource-map/resource-map-polygon-placement'
 import {
@@ -21,6 +25,10 @@ import { WarehousePolygons } from '@/features/warehouses/map/warehouse-polygon'
 import type { PresentedWarehouse } from '@/features/warehouses/types'
 
 const MAP_EDGE_PADDING = 56
+/** A selected warehouse is framed as tightly as the basemap allows, so its doors are far enough
+ * apart to tell apart and to place a new one between them. The collection view stays wide. */
+const SELECTED_MAX_ZOOM = 19
+const COLLECTION_MAX_ZOOM = 13
 const DESKTOP_PANEL_MAX_WIDTH = 32 * 16
 const MOBILE_PANEL_MAX_HEIGHT = 38 * 16
 const MOBILE_PANEL_VIEWPORT_RATIO = 0.75
@@ -36,6 +44,35 @@ export type WarehouseMapPlacement = {
   completed: boolean
 }
 
+export type WarehouseMapDoorPlacement = {
+  armed: boolean
+  pending: LatLng | null
+  onPlace: (point: LatLng) => void
+  onMove: (point: LatLng) => void
+}
+
+/** Composes the shared click-to-place hook with the shared pending marker, exactly as
+ * `CheckpointPlacementLayer` does: what is shared is the hook and the marker, while the icon, the
+ * label, and what arms them are this feature's business. Must be used inside a `<Map>`. */
+function WarehouseDoorPlacementLayer({ placement }: { placement: WarehouseMapDoorPlacement }) {
+  useResourceMapPlacement({ armed: placement.armed, onPlace: placement.onPlace })
+
+  if (!placement.pending) {
+    return null
+  }
+
+  return (
+    <PendingPlacementMarker label="New door" onMove={placement.onMove} position={placement.pending}>
+      <span
+        className="grid size-8 place-items-center rounded-full border-2 border-white bg-primary text-primary-foreground shadow-lg dark:border-neutral-900"
+        data-pending-placement-marker
+      >
+        <DoorOpenIcon aria-hidden="true" className="size-4" />
+      </span>
+    </PendingPlacementMarker>
+  )
+}
+
 export type WarehouseMapEditing = {
   /** The warehouse whose ring is being corrected — excluded from the selection layer meanwhile. */
   warehouseId: string
@@ -47,11 +84,11 @@ export type WarehouseMapEditing = {
 }
 
 function getFitPadding(
-  selected: PresentedWarehouse | undefined,
+  hasSelection: boolean,
   detailsPanelSide: DetailsPanelSide | undefined,
   viewportHeight: number,
 ) {
-  if (!selected || !detailsPanelSide) {
+  if (!hasSelection || !detailsPanelSide) {
     return MAP_EDGE_PADDING
   }
 
@@ -87,29 +124,30 @@ function FitWarehouseBounds({
   const [viewportHeight, setViewportHeight] = useState(() =>
     typeof window === 'undefined' ? 0 : window.innerHeight,
   )
+  const hasSelection = selected !== undefined
+  // The page presents its warehouses afresh on every render, so the frames are keyed by value the
+  // way the checkpoint map keys its own: keyed by identity, the fit would replay on every state
+  // change — each door point placed, each coordinate typed — and haul the view back from wherever
+  // the administrator had panned or zoomed it.
+  const framesKey = (selected ? [selected] : warehouses)
+    .map((warehouse) => getFootprintBounds(warehouse.footprint.points))
+    .filter((frame): frame is NonNullable<typeof frame> => frame !== null)
+    .map((frame) =>
+      [frame.minLongitude, frame.minLatitude, frame.maxLongitude, frame.maxLatitude].join(':'),
+    )
+    .sort()
+    .join('|')
   const bounds = useMemo(() => {
-    const items = selected ? [selected] : warehouses
-    const frames = items
-      .map((warehouse) => getFootprintBounds(warehouse.footprint.points))
-      .filter((frame): frame is NonNullable<typeof frame> => frame !== null)
-
-    if (frames.length === 0) {
+    if (!framesKey) {
       return null
     }
 
-    return frames
-      .slice(1)
-      .reduce(
-        (current, frame) =>
-          current
-            .extend([frame.minLongitude, frame.minLatitude])
-            .extend([frame.maxLongitude, frame.maxLatitude]),
-        new LngLatBounds(
-          [frames[0].minLongitude, frames[0].minLatitude],
-          [frames[0].maxLongitude, frames[0].maxLatitude],
-        ),
-      )
-  }, [selected, warehouses])
+    return framesKey.split('|').reduce((current, frame) => {
+      const [minLongitude, minLatitude, maxLongitude, maxLatitude] = frame.split(':').map(Number)
+
+      return current.extend([minLongitude, minLatitude]).extend([maxLongitude, maxLatitude])
+    }, new LngLatBounds())
+  }, [framesKey])
 
   useEffect(() => {
     if (detailsPanelSide !== 'bottom') {
@@ -130,14 +168,17 @@ function FitWarehouseBounds({
     const northEast = bounds.getNorthEast()
     const southWest = bounds.getSouthWest()
     if (northEast.lng === southWest.lng && northEast.lat === southWest.lat) {
-      map.easeTo({ center: bounds.getCenter(), zoom: 13 })
+      map.easeTo({
+        center: bounds.getCenter(),
+        zoom: hasSelection ? SELECTED_MAX_ZOOM : COLLECTION_MAX_ZOOM,
+      })
       return
     }
     map.fitBounds(bounds, {
-      maxZoom: selected ? 16 : 13,
-      padding: getFitPadding(selected, detailsPanelSide, viewportHeight),
+      maxZoom: hasSelection ? SELECTED_MAX_ZOOM : COLLECTION_MAX_ZOOM,
+      padding: getFitPadding(hasSelection, detailsPanelSide, viewportHeight),
     })
-  }, [bounds, detailsPanelSide, isLoaded, map, selected, viewportHeight])
+  }, [bounds, detailsPanelSide, hasSelection, isLoaded, map, viewportHeight])
 
   return null
 }
@@ -152,6 +193,7 @@ export function WarehouseMap({
   selectedDoorId,
   onDoorSelect,
   placement,
+  doorPlacement,
   editing,
   createActions = [],
   selectMode = false,
@@ -170,6 +212,7 @@ export function WarehouseMap({
   selectedDoorId?: string
   onDoorSelect?: (door: WarehouseDoorDto) => void
   placement?: WarehouseMapPlacement
+  doorPlacement?: WarehouseMapDoorPlacement
   editing?: WarehouseMapEditing
   createActions?: ResourceMapCreateAction[]
   selectMode?: boolean
@@ -183,7 +226,12 @@ export function WarehouseMap({
   const [hoveredDoorId, setHoveredDoorId] = useState<string>()
   // A ring under correction owns the map exactly like an armed drawing does: nothing else is
   // selectable, and the view must not re-fit under the administrator on every vertex they move.
+  // Only a ring being drawn or corrected suppresses the fit: those change the bounds under the
+  // administrator on every vertex. Door placement changes no polygon — the bounds stay the selected
+  // warehouse's stored footprint — so it keeps the fit and only stops other things being selected.
   const isArmed = (placement?.armed ?? false) || editing !== undefined
+  const isDoorPlacementArmed = doorPlacement?.armed ?? false
+  const suppressesSelection = isArmed || isDoorPlacementArmed
   const initialCenter = useMemo<[number, number]>(() => {
     const point = warehouses[0]?.footprint.points[0]
     return point ? [point.longitude, point.latitude] : [-1.2264, 46.1591]
@@ -210,7 +258,7 @@ export function WarehouseMap({
           selectedId={selected?.id}
           onSelect={onSelect}
           hideTooltip={hoveredDoorId !== undefined}
-          disabled={isArmed}
+          disabled={suppressesSelection}
           selectMode={selectMode}
           checkedIds={checkedIds}
           checkableIds={checkableIds}
@@ -237,6 +285,7 @@ export function WarehouseMap({
             points={placement.points}
           />
         )}
+        {doorPlacement && <WarehouseDoorPlacementLayer placement={doorPlacement} />}
         {/* Doors stay rendered while the ring is corrected: they are the constraint the
             administrator is shaping around, so hiding them would make a refusal feel arbitrary. */}
         {selected &&
@@ -246,7 +295,9 @@ export function WarehouseMap({
               key={door.id}
               door={door}
               doors={doors}
-              onSelect={onDoorSelect}
+              // While a door is being placed, a click on an existing marker must place the pending
+              // point rather than select that door — the map only places in this mode.
+              onSelect={isDoorPlacementArmed ? undefined : onDoorSelect}
               selected={door.id === selectedDoorId}
               onHoverChange={(hovered) => setHoveredDoorId(hovered ? door.id : undefined)}
             />
@@ -269,7 +320,7 @@ export function WarehouseMap({
       <section aria-label="Warehouses on map" className="sr-only">
         {warehouses.map((warehouse) => (
           <button
-            disabled={isArmed}
+            disabled={suppressesSelection}
             key={warehouse.id}
             onClick={() => onSelect(warehouse)}
             title={`${warehouse.name} — ${warehouse.status === 'AVAILABLE' ? 'Available' : 'Archived'}`}

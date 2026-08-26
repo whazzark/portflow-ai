@@ -52,6 +52,7 @@ export type ScannedRoutes = {
     'weighing_areas.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighing_areas.reactivate_many': { paramsTuple?: []; params?: {} }
     'weighing_areas.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'warehouse_doors.store': { paramsTuple?: []; params?: {} }
     'warehouse_doors.available': { paramsTuple?: []; params?: {} }
     'warehouses.index': { paramsTuple?: []; params?: {} }
     'warehouses.store': { paramsTuple?: []; params?: {} }
@@ -127,6 +128,7 @@ export type ScannedRoutes = {
     'weighing_areas.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'weighing_areas.reactivate_many': { paramsTuple?: []; params?: {} }
     'weighing_areas.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'warehouse_doors.store': { paramsTuple?: []; params?: {} }
     'warehouses.store': { paramsTuple?: []; params?: {} }
     'warehouses.archive_many': { paramsTuple?: []; params?: {} }
     'warehouses.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

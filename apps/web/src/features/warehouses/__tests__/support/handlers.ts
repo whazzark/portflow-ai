@@ -1,6 +1,6 @@
 import { HttpResponse, http } from 'msw'
 import type { WarehouseDto } from '@/features/warehouses/types'
-import { API_BASE_URL } from './fixtures'
+import { API_BASE_URL, type CreatedWarehouseDoorDto } from './fixtures'
 
 export function warehousesHandler(warehouses: WarehouseDto[]) {
   return http.get(`${API_BASE_URL}/api/v1/warehouses`, () =>
@@ -138,4 +138,68 @@ export function updateWarehouseFailureHandler(id: string, status = 500) {
     { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' },
     status,
   )
+}
+
+const warehouseDoorsUrl = `${API_BASE_URL}/api/v1/warehouse-doors`
+
+/** The 201 body is the standalone door DTO — `warehouseId` and `createdAt` included — not the
+ * shape embedded under a warehouse. */
+export function createWarehouseDoorHandler(created: CreatedWarehouseDoorDto) {
+  return http.post(warehouseDoorsUrl, () => HttpResponse.json({ data: created }, { status: 201 }))
+}
+
+export function createWarehouseDoorErrorHandler(
+  error: { code: string; message: string },
+  status: number,
+) {
+  return http.post(warehouseDoorsUrl, () => HttpResponse.json({ error }, { status }))
+}
+
+export const createWarehouseDoorConflictHandler = () =>
+  createWarehouseDoorErrorHandler(
+    {
+      code: 'E_WAREHOUSE_DOOR_NAME_CONFLICT',
+      message: 'Warehouse door name is already in use in this warehouse',
+    },
+    409,
+  )
+
+export const createWarehouseDoorOutsideFootprintHandler = () =>
+  createWarehouseDoorErrorHandler(
+    {
+      code: 'E_WAREHOUSE_DOOR_OUTSIDE_FOOTPRINT',
+      message: 'Warehouse door must be placed within its warehouse footprint',
+    },
+    422,
+  )
+
+export const createWarehouseDoorArchivedWarehouseHandler = () =>
+  createWarehouseDoorErrorHandler(
+    {
+      code: 'E_WAREHOUSE_ARCHIVED',
+      message: 'Archived warehouses are read-only. Reactivate the warehouse first.',
+    },
+    409,
+  )
+
+export const createWarehouseDoorFailureHandler = (status = 500) =>
+  createWarehouseDoorErrorHandler(
+    { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' },
+    status,
+  )
+
+/** Fails once, then succeeds — the retry-after-a-transient-failure path. */
+export function createWarehouseDoorRecoveringHandler(created: CreatedWarehouseDoorDto) {
+  let attempts = 0
+
+  return http.post(warehouseDoorsUrl, () => {
+    attempts += 1
+
+    return attempts === 1
+      ? HttpResponse.json(
+          { error: { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' } },
+          { status: 500 },
+        )
+      : HttpResponse.json({ data: created }, { status: 201 })
+  })
 }

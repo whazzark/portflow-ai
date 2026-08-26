@@ -10,6 +10,10 @@ export default class WarehouseDoorTransformer extends BaseTransformer<WarehouseD
       'status',
       'latitude',
       'longitude',
+      // Creation is the first writer of this column, and the 201 response is where an administrator
+      // observes it. Additive for the available-doors collection, and deliberately not mirrored onto
+      // the doors embedded by `WarehouseTransformer`: no consultation surface renders it.
+      'createdAt',
     ])
   }
 }

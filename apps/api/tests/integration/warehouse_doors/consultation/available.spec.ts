@@ -34,6 +34,11 @@ test.group('GET /api/v1/warehouse-doors/available', (group) => {
 
     const response = await client.get('/api/v1/warehouse-doors/available').loginAs(user)
 
+    // Read back rather than trusting the factory instance: the persisted timestamp is what the
+    // serializer echoes, and SQLite (the test database, per ADR 0002) does not round-trip the
+    // in-memory value's precision.
+    const persisted = await WarehouseDoor.findOrFail(available.id)
+
     response.assertStatus(200)
     assert.deepEqual(response.body().data, [
       {
@@ -43,6 +48,7 @@ test.group('GET /api/v1/warehouse-doors/available', (group) => {
         latitude: available.latitude,
         longitude: available.longitude,
         status: 'AVAILABLE',
+        createdAt: persisted.createdAt.toISO(),
       },
     ])
     assert.notInclude(
