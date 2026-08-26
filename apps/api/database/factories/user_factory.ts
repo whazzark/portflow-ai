@@ -49,6 +49,11 @@ export const UserFactory = factory
     user.reactivatedAt = null
     user.reactivatedByUserId = null
   })
+  .state('invited', (user) => {
+    user.accessStatus = 'PENDING'
+    user.invitedAt = DateTime.now()
+    user.invitedByUserId = null
+  })
   .state('deactivated', (user) => {
     user.accessStatus = 'DEACTIVATED'
     user.deactivatedAt = DateTime.now()

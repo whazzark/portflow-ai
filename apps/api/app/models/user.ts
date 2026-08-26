@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
-import { beforeCreate } from '@adonisjs/lucid/orm'
+import { beforeCreate, belongsTo } from '@adonisjs/lucid/orm'
+import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import FixedExpiryRememberMeTokensProvider from '#auth/shared/fixed_expiry_remember_me_tokens_provider'
 import { UserSchema } from '#database/schema'
 
@@ -22,6 +23,24 @@ export default class User extends UserSchema {
 
   declare accessStatus: UserAccessStatus
   declare role: UserRole
+
+  // Self-referential: every lifecycle event may name the administrator who caused it, and each one
+  // is nullable because an event can be recorded without an actor.
+  // biome-ignore lint/security/noSecrets: database column name, not a secret
+  @belongsTo(() => User, { foreignKey: 'invitedByUserId' })
+  declare invitedBy: BelongsTo<typeof User>
+
+  @belongsTo(() => User, { foreignKey: 'activatedByUserId' })
+  declare activatedBy: BelongsTo<typeof User>
+
+  @belongsTo(() => User, { foreignKey: 'cancelledByUserId' })
+  declare cancelledBy: BelongsTo<typeof User>
+
+  @belongsTo(() => User, { foreignKey: 'deactivatedByUserId' })
+  declare deactivatedBy: BelongsTo<typeof User>
+
+  @belongsTo(() => User, { foreignKey: 'reactivatedByUserId' })
+  declare reactivatedBy: BelongsTo<typeof User>
 
   @beforeCreate()
   static assignId(user: User) {

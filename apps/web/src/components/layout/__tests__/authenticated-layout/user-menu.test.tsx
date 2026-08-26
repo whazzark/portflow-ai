@@ -53,8 +53,8 @@ test('renders the protected frame with navigation for an authenticated user', as
     'href',
     '/warehouses',
   )
-  expect(within(nav).getByRole('button', { name: /Users/ })).toBeDisabled()
-  expect(within(nav).getAllByText('Coming soon')).toHaveLength(3)
+  expect(within(nav).getByRole('link', { name: /Users/ })).toHaveAttribute('href', '/users')
+  expect(within(nav).getAllByText('Coming soon')).toHaveLength(2)
   const themeToggle = screen.getByRole('switch', { name: 'Switch to light theme' })
   const profileTrigger = screen.getByRole('button', {
     name: 'Open user menu for Claire Martin',
@@ -116,5 +116,5 @@ test('hides user administration from non-administrative roles', async () => {
   const nav = await screen.findByRole('navigation', { name: 'Primary' })
 
   expect(within(nav).queryByText('Administration')).not.toBeInTheDocument()
-  expect(within(nav).queryByRole('button', { name: /Users/ })).not.toBeInTheDocument()
+  expect(within(nav).queryByRole('link', { name: /Users/ })).not.toBeInTheDocument()
 })
