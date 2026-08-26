@@ -144,3 +144,27 @@ test('discards the pending door when the mode is cancelled', async () => {
 
   expect(screen.queryByTestId('pending-door')).not.toBeInTheDocument()
 })
+
+// A new door is always Available, so placement runs in the Available view whatever the
+// administrator was consulting: the archived view would hide the very doors they are placing the
+// new one between.
+test('places from the Available view even when the archived doors were on screen', async () => {
+  const user = userEvent.setup()
+  const { router } = renderWarehouses()
+
+  await user.click(
+    await screen.findByRole('button', { name: 'View warehouse North Shed (Available)' }),
+  )
+  await user.click(await screen.findByRole('tab', { name: /Archived/ }))
+  await waitFor(() =>
+    expect(router.state.location.search).toMatchObject({ doorStatus: 'archived' }),
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Create door' }))
+
+  await waitFor(() =>
+    expect(router.state.location.search).toMatchObject({ doorStatus: 'available' }),
+  )
+  expect(await screen.findByRole('button', { name: 'North Door door marker' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Old Door door marker' })).not.toBeInTheDocument()
+})

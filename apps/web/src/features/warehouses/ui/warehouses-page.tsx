@@ -437,6 +437,9 @@ export function WarehousesPage() {
     })
   }
 
+  // The lifecycle view follows the door being created, which is always Available: entered from the
+  // Archived tab, placement would otherwise hide every existing door — exactly the ones the
+  // administrator needs on the map to place a new one between them.
   const startCreatingDoor = () => {
     clearEditSession()
     setPendingDoor(null)
@@ -446,6 +449,7 @@ export function WarehousesPage() {
         create: 'door' as const,
         edit: undefined,
         doorId: undefined,
+        doorStatus: 'available' as const,
       }),
     })
   }
@@ -462,8 +466,7 @@ export function WarehousesPage() {
 
     return result.data
   }
-  // A new door is always Available, so an administrator who had the Archived view open would submit
-  // successfully and see nothing. The lifecycle view follows the door that was just created.
+  // The lifecycle view stays on Available, where placement put it, and follows the new door.
   const handleDoorCreated = (door: { id: string }) => {
     toast.success('Door created')
     void navigate({
