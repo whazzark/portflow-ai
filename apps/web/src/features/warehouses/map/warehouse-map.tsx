@@ -25,6 +25,10 @@ import { WarehousePolygons } from '@/features/warehouses/map/warehouse-polygon'
 import type { PresentedWarehouse } from '@/features/warehouses/types'
 
 const MAP_EDGE_PADDING = 56
+/** A selected warehouse is framed as tightly as the basemap allows, so its doors are far enough
+ * apart to tell apart and to place a new one between them. The collection view stays wide. */
+const SELECTED_MAX_ZOOM = 19
+const COLLECTION_MAX_ZOOM = 13
 const DESKTOP_PANEL_MAX_WIDTH = 32 * 16
 const MOBILE_PANEL_MAX_HEIGHT = 38 * 16
 const MOBILE_PANEL_VIEWPORT_RATIO = 0.75
@@ -163,11 +167,14 @@ function FitWarehouseBounds({
     const northEast = bounds.getNorthEast()
     const southWest = bounds.getSouthWest()
     if (northEast.lng === southWest.lng && northEast.lat === southWest.lat) {
-      map.easeTo({ center: bounds.getCenter(), zoom: 13 })
+      map.easeTo({
+        center: bounds.getCenter(),
+        zoom: selected ? SELECTED_MAX_ZOOM : COLLECTION_MAX_ZOOM,
+      })
       return
     }
     map.fitBounds(bounds, {
-      maxZoom: selected ? 16 : 13,
+      maxZoom: selected ? SELECTED_MAX_ZOOM : COLLECTION_MAX_ZOOM,
       padding: getFitPadding(selected, detailsPanelSide, viewportHeight),
     })
   }, [bounds, detailsPanelSide, isLoaded, map, selected, viewportHeight])
