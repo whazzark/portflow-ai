@@ -79,7 +79,9 @@ export const CHECKPOINT_KIND_PLURAL_LABELS: Record<CheckpointKind, string> = {
   WEIGHING_AREA: 'weighing areas',
 }
 
-export type BulkLifecycleIntent = 'ARCHIVE' | 'REACTIVATE'
+export type { BulkLifecycleIntent } from '@/components/lifecycle/lifecycle-copy'
+
+import type { BulkLifecycleIntent } from '@/components/lifecycle/lifecycle-copy'
 
 /** Which bulk lifecycle operations each checkpoint kind supports. Both kinds support both
  * directions; the table stays so a future kind can opt out of one. */
@@ -92,22 +94,4 @@ export const BULK_LIFECYCLE_INTENTS: Record<CheckpointKind, BulkLifecycleIntent[
 export const STATUS_FOR_BULK_INTENT: Record<BulkLifecycleIntent, CheckpointStatus> = {
   ARCHIVE: 'AVAILABLE',
   REACTIVATE: 'ARCHIVED',
-}
-
-/** Only the dialog description genuinely varies by kind *and* intent — every other string in the
- * bulk toolbar and dialog is derived from the kind's labels plus the intent's verb, which is what
- * keeps the delivered dock wording byte-identical. */
-export const BULK_LIFECYCLE_DESCRIPTIONS: Record<
-  CheckpointKind,
-  Partial<Record<BulkLifecycleIntent, string>>
-> = {
-  DOCK: {
-    ARCHIVE: 'These docks will remain readable but no longer selectable for new discharges.',
-    REACTIVATE: 'These docks will become selectable for new discharges again.',
-  },
-  WEIGHING_AREA: {
-    ARCHIVE:
-      'These weighing areas will remain readable but no longer offered for new operational work.',
-    REACTIVATE: 'These weighing areas will be offered again for new operational work.',
-  },
 }

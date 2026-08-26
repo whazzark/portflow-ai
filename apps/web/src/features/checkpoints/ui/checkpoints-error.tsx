@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { ResourceMapError } from '@/components/resource-map/resource-map-feedback'
+import { ResourceCollectionError } from '@/components/resource-map/resource-map-feedback'
 import { dockQueries } from '@/features/docks/queries/dock-queries'
 
 export function CheckpointsError() {
@@ -8,7 +8,7 @@ export function CheckpointsError() {
   const router = useRouter()
 
   return (
-    <ResourceMapError
+    <ResourceCollectionError
       label="checkpoints"
       onRetry={async () => {
         queryClient.removeQueries({ queryKey: dockQueries.list().queryKey })

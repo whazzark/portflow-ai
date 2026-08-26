@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table'
 import { customerMatchesSearch } from '@/features/customers/helpers/customer-search'
 import type { CustomerDto } from '@/features/customers/types'
+import { CustomerRowActions } from '@/features/customers/ui/customer-row-actions'
 import { formatFullName } from '@/features/users/helpers/name'
 import { UserAvatar } from '@/features/users/ui/user-avatar'
 import { classnames } from '@/libraries/shadcn/helpers'
@@ -46,6 +47,7 @@ function lifecycleUserCell(user: LifecycleUser | null) {
 declare module '@tanstack/react-table' {
   interface TableMeta<TData extends import('@tanstack/react-table').RowData> {
     onSelect?: (customerId: string) => void
+    onEdit?: (customerId: string) => void
     selectedIds?: Set<string>
     onSelectVisible?: (checked: boolean, customerIds: string[]) => void
   }
@@ -57,6 +59,7 @@ type CustomerTableProps = {
   sorting: SortingState
   onSortingChange: OnChangeFn<SortingState>
   onSelect: (customerId: string) => void
+  onEdit: (customerId: string) => void
   emptyTitle: string
   emptyDescription: string
   isArchived: boolean
@@ -175,6 +178,23 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
               lifecycleUserCell(row.original.reactivatedBy),
           } satisfies ColumnDef<CustomerDto>,
         ]),
+    // Last column, as in the truck and transport-company directories: the row's own administration
+    // menu, so a lifecycle change never requires opening the detail pane first.
+    {
+      id: 'actions',
+      header: () => <span className="sr-only">Actions</span>,
+      enableSorting: false,
+      cell: ({ row, table }: CellContext<CustomerDto, unknown>) => (
+        <div className="flex justify-end">
+          <CustomerRowActions
+            canAdminister={canAdminister}
+            customer={row.original}
+            onEdit={table.options.meta?.onEdit}
+            onView={table.options.meta?.onSelect}
+          />
+        </div>
+      ),
+    } satisfies ColumnDef<CustomerDto>,
   ]
 }
 
@@ -184,6 +204,7 @@ export function CustomerTable({
   sorting,
   onSortingChange,
   onSelect,
+  onEdit,
   emptyTitle,
   emptyDescription,
   isArchived,
@@ -199,6 +220,7 @@ export function CustomerTable({
     onSortingChange,
     meta: {
       onSelect,
+      onEdit,
       selectedIds,
       onSelectVisible: (checked, customerIds) => {
         const next = new Set(selectedIds)
@@ -214,6 +236,10 @@ export function CustomerTable({
     },
     globalFilterFn: (row, _columnId, filterValue) =>
       customerMatchesSearch(row.original, filterValue),
+    // A row now carries state — an open confirmation and the comment typed into it — so it is
+    // keyed by the customer itself: a refetch that shifts positions must never rebind an open
+    // dialog to a different record.
+    getRowId: (customer) => customer.id,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -283,10 +309,15 @@ export function CustomerTable({
                       className={
                         cell.column.id === 'selection'
                           ? 'relative w-10 min-w-10 max-w-10 p-0'
-                          : undefined
+                          : cell.column.id === 'actions'
+                            ? 'w-10 min-w-10 max-w-10'
+                            : undefined
                       }
+                      // The row itself opens the detail pane; the selection checkbox and the
+                      // actions menu are their own affordances and must not trigger it too —
+                      // opening the pane underneath would tear the menu down as it renders.
                       onClick={
-                        cell.column.id === 'selection'
+                        cell.column.id === 'selection' || cell.column.id === 'actions'
                           ? (event) => event.stopPropagation()
                           : undefined
                       }

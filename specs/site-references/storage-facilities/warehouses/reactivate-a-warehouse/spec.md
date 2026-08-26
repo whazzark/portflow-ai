@@ -283,7 +283,9 @@ every attempt is refused before any warehouse or door changes and no partial eff
   against them; no such record may be modified by this feature.
 - **FR-018**: The reactivation experience MUST require an explicit confirmation that names the
   warehouse, states how many of its doors return to service with it, states that the warehouse and
-  those doors become selectable again for new operational work, and offers an optional comment.
+  those doors become available again for new operations, and offers an optional comment. The
+  reactivation wording is the one every site reference uses, owned by
+  `apps/web/src/components/lifecycle/lifecycle-copy.ts`; the door restore clause is appended to it.
 - **FR-019**: The administrator MUST be able to abandon a reactivation in progress, leaving every
   targeted warehouse and every one of their doors unchanged.
 - **FR-020**: The system MUST ensure that repeated or concurrent reactivation attempts for the same

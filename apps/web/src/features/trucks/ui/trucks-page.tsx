@@ -4,6 +4,7 @@ import { SearchIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -15,10 +16,16 @@ import { isAdministrator } from '@/features/auth/policies/permissions'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
 import { useTruckMutations } from '@/features/trucks/mutations/use-truck-mutations'
 import { truckQueries } from '@/features/trucks/queries/truck-queries'
-import type { BulkTruckLifecycleBlocker, TruckDto } from '@/features/trucks/types'
+import {
+  TRUCK_BLOCKER_REASON_LABELS,
+  TRUCK_PLURAL,
+  TRUCK_SINGULAR,
+  toBulkTruckLifecycleOutcome,
+} from '@/features/trucks/truck-lifecycle'
+import type { TruckDto } from '@/features/trucks/types'
 import { CreateTruckPanel } from '@/features/trucks/ui/create-truck-panel'
 import { EditTruckPanel } from '@/features/trucks/ui/edit-truck-panel'
-import { TruckBulkLifecycleActions } from '@/features/trucks/ui/truck-bulk-lifecycle-actions'
+
 import { TruckDetails } from '@/features/trucks/ui/truck-details'
 import { TruckSection } from '@/features/trucks/ui/truck-section'
 import { TrucksError } from '@/features/trucks/ui/trucks-error'
@@ -101,7 +108,6 @@ export function TrucksPage() {
     editSession.editable
 
   const [selectedTruckIds, setSelectedTruckIds] = useState<Set<string>>(new Set())
-  const [blockedTrucks, setBlockedTrucks] = useState<BulkTruckLifecycleBlocker[]>([])
   const activeLifecycleStatus =
     truckStatus === 'archived'
       ? 'ARCHIVED'
@@ -126,21 +132,6 @@ export function TrucksPage() {
     () => [...visibleSelectedTruckIds],
     [visibleSelectedTruckIds],
   )
-  const lifecycleActionIds = useMemo(
-    () =>
-      blockedTrucks.length > 0
-        ? blockedTrucks.map((blocked) => blocked.id)
-        : visibleSelectedTruckIdList,
-    [blockedTrucks, visibleSelectedTruckIdList],
-  )
-
-  // The retry set from a previous outcome is meaningful only for the direction (archive or
-  // reactivate) it came from, so leaving the tab it was reported in clears it — the same reason
-  // switching tabs already prunes the selection itself.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: truckStatus is the trigger, not a value read by the effect body.
-  useEffect(() => {
-    setBlockedTrucks([])
-  }, [truckStatus])
 
   useEffect(() => {
     if (!administrator && truckStatus === 'archived') {
@@ -305,7 +296,6 @@ export function TrucksPage() {
                     }
                     return next
                   })
-                  setBlockedTrucks([])
                 }}
                 onView={selectTruck}
                 search={truckSearch}
@@ -353,7 +343,6 @@ export function TrucksPage() {
                       }
                       return next
                     })
-                    setBlockedTrucks([])
                   }}
                   onView={selectTruck}
                   search={truckSearch}
@@ -435,18 +424,28 @@ export function TrucksPage() {
 
   // Suspension is a one-truck-at-a-time action, so the suspended tab has no bulk toolbar.
   const bulkLifecycleActions = administrator && truckStatus !== 'suspended' && (
-    <TruckBulkLifecycleActions
-      blockedTrucks={blockedTrucks}
-      isArchived={truckStatus === 'archived'}
-      onClear={() => {
-        setSelectedTruckIds(new Set())
-        setBlockedTrucks([])
-      }}
-      onSuccess={(result) => {
-        setSelectedTruckIds(new Set())
-        setBlockedTrucks(result.blockedTrucks)
-      }}
-      selectedIds={lifecycleActionIds}
+    <BulkResourceLifecycleActions
+      action={truckStatus === 'archived' ? 'reactivate' : 'archive'}
+      blockerReasonLabels={TRUCK_BLOCKER_REASON_LABELS}
+      idPrefix="truck"
+      onClear={() => setSelectedTruckIds(new Set())}
+      // Narrowed to the blocked ids rather than cleared, so the administrator can resolve the
+      // blocker and retry exactly those without reselecting them.
+      onSuccess={(outcome) =>
+        setSelectedTruckIds(new Set(outcome.blocked.map((blocked) => blocked.id)))
+      }
+      plural={TRUCK_PLURAL}
+      refresh={truckMutations.refreshTrucks}
+      selectedIds={visibleSelectedTruckIdList}
+      singular={TRUCK_SINGULAR}
+      submit={async ({ ids, comment }) =>
+        toBulkTruckLifecycleOutcome(
+          (truckStatus === 'archived'
+            ? await truckMutations.reactivateMany.mutateAsync({ body: { ids, comment } })
+            : await truckMutations.archiveMany.mutateAsync({ body: { ids, comment } })
+          ).data,
+        )
+      }
     />
   )
 

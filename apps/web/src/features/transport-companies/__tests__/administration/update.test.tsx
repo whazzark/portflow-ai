@@ -60,7 +60,7 @@ test('lets an administrator cancel an edit without changing the company', async 
   await openEditFor('Atlantic Transport')
   expect(await screen.findByRole('heading', { name: 'Edit transport company' })).toBeInTheDocument()
 
-  fireEvent.click(screen.getByRole('button', { name: 'Back to company details' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Back to details' }))
 
   expect(await screen.findByRole('heading', { name: 'Atlantic Transport' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Edit transport company' })).not.toBeInTheDocument()

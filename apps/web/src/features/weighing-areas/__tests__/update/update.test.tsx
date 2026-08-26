@@ -25,7 +25,7 @@ async function openEditWeighingArea(user: ReturnType<typeof userEvent.setup>) {
       name: `View weighing area ${ALPHA_SCALE.name} (Available)`,
     }),
   )
-  await user.click(screen.getByRole('button', { name: 'Edit weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Edit' }))
   await screen.findByRole('heading', { name: 'Edit weighing area' })
 }
 

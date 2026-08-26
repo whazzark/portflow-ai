@@ -1,5 +1,14 @@
 # UI State Contract: Reactivate a Warehouse
 
+> **Superseded in part (2026-08-25)** — the lifecycle UI this contract describes has been unified.
+> The component names and the exact confirmation copy below are historical: every site reference now
+> renders `ResourceLifecycleActions` / `BulkResourceLifecycleActions`, and every lifecycle string
+> comes from `apps/web/src/components/lifecycle/lifecycle-copy.ts`. Reactivation now reads
+> "…becomes available again for new operations", and lifecycle buttons carry the action alone
+> (`Reactivate`, not `Reactivate warehouse`). The behavioral requirements in the sibling `spec.md`
+> still hold; only their rendering moved.
+
+
 **Feature**: `GH-211` | **Spec**: [../spec.md](../spec.md) | **API**: [warehouse-reactivate-api.md](./warehouse-reactivate-api.md)
 
 Phase 1 output. Describes the states the warehouse map surface must express for reactivation, and

@@ -1,5 +1,14 @@
 # Contract: Dock Reactivate UI State
 
+> **Superseded in part (2026-08-25)** — the lifecycle UI this contract describes has been unified.
+> The component names and the exact confirmation copy below are historical: every site reference now
+> renders `ResourceLifecycleActions` / `BulkResourceLifecycleActions`, and every lifecycle string
+> comes from `apps/web/src/components/lifecycle/lifecycle-copy.ts`. Archival now reads "…remains
+> readable but is no longer available for new operations", and lifecycle buttons carry the action
+> alone (`Archive`, not `Archive dock`). The behavioral requirements in the sibling `spec.md` still
+> hold; only their rendering moved.
+
+
 **Feature**: [../spec.md](../spec.md) | **Plan**: [../plan.md](../plan.md)
 
 This contract describes how the reactivation direction is surfaced on `/checkpoints`. It extends

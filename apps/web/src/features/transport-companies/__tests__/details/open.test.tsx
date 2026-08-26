@@ -16,7 +16,7 @@ test('opens lifecycle details and clears the selection when closed', async () =>
   await user.click(await screen.findByRole('menuitem', { name: 'View' }))
 
   const details = await screen.findByRole('region', { name: 'Transport company details' })
-  expect(within(details).getByText('Latest reactivation context')).toBeInTheDocument()
+  expect(within(details).getByText('Reactivation context')).toBeInTheDocument()
   expect(within(details).getByText('Contract renewed')).toBeInTheDocument()
   expect(within(details).getByText('Claire Martin')).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/transport-resources')

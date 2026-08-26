@@ -24,7 +24,7 @@ test('offers no reactivate action on any weighing area to a non-administrator', 
     }),
   )
   await screen.findByRole('heading', { name: RETIRED_SCALE.name })
-  expect(screen.queryByRole('button', { name: 'Reactivate weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Close' }))
 
   await user.click(
@@ -33,7 +33,7 @@ test('offers no reactivate action on any weighing area to a non-administrator', 
     }),
   )
   await screen.findByRole('heading', { name: ALPHA_SCALE.name })
-  expect(screen.queryByRole('button', { name: 'Reactivate weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 
 test('offers no select mode to a non-administrator', async () => {

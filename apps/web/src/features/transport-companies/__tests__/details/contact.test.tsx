@@ -54,7 +54,7 @@ test('keeps an archived company recorded contact details visible and read-only',
   const details = await screen.findByRole('region', { name: 'Transport company details' })
   expect(within(details).getByText('+44 20 7946 0958')).toBeInTheDocument()
   expect(within(details).getByText('ops@coastal-haulage.test')).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Edit company' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('offers no edit affordance to an active user without administration rights', async () => {
@@ -65,5 +65,5 @@ test('offers no edit affordance to an active user without administration rights'
   const details = await openDetailsFor('Atlantic Transport')
 
   expect(within(details).getByText('+33 2 40 12 34 56')).toBeInTheDocument()
-  expect(within(details).queryByRole('button', { name: 'Edit company' })).not.toBeInTheDocument()
+  expect(within(details).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })

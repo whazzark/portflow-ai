@@ -82,7 +82,7 @@ test('lets an administrator record contact details and see them reflected in the
   // Reopen the edit form (from the still-open details panel, not the list — the sheet makes the
   // background list inert) to prove the recorded values round-trip through the API, rather than
   // asserting on the read-only details display, which is built by a later story.
-  fireEvent.click(screen.getByRole('button', { name: 'Edit company' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
   expect(await screen.findByRole('textbox', { name: 'Contact phone' })).toHaveValue(
     '+33 1 98 76 54 32',
   )
@@ -193,7 +193,7 @@ test('cancelling an edit leaves the company unchanged', async () => {
   fireEvent.change(await screen.findByRole('textbox', { name: 'Contact phone' }), {
     target: { value: '+33 9 99 99 99 99' },
   })
-  fireEvent.click(screen.getByRole('button', { name: 'Back to company details' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Back to details' }))
 
   expect(await screen.findByRole('heading', { name: 'Atlantic Transport' })).toBeInTheDocument()
   expect(screen.getByText('+33 2 40 12 34 56')).toBeInTheDocument()

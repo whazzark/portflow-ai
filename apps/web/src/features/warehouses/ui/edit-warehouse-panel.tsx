@@ -120,7 +120,7 @@ const samePoints = (left: LatLng[], right: LatLng[]) =>
       point.latitude === right[index].latitude && point.longitude === right[index].longitude,
   )
 
-export function UpdateWarehousePanel({
+export function EditWarehousePanel({
   warehouse,
   points,
   originName,
@@ -206,9 +206,9 @@ export function UpdateWarehousePanel({
       <SheetHeader>
         <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
           <ArrowLeftIcon aria-hidden="true" />
-          Back to warehouse details
+          Back to details
         </Button>
-        <SheetTitle>Update warehouse</SheetTitle>
+        <SheetTitle>Edit warehouse</SheetTitle>
         <SheetDescription>
           Drag a boundary point, split an edge to add one, or remove one to reshape {warehouse.name}
           .

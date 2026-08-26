@@ -114,7 +114,7 @@ reason.
 7. **Given** an authorized administrator opens the archive confirmation for an eligible warehouse,
    **When** the confirmation is displayed, **Then** it names the warehouse, states how many of its
    available doors will be archived with it, states that the warehouse and those doors remain
-   readable but are no longer selectable for new operational work, and offers an optional comment.
+   readable but are no longer available for new operations, and offers an optional comment.
 8. **Given** an administrator opens the archive confirmation, **When** the administrator abandons it,
    **Then** the warehouse and every one of its doors remain entirely unchanged.
 
@@ -333,8 +333,9 @@ their own.
   NOT release their names within that warehouse.
 - **FR-023**: The archive experience MUST require an explicit confirmation that names the warehouse,
   states how many of its available doors will be archived with it, states that the warehouse and those
-  doors remain readable but are no longer selectable for new operational work, and offers an optional
-  comment.
+  doors remain readable but are no longer available for new operations, and offers an optional
+  comment. The archival wording is the one every site reference uses, owned by
+  `apps/web/src/components/lifecycle/lifecycle-copy.ts`; the door cascade is appended to it.
 - **FR-024**: The administrator MUST be able to abandon an archival in progress, leaving every targeted
   warehouse and every one of their doors unchanged.
 - **FR-025**: The system MUST report authorization refusals, not-found refusals, already-archived

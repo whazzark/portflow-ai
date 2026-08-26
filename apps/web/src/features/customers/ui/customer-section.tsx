@@ -6,6 +6,7 @@ type CustomerSectionProps = {
   customers: CustomerDto[]
   isArchived: boolean
   onSelect: (customerId: string) => void
+  onEdit: (customerId: string) => void
   search: string
   sorting: SortingState
   onSortingChange: OnChangeFn<SortingState>
@@ -18,6 +19,7 @@ export function CustomerSection({
   customers,
   isArchived,
   onSelect,
+  onEdit,
   search,
   sorting,
   onSortingChange,
@@ -37,6 +39,7 @@ export function CustomerSection({
           search ? 'No matching customers' : `No ${isArchived ? 'archived' : 'available'} customers`
         }
         isArchived={isArchived}
+        onEdit={onEdit}
         onSelect={onSelect}
         onSortingChange={onSortingChange}
         search={search}

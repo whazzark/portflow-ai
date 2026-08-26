@@ -64,12 +64,10 @@ test('reports unchanged trucks in a toast and allows retrying only those', async
   )
 
   expect(await screen.findByText('1 truck reactivated; 1 truck unchanged')).toBeInTheDocument()
-  expect(
-    screen.getByText(`${second.registration} (archived transport company)`),
-  ).toBeInTheDocument()
+  expect(screen.getByText(`${second.registration}: archived transport company`)).toBeInTheDocument()
   expect(screen.getByText('1 selected')).toBeInTheDocument()
 
-  fireEvent.click(screen.getByRole('button', { name: 'Retry blocked trucks' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Reactivate selected' }))
   fireEvent.click(
     within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Reactivate' }),
   )
@@ -116,12 +114,12 @@ test('hides the retry toolbar for blocked trucks after leaving the archived tab'
     within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Reactivate' }),
   )
 
-  expect(await screen.findByRole('button', { name: 'Retry blocked trucks' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Reactivate selected' })).toBeInTheDocument()
 
   await user.click(truckTab(/Available/))
 
   await waitFor(() =>
-    expect(screen.queryByRole('button', { name: 'Retry blocked trucks' })).not.toBeInTheDocument(),
+    expect(screen.queryByRole('button', { name: 'Reactivate selected' })).not.toBeInTheDocument(),
   )
   expect(screen.queryByRole('toolbar')).not.toBeInTheDocument()
 })
@@ -164,8 +162,6 @@ test('reports every truck as unchanged and reactivates nothing when the whole se
   )
 
   expect(await screen.findByText('1 truck unchanged')).toBeInTheDocument()
-  expect(
-    screen.getByText(`${second.registration} (archived transport company)`),
-  ).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Retry blocked trucks' })).toBeInTheDocument()
+  expect(screen.getByText(`${second.registration}: archived transport company`)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Reactivate selected' })).toBeInTheDocument()
 })

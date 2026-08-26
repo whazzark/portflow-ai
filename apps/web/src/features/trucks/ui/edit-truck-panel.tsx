@@ -30,7 +30,7 @@ export function EditTruckPanel({
       <SheetHeader>
         <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
           <ArrowLeftIcon aria-hidden="true" />
-          Back to truck details
+          Back to details
         </Button>
         <SheetTitle>Edit truck</SheetTitle>
         <SheetDescription>Update {truck.registration}'s information and provider.</SheetDescription>

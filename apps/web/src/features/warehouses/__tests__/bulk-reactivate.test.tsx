@@ -102,7 +102,9 @@ test('reports each blocked warehouse with its own reason', async () => {
   const dialog = await openBulkDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('1 warehouse reactivated; 1 unchanged')).toBeInTheDocument()
+  expect(
+    await screen.findByText('1 warehouse reactivated; 1 warehouse unchanged'),
+  ).toBeInTheDocument()
   expect(await screen.findByText(`${RETIRED.name}: already available`)).toBeInTheDocument()
 })
 
@@ -146,7 +148,9 @@ test('clears the selection after a partial outcome instead of turning it into an
   const requestsBeforeSubmission = listRequests
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('1 warehouse reactivated; 1 unchanged')).toBeInTheDocument()
+  expect(
+    await screen.findByText('1 warehouse reactivated; 1 warehouse unchanged'),
+  ).toBeInTheDocument()
   await waitFor(() => expect(listRequests).toBeGreaterThan(requestsBeforeSubmission))
   // Nothing stays checked. Keeping the refused warehouse would leave the bar reading "1 selected"
   // over a warehouse the refresh has just turned available — an archival of what was asked to be
@@ -178,7 +182,7 @@ test('reports an all-blocked submission as nothing changed', async () => {
   const dialog = await openBulkDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('0 warehouses reactivated; 2 unchanged')).toBeInTheDocument()
+  expect(await screen.findByText('2 warehouses unchanged')).toBeInTheDocument()
   expect(await screen.findByText(new RegExp(`${RETIRED.id}: not found`))).toBeInTheDocument()
 })
 

@@ -4,6 +4,7 @@ import { PlusIcon, SearchIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
+import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -15,7 +16,12 @@ import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { useTransportCompanyMutations } from '@/features/transport-companies/mutations/use-transport-company-mutations'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
-import { BulkTransportCompanyLifecycleActions } from '@/features/transport-companies/ui/bulk-transport-company-lifecycle-actions'
+import {
+  TRANSPORT_COMPANY_BLOCKER_REASON_LABELS,
+  TRANSPORT_COMPANY_PLURAL,
+  TRANSPORT_COMPANY_SINGULAR,
+  toBulkTransportCompanyLifecycleOutcome,
+} from '@/features/transport-companies/transport-company-lifecycle'
 import { CreateTransportCompanyPanel } from '@/features/transport-companies/ui/create-transport-company-panel'
 import { EditTransportCompanyPanel } from '@/features/transport-companies/ui/edit-transport-company-panel'
 import { TransportCompaniesError } from '@/features/transport-companies/ui/transport-companies-error'
@@ -285,13 +291,28 @@ export function TransportResourcesWorkspace() {
           </Tabs>
         </CardContent>
         {canAdminister && (
-          <BulkTransportCompanyLifecycleActions
-            direction={companyStatus === 'available' ? 'archive' : 'reactivate'}
+          <BulkResourceLifecycleActions
+            action={companyStatus === 'available' ? 'archive' : 'reactivate'}
+            blockerReasonLabels={TRANSPORT_COMPANY_BLOCKER_REASON_LABELS}
+            idPrefix="transport-company"
             onClear={clearCompanySelection}
-            onSuccess={(result) => {
-              setSelectedCompanyIds(new Set(result.blockedCompanies.map((blocked) => blocked.id)))
-            }}
+            // Narrowed to the blocked ids rather than cleared, so the administrator can resolve
+            // the blocker and retry exactly those without reselecting them.
+            onSuccess={(outcome) =>
+              setSelectedCompanyIds(new Set(outcome.blocked.map((blocked) => blocked.id)))
+            }
+            plural={TRANSPORT_COMPANY_PLURAL}
+            refresh={mutations.refreshTransportCompanies}
             selectedIds={[...selectedCompanyIds]}
+            singular={TRANSPORT_COMPANY_SINGULAR}
+            submit={async ({ ids, comment }) =>
+              toBulkTransportCompanyLifecycleOutcome(
+                (companyStatus === 'available'
+                  ? await mutations.archiveMany.mutateAsync({ body: { ids, comment } })
+                  : await mutations.reactivateMany.mutateAsync({ body: { ids, comment } })
+                ).data,
+              )
+            }
           />
         )}
       </Card>

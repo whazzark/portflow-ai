@@ -26,8 +26,8 @@ test('offers reactivating on an archived dock to an administrator, and no edit a
 
   await openDock(user, RETIRED_DOCK.name, 'Archived')
 
-  expect(screen.getByRole('button', { name: 'Reactivate dock' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Edit dock' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('offers edit and archive, but not reactivate, on an available dock', async () => {
@@ -37,9 +37,9 @@ test('offers edit and archive, but not reactivate, on an available dock', async 
 
   await openDock(user, NORTH_DOCK.name, 'Available')
 
-  expect(screen.getByRole('button', { name: 'Edit dock' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Archive dock' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Reactivate dock' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 
 test('does not offer reactivating to a non-administrator', async () => {
@@ -49,7 +49,7 @@ test('does not offer reactivating to a non-administrator', async () => {
 
   await openDock(user, RETIRED_DOCK.name, 'Archived')
 
-  expect(screen.queryByRole('button', { name: 'Reactivate dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 
 test('reactivates a dock with a comment', async () => {
@@ -76,7 +76,7 @@ test('reactivates a dock with a comment', async () => {
   renderCheckpoints()
   await openDock(user, RETIRED_DOCK.name, 'Archived')
 
-  await user.click(screen.getByRole('button', { name: 'Reactivate dock' }))
+  await user.click(screen.getByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('heading', { name: 'Reactivate dock?' })
   await user.type(
     screen.getByRole('textbox', { name: /comment/i }),
@@ -87,7 +87,7 @@ test('reactivates a dock with a comment', async () => {
   expect(await screen.findByText('Dock reactivated')).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Quay reopened after resurfacing' })
   await waitFor(() =>
-    expect(screen.queryByRole('button', { name: 'Reactivate dock' })).not.toBeInTheDocument(),
+    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument(),
   )
 })
 
@@ -107,7 +107,7 @@ test('reactivates a dock without a comment', async () => {
   renderCheckpoints()
   await openDock(user, RETIRED_DOCK.name, 'Archived')
 
-  await user.click(screen.getByRole('button', { name: 'Reactivate dock' }))
+  await user.click(screen.getByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('heading', { name: 'Reactivate dock?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
@@ -131,7 +131,7 @@ test('shows a failure toast with the parsed API message when reactivation fails'
   renderCheckpoints()
   await openDock(user, RETIRED_DOCK.name, 'Archived')
 
-  await user.click(screen.getByRole('button', { name: 'Reactivate dock' }))
+  await user.click(screen.getByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('heading', { name: 'Reactivate dock?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 

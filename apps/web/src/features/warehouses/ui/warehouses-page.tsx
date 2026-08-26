@@ -2,10 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { PlusIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import {
+  ACTION_BY_BULK_INTENT,
   type BulkLifecycleIntent,
-  BulkResourceLifecycleActions,
-} from '@/components/resource-map/bulk-resource-lifecycle-actions'
+} from '@/components/lifecycle/lifecycle-copy'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { countResources } from '@/components/resource-map/resource-map-search'
 import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
@@ -32,7 +34,7 @@ import { useWarehouseMutations } from '@/features/warehouses/mutations/use-wareh
 import { warehouseQueries } from '@/features/warehouses/queries/warehouse-queries'
 import type { WarehouseStatus } from '@/features/warehouses/types'
 import { CreateWarehousePanel } from '@/features/warehouses/ui/create-warehouse-panel'
-import { UpdateWarehousePanel } from '@/features/warehouses/ui/update-warehouse-panel'
+import { EditWarehousePanel } from '@/features/warehouses/ui/edit-warehouse-panel'
 import { WarehouseDetails } from '@/features/warehouses/ui/warehouse-details'
 import { WarehouseMapControls } from '@/features/warehouses/ui/warehouse-map-controls'
 import { WarehousesError } from '@/features/warehouses/ui/warehouses-error'
@@ -40,10 +42,12 @@ import { useWarehouseEditSession } from '@/features/warehouses/use-warehouse-edi
 import {
   countAvailableDoorsIn,
   countRestorableDoorsIn,
-  describeBulkDoorCascade,
-  describeBulkDoorRestore,
-  toBulkLifecycleOutcome,
-} from '@/features/warehouses/warehouse-lifecycle-adapter'
+  describeBulkWarehouseEffect,
+  toBulkWarehouseLifecycleOutcome,
+  WAREHOUSE_BLOCKER_REASON_LABELS,
+  WAREHOUSE_PLURAL,
+  WAREHOUSE_SINGULAR,
+} from '@/features/warehouses/warehouse-lifecycle'
 import { presentWarehouses, warehouseMatchesSearch } from '@/features/warehouses/warehouse-search'
 import { useIsMobile } from '@/hooks/use-mobile'
 
@@ -380,7 +384,8 @@ export function WarehousesPage() {
     return result.data
   }
   // The new warehouse is revealed whatever the previous lifecycle view or search would have hidden.
-  const handleCreated = (warehouse: { id: string }) =>
+  const handleCreated = (warehouse: { id: string }) => {
+    toast.success('Warehouse created')
     void navigate({
       search: (previous) => ({
         ...previous,
@@ -392,6 +397,7 @@ export function WarehousesPage() {
         warehouseId: warehouse.id,
       }),
     })
+  }
 
   const createActions =
     canManageWarehouses && !isCreating
@@ -484,26 +490,22 @@ export function WarehousesPage() {
       />
       {isSelecting && (
         <BulkResourceLifecycleActions
+          action={ACTION_BY_BULK_INTENT[bulkIntent]}
           // The door-in-use wording belongs to archival only: reactivation has no usage blocker,
           // so overriding the label there would describe a reason that cannot occur.
           blockerReasonLabels={
-            bulkIntent === 'ARCHIVE'
-              ? { IN_USE: 'a door is used by an active or planned discharge' }
-              : undefined
+            bulkIntent === 'ARCHIVE' ? WAREHOUSE_BLOCKER_REASON_LABELS : undefined
           }
-          description={
-            bulkIntent === 'REACTIVATE'
-              ? describeBulkDoorRestore(
-                  checkedWarehouses.length,
-                  countRestorableDoorsIn(checkedWarehouses),
-                )
-              : describeBulkDoorCascade(
-                  checkedWarehouses.length,
-                  countAvailableDoorsIn(checkedWarehouses),
-                )
+          describeEffect={(action) =>
+            describeBulkWarehouseEffect(
+              action,
+              checkedWarehouses.length,
+              action === 'reactivate'
+                ? countRestorableDoorsIn(checkedWarehouses)
+                : countAvailableDoorsIn(checkedWarehouses),
+            )
           }
           idPrefix="warehouse"
-          intent={bulkIntent}
           onClear={clearChecked}
           onSuccess={(outcome) => {
             // Only an archival leaves anything worth keeping checked: IN_USE is the one blocker an
@@ -521,12 +523,12 @@ export function WarehousesPage() {
                 : new Set(),
             )
           }}
-          plural="warehouses"
+          plural={WAREHOUSE_PLURAL}
           refresh={mutations.refreshWarehouses}
           selectedIds={[...checkedIds]}
-          singular="warehouse"
+          singular={WAREHOUSE_SINGULAR}
           submit={async ({ ids, comment }) =>
-            toBulkLifecycleOutcome(
+            toBulkWarehouseLifecycleOutcome(
               (
                 await (bulkIntent === 'REACTIVATE'
                   ? mutations.reactivateMany
@@ -589,7 +591,7 @@ export function WarehousesPage() {
               points={pendingPoints}
             />
           ) : isEditing && selected && editSession ? (
-            <UpdateWarehousePanel
+            <EditWarehousePanel
               onCancel={cancelUpdating}
               onInsertPoint={insertPoint}
               onMovePoint={movePoint}

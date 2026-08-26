@@ -24,7 +24,7 @@ test('offers no archive action on any weighing area to a non-administrator', asy
     }),
   )
   await screen.findByRole('heading', { name: ALPHA_SCALE.name })
-  expect(screen.queryByRole('button', { name: 'Archive weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Close' }))
 
   await user.click(
@@ -33,5 +33,5 @@ test('offers no archive action on any weighing area to a non-administrator', asy
     }),
   )
   await screen.findByRole('heading', { name: RETIRED_SCALE.name })
-  expect(screen.queryByRole('button', { name: 'Archive weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })

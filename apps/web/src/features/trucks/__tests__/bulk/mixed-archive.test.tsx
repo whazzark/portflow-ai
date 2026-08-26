@@ -61,15 +61,15 @@ test('reports unchanged trucks in a toast and allows retrying only those', async
   expect(await screen.findByText('1 truck archived; 2 trucks unchanged')).toBeInTheDocument()
   expect(
     screen.getByText(
-      `${second.registration} (used by an active or planned discharge), ${third.registration} (already archived)`,
+      `${second.registration}: used by an active or planned discharge, ${third.registration}: already archived`,
     ),
   ).toBeInTheDocument()
   expect(screen.getByText('2 selected')).toBeInTheDocument()
-  // The toolbar frame itself stays compact: no permanent per-truck list, just the count and a
-  // button that now offers to retry exactly the trucks the toast reported as unchanged.
+  // The toolbar frame itself stays compact: no permanent per-truck list, just the count and the
+  // same action button, whose selection is now exactly the trucks the toast reported as unchanged.
   expect(screen.queryByText('Some trucks were unchanged')).not.toBeInTheDocument()
 
-  fireEvent.click(screen.getByRole('button', { name: 'Retry blocked trucks' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Archive selected' }))
   fireEvent.click(
     within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Archive' }),
   )
@@ -111,12 +111,12 @@ test('hides the retry toolbar for blocked trucks after leaving the available tab
     within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Archive' }),
   )
 
-  expect(await screen.findByRole('button', { name: 'Retry blocked trucks' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Archive selected' })).toBeInTheDocument()
 
   await user.click(truckTab(/Archived/))
 
   await waitFor(() =>
-    expect(screen.queryByRole('button', { name: 'Retry blocked trucks' })).not.toBeInTheDocument(),
+    expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument(),
   )
   expect(screen.queryByRole('toolbar')).not.toBeInTheDocument()
 })
@@ -153,6 +153,6 @@ test('reports every truck as unchanged and archives nothing when the whole selec
   )
 
   expect(await screen.findByText('1 truck unchanged')).toBeInTheDocument()
-  expect(screen.getByText(`${third.registration} (already archived)`)).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Retry blocked trucks' })).toBeInTheDocument()
+  expect(screen.getByText(`${third.registration}: already archived`)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archive selected' })).toBeInTheDocument()
 })

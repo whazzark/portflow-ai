@@ -1,13 +1,6 @@
-import { EllipsisVerticalIcon } from 'lucide-react'
 import { HighlightedText } from '@/components/highlighted-text'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import {
   Empty,
   EmptyContent,
@@ -16,6 +9,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
+import { TransportCompanyRowActions } from '@/features/transport-companies/ui/transport-company-row-actions'
 import { classnames } from '@/libraries/shadcn/helpers'
 
 type TransportCompanyListProps = {
@@ -125,32 +119,12 @@ export function TransportCompanyList({
                         : 'No contact details recorded'}
                     </span>
                   </button>
-                  {onView && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            aria-label={`Actions for ${company.name}`}
-                            className="mr-1 shrink-0"
-                            size="icon-sm"
-                            type="button"
-                            variant="ghost"
-                          />
-                        }
-                      >
-                        <EllipsisVerticalIcon />
-                        <span className="sr-only">Actions</span>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onView(company.id)}>View</DropdownMenuItem>
-                        {canAdminister && onEdit && company.status === 'AVAILABLE' && (
-                          <DropdownMenuItem onClick={() => onEdit(company.id)}>
-                            Edit
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                  <TransportCompanyRowActions
+                    canAdminister={canAdminister}
+                    company={company}
+                    onEdit={onEdit}
+                    onView={onView}
+                  />
                 </div>
               </li>
             )
@@ -164,6 +138,9 @@ export function TransportCompanyList({
           </EmptyHeader>
           {canAdminister && onCreate && (
             <EmptyContent>
+              {/* Deliberately worded apart from the header's own "Create transport company":
+                  both are on screen at once, and two buttons sharing an accessible name is worse
+                  than the small wording difference. */}
               <Button onClick={onCreate} size="sm">
                 Create a transport company
               </Button>
