@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { WAREHOUSE_ADMIN, WAREHOUSES } from '@/features/warehouses/__tests__/support/fixtures'
@@ -142,6 +142,28 @@ test('discards the pending door when the mode is cancelled', async () => {
 
   await user.click(await screen.findByRole('button', { name: 'Create door' }))
 
+  expect(screen.queryByTestId('pending-door')).not.toBeInTheDocument()
+})
+
+// Cancelling is not the only way back into the mode: the browser's Back button returns to the very
+// URL the administrator cancelled out of, and the point they discarded must not come back with it.
+test('does not restore the discarded pending door when the browser returns to the mode', async () => {
+  const user = userEvent.setup()
+  const { router } = renderWarehouses()
+
+  await openDoorCreation(user)
+  await user.click(
+    await screen.findByRole('button', { name: 'Simulate map click to place the door' }),
+  )
+  await screen.findByTestId('pending-door')
+
+  await user.click(screen.getByRole('button', { name: 'Cancel' }))
+  await waitFor(() => expect(router.state.location.search).not.toHaveProperty('create'))
+
+  await act(async () => router.history.back())
+
+  await waitFor(() => expect(router.state.location.search).toMatchObject({ create: 'door' }))
+  expect(await screen.findByRole('heading', { name: 'Create door' })).toBeInTheDocument()
   expect(screen.queryByTestId('pending-door')).not.toBeInTheDocument()
 })
 

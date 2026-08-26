@@ -122,8 +122,15 @@ export function WarehousesPage() {
   const selectedStatus = selected?.status
   const isCreatingDoor =
     canManageWarehouses && create === 'door' && selected?.status === 'AVAILABLE'
-  // Leaving the mode — cancelling, dismissing the sheet, navigating away — or switching to another
-  // warehouse discards the pending point rather than carrying it into the next session.
+  // Leaving the mode — cancelling, dismissing the sheet, navigating away — discards the pending
+  // point rather than carrying it into the next session, including one the browser's Back button
+  // returns to. Switching to another warehouse without leaving needs no cleanup: a point kept with
+  // the warehouse it was placed in is simply not read once another one is selected.
+  useEffect(() => {
+    if (!isCreatingDoor) {
+      setPendingDoor(null)
+    }
+  }, [isCreatingDoor])
   const pendingDoorPoint =
     isCreatingDoor && pendingDoor?.warehouseId === selected?.id ? pendingDoor.point : null
   const placePendingDoor = (point: LatLng) =>
@@ -455,7 +462,6 @@ export function WarehousesPage() {
   // administrator needs on the map to place a new one between them.
   const startCreatingDoor = () => {
     clearEditSession()
-    setPendingDoor(null)
     void navigate({
       search: (previous) => ({
         ...previous,
