@@ -188,7 +188,9 @@ test('reports a mixed outcome and reduces the selection to exactly the blocked c
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('1 transport company archived; 1 unchanged')).toBeInTheDocument()
+  expect(
+    await screen.findByText('1 transport company archived; 1 transport company unchanged'),
+  ).toBeInTheDocument()
   // The refusal detail is a toast only, never an inline frame beside the selection.
   const toaster = document.querySelector('[data-sonner-toaster]') as HTMLElement
   expect(
@@ -218,7 +220,7 @@ test('reports plainly that nothing changed when every company is blocked', async
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('0 transport companies archived; 2 unchanged')).toBeInTheDocument()
+  expect(await screen.findByText('2 transport companies unchanged')).toBeInTheDocument()
   expect(
     within(await companyTabs()).getByRole('tab', { name: /Available \(3\)/ }),
   ).toBeInTheDocument()

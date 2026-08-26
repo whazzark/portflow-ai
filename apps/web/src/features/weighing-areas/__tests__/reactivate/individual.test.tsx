@@ -33,9 +33,9 @@ test('offers reactivation, and no edit action, on an archived weighing area', as
 
   await openWeighingArea(user, RETIRED_SCALE.name, 'Archived')
 
-  expect(screen.getByRole('button', { name: 'Reactivate weighing area' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
   // An archived weighing area is read-only; only its lifecycle can change.
-  expect(screen.queryByRole('button', { name: 'Edit weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('offers edit and archive, and no reactivation, on an available weighing area', async () => {
@@ -45,9 +45,9 @@ test('offers edit and archive, and no reactivation, on an available weighing are
 
   await openWeighingArea(user, ALPHA_SCALE.name, 'Available')
 
-  expect(screen.getByRole('button', { name: 'Edit weighing area' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Archive weighing area' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Reactivate weighing area' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 
 test('reactivates an archived weighing area with a comment and reflects it without a reload', async () => {
@@ -81,7 +81,7 @@ test('reactivates an archived weighing area with a comment and reflects it witho
   renderCheckpoints('/checkpoints?status=all')
   await openWeighingArea(user, RETIRED_SCALE.name, 'Archived')
 
-  await user.click(screen.getByRole('button', { name: 'Reactivate weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('heading', { name: 'Reactivate weighing area?' })
   await user.type(
     screen.getByRole('textbox', { name: /comment/i }),
@@ -94,11 +94,9 @@ test('reactivates an archived weighing area with a comment and reflects it witho
   // The invalidated list query re-renders the sheet from authoritative state: the weighing area is
   // now available, so it offers editing and archiving rather than reactivation.
   await waitFor(() =>
-    expect(
-      screen.queryByRole('button', { name: 'Reactivate weighing area' }),
-    ).not.toBeInTheDocument(),
+    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument(),
   )
-  expect(screen.getByRole('button', { name: 'Archive weighing area' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument()
 })
 
 test('reactivates an archived weighing area without a comment', async () => {
@@ -119,7 +117,7 @@ test('reactivates an archived weighing area without a comment', async () => {
   renderCheckpoints('/checkpoints?status=all')
   await openWeighingArea(user, RETIRED_SCALE.name, 'Archived')
 
-  await user.click(screen.getByRole('button', { name: 'Reactivate weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('heading', { name: 'Reactivate weighing area?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
@@ -142,7 +140,7 @@ test('abandoning the confirmation leaves the weighing area archived and unchange
   renderCheckpoints('/checkpoints?status=all')
   await openWeighingArea(user, RETIRED_SCALE.name, 'Archived')
 
-  await user.click(screen.getByRole('button', { name: 'Reactivate weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('heading', { name: 'Reactivate weighing area?' })
   await user.type(screen.getByRole('textbox', { name: /comment/i }), 'Never mind')
   await user.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -153,5 +151,5 @@ test('abandoning the confirmation leaves the weighing area archived and unchange
     ).not.toBeInTheDocument(),
   )
   expect(requested).toBe(false)
-  expect(screen.getByRole('button', { name: 'Reactivate weighing area' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
 })

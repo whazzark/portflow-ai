@@ -25,7 +25,7 @@ test('offers no archive action to an active non-administrator', async () => {
   await openWarehouse(user)
 
   expect(await screen.findByText(NORTH_SHED.name)).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Archive warehouse' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })
 
 test('offers the archive action to an administrator', async () => {
@@ -35,7 +35,7 @@ test('offers the archive action to an administrator', async () => {
 
   await openWarehouse(user)
 
-  expect(await screen.findByRole('button', { name: 'Archive warehouse' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Archive' })).toBeInTheDocument()
 })
 
 test('offers reactivation rather than archival on an already archived warehouse', async () => {
@@ -48,8 +48,8 @@ test('offers reactivation rather than archival on an already archived warehouse'
   )
 
   expect(await screen.findByText(WAREHOUSES[1].name)).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Archive warehouse' })).not.toBeInTheDocument()
-  expect(await screen.findByRole('button', { name: 'Reactivate warehouse' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
 })
 
 test('offers no reactivate action to an active non-administrator', async () => {
@@ -62,7 +62,7 @@ test('offers no reactivate action to an active non-administrator', async () => {
   )
 
   expect(await screen.findByText(WAREHOUSES[1].name)).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Reactivate warehouse' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 
 // The select control is what starts a bulk lifecycle action in either direction, so a

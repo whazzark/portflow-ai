@@ -78,7 +78,7 @@ test('a mixed reactivation empties the whole selection, and a later selection is
   await screen.findByRole('heading', { name: 'Reactivate selected docks?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('1 dock reactivated; 1 unchanged')).toBeInTheDocument()
+  expect(await screen.findByText('1 dock reactivated; 1 dock unchanged')).toBeInTheDocument()
   // Neither reactivation blocker is retryable, so nothing stays checked — the counterpart of the
   // archive path's IN_USE handling, which keeps the blocked dock checked instead (research D7).
   expect(await screen.findByText('0 selected')).toBeInTheDocument()

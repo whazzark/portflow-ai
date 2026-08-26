@@ -240,7 +240,7 @@ behind.
   and the shifts it was assigned to and the weighings recorded at it; no such record may be modified
   by this feature.
 - **FR-013**: The reactivation experience MUST require an explicit confirmation, MUST state that the
-  weighing area becomes selectable again for new operational work, and MUST offer an optional
+  weighing area becomes available again for new operations, and MUST offer an optional
   comment.
 - **FR-014**: The administrator MUST be able to abandon a reactivation in progress, leaving every
   targeted weighing area unchanged.

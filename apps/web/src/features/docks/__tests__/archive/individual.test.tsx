@@ -26,7 +26,7 @@ test('offers archiving on an available dock to an administrator', async () => {
 
   await openDock(user, NORTH_DOCK.name, 'Available')
 
-  expect(screen.getByRole('button', { name: 'Archive dock' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument()
 })
 
 test('does not offer archiving to a non-administrator', async () => {
@@ -36,7 +36,7 @@ test('does not offer archiving to a non-administrator', async () => {
 
   await openDock(user, NORTH_DOCK.name, 'Available')
 
-  expect(screen.queryByRole('button', { name: 'Archive dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })
 
 test('does not offer archiving an already archived dock', async () => {
@@ -46,7 +46,7 @@ test('does not offer archiving an already archived dock', async () => {
 
   await openDock(user, RETIRED_DOCK.name, 'Archived')
 
-  expect(screen.queryByRole('button', { name: 'Archive dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })
 
 test('archives a dock with a comment', async () => {
@@ -73,7 +73,7 @@ test('archives a dock with a comment', async () => {
   renderCheckpoints()
   await openDock(user, NORTH_DOCK.name, 'Available')
 
-  await user.click(screen.getByRole('button', { name: 'Archive dock' }))
+  await user.click(screen.getByRole('button', { name: 'Archive' }))
   await screen.findByRole('heading', { name: 'Archive dock?' })
   await user.type(screen.getByRole('textbox', { name: /comment/i }), 'Quay closed for resurfacing')
   await user.click(screen.getByRole('button', { name: 'Archive' }))
@@ -81,7 +81,7 @@ test('archives a dock with a comment', async () => {
   expect(await screen.findByText('Dock archived')).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Quay closed for resurfacing' })
   await waitFor(() =>
-    expect(screen.queryByRole('button', { name: 'Archive dock' })).not.toBeInTheDocument(),
+    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument(),
   )
 })
 
@@ -101,7 +101,7 @@ test('archives a dock without a comment', async () => {
   renderCheckpoints()
   await openDock(user, NORTH_DOCK.name, 'Available')
 
-  await user.click(screen.getByRole('button', { name: 'Archive dock' }))
+  await user.click(screen.getByRole('button', { name: 'Archive' }))
   await screen.findByRole('heading', { name: 'Archive dock?' })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 

@@ -132,7 +132,7 @@ test('offers no archive affordance to a non-administrator', async () => {
   await openDetailsFor('Atlantic Transport')
 
   expect(await screen.findByRole('heading', { name: 'Atlantic Transport' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Archive company' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })
 
 test('offers no archive affordance to an administrator viewing an archived company', async () => {
@@ -147,7 +147,7 @@ test('offers no archive affordance to an administrator viewing an archived compa
   await openDetailsFor('Coastal Haulage')
 
   expect(await screen.findByRole('heading', { name: 'Coastal Haulage' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Archive company' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })
 
 test('offers no reactivate affordance to a non-administrator viewing an available company', async () => {
@@ -159,7 +159,7 @@ test('offers no reactivate affordance to a non-administrator viewing an availabl
   await openDetailsFor('Atlantic Transport')
 
   expect(await screen.findByRole('heading', { name: 'Atlantic Transport' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Reactivate company' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 
 test('offers no reactivate affordance to a non-administrator viewing an archived company', async () => {
@@ -172,7 +172,7 @@ test('offers no reactivate affordance to a non-administrator viewing an archived
   await openDetailsFor('Coastal Haulage')
 
   expect(await screen.findByRole('heading', { name: 'Coastal Haulage' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Reactivate company' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 
 test('offers Edit and Archive but no Reactivate to an administrator viewing an available company', async () => {
@@ -183,9 +183,9 @@ test('offers Edit and Archive but no Reactivate to an administrator viewing an a
   await screen.findByRole('list', { name: 'Available transport companies' })
   await openDetailsFor('Atlantic Transport')
 
-  expect(await screen.findByRole('button', { name: 'Edit company' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Archive company' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Reactivate company' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Edit' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 
 test('offers Reactivate but no Edit to an administrator viewing an archived company', async () => {
@@ -199,8 +199,8 @@ test('offers Reactivate but no Edit to an administrator viewing an archived comp
   await screen.findByRole('list', { name: 'Archived transport companies' })
   await openDetailsFor('Coastal Haulage')
 
-  expect(await screen.findByRole('button', { name: 'Reactivate company' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Edit company' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('surfaces an already-available refusal distinctly and allows retrying without reopening', async () => {
@@ -215,7 +215,7 @@ test('surfaces an already-available refusal distinctly and allows retrying witho
   renderTransportCompanies('/transport-resources?companyStatus=archived')
   await screen.findByRole('list', { name: 'Archived transport companies' })
   await openDetailsFor('Coastal Haulage')
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('alertdialog')
   fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }))
 
@@ -235,7 +235,7 @@ test('surfaces a retryable reactivation save failure distinctly and allows retry
   renderTransportCompanies('/transport-resources?companyStatus=archived')
   await screen.findByRole('list', { name: 'Archived transport companies' })
   await openDetailsFor('Coastal Haulage')
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('alertdialog')
   fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }))
 
@@ -260,7 +260,7 @@ test('surfaces an already-archived refusal distinctly and allows retrying withou
   renderTransportCompanies()
   await screen.findByRole('list', { name: 'Available transport companies' })
   await openDetailsFor('Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   await screen.findByRole('alertdialog')
   fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
 
@@ -279,7 +279,7 @@ test('surfaces a retryable save failure distinctly and allows retrying without r
   renderTransportCompanies()
   await screen.findByRole('list', { name: 'Available transport companies' })
   await openDetailsFor('Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   await screen.findByRole('alertdialog')
   fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
 

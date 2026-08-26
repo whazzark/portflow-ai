@@ -18,7 +18,7 @@ async function openArchiveDialog(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     await screen.findByRole('button', { name: `View warehouse ${NORTH_SHED.name} (Available)` }),
   )
-  await user.click(await screen.findByRole('button', { name: 'Archive warehouse' }))
+  await user.click(await screen.findByRole('button', { name: 'Archive' }))
 
   return screen.findByRole('alertdialog')
 }

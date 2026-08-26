@@ -23,7 +23,7 @@ async function openAndStartReactivating(user: ReturnType<typeof userEvent.setup>
     }),
   )
   await screen.findByRole('heading', { name: RETIRED_SCALE.name })
-  await user.click(screen.getByRole('button', { name: 'Reactivate weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('heading', { name: 'Reactivate weighing area?' })
 }
 

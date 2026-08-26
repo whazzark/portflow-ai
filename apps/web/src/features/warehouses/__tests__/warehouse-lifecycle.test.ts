@@ -1,23 +1,21 @@
 import { describe, expect, test } from 'vitest'
 import {
   countAvailableDoors,
-  countRestorableDoors,
-  describeDoorCascade,
-  describeDoorRestore,
-} from '@/features/warehouses/ui/warehouse-lifecycle-actions'
-import {
   countAvailableDoorsIn,
+  countRestorableDoors,
   countRestorableDoorsIn,
   describeBulkDoorCascade,
-  describeBulkDoorRestore,
-  toBulkLifecycleOutcome,
-} from '@/features/warehouses/warehouse-lifecycle-adapter'
+  describeBulkWarehouseEffect,
+  describeDoorCascade,
+  describeDoorRestore,
+  toBulkWarehouseLifecycleOutcome,
+} from '@/features/warehouses/warehouse-lifecycle'
 import { MIXED_ARCHIVED_WAREHOUSE, WAREHOUSES } from './support/fixtures'
 
 describe('warehouse bulk lifecycle adapter', () => {
   test('maps the bulk result onto the shared outcome shape', () => {
     expect(
-      toBulkLifecycleOutcome({
+      toBulkWarehouseLifecycleOutcome({
         updatedWarehouses: [WAREHOUSES[0], WAREHOUSES[1]],
         blockedWarehouses: [{ id: 'a', name: 'Busy Shed', reason: 'IN_USE' }],
       } as never),
@@ -29,7 +27,7 @@ describe('warehouse bulk lifecycle adapter', () => {
 
   test('reports an all-blocked submission as zero updated', () => {
     expect(
-      toBulkLifecycleOutcome({
+      toBulkWarehouseLifecycleOutcome({
         updatedWarehouses: [],
         blockedWarehouses: [
           { id: 'a', reason: 'NOT_FOUND' },
@@ -64,9 +62,7 @@ describe('door cascade counting', () => {
   })
 
   test('describes the bulk cascade in agreeing numbers', () => {
-    expect(describeBulkDoorCascade(1, 1)).toContain('1 warehouse')
     expect(describeBulkDoorCascade(1, 1)).toContain('1 available door is archived')
-    expect(describeBulkDoorCascade(3, 0)).toContain('3 warehouses')
     expect(describeBulkDoorCascade(3, 0)).toContain('no available door')
     expect(describeBulkDoorCascade(2, 5)).toContain('5 available doors are archived')
   })
@@ -74,17 +70,17 @@ describe('door cascade counting', () => {
   // Asserted as whole sentences: the counts vary independently, and a `toContain` on the noun
   // phrase alone still passes while the verb around it disagrees.
   test('keeps every clause agreeing when either count is one or zero', () => {
-    expect(describeBulkDoorCascade(3, 0)).toBe(
-      'These 3 warehouses remain readable but are no longer selectable for new operational work. They have no available door to archive with them.',
+    expect(describeBulkWarehouseEffect('archive', 3, 0)).toBe(
+      'These 3 warehouses remain readable but are no longer available for new operations. They have no available door to archive with them.',
     )
-    expect(describeBulkDoorCascade(1, 0)).toBe(
-      'This 1 warehouse remains readable but is no longer selectable for new operational work. It has no available door to archive with it.',
+    expect(describeBulkWarehouseEffect('archive', 1, 0)).toBe(
+      'This 1 warehouse remains readable but is no longer available for new operations. It has no available door to archive with it.',
     )
-    expect(describeBulkDoorCascade(1, 1)).toBe(
-      'This 1 warehouse remains readable but is no longer selectable for new operational work. Its 1 available door is archived with it.',
+    expect(describeBulkWarehouseEffect('archive', 1, 1)).toBe(
+      'This 1 warehouse remains readable but is no longer available for new operations. Its 1 available door is archived with it.',
     )
-    expect(describeBulkDoorCascade(2, 5)).toBe(
-      'These 2 warehouses remain readable but are no longer selectable for new operational work. Their 5 available doors are archived with them.',
+    expect(describeBulkWarehouseEffect('archive', 2, 5)).toBe(
+      'These 2 warehouses remain readable but are no longer available for new operations. Their 5 available doors are archived with them.',
     )
   })
 })
@@ -125,20 +121,20 @@ describe('door restore counting', () => {
   })
 
   test('keeps every bulk restore clause agreeing when either count is one or zero', () => {
-    expect(describeBulkDoorRestore(3, 0)).toBe(
-      'These 3 warehouses become selectable again for new operational work. No door returns to service with them.',
+    expect(describeBulkWarehouseEffect('reactivate', 3, 0)).toBe(
+      'These 3 warehouses become available again for new operations. No door returns to service with them.',
     )
-    expect(describeBulkDoorRestore(1, 0)).toBe(
-      'This 1 warehouse becomes selectable again for new operational work. No door returns to service with it.',
+    expect(describeBulkWarehouseEffect('reactivate', 1, 0)).toBe(
+      'This 1 warehouse becomes available again for new operations. No door returns to service with it.',
     )
-    expect(describeBulkDoorRestore(1, 1)).toBe(
-      'This 1 warehouse becomes selectable again for new operational work. Its 1 door archived with it returns to service.',
+    expect(describeBulkWarehouseEffect('reactivate', 1, 1)).toBe(
+      'This 1 warehouse becomes available again for new operations. Its 1 door archived with it returns to service.',
     )
-    expect(describeBulkDoorRestore(3, 1)).toBe(
-      'These 3 warehouses become selectable again for new operational work. Their 1 door archived with them returns to service.',
+    expect(describeBulkWarehouseEffect('reactivate', 3, 1)).toBe(
+      'These 3 warehouses become available again for new operations. Their 1 door archived with them returns to service.',
     )
-    expect(describeBulkDoorRestore(2, 5)).toBe(
-      'These 2 warehouses become selectable again for new operational work. Their 5 doors archived with them return to service.',
+    expect(describeBulkWarehouseEffect('reactivate', 2, 5)).toBe(
+      'These 2 warehouses become available again for new operations. Their 5 doors archived with them return to service.',
     )
   })
 })

@@ -27,7 +27,7 @@ test('does not offer editing to a non-administrator', async () => {
   )
   await screen.findByRole('heading', { name: ALPHA_SCALE.name })
 
-  expect(screen.queryByRole('button', { name: 'Edit weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('does not offer editing an archived weighing area, even to an administrator', async () => {
@@ -42,7 +42,7 @@ test('does not offer editing an archived weighing area, even to an administrator
   )
   await screen.findByRole('heading', { name: RETIRED_SCALE.name })
 
-  expect(screen.queryByRole('button', { name: 'Edit weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
   expect(
     screen.getByText('Archived weighing areas cannot receive new operations.'),
   ).toBeInTheDocument()
@@ -87,7 +87,7 @@ test('keeps the form open and names reactivation when the weighing area was arch
       name: `View weighing area ${ALPHA_SCALE.name} (Available)`,
     }),
   )
-  await user.click(screen.getByRole('button', { name: 'Edit weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Edit' }))
   await screen.findByRole('heading', { name: 'Edit weighing area' })
 
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
@@ -115,7 +115,7 @@ test('exits edit mode and clears the selection when the weighing area is no long
       name: `View weighing area ${ALPHA_SCALE.name} (Available)`,
     }),
   )
-  await user.click(screen.getByRole('button', { name: 'Edit weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Edit' }))
   await screen.findByRole('heading', { name: 'Edit weighing area' })
 
   await user.click(screen.getByRole('button', { name: 'Save changes' }))

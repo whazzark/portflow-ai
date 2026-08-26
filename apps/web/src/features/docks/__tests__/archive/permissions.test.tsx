@@ -24,14 +24,14 @@ test('offers no archive or select actions to an Observer anywhere on the checkpo
 
   await user.click(screen.getByRole('button', { name: `View dock ${NORTH_DOCK.name} (Available)` }))
   await screen.findByRole('heading', { name: NORTH_DOCK.name })
-  expect(screen.queryByRole('button', { name: 'Archive dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Close' }))
 
   await user.click(
     await screen.findByRole('button', { name: `View dock ${RETIRED_DOCK.name} (Archived)` }),
   )
   await screen.findByRole('heading', { name: RETIRED_DOCK.name })
-  expect(screen.queryByRole('button', { name: 'Archive dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })
 
 test('forcing selecting=docks in the URL offers no checkable markers or bulk bar to an Observer', async () => {

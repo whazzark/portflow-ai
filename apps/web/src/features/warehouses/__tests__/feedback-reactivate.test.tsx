@@ -20,7 +20,7 @@ async function submitReactivation(user: ReturnType<typeof userEvent.setup>, comm
   await user.click(
     await screen.findByRole('button', { name: `View warehouse ${MIXED.name} (Archived)` }),
   )
-  await user.click(await screen.findByRole('button', { name: 'Reactivate warehouse' }))
+  await user.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
   if (comment) {
     await user.type(within(dialog).getByRole('textbox'), comment)

@@ -95,7 +95,7 @@ test('lets an administrator cancel an edit without changing the truck', async ()
   fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   expect(await screen.findByRole('heading', { name: 'Edit truck' })).toBeInTheDocument()
 
-  fireEvent.click(screen.getByRole('button', { name: 'Back to truck details' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Back to details' }))
 
   expect(await screen.findByRole('heading', { name: target.registration })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Edit truck' })).not.toBeInTheDocument()

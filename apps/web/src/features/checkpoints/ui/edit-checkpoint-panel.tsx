@@ -43,7 +43,7 @@ export function EditCheckpointPanel<
       <SheetHeader>
         <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
           <ArrowLeftIcon aria-hidden="true" />
-          Back to {resourceNoun} details
+          Back to details
         </Button>
         <SheetTitle>Edit {resourceNoun}</SheetTitle>
         <SheetDescription>

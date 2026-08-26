@@ -63,12 +63,13 @@ test('retains a not-found blocker after its customer disappears on refetch', asy
   await firstRequestReceived
   await withTimeout(refetchReceived, 'Customer list was not refetched')
   await new Promise((resolve) => setTimeout(resolve, 0))
-  expect(document.body.textContent).toContain('Some customers were unchanged')
+  expect(document.body.textContent).toContain('1 customer unchanged')
   expect(document.body.textContent).toContain('not found')
   expect(document.body.textContent).toContain('Available (1)')
 
   expect(listRequests).toBeGreaterThan(initialListRequests)
-  expect(document.body.textContent).toContain('Retry blocked customers')
+  // The blocked customer stays selected, so the toolbar's own button offers the retry.
+  expect(document.body.textContent).toContain('Archive selected')
   expect(requestBodies).toEqual([{ ids: ['available-1'], comment: null }])
 })
 

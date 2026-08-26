@@ -56,7 +56,7 @@ test('resubmitting after a partial success does not re-touch the already-archive
   await screen.findByRole('heading', { name: 'Archive selected docks?' })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('1 dock archived; 1 unchanged')).toBeInTheDocument()
+  expect(await screen.findByText('1 dock archived; 1 dock unchanged')).toBeInTheDocument()
   expect(
     screen.queryByRole('button', { name: `Select dock ${BETA_DOCK.name}` }),
   ).not.toBeInTheDocument()

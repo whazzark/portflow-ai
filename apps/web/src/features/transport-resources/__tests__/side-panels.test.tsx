@@ -17,7 +17,7 @@ test('opens company details without changing the truck filter', async () => {
   await user.click(await screen.findByRole('menuitem', { name: 'View' }))
 
   const details = await screen.findByRole('region', { name: 'Transport company details' })
-  expect(within(details).getByText('Latest reactivation context')).toBeInTheDocument()
+  expect(within(details).getByText('Reactivation context')).toBeInTheDocument()
   expect(screen.getByText('AA-101-PF')).toBeInTheDocument()
 })
 

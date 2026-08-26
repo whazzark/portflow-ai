@@ -128,7 +128,7 @@ test('keeps only the in-use blocked docks checked and lists every blocker with i
   await screen.findByRole('heading', { name: 'Archive selected docks?' })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('1 dock archived; 1 unchanged')).toBeInTheDocument()
+  expect(await screen.findByText('1 dock archived; 1 dock unchanged')).toBeInTheDocument()
   expect(
     screen.getByText(`${NORTH_DOCK.name}: used by an active or planned discharge`),
   ).toBeInTheDocument()

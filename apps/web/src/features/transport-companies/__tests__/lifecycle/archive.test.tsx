@@ -30,7 +30,7 @@ test('offers archival only to an administrator viewing an available company', as
   await screen.findByRole('list', { name: 'Available transport companies' })
   await openDetailsFor('Atlantic Transport')
 
-  expect(await screen.findByRole('button', { name: 'Archive company' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Archive' })).toBeInTheDocument()
 })
 
 test('explains the outcome and offers an optional comment before archiving', async () => {
@@ -41,11 +41,11 @@ test('explains the outcome and offers an optional comment before archiving', asy
   renderTransportCompanies()
   await screen.findByRole('list', { name: 'Available transport companies' })
   await openDetailsFor('Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
 
   expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
   expect(
-    screen.getByText(/will remain readable but will no longer be selectable/i),
+    screen.getByText(/remains readable but is no longer available for new operations/i),
   ).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: /comment/i })).toBeInTheDocument()
 })
@@ -58,7 +58,7 @@ test('cancelling the confirmation sends no request and leaves the company unchan
   renderTransportCompanies()
   await screen.findByRole('list', { name: 'Available transport companies' })
   await openDetailsFor('Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   await screen.findByRole('alertdialog')
 
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -80,7 +80,7 @@ test('archiving moves the company to the Archived tab with its lifecycle context
   ).toBeInTheDocument()
 
   await openDetailsFor('Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   await screen.findByRole('alertdialog')
   fireEvent.change(screen.getByRole('textbox', { name: /comment/i }), {
     target: { value: 'Provider no longer serves the site' },
@@ -118,7 +118,7 @@ test('a truck-conflict refusal is shown in the dialog and the company stays avai
   renderTransportCompanies()
   await screen.findByRole('list', { name: 'Available transport companies' })
   await openDetailsFor('Atlantic Transport')
-  fireEvent.click(await screen.findByRole('button', { name: 'Archive company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   await screen.findByRole('alertdialog')
   fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
 
@@ -129,4 +129,32 @@ test('a truck-conflict refusal is shown in the dialog and the company stays avai
   expect(
     within(await companyTabs()).getByRole('tab', { name: /Available \(3\)/, hidden: true }),
   ).toBeInTheDocument()
+})
+
+test('a validation refusal shows its field-level detail and keeps the typed comment', async () => {
+  mockTrucks()
+  mockTransportCompanyArchivalFailure(422, {
+    code: 'E_VALIDATION_ERROR',
+    message: 'Validation failure',
+    details: [{ field: 'comment', message: 'The comment field must not exceed 1000 characters' }],
+  })
+  mockTransportCompanies(TRANSPORT_COMPANIES, ADMIN_USER)
+
+  renderTransportCompanies()
+  await screen.findByRole('list', { name: 'Available transport companies' })
+  await openDetailsFor('Atlantic Transport')
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
+  const dialog = await screen.findByRole('alertdialog')
+  const comment = within(dialog).getByRole('textbox', { name: /comment/i })
+  // maxLength=1000 on the field blocks typing past the limit, so an over-long value that reaches
+  // the server has to be set programmatically here.
+  fireEvent.change(comment, { target: { value: 'a'.repeat(1001) } })
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
+
+  // The field-level detail, not the generic "Validation failure", is what says what to fix.
+  expect(
+    await screen.findByText('The comment field must not exceed 1000 characters'),
+  ).toBeInTheDocument()
+  expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+  expect(comment).toHaveValue('a'.repeat(1001))
 })

@@ -24,7 +24,7 @@ test('does not offer editing to a non-administrator', async () => {
   )
   await screen.findByRole('heading', { name: NORTH_DOCK.name })
 
-  expect(screen.queryByRole('button', { name: 'Edit dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('does not offer editing an archived dock, even to an administrator', async () => {
@@ -37,7 +37,7 @@ test('does not offer editing an archived dock, even to an administrator', async 
   )
   await screen.findByRole('heading', { name: RETIRED_DOCK.name })
 
-  expect(screen.queryByRole('button', { name: 'Edit dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
   expect(screen.getByText('Archived docks cannot receive new operations.')).toBeInTheDocument()
 })
 
@@ -73,7 +73,7 @@ test('keeps the form open and names reactivation when the dock was archived mid-
   await user.click(
     await screen.findByRole('button', { name: `View dock ${NORTH_DOCK.name} (Available)` }),
   )
-  await user.click(screen.getByRole('button', { name: 'Edit dock' }))
+  await user.click(screen.getByRole('button', { name: 'Edit' }))
   await screen.findByRole('heading', { name: 'Edit dock' })
 
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
@@ -99,7 +99,7 @@ test('exits edit mode and clears the selection when the dock is no longer found'
   await user.click(
     await screen.findByRole('button', { name: `View dock ${NORTH_DOCK.name} (Available)` }),
   )
-  await user.click(screen.getByRole('button', { name: 'Edit dock' }))
+  await user.click(screen.getByRole('button', { name: 'Edit' }))
   await screen.findByRole('heading', { name: 'Edit dock' })
 
   await user.click(screen.getByRole('button', { name: 'Save changes' }))

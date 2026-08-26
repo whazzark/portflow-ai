@@ -53,7 +53,7 @@ test('archives and reactivates a customer with explicit lifecycle actions', asyn
   const detailsDialog = await screen.findByRole('dialog')
   expect((await within(detailsDialog).findAllByText('Acme Logistics')).length).toBeGreaterThan(0)
 
-  fireEvent.click(screen.getByRole('button', { name: 'Archive customer' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
   const archiveDialog = await screen.findByRole('alertdialog')
   const comment = within(archiveDialog).getByRole('textbox', { name: 'Comment (optional)' })
   expect(comment).toHaveAttribute('maxlength', '1000')
@@ -63,16 +63,16 @@ test('archives and reactivates a customer with explicit lifecycle actions', asyn
   fireEvent.click(within(archiveDialog).getByRole('button', { name: 'Archive' }))
 
   expect((await within(detailsDialog).findAllByText('Archived')).length).toBeGreaterThan(0)
-  expect(await within(detailsDialog).findByText('Lifecycle')).toBeInTheDocument()
-  expect(within(detailsDialog).getByText('Archive comment')).toBeInTheDocument()
+  // The detail pane reports the context the customer now sits in, not both directions at once.
+  expect(await within(detailsDialog).findByText('Archive context')).toBeInTheDocument()
+  expect(within(detailsDialog).getByText('Archived at')).toBeInTheDocument()
+  expect(within(detailsDialog).getByText('Comment')).toBeInTheDocument()
+  expect(within(detailsDialog).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
   expect(
-    within(detailsDialog).queryByRole('button', { name: 'Edit customer' }),
-  ).not.toBeInTheDocument()
-  expect(
-    await within(detailsDialog).findByRole('button', { name: 'Reactivate customer' }),
+    await within(detailsDialog).findByRole('button', { name: 'Reactivate' }),
   ).toBeInTheDocument()
 
-  fireEvent.click(screen.getByRole('button', { name: 'Reactivate customer' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }))
   const reactivateDialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(reactivateDialog).getByRole('button', { name: 'Reactivate' }))
 

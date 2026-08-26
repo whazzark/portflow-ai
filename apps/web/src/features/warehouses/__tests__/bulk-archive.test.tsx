@@ -96,7 +96,9 @@ test('names each unchanged warehouse and its own reason on a partial outcome', a
   const dialog = await openBulkDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('1 warehouse archived; 2 unchanged')).toBeInTheDocument()
+  expect(
+    await screen.findByText('1 warehouse archived; 2 warehouses unchanged'),
+  ).toBeInTheDocument()
   // The in-use wording names the door as the cause, not the warehouse itself.
   expect(
     await screen.findByText(
@@ -127,7 +129,7 @@ test('reports an all-blocked selection as nothing changed', async () => {
   const dialog = await openBulkDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('0 warehouses archived; 2 unchanged')).toBeInTheDocument()
+  expect(await screen.findByText('2 warehouses unchanged')).toBeInTheDocument()
 })
 
 // Only IN_USE is worth keeping checked: it is the one refusal an administrator can act on and
@@ -154,7 +156,9 @@ test('keeps only the retriable blocked warehouse checked after a mixed refusal',
   await checkWarehouses(user, NORTH.name, EAST.name, WEST.name)
   await user.click(within(await openBulkDialog(user)).getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('1 warehouse archived; 2 unchanged')).toBeInTheDocument()
+  expect(
+    await screen.findByText('1 warehouse archived; 2 warehouses unchanged'),
+  ).toBeInTheDocument()
   expect(await screen.findByText('1 selected')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Archive selected' })).toBeInTheDocument()
 })
@@ -186,7 +190,7 @@ test('retries only the blocked warehouses without reselecting them', async () =>
 
   await checkWarehouses(user, NORTH.name, EAST.name)
   await user.click(within(await openBulkDialog(user)).getByRole('button', { name: 'Archive' }))
-  expect(await screen.findByText('1 warehouse archived; 1 unchanged')).toBeInTheDocument()
+  expect(await screen.findByText('1 warehouse archived; 1 warehouse unchanged')).toBeInTheDocument()
 
   // The selection has narrowed to exactly the blocked warehouse, ready to retry.
   expect(await screen.findByText('1 selected')).toBeInTheDocument()

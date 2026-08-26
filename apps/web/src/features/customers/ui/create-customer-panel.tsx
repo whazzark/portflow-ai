@@ -12,7 +12,7 @@ export function CreateCustomerPanel({ onCreate, onSuccess }: CreateCustomerPanel
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <SheetHeader>
         <SheetTitle>Create customer</SheetTitle>
-        <SheetDescription>Add a reusable Customer reference for the site.</SheetDescription>
+        <SheetDescription>Add a reusable customer reference for the site.</SheetDescription>
       </SheetHeader>
       <div className="px-4">
         <CustomerForm

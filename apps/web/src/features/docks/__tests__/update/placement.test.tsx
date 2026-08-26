@@ -21,7 +21,7 @@ async function openEditDock(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     await screen.findByRole('button', { name: `View dock ${NORTH_DOCK.name} (Available)` }),
   )
-  await user.click(screen.getByRole('button', { name: 'Edit dock' }))
+  await user.click(screen.getByRole('button', { name: 'Edit' }))
   await screen.findByRole('heading', { name: 'Edit dock' })
 }
 

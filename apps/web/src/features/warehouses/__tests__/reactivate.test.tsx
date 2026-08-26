@@ -21,7 +21,7 @@ async function openReactivateDialog(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     await screen.findByRole('button', { name: `View warehouse ${MIXED.name} (Archived)` }),
   )
-  await user.click(await screen.findByRole('button', { name: 'Reactivate warehouse' }))
+  await user.click(await screen.findByRole('button', { name: 'Reactivate' }))
 
   return screen.findByRole('alertdialog')
 }
@@ -54,14 +54,14 @@ test('offers reactivation for an archived warehouse and archival for an availabl
   await user.click(
     await screen.findByRole('button', { name: `View warehouse ${AVAILABLE.name} (Available)` }),
   )
-  expect(await screen.findByRole('button', { name: 'Archive warehouse' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Reactivate warehouse' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Archive' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
 
   await user.click(
     await screen.findByRole('button', { name: `View warehouse ${MIXED.name} (Archived)` }),
   )
-  expect(await screen.findByRole('button', { name: 'Reactivate warehouse' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Archive warehouse' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })
 
 test('states how many doors return to service with the warehouse', async () => {
@@ -74,7 +74,7 @@ test('states how many doors return to service with the warehouse', async () => {
   expect(within(dialog).getByRole('heading', { name: 'Reactivate warehouse?' })).toBeInTheDocument()
   // Mixed Shed holds one door archived with it and one archived on its own.
   expect(dialog).toHaveTextContent('Its 1 door archived with it returns to service')
-  expect(dialog).toHaveTextContent('selectable again for new operational work')
+  expect(dialog).toHaveTextContent('becomes available again for new operations')
 })
 
 test('reactivates the warehouse and reports the restored doors', async () => {

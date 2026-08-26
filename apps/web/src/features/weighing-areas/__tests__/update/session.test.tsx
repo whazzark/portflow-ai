@@ -29,7 +29,7 @@ async function openEditWeighingArea(user: ReturnType<typeof userEvent.setup>) {
       name: `View weighing area ${ALPHA_SCALE.name} (Available)`,
     }),
   )
-  await user.click(screen.getByRole('button', { name: 'Edit weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Edit' }))
   await screen.findByRole('heading', { name: 'Edit weighing area' })
 }
 
@@ -55,7 +55,7 @@ test('never arms the map for a dock merely selected for viewing after a weighing
 
   await openEditWeighingArea(user)
 
-  await user.click(screen.getByRole('button', { name: 'Back to weighing area details' }))
+  await user.click(screen.getByRole('button', { name: 'Back to details' }))
   await user.click(screen.getByRole('button', { name: 'Close' }))
 
   await user.click(
@@ -63,7 +63,7 @@ test('never arms the map for a dock merely selected for viewing after a weighing
   )
 
   expect(await screen.findByRole('heading', { name: AVAILABLE_DOCK.name })).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Edit dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Edit weighing area' })).not.toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Edit weighing area' })).not.toBeInTheDocument()
 })
 
@@ -92,7 +92,7 @@ test('hides both create controls while a weighing-area edit session is armed', a
   expect(screen.queryByRole('button', { name: 'New dock' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'New weighing area' })).not.toBeInTheDocument()
 
-  await user.click(screen.getByRole('button', { name: 'Back to weighing area details' }))
+  await user.click(screen.getByRole('button', { name: 'Back to details' }))
   await user.click(screen.getByRole('button', { name: 'Close' }))
 
   expect(await screen.findByRole('button', { name: 'New dock' })).toBeInTheDocument()
@@ -104,7 +104,7 @@ test('ignores a URL whose edit kind does not match the selected checkpoint kind'
   renderCheckpoints(`/checkpoints?checkpoint=dock:${AVAILABLE_DOCK.id}&edit=weighing-area`)
 
   expect(await screen.findByRole('heading', { name: AVAILABLE_DOCK.name })).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Edit dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Edit weighing area' })).not.toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Edit weighing area' })).not.toBeInTheDocument()
 })
 

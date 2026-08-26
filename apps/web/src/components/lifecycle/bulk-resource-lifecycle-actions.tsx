@@ -16,13 +16,24 @@ import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 import { classnames } from '@/libraries/shadcn/helpers'
 import { parseApiError } from '@/libraries/tuyau/api-error'
-
-export type BulkLifecycleIntent = 'ARCHIVE' | 'REACTIVATE'
+import {
+  BULK_LIFECYCLE_COMMENT_DESCRIPTION,
+  bulkLifecycleDialogTitle,
+  bulkLifecycleFailureTitle,
+  describeBulkLifecycleEffect,
+  LIFECYCLE_ACTION_LABELS,
+  LIFECYCLE_COMMENT_LABEL,
+  LIFECYCLE_PAST_PARTICIPLES,
+  LIFECYCLE_PENDING_LABELS,
+  type LifecycleAction,
+} from './lifecycle-copy'
 
 export type BulkLifecycleBlocker = {
   id: string
   name?: string
-  reason: 'NOT_FOUND' | 'IN_USE' | 'ALREADY_ARCHIVED' | 'ALREADY_AVAILABLE'
+  /** Open on purpose: each resource refuses for its own reasons — a suspended truck, a transport
+   * company that still provides available trucks — and names them through `blockerReasonLabels`. */
+  reason: string
 }
 
 export type BulkLifecycleOutcome = {
@@ -30,7 +41,7 @@ export type BulkLifecycleOutcome = {
   blocked: BulkLifecycleBlocker[]
 }
 
-export const DEFAULT_BLOCKER_REASON_LABELS: Record<BulkLifecycleBlocker['reason'], string> = {
+export const DEFAULT_BLOCKER_REASON_LABELS: Record<string, string> = {
   IN_USE: 'used by an active or planned discharge',
   NOT_FOUND: 'not found',
   ALREADY_ARCHIVED: 'already archived',
@@ -44,46 +55,67 @@ type BulkResourceLifecycleActionsProps = {
   plural: string
   /** Prefix for the comment field's element id, so several instances never collide. */
   idPrefix: string
-  /** Sentence shown in the confirmation, describing what the transition means for this resource. */
-  description: string
   /** Which lifecycle transition the current selection is for. */
-  intent: BulkLifecycleIntent
+  action: LifecycleAction
   selectedIds: string[]
   onClear: () => void
   onSuccess: (outcome: BulkLifecycleOutcome) => void
-  /** Submits the bulk request for this resource and intent, returning its normalized outcome. Each
+  /** Submits the bulk request for this resource and action, returning its normalized outcome. Each
    * resource feature adapts its own response shape (e.g. `{ updatedDocks, blockedDocks }`) onto
    * `BulkLifecycleOutcome`, so this component holds no resource-specific knowledge. */
   submit: (input: { ids: string[]; comment: string | null }) => Promise<BulkLifecycleOutcome>
   /** Invalidates the resource's own list query after a successful submission. */
   refresh: () => void | Promise<void>
-  /** Overrides individual blocked-reason wordings where a resource needs to say more — a warehouse
-   * is blocked by one of its *doors*, not by itself. Missing keys fall back to the defaults. */
-  blockerReasonLabels?: Partial<Record<BulkLifecycleBlocker['reason'], string>>
+  /** Replaces the canonical effect sentence where a resource genuinely says more — archiving
+   * warehouses cascades to their available doors. Receives the size of the selection, which every
+   * clause of the sentence has to agree with. */
+  describeEffect?: (action: LifecycleAction, count: number) => string
+  /** Names blocked reasons this resource can report beyond the shared four. Missing keys fall
+   * back to the defaults, and an unknown reason falls back to its own code. */
+  blockerReasonLabels?: Record<string, string>
 }
 
 export function BulkResourceLifecycleActions({
   singular,
   plural,
   idPrefix,
-  description,
-  intent,
+  action,
   selectedIds,
   onClear,
   onSuccess,
   submit: submitRequest,
   refresh,
+  describeEffect,
   blockerReasonLabels,
 }: BulkResourceLifecycleActionsProps) {
-  const isReactivate = intent === 'REACTIVATE'
-  const actionLabel = isReactivate ? 'Reactivate' : 'Archive'
-  const pastTense = isReactivate ? 'reactivated' : 'archived'
   const countLabel = (count: number) => `${count} ${count === 1 ? singular : plural}`
   const reasonLabels = { ...DEFAULT_BLOCKER_REASON_LABELS, ...blockerReasonLabels }
+  const describeBlocked = (blocked: BulkLifecycleBlocker) =>
+    `${blocked.name ?? blocked.id}: ${reasonLabels[blocked.reason] ?? blocked.reason}`
 
   const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const notifyOutcome = (outcome: BulkLifecycleOutcome) => {
+    const verb = LIFECYCLE_PAST_PARTICIPLES[action]
+
+    if (outcome.blocked.length === 0) {
+      toast.success(`${countLabel(outcome.updatedCount)} ${verb}`)
+      return
+    }
+
+    // The toolbar stays compact (a count and a button); the per-record breakdown lives here
+    // instead, where it does not crowd the UI once read.
+    const notify = outcome.updatedCount > 0 ? toast.warning : toast.error
+
+    notify(
+      outcome.updatedCount > 0
+        ? `${countLabel(outcome.updatedCount)} ${verb}; ${countLabel(outcome.blocked.length)} unchanged`
+        : `${countLabel(outcome.blocked.length)} unchanged`,
+      { description: outcome.blocked.map(describeBlocked).join(', '), duration: 8000 },
+    )
+  }
 
   const submit = async () => {
     setIsSubmitting(true)
@@ -94,21 +126,14 @@ export function BulkResourceLifecycleActions({
       setComment('')
       onSuccess(outcome)
       void refresh()
-      toast.success(
-        outcome.blocked.length > 0
-          ? `${countLabel(outcome.updatedCount)} ${pastTense}; ${outcome.blocked.length} unchanged`
-          : `${countLabel(selectedIds.length)} ${pastTense}`,
-        outcome.blocked.length > 0
-          ? {
-              description: outcome.blocked
-                .map((blocked) => `${blocked.name ?? blocked.id}: ${reasonLabels[blocked.reason]}`)
-                .join(', '),
-            }
-          : undefined,
-      )
+      notifyOutcome(outcome)
     } catch (cause) {
-      toast.error(`Unable to ${actionLabel.toLowerCase()} ${plural}`, {
-        description: parseApiError(cause).message,
+      // As in the single-record dialog, a refusal keeps the dialog open with the typed comment
+      // intact so the administrator can correct and resubmit.
+      const error = parseApiError(cause)
+
+      toast.error(bulkLifecycleFailureTitle(action, plural), {
+        description: error.details?.[0]?.message ?? error.message,
       })
     } finally {
       setIsSubmitting(false)
@@ -136,9 +161,9 @@ export function BulkResourceLifecycleActions({
           <Button
             onClick={() => setOpen(true)}
             size="sm"
-            variant={isReactivate ? 'default' : 'destructive'}
+            variant={action === 'reactivate' ? 'default' : 'destructive'}
           >
-            {actionLabel} selected
+            {LIFECYCLE_ACTION_LABELS[action]} selected
           </Button>
           <Button aria-label="Clear selection" onClick={onClear} size="icon-sm" variant="ghost">
             <XIcon aria-hidden="true" />
@@ -148,12 +173,15 @@ export function BulkResourceLifecycleActions({
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{`${actionLabel} selected ${plural}?`}</AlertDialogTitle>
-            <AlertDialogDescription>{description}</AlertDialogDescription>
+            <AlertDialogTitle>{bulkLifecycleDialogTitle(action, plural)}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {describeEffect?.(action, selectedIds.length) ??
+                describeBulkLifecycleEffect(action, selectedIds.length, singular, plural)}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <Field>
             <FieldLabel htmlFor={`bulk-${idPrefix}-lifecycle-comment`}>
-              Comment (optional)
+              {LIFECYCLE_COMMENT_LABEL}
             </FieldLabel>
             <Textarea
               id={`bulk-${idPrefix}-lifecycle-comment`}
@@ -161,7 +189,7 @@ export function BulkResourceLifecycleActions({
               onChange={(event) => setComment(event.target.value)}
               value={comment}
             />
-            <FieldDescription>Maximum 1,000 characters.</FieldDescription>
+            <FieldDescription>{BULK_LIFECYCLE_COMMENT_DESCRIPTION}</FieldDescription>
           </Field>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -172,7 +200,7 @@ export function BulkResourceLifecycleActions({
                 void submit()
               }}
             >
-              {actionLabel}
+              {isSubmitting ? LIFECYCLE_PENDING_LABELS[action] : LIFECYCLE_ACTION_LABELS[action]}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

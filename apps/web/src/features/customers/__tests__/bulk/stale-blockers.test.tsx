@@ -1,72 +1,62 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test, vi } from 'vitest'
-import type { BulkCustomerLifecycleBlocker } from '@/features/customers/types'
-import { BulkLifecycleActions } from '@/features/customers/ui/bulk-lifecycle-actions'
+import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
 import { API_BASE_URL } from '../support/fixtures'
+import { mockCustomers, renderCustomers } from '../support/test-helpers'
 
+/**
+ * A stale blocker is one the customer collection cannot explain on its own: the server refused the
+ * customer without returning a refreshed DTO for it. The outcome still has to leave that customer
+ * selected and retryable, and has to name why it was refused.
+ */
 test.each([
-  ['NOT_FOUND', false, 'archive', 'Archive selected', 'not found'],
-  ['ALREADY_ARCHIVED', false, 'archive', 'Archive selected', 'already archived'],
-  ['ALREADY_AVAILABLE', true, 'reactivate', 'Reactivate selected', 'already available'],
-] as const)(
-  'keeps a stale %s blocker actionable without a refreshed customer DTO',
-  async (reason, isArchived, endpoint, openLabel, reasonLabel) => {
-    const selectedId = 'stale-customer-id'
-    const blocker: BulkCustomerLifecycleBlocker = {
-      id: selectedId,
-      code: reason === 'NOT_FOUND' ? undefined : 'STALE-01',
-      companyName: reason === 'NOT_FOUND' ? undefined : 'Stale Customer',
-      reason,
-    }
-    let requestBody: unknown
-    const onClear = vi.fn()
-    const onSuccess = vi.fn()
+  ['NOT_FOUND', 'not found'],
+  ['ALREADY_ARCHIVED', 'already archived'],
+] as const)('keeps a stale %s blocker selected and retryable', async (reason, reasonLabel) => {
+  let attempts = 0
 
-    server.use(
-      http.post(`${API_BASE_URL}/api/v1/customers/${endpoint}`, async ({ request }) => {
-        requestBody = await request.json()
-        return HttpResponse.json({
-          data: { updatedCustomers: [], blockedCustomers: [blocker] },
-        })
-      }),
-    )
+  mockCustomers()
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/customers/archive`, () => {
+      attempts += 1
+      return HttpResponse.json({
+        data: {
+          updatedCustomers: [],
+          blockedCustomers: [
+            { id: 'available-1', code: reason === 'NOT_FOUND' ? undefined : 'AVAIL-01', reason },
+          ],
+        },
+      })
+    }),
+  )
 
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-    })
-    render(
-      <QueryClientProvider client={queryClient}>
-        <BulkLifecycleActions
-          blockedCustomers={[blocker]}
-          isArchived={isArchived}
-          onClear={onClear}
-          onSuccess={onSuccess}
-          selectedIds={[selectedId]}
-        />
-      </QueryClientProvider>,
-    )
+  renderCustomers()
+  const table = await screen.findByRole('table', { name: 'Available customers' })
+  fireEvent.click(within(table).getByRole('checkbox', { name: 'Select all available customers' }))
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Archive selected' })).toBeInTheDocument(),
+  )
 
-    expect(screen.getByText('Some customers were unchanged')).toBeInTheDocument()
-    expect(screen.getByText(new RegExp(reasonLabel))).toBeInTheDocument()
-    expect(screen.getByText('1 selected')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Archive selected' }))
+  fireEvent.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Archive' }),
+  )
 
-    expect(screen.getByRole('button', { name: openLabel })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Retry blocked customers' }))
-    fireEvent.click(
-      within(await screen.findByRole('alertdialog')).getByRole('button', {
-        name: isArchived ? 'Reactivate' : 'Archive',
-      }),
-    )
+  // The outcome names the reason rather than leaving the administrator to guess it.
+  expect(await screen.findByText(new RegExp(reasonLabel))).toBeInTheDocument()
 
-    await waitFor(() => {
-      expect(requestBody).toEqual({ ids: [selectedId], comment: null })
-      expect(onSuccess).toHaveBeenCalled()
-    })
+  // The toolbar stays up with only the blocked customer selected, so its own button is the retry.
+  await waitFor(() => expect(screen.getByText('1 selected')).toBeInTheDocument())
+  fireEvent.click(screen.getByRole('button', { name: 'Archive selected' }))
+  fireEvent.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Archive' }),
+  )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
-    expect(onClear).toHaveBeenCalledOnce()
-  },
-)
+  await waitFor(() => expect(attempts).toBe(2))
+
+  fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument(),
+  )
+})

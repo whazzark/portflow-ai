@@ -1,3 +1,4 @@
+import { ResourceLifecycleSummary } from '@/components/lifecycle/resource-lifecycle-summary'
 import {
   ResourceDetailBody,
   ResourceDetailField,
@@ -6,8 +7,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SheetFooter } from '@/components/ui/sheet'
+import { DockLifecycleActions, dockLifecycleBlocks } from '@/features/docks/dock-lifecycle'
 import type { DockDto } from '@/features/docks/types'
-import { DockLifecycleActions } from '@/features/docks/ui/dock-lifecycle-actions'
 import { formatDateTime } from '@/helpers/dates'
 
 export function DockDetails({
@@ -19,6 +20,8 @@ export function DockDetails({
   dock: DockDto
   onEdit: () => void
 }) {
+  const lifecycleBlocks = dockLifecycleBlocks(dock)
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ResourceDetailHeader
@@ -33,28 +36,12 @@ export function DockDetails({
           <ResourceDetailField label="Created" value={formatDateTime(dock.createdAt)} />
           <ResourceDetailField label="Last updated" value={formatDateTime(dock.updatedAt)} />
         </dl>
-        <Separator className="my-6" />
-        <section aria-labelledby="dock-lifecycle-heading" className="flex flex-col gap-3">
-          <h3 className="font-medium" id="dock-lifecycle-heading">
-            Lifecycle
-          </h3>
-          <dl className="grid gap-4 text-sm">
-            <ResourceDetailField
-              label="Archived"
-              value={dock.archivedAt ? formatDateTime(dock.archivedAt) : null}
-            />
-            <ResourceDetailField label="Archive comment" value={dock.archiveComment} />
-            <ResourceDetailField
-              label="Reactivated"
-              value={dock.reactivatedAt ? formatDateTime(dock.reactivatedAt) : null}
-            />
-            <ResourceDetailField label="Reactivation comment" value={dock.reactivationComment} />
-          </dl>
-        </section>
+        {lifecycleBlocks.some((block) => block.at) && <Separator className="my-6" />}
+        <ResourceLifecycleSummary blocks={lifecycleBlocks} />
       </ResourceDetailBody>
       {canEdit && (
         <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
-          {dock.status === 'AVAILABLE' && <Button onClick={onEdit}>Edit dock</Button>}
+          {dock.status === 'AVAILABLE' && <Button onClick={onEdit}>Edit</Button>}
           <DockLifecycleActions dock={dock} />
         </SheetFooter>
       )}

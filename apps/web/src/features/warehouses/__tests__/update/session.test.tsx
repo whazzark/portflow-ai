@@ -30,6 +30,9 @@ test('opens the update mode pre-filled with the stored name and every boundary p
 
   await waitFor(() => expect(router.state.location.search).toMatchObject({ edit: 'warehouse' }))
   expect(router.state.location.search).toMatchObject({ warehouseId: NORTH_SHED.id })
+  // The panel is titled like every other edit panel, and the way back out is worded like theirs.
+  expect(screen.getByRole('heading', { name: 'Edit warehouse' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Back to details' })).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Warehouse name' })).toHaveValue(NORTH_SHED.name)
 
   for (const [index, point] of NORTH_SHED.footprint.points.entries()) {

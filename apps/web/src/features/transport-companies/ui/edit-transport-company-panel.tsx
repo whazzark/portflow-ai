@@ -25,7 +25,7 @@ export function EditTransportCompanyPanel({
       <SheetHeader>
         <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
           <ArrowLeftIcon aria-hidden="true" />
-          Back to company details
+          Back to details
         </Button>
         <SheetTitle>Edit transport company</SheetTitle>
         <SheetDescription>Update the name and contact details for {company.name}.</SheetDescription>

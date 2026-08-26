@@ -49,8 +49,8 @@ and remains fully readable with an unchanged name and position.
    archival completes, **Then** the weighing area is archived with the archive time and responsible
    administrator recorded and no comment shown.
 5. **Given** an administrator opens the archive confirmation for an eligible weighing area, **When**
-   the confirmation is displayed, **Then** it states that the weighing area remains readable but
-   will no longer be selectable for new operational work, and it offers an optional comment.
+   the confirmation is displayed, **Then** it names the weighing area, states that it remains
+   readable but is no longer available for new operations, and it offers an optional comment.
 6. **Given** an administrator opens the archive confirmation, **When** the administrator abandons
    it, **Then** the weighing area remains available and entirely unchanged.
 7. **Given** a weighing area is archived, **When** the Checkpoints map is consulted under the
@@ -279,9 +279,10 @@ that the blocked ones can be retried on their own.
   feature.
 - **FR-016**: Archiving a weighing area MUST NOT release its name for reuse; weighing-area names
   remain unique across all weighing areas regardless of lifecycle status.
-- **FR-017**: The archive experience MUST require an explicit confirmation, MUST state that the
-  weighing area remains readable but is no longer selectable for new operational work, and MUST
-  offer an optional comment.
+- **FR-017**: The archive experience MUST require an explicit confirmation, MUST name the weighing
+  area and state that it remains readable but is no longer available for new operations, and MUST
+  offer an optional comment. This wording is the one every site reference uses for archival; it is
+  owned by `apps/web/src/components/lifecycle/lifecycle-copy.ts`.
 - **FR-018**: The administrator MUST be able to abandon an archival in progress, leaving every
   targeted weighing area unchanged.
 - **FR-019**: The system MUST report authorization refusals, not-found refusals, already-archived

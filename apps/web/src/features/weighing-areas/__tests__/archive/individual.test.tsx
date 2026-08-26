@@ -33,7 +33,7 @@ test('offers archiving on an available weighing area to an administrator', async
 
   await openWeighingArea(user, ALPHA_SCALE.name, 'Available')
 
-  expect(screen.getByRole('button', { name: 'Archive weighing area' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument()
 })
 
 test('does not offer archiving to a non-administrator', async () => {
@@ -43,7 +43,7 @@ test('does not offer archiving to a non-administrator', async () => {
 
   await openWeighingArea(user, ALPHA_SCALE.name, 'Available')
 
-  expect(screen.queryByRole('button', { name: 'Archive weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })
 
 test('does not offer archiving an already archived weighing area', async () => {
@@ -53,7 +53,7 @@ test('does not offer archiving an already archived weighing area', async () => {
 
   await openWeighingArea(user, RETIRED_SCALE.name, 'Archived')
 
-  expect(screen.queryByRole('button', { name: 'Archive weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })
 
 test('archives a weighing area with a comment', async () => {
@@ -85,7 +85,7 @@ test('archives a weighing area with a comment', async () => {
   renderCheckpoints()
   await openWeighingArea(user, ALPHA_SCALE.name, 'Available')
 
-  await user.click(screen.getByRole('button', { name: 'Archive weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Archive' }))
   await screen.findByRole('heading', { name: 'Archive weighing area?' })
   await user.type(screen.getByRole('textbox', { name: /comment/i }), 'Weighbridge decommissioned')
   await user.click(screen.getByRole('button', { name: 'Archive' }))
@@ -93,7 +93,7 @@ test('archives a weighing area with a comment', async () => {
   expect(await screen.findByText('Weighing area archived')).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Weighbridge decommissioned' })
   await waitFor(() =>
-    expect(screen.queryByRole('button', { name: 'Archive weighing area' })).not.toBeInTheDocument(),
+    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument(),
   )
 })
 
@@ -116,7 +116,7 @@ test('archives a weighing area without a comment', async () => {
   renderCheckpoints()
   await openWeighingArea(user, ALPHA_SCALE.name, 'Available')
 
-  await user.click(screen.getByRole('button', { name: 'Archive weighing area' }))
+  await user.click(screen.getByRole('button', { name: 'Archive' }))
   await screen.findByRole('heading', { name: 'Archive weighing area?' })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 

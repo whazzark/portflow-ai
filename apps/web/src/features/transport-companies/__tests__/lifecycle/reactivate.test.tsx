@@ -35,8 +35,8 @@ test('offers reactivation only to an administrator viewing an archived company, 
   await screen.findByRole('list', { name: 'Archived transport companies' })
   await openDetailsFor('Coastal Haulage')
 
-  expect(await screen.findByRole('button', { name: 'Reactivate company' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Edit company' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('explains the outcome and offers an optional comment before reactivating', async () => {
@@ -47,10 +47,10 @@ test('explains the outcome and offers an optional comment before reactivating', 
   archivedTab()
   await screen.findByRole('list', { name: 'Archived transport companies' })
   await openDetailsFor('Coastal Haulage')
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
 
   expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
-  expect(screen.getByText(/will become selectable again/i)).toBeInTheDocument()
+  expect(screen.getByText(/becomes available again for new operations/i)).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: /comment/i })).toBeInTheDocument()
 })
 
@@ -62,7 +62,7 @@ test('cancelling the confirmation sends no request and leaves the company unchan
   archivedTab()
   await screen.findByRole('list', { name: 'Archived transport companies' })
   await openDetailsFor('Coastal Haulage')
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('alertdialog')
 
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -84,7 +84,7 @@ test('reactivating moves the company to the Available tab with its lifecycle con
   ).toBeInTheDocument()
 
   await openDetailsFor('Coastal Haulage')
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('alertdialog')
   fireEvent.change(screen.getByRole('textbox', { name: /comment/i }), {
     target: { value: 'Framework contract renewed for the season' },
@@ -106,9 +106,14 @@ test('reactivating moves the company to the Available tab with its lifecycle con
 
   const details = await screen.findByRole('heading', { name: 'Coastal Haulage' })
   const panel = details.closest('section') as HTMLElement
-  expect(within(panel).getByText('Latest reactivation context')).toBeInTheDocument()
-  expect(within(panel).getByText('Claire Martin')).toBeInTheDocument()
-  expect(within(panel).getByText('Framework contract renewed for the season')).toBeInTheDocument()
+  // A reactivated company reports both transitions, newest first: the reactivation, and the
+  // archival it reversed — which stays readable as history.
+  const reactivation = within(panel).getByRole('region', { name: 'Reactivation context' })
+  expect(within(reactivation).getByText('Claire Martin')).toBeInTheDocument()
+  expect(
+    within(reactivation).getByText('Framework contract renewed for the season'),
+  ).toBeInTheDocument()
+  expect(within(panel).getByRole('region', { name: 'Archive context' })).toBeInTheDocument()
 })
 
 test('an already-available refusal is shown in the dialog and the company stays archived', async () => {
@@ -122,7 +127,7 @@ test('an already-available refusal is shown in the dialog and the company stays 
   archivedTab()
   await screen.findByRole('list', { name: 'Archived transport companies' })
   await openDetailsFor('Coastal Haulage')
-  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate company' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   await screen.findByRole('alertdialog')
   fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }))
 

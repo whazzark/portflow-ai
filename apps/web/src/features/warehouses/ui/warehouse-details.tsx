@@ -1,12 +1,12 @@
-import {
-  ResourceDetailField,
-  ResourceDetailHeader,
-} from '@/components/resource-map/resource-details'
+import { ResourceLifecycleSummary } from '@/components/lifecycle/resource-lifecycle-summary'
+import { ResourceDetailHeader } from '@/components/resource-map/resource-details'
 import { Separator } from '@/components/ui/separator'
 import { SheetFooter } from '@/components/ui/sheet'
 import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
-import { WarehouseLifecycleActions } from '@/features/warehouses/ui/warehouse-lifecycle-actions'
-import { formatDateTime } from '@/helpers/dates'
+import {
+  WarehouseLifecycleActions,
+  warehouseLifecycleBlocks,
+} from '@/features/warehouses/warehouse-lifecycle'
 
 export function WarehouseDetails({
   canManageLifecycle = false,
@@ -17,7 +17,10 @@ export function WarehouseDetails({
   canManageLifecycle?: boolean
   warehouse: WarehouseWithDoorsDto
 }) {
-  const hasLifecycleContext = Boolean(warehouse.archivedAt ?? warehouse.reactivatedAt)
+  const lifecycleBlocks = warehouseLifecycleBlocks(warehouse)
+  // The summary renders nothing for a warehouse with no history; the frame around it has to go
+  // too, or an empty separator would sit under the header.
+  const hasLifecycleContext = lifecycleBlocks.some((block) => block.at)
 
   return (
     <div className="shrink-0">
@@ -27,31 +30,10 @@ export function WarehouseDetails({
         status={warehouse.status}
       />
       {hasLifecycleContext && (
-        <section aria-labelledby="warehouse-lifecycle-heading" className="px-4 pt-4">
-          <h3 className="font-medium text-sm" id="warehouse-lifecycle-heading">
-            Lifecycle
-          </h3>
-          <Separator className="my-3" />
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-            <ResourceDetailField
-              label="Archived"
-              value={warehouse.archivedAt ? formatDateTime(warehouse.archivedAt) : null}
-            />
-            <ResourceDetailField label="Archive comment" value={warehouse.archiveComment} />
-            {warehouse.reactivatedAt && (
-              <>
-                <ResourceDetailField
-                  label="Reactivated"
-                  value={formatDateTime(warehouse.reactivatedAt)}
-                />
-                <ResourceDetailField
-                  label="Reactivation comment"
-                  value={warehouse.reactivationComment}
-                />
-              </>
-            )}
-          </dl>
-        </section>
+        <div className="px-4 pt-4">
+          <Separator className="mb-3" />
+          <ResourceLifecycleSummary blocks={lifecycleBlocks} />
+        </div>
       )}
       {canManageLifecycle && (
         <SheetFooter className="shrink-0 sm:flex-row sm:items-center sm:justify-end">

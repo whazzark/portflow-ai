@@ -66,7 +66,9 @@ test('clears blocked entries and reactivates only the reduced selection on resub
   await screen.findByRole('heading', { name: 'Reactivate selected weighing areas?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('1 weighing area reactivated; 1 unchanged')).toBeInTheDocument()
+  expect(
+    await screen.findByText('1 weighing area reactivated; 1 weighing area unchanged'),
+  ).toBeInTheDocument()
   expect(screen.getByText(`${RETIRED_SCALE.name}: already available`)).toBeInTheDocument()
   // The whole selection is cleared, blocked entry included: neither reactivation blocker becomes
   // eligible on a retry, so keeping it checked would only invite a second refusal.
