@@ -7,7 +7,7 @@
 | Issue | Slice | Status | Artifact |
 |---|---|---|---|
 | #212 | List Warehouse Doors | backlog | pending selection |
-| #213 | Create a Warehouse Door | backlog | pending selection |
+| #213 | Create a Warehouse Door | in progress | `create-a-warehouse-door/spec.md` |
 | #214 | Update a Warehouse Door | backlog | pending selection |
 | #215 | Archive a Warehouse Door | backlog | pending selection |
 | #216 | Reactivate a Warehouse Door | backlog | pending selection |

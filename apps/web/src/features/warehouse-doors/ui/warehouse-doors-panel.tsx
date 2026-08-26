@@ -22,12 +22,16 @@ export function WarehouseDoorsPanel({
   selectedDoorId,
   onStatusChange,
   onDoorSelect,
+  onCreateDoor,
 }: {
   warehouse: WarehouseWithDoorsDto
   status: WarehouseDoorStatusFilter
   selectedDoorId?: string
   onStatusChange: (status: WarehouseDoorStatusFilter) => void
   onDoorSelect: (doorId: string) => void
+  /** Absent — rather than disabled — for anyone who may not add a door to this warehouse, and for
+   * an archived warehouse, which is read-only until it is reactivated. */
+  onCreateDoor?: () => void
 }) {
   const counts = countWarehouseDoors(warehouse)
   const doors = sortDoors(filterWarehouseDoors(warehouse, status))
@@ -41,6 +45,11 @@ export function WarehouseDoorsPanel({
             Select a door to highlight its unloading point on the map.
           </p>
         </div>
+        {onCreateDoor && (
+          <Button onClick={onCreateDoor} size="sm" type="button">
+            Create door
+          </Button>
+        )}
       </div>
       <Tabs
         value={status}

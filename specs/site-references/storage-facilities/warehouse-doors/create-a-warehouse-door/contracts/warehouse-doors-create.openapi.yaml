@@ -1,0 +1,210 @@
+openapi: 3.1.0
+info:
+  title: Portflow Warehouse Door Creation Contract
+  version: 1.0.0
+  description: >-
+    Write contract for Issue #213 Create a Warehouse Door. Extends the read contract introduced by
+    #212 (specs/site-references/storage-facilities/warehouse-doors/list-warehouse-doors/contracts/warehouse-doors.openapi.yaml).
+    The WarehouseDoor schema below is that contract's door object plus createdAt, which this slice
+    adds to WarehouseDoorTransformer (research R6). The door objects embedded under
+    GET /api/v1/warehouses are unchanged by this feature.
+paths:
+  /api/v1/warehouse-doors:
+    post:
+      operationId: createWarehouseDoor
+      summary: Create a door inside an eligible warehouse
+      description: >-
+        Creates one available door under an existing AVAILABLE warehouse, from a trimmed name that is
+        unique within that warehouse and a GPS position lying within or on the boundary of that
+        warehouse's footprint. The created door always starts AVAILABLE; the caller cannot choose a
+        lifecycle state. Requires an authenticated, active organization or operations administrator.
+        The containing warehouse's status and footprint are read under lock inside the write
+        transaction, so a concurrent archival or footprint replacement cannot be raced.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWarehouseDoorRequest"
+            examples:
+              inside:
+                summary: A door placed inside its warehouse footprint
+                value:
+                  warehouseId: 018f80c0-8799-7cb0-bb14-2d2c8d206a8c
+                  name: Door 3
+                  latitude: 49.4933
+                  longitude: 0.1084
+      responses:
+        "201":
+          description: >-
+            The door was created. Status is always AVAILABLE and createdAt is the recorded creation
+            time.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/WarehouseDoor"
+              examples:
+                created:
+                  value:
+                    data:
+                      id: 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f11
+                      warehouseId: 018f80c0-8799-7cb0-bb14-2d2c8d206a8c
+                      name: Door 3
+                      status: AVAILABLE
+                      latitude: 49.4933
+                      longitude: 0.1084
+                      createdAt: "2026-08-26T09:12:44.000+02:00"
+        "401":
+          description: The session is missing, invalid, expired, or belongs to a user who is no longer active.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The user is active but lacks warehouse-door management permission.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: >-
+            No warehouse has this identifier. A syntactically invalid identifier resolves here too,
+            rather than to a server error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                notFound:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_NOT_FOUND
+                        message: Warehouse not found
+        "409":
+          description: >-
+            Either the containing warehouse is archived and therefore ineligible, or the trimmed name
+            is already used by a door of that warehouse — available or archived, compared without
+            letter case.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                archivedWarehouse:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_ARCHIVED
+                        message: Archived warehouses are read-only. Reactivate the warehouse first.
+                duplicateName:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_NAME_CONFLICT
+                        message: Warehouse door name is already in use in this warehouse
+        "422":
+          description: >-
+            The payload failed structural validation, the trimmed name is empty or too long, a
+            coordinate is out of range, or the position falls outside the containing warehouse's
+            footprint.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                blankName:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_NAME_INVALID
+                        message: Warehouse door name must not be empty
+                outsideFootprint:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_OUTSIDE_FOOTPRINT
+                        message: Warehouse door must be placed within its warehouse footprint
+                validation:
+                  value:
+                    errors:
+                      - code: E_VALIDATION_ERROR
+                        field: latitude
+                        message: The latitude field must be at most 90
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: adonis-session
+  schemas:
+    CreateWarehouseDoorRequest:
+      type: object
+      required: [warehouseId, name, latitude, longitude]
+      # Unknown members are stripped by the validator rather than refused, so a caller sending a
+      # `status` cannot choose the new door's lifecycle state — it is simply ignored.
+      additionalProperties: true
+      properties:
+        warehouseId:
+          type: string
+          description: >-
+            The warehouse the door belongs to, permanently. Must name an existing AVAILABLE
+            warehouse. Deliberately not shape-validated: an identifier that cannot name a row —
+            malformed or merely absent — is one outcome for the client, E_WAREHOUSE_NOT_FOUND.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: >-
+            Trimmed before storage and compared without letter case for uniqueness within the
+            containing warehouse. The accepted casing is preserved for display. A name already used
+            by a door of a different warehouse is accepted.
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+    WarehouseDoor:
+      type: object
+      required: [id, warehouseId, name, status, latitude, longitude, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        warehouseId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+          description: Always AVAILABLE on creation.
+        latitude:
+          type: number
+        longitude:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+          description: Added to WarehouseDoorTransformer by this slice; additive for existing consumers.
+    ErrorResponse:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [message]
+            properties:
+              code:
+                type: string
+              field:
+                type: string
+              message:
+                type: string
