@@ -14,6 +14,7 @@ vi.mock(
 
 const NORTH = BULK_WAREHOUSES[0]
 const EAST = BULK_WAREHOUSES[1]
+const ARCHIVED = BULK_WAREHOUSES[3]
 
 beforeEach(() => {
   mockWarehouses(WAREHOUSE_ADMIN, BULK_WAREHOUSES)
@@ -79,6 +80,19 @@ test('drops a mode carried in on a URL that names no warehouse', async () => {
   await selectEastShed(user)
 
   expect(await screen.findByRole('heading', { name: 'Doors' })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Create door' })).not.toBeInTheDocument()
+})
+
+/** An archived warehouse takes no new door, so the mode is inert on one — but left in the URL it
+ * would arm placement the moment that warehouse is reactivated (#211), an action the administrator
+ * never asked for. The param goes as soon as the selection turns out to be archived. */
+test('drops a mode carried in on a URL naming an archived warehouse', async () => {
+  const { router } = renderWarehouses(
+    `/warehouses?status=all&warehouseId=${ARCHIVED.id}&create=door`,
+  )
+
+  expect(await screen.findByRole('heading', { name: 'Doors' })).toBeInTheDocument()
+  await waitFor(() => expect(router.state.location.search).not.toHaveProperty('create'))
   expect(screen.queryByRole('heading', { name: 'Create door' })).not.toBeInTheDocument()
 })
 

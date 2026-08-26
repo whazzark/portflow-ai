@@ -119,6 +119,7 @@ export function WarehousesPage() {
   // Door creation is scoped to one warehouse rather than to the page: the mode is real only when
   // the administrator may manage doors and `warehouseId` resolves to an *available* warehouse.
   // Anything else — no permission, no or unknown id, an archived warehouse — renders consultation.
+  const selectedStatus = selected?.status
   const isCreatingDoor =
     canManageWarehouses && create === 'door' && selected?.status === 'AVAILABLE'
   // Leaving the mode — cancelling, dismissing the sheet, navigating away — or switching to another
@@ -262,6 +263,18 @@ export function WarehousesPage() {
       })
     }
   }, [create, edit, navigate, warehouseId])
+
+  // Dormant rather than dropped, a door-scoped `create` would arm placement the moment the archived
+  // warehouse it points at is reactivated (#211) — an action the administrator never asked for. So
+  // the param goes as soon as the selection turns out to be one that cannot take a new door.
+  useEffect(() => {
+    if (create === 'door' && selectedStatus === 'ARCHIVED') {
+      void navigate({
+        replace: true,
+        search: (previous) => ({ ...previous, create: withoutDoorCreation(previous.create) }),
+      })
+    }
+  }, [create, navigate, selectedStatus])
 
   useEffect(() => {
     if (query.data && selected && doorId && !admittedDoor) {
