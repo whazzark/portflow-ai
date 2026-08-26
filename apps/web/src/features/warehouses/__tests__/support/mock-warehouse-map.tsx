@@ -124,9 +124,15 @@ export function WarehouseMap({
       })}
       {doors.map((door) => (
         <button
-          disabled={isPlacingDoor}
           key={door.id}
-          onClick={() => onDoorSelect?.(door)}
+          // While a door is being placed the real marker takes no pointer event at all, so the
+          // click lands on the map underneath and places the pending door instead of selecting
+          // this one. Mirrors `pointer-events-none` in `warehouse-door-marker.tsx`.
+          onClick={() =>
+            isPlacingDoor
+              ? doorPlacement?.onPlace(MOCK_DOOR_CLICK_POINTS[doorPlacement.pending ? 1 : 0])
+              : onDoorSelect?.(door)
+          }
           type="button"
         >
           {door.name} door marker

@@ -38,8 +38,10 @@ export function WarehouseDoorMarker({
   door: WarehouseDoorDto
   doors: WarehouseDoorDto[]
   selected?: boolean
-  /** Omitted while the map is placing a new door: the marker then carries no action, so a stray
-   * click on it cannot select a door instead of placing the one being created. */
+  /** Omitted while the map is placing a new door: the marker then takes no pointer event at all,
+   * so a click over it reaches the map and places the door being created rather than selecting
+   * this one. Disabling the button alone would swallow the click and make the marker a dead spot,
+   * which is precisely where a new door between two existing ones is placed. */
   onSelect?: (door: WarehouseDoorDto) => void
   onHoverChange?: (hovered: boolean) => void
 }) {
@@ -57,7 +59,7 @@ export function WarehouseDoorMarker({
           aria-label={`View warehouse door ${door.name} (${statusLabel})`}
           className={classnames(
             'grid size-11 place-items-center rounded-full transition-[opacity,transform,filter] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-            onSelect && 'cursor-pointer hover:brightness-110',
+            onSelect ? 'cursor-pointer hover:brightness-110' : 'pointer-events-none',
             selected ? 'scale-110 opacity-100' : 'scale-90 opacity-70',
           )}
           data-door-id={door.id}

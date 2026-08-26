@@ -98,7 +98,7 @@ test('places the door without a pointing device from the coordinate fields alone
   expect(await screen.findByTestId('pending-door')).toHaveTextContent('48.853, 2.35')
 })
 
-test('map clicks place the door instead of selecting a warehouse or an existing door', async () => {
+test('map clicks place the door instead of selecting a warehouse', async () => {
   const user = userEvent.setup()
   renderWarehouses()
 
@@ -107,7 +107,22 @@ test('map clicks place the door instead of selecting a warehouse or an existing 
   expect(
     screen.getByRole('button', { name: 'View warehouse North Shed (Available)' }),
   ).toBeDisabled()
-  expect(screen.getByRole('button', { name: 'North Door door marker' })).toBeDisabled()
+})
+
+// An existing door is the likeliest neighbour of a new one, so its marker must not become a hole
+// the placement click falls into: the marker stops taking pointer events rather than merely
+// refusing to select, and the click carries on to the map underneath.
+test('a click over an existing door places the pending door rather than selecting it', async () => {
+  const user = userEvent.setup()
+  renderWarehouses()
+
+  await openDoorCreation(user)
+  await user.click(await screen.findByRole('button', { name: 'North Door door marker' }))
+
+  expect(await screen.findByTestId('pending-door')).toHaveTextContent(
+    `${MOCK_DOOR_CLICK_POINTS[0].latitude}, ${MOCK_DOOR_CLICK_POINTS[0].longitude}`,
+  )
+  expect(screen.getByRole('heading', { name: 'Create door' })).toBeInTheDocument()
 })
 
 test('discards the pending door when the mode is cancelled', async () => {
