@@ -152,8 +152,8 @@ function useWarehouseLifecycleConfig(
           : result.data.archivedDoorCount
 
       return changedDoors === 0
-        ? lifecycleSuccessMessage(action, WAREHOUSE_SINGULAR)
-        : `${lifecycleSuccessMessage(action, WAREHOUSE_SINGULAR)} with ${changedDoors} ${
+        ? lifecycleSuccessMessage(action, WAREHOUSE_SINGULAR, warehouse.name)
+        : `${lifecycleSuccessMessage(action, WAREHOUSE_SINGULAR, warehouse.name)} with ${changedDoors} ${
             changedDoors === 1 ? 'door' : 'doors'
           }`
     },

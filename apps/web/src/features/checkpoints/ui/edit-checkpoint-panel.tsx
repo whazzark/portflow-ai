@@ -7,6 +7,7 @@ import {
   CheckpointResourceForm,
   type PendingCheckpointPlacement,
 } from '@/features/checkpoints/ui/checkpoint-resource-form'
+import { resourceFailureTitle } from '@/helpers/resource-copy'
 
 export function EditCheckpointPanel<
   TResource extends { name: string; latitude: number; longitude: number },
@@ -60,7 +61,7 @@ export function EditCheckpointPanel<
           </FieldDescription>
         )}
         <CheckpointResourceForm
-          errorTitle={`Unable to update ${resourceNoun}`}
+          failureTitle={() => resourceFailureTitle('update', resourceNoun, resource.name)}
           initialValues={resource}
           kind={kind}
           onNotFound={onNotFound}

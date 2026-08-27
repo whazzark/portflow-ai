@@ -139,7 +139,7 @@ test('creates successfully when the submitted name matches an existing dock name
   await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), 'North Dock')
   await user.click(screen.getByRole('button', { name: 'Create weighing area' }))
 
-  expect(await screen.findByText('Weighing area created')).toBeInTheDocument()
+  expect(await screen.findByText('Weighing area “North Dock” created')).toBeInTheDocument()
 })
 
 test('rejects a manually edited out-of-range coordinate and disables submission', async () => {
@@ -179,7 +179,9 @@ test('shows an error toast and preserves the pending marker on a server failure'
   await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), 'South Scale')
   await user.click(screen.getByRole('button', { name: 'Create weighing area' }))
 
-  expect(await screen.findByText('Unable to create weighing area')).toBeInTheDocument()
+  expect(
+    await screen.findByText('Unable to create weighing area “South Scale”'),
+  ).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Weighing area name' })).toHaveValue('South Scale')
   expect(screen.getByRole('textbox', { name: 'Latitude' })).toHaveValue('10.5')
 })

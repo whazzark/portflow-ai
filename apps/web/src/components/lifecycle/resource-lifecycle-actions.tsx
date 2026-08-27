@@ -86,7 +86,7 @@ export function ResourceLifecycleDialog<TResult>({
       close()
       toast.success(
         config.describeSuccess?.(lifecycleAction, result) ??
-          lifecycleSuccessMessage(lifecycleAction, config.singular),
+          lifecycleSuccessMessage(lifecycleAction, config.singular, config.name),
       )
     } catch (cause) {
       // A refusal may mean the record's authoritative state has moved on since this view loaded,

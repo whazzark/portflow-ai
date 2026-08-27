@@ -1,7 +1,9 @@
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { FieldGroup } from '@/components/ui/field'
+import { TRANSPORT_COMPANY_SINGULAR } from '@/features/transport-companies/transport-company-lifecycle'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
+import { resourceFailureTitle } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
@@ -58,7 +60,9 @@ export function TransportCompanyForm({
           const apiError = parseApiError(error)
 
           toast.error(
-            company ? 'Unable to update transport company' : 'Unable to create transport company',
+            company
+              ? resourceFailureTitle('update', TRANSPORT_COMPANY_SINGULAR, company.name)
+              : resourceFailureTitle('create', TRANSPORT_COMPANY_SINGULAR, submitted.name),
             { description: apiError.message },
           )
         }

@@ -78,7 +78,7 @@ test('archives a dock with a comment', async () => {
   await user.type(screen.getByRole('textbox', { name: /comment/i }), 'Quay closed for resurfacing')
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('Dock archived')).toBeInTheDocument()
+  expect(await screen.findByText(`Dock “${NORTH_DOCK.name}” archived`)).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Quay closed for resurfacing' })
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument(),
@@ -105,6 +105,6 @@ test('archives a dock without a comment', async () => {
   await screen.findByRole('heading', { name: 'Archive dock?' })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('Dock archived')).toBeInTheDocument()
+  expect(await screen.findByText(`Dock “${NORTH_DOCK.name}” archived`)).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: null })
 })

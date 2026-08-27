@@ -76,7 +76,9 @@ test('archives a customer from its row without opening the detail pane', async (
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
   await waitFor(() => expect(received).toEqual({ comment: 'Retired from the row menu' }))
-  expect(await screen.findByText('Customer archived')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Customer “${AVAILABLE.companyName}” archived`),
+  ).toBeInTheDocument()
   // The detail sheet was never opened: the row menu is enough on its own.
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })

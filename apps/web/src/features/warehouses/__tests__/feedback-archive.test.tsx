@@ -134,6 +134,8 @@ test('recovers when a transient failure is resolved and the archival is retried'
   // The dialog is still open, so the retry needs no reopening.
   await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('Warehouse archived with 1 door')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Warehouse “${NORTH_SHED.name}” archived with 1 door`),
+  ).toBeInTheDocument()
   expect(attempts).toBe(2)
 })

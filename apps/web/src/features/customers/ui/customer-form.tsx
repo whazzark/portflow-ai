@@ -1,7 +1,9 @@
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { FieldGroup } from '@/components/ui/field'
+import { CUSTOMER_SINGULAR } from '@/features/customers/customer-lifecycle'
 import type { CustomerDto } from '@/features/customers/types'
+import { resourceFailureTitle } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
@@ -37,9 +39,12 @@ export function CustomerForm({ customer, onCreate, onUpdate, onSuccess }: Custom
         if (!applyValidationError(formApi, error)) {
           const apiError = parseApiError(error)
 
-          toast.error(customer ? 'Unable to update customer' : 'Unable to create customer', {
-            description: apiError.message,
-          })
+          toast.error(
+            customer
+              ? resourceFailureTitle('update', CUSTOMER_SINGULAR, customer.companyName)
+              : resourceFailureTitle('create', CUSTOMER_SINGULAR, value.companyName.trim()),
+            { description: apiError.message },
+          )
         }
       }
     },
