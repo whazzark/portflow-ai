@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { PlusIcon } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import {
@@ -104,6 +104,8 @@ export function WarehousesPage() {
     null,
   )
   const doorMutations = useWarehouseDoorMutations()
+  // The lifecycle view placement was entered from, kept so cancelling can restore it.
+  const doorStatusBeforeCreating = useRef<WarehouseDoorStatusFilter | undefined>(undefined)
 
   // Leaving the mode — cancelling, navigating away, or landing on the route without the param —
   // discards every pending boundary point rather than carrying it into a later session.
@@ -515,6 +517,7 @@ export function WarehousesPage() {
   const startCreatingDoor = () => {
     clearEditSession()
     clearDoorEditSession()
+    doorStatusBeforeCreating.current = doorStatus
     void navigate({
       search: (previous) => ({
         ...previous,
@@ -525,8 +528,17 @@ export function WarehousesPage() {
       }),
     })
   }
+  // Cancelling undoes the forced view along with the mode: an administrator who reached placement
+  // from the Archived tab is put back on it, rather than left on Available with nothing to explain
+  // why the list changed. A created door keeps Available, where it is the one that matters.
   const cancelCreatingDoor = () =>
-    void navigate({ search: (previous) => ({ ...previous, create: undefined }) })
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        create: undefined,
+        doorStatus: doorStatusBeforeCreating.current,
+      }),
+    })
   const createWarehouseDoor = async (value: {
     name: string
     latitude: number
