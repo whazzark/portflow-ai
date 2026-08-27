@@ -171,7 +171,9 @@ test('shows a toast for a non-field refusal and lets the administrator correct a
   await openEditFor('Atlantic Transport')
   expect(await screen.findByRole('heading', { name: 'Edit transport company' })).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
-  expect(await screen.findByText('Unable to update transport company')).toBeInTheDocument()
+  expect(
+    await screen.findByText('Unable to update transport company “Atlantic Transport”'),
+  ).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Edit transport company' })).toBeInTheDocument()
 
   fireEvent.change(screen.getByRole('textbox', { name: 'Contact email' }), {

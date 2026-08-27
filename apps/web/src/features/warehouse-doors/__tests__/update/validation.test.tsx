@@ -164,7 +164,7 @@ test('keeps the name and the draft after a transient failure', async () => {
   await user.click(screen.getByRole('button', { name: 'Simulate dragging the door being edited' }))
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
-  expect(await screen.findByText('Unable to update door')).toBeInTheDocument()
+  expect(await screen.findByText(`Unable to update door “${DOOR.name}”`)).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Door name' })).toHaveValue('Door 4')
   expect(screen.getByLabelText('Latitude')).toHaveValue(String(DOOR.latitude + 0.0005))
   expect(screen.getByRole('heading', { name: 'Edit door' })).toBeInTheDocument()
@@ -179,7 +179,7 @@ test('applies the correction exactly once when a failed submission is retried', 
   await retype(user, 'Door 4')
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
-  await screen.findByText('Unable to update door')
+  await screen.findByText(`Unable to update door “${DOOR.name}”`)
   expect(router.state.location.search).toMatchObject({ edit: 'door' })
 
   await user.click(screen.getByRole('button', { name: 'Save changes' }))

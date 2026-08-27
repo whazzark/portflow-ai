@@ -12,11 +12,10 @@ import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet
 import type { WarehouseDoorDto } from '@/features/warehouse-doors/types'
 import { isInsideFootprint } from '@/features/warehouses/geometry/footprint-validation'
 import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
+import { resourceFailureTitle } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
-
-const ERROR_TITLE = 'Unable to update door'
 
 const OUTSIDE_FOOTPRINT_MESSAGE =
   'Keep the door inside its warehouse footprint, or on its boundary.'
@@ -70,6 +69,9 @@ export function EditWarehouseDoorPanel({
   const nameSchema = z.object({
     name: z.string().trim().min(1, 'Door name is required.').max(255),
   })
+  // The name the session opened on, not the one being typed: a refused rename must still point at
+  // the door the administrator was correcting.
+  const failureTitle = resourceFailureTitle('update', 'door', originName)
 
   const form = useAppForm({
     defaultValues: { name: originName },
@@ -105,7 +107,7 @@ export function EditWarehouseDoorPanel({
         ) {
           // The door the session was opened for is gone: there is nothing left to correct, so the
           // administrator is returned to a consistent view rather than left editing a ghost.
-          toast.error(ERROR_TITLE, { description: apiError.message })
+          toast.error(failureTitle, { description: apiError.message })
           onNotFound()
         } else if (
           apiError.code === 'E_WAREHOUSE_DOOR_OUTSIDE_FOOTPRINT' ||
@@ -117,7 +119,7 @@ export function EditWarehouseDoorPanel({
         } else {
           // Neither the typed name nor the draft position is cleared, so a retry after a transient
           // failure re-sends the same submission rather than starting over.
-          toast.error(ERROR_TITLE, { description: apiError.message })
+          toast.error(failureTitle, { description: apiError.message })
         }
       }
     },

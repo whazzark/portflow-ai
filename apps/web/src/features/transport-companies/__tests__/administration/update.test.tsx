@@ -121,7 +121,9 @@ test('shows a distinct toast for a duplicate name conflict', async () => {
   })
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-  expect(await screen.findByText('Unable to update transport company')).toBeInTheDocument()
+  expect(
+    await screen.findByText('Unable to update transport company “Atlantic Transport”'),
+  ).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Edit transport company' })).toBeInTheDocument()
 })
 

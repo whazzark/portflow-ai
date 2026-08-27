@@ -4,6 +4,7 @@ import {
   CheckpointResourceForm,
   type PendingCheckpointPlacement,
 } from '@/features/checkpoints/ui/checkpoint-resource-form'
+import { resourceFailureTitle } from '@/helpers/resource-copy'
 
 export function CreateCheckpointPanel<TResource>({
   kind,
@@ -30,7 +31,7 @@ export function CreateCheckpointPanel<TResource>({
       </SheetHeader>
       <div className="px-4">
         <CheckpointResourceForm
-          errorTitle={`Unable to create ${resourceNoun}`}
+          failureTitle={(name) => resourceFailureTitle('create', resourceNoun, name)}
           kind={kind}
           onPendingChange={onPendingChange}
           onSubmit={onCreate}

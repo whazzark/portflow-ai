@@ -179,7 +179,9 @@ test('shows an error toast and preserves the pending marker on a server failure'
   await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), 'South Scale')
   await user.click(screen.getByRole('button', { name: 'Create weighing area' }))
 
-  expect(await screen.findByText('Unable to create weighing area')).toBeInTheDocument()
+  expect(
+    await screen.findByText('Unable to create weighing area “South Scale”'),
+  ).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Weighing area name' })).toHaveValue('South Scale')
   expect(screen.getByRole('textbox', { name: 'Latitude' })).toHaveValue('10.5')
 })
