@@ -142,7 +142,6 @@ test.group('Warehouse door bulk archival endpoint', (group) => {
       assert.equal(entry.status, 'ARCHIVED')
       assert.equal(entry.archiveComment, 'North side condemned')
       assert.equal(entry.archivedByUserId, admin.id)
-      assert.isFalse(entry.archivedWithWarehouse)
     }
     assert.equal(archived[0].archivedAt?.toISO(), archived[1].archivedAt?.toISO())
   })
@@ -248,13 +247,13 @@ test.group('Warehouse door bulk archival endpoint', (group) => {
     assert.equal((await WarehouseDoor.findOrFail(eligible.id)).status, 'ARCHIVED')
   })
 
-  test('leaves a door archived with its warehouse untouched, provenance included', async ({
+  test('leaves a door archived with its warehouse untouched, context included', async ({
     assert,
     client,
   }) => {
     const admin = await administrator()
     const containing = await warehouse('archived')
-    const cascaded = await door(containing.id, 'Door 1', 'archivedWithWarehouse')
+    const cascaded = await door(containing.id, 'Door 1', 'archived')
 
     const response = await client
       .post(URL)
@@ -266,7 +265,6 @@ test.group('Warehouse door bulk archival endpoint', (group) => {
       { id: cascaded.id, name: 'Door 1', reason: 'ALREADY_ARCHIVED' },
     ])
     const persisted = await WarehouseDoor.findOrFail(cascaded.id)
-    assert.isTrue(persisted.archivedWithWarehouse)
     assert.notEqual(persisted.archiveComment, 'Retry')
   })
 })

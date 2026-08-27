@@ -13,21 +13,28 @@ pnpm --filter @portflow/api db:fresh                  # migrate + seed
 pnpm dev                                              # api on :3333, web on :3000
 ```
 
-No migration ships with this slice (research **D13**), so `db:fresh` is only needed if your database
-predates `#210`'s `archived_with_warehouse` column.
+No migration ships with this slice (research **D13**). `db:fresh` is only needed if your database
+predates the migrations of `#210` or of `#216`, the latter dropping the `archived_with_warehouse`
+column this document was written around.
 
 Sign in as an administrator: the seeded `operationsAdmin` or `organizationAdmin` from
 `apps/api/database/fixtures/users.ts`. Any active non-administrator is the negative case.
 
-## Read this before validating: the fixtures do not cover the main case
+## Read this before validating: amended by #216
+
+> Since [#216](../../warehouse-doors/reactivate-a-warehouse-door/spec.md), a reactivation restores
+> **every** door of the warehouse and the `archived_with_warehouse` column is gone. The warning
+> below — that seeded archived doors carry no marker and are therefore not restored — no longer
+> applies: reactivating a seeded archived warehouse now restores every door it holds. The rest of
+> this section is kept as the original delivery record.
 
 The seeded data contains archived warehouses (`ancien`, `ancienHangar`, and
 `WAREHOUSE_FIXTURES[5]`) and archived doors — but **no seeded door carries
 `archived_with_warehouse = true`**. The fixtures never set the column, so every seeded archived door
 defaults to `false`, meaning "archived on its own".
 
-The consequence is easy to trip over: **reactivating a seeded archived warehouse restores zero
-doors.** That is correct behavior (FR-008 + FR-010), and it is a case worth checking — but it is not
+The consequence was easy to trip over: **reactivating a seeded archived warehouse restored zero
+doors.** That was correct behavior then (FR-008 + FR-010), and it is a case worth checking — but it is not
 the primary happy path, and mistaking it for one would hide a broken restore entirely.
 
 To exercise a real restore, do a **round trip**: archive an available warehouse first, which sets the
@@ -43,34 +50,32 @@ marker on its available doors, then reactivate it.
 | `ancienHangar` | **already archived**, 1 independently archived door | second zero-restore case |
 | any available warehouse | available | `ALREADY_AVAILABLE` refusal (FR-004) |
 
-Unit and integration tests should construct the marker state directly rather than depending on a
-prior archive call, so a restore test cannot pass because archival happened to work. The factory
-state for it already exists — `WarehouseDoorFactory.apply('archivedWithWarehouse')`, added by `#210`
-with the comment *"Reactivating the warehouse (#211) restores exactly these doors"* — beside the
-plain `archived` state that leaves the marker `false`. Those two states are the whole test matrix
-for FR-007 vs FR-008.
+Unit and integration tests should construct the archived state directly rather than depending on a
+prior archive call, so a restore test cannot pass because archival happened to work.
+`WarehouseDoorFactory.apply('archived')` under an archived warehouse is that state — and since #216
+it is the only one, the marker state having been removed with the column.
 
 ## Validate the API directly
 
 ```bash
-# Round trip. Step 1: archive, which sets the cascade marker on the available doors.
+# Round trip. Step 1: archive, which takes every door of the warehouse with it.
 curl -sX POST localhost:3333/api/v1/warehouses/$SOCOMAC_ID/archive \
   -b cookies.txt -H 'content-type: application/json' -d '{"comment":"Works"}' \
   | jq '{status:.data.warehouse.status, archivedDoorCount:.data.archivedDoorCount}'
 
-# Step 2: reactivate → 200, warehouse AVAILABLE, the cascaded doors AVAILABLE with the same
-# reactivation context, archivedWithWarehouse cleared, archive context preserved.
+# Step 2: reactivate → 200, warehouse AVAILABLE, every door AVAILABLE with the same
+# reactivation context, archive context preserved.
 curl -sX POST localhost:3333/api/v1/warehouses/$SOCOMAC_ID/reactivate \
   -b cookies.txt -H 'content-type: application/json' -d '{"comment":"Zone reopened"}' \
   | jq '{status:.data.warehouse.status, reactivatedAt:.data.warehouse.reactivatedAt,
          archivedAt:.data.warehouse.archivedAt,
-         doors:[.data.warehouse.doors[]|{name,status,archivedWithWarehouse,archivedAt,reactivatedAt}],
+         doors:[.data.warehouse.doors[]|{name,status,archivedAt,reactivatedAt}],
          reactivatedDoorCount:.data.reactivatedDoorCount}'
 ```
 
-Check four things in that output: `status` is `AVAILABLE`; `archivedAt` is **still populated** on the
-warehouse and on the restored door (FR-015); `archivedWithWarehouse` is now `false` (FR-009); and the
-warehouse and its restored door share one `reactivatedAt` (FR-007).
+Check three things in that output: `status` is `AVAILABLE`; `archivedAt` is **still populated** on
+the warehouse and on every restored door (FR-015); and the warehouse and all of its doors share one
+`reactivatedAt` (FR-007, as amended by #216).
 
 ```bash
 # already available → 409 E_WAREHOUSE_ALREADY_AVAILABLE, nothing changed
@@ -187,9 +192,10 @@ assertion.
 ### The two tests that would catch the subtle bugs
 
 - **The double-cycle test** (SC-012): archive W → reactivate W → archive one door on its own →
-  archive W → reactivate W. The independently archived door must still be archived at the end. This
-  is the only test that catches a missing `archived_with_warehouse = false` write (research **D2**),
-  and every simpler test passes without it.
+  archive W → reactivate W. Since #216 the door must be **available** at the end, under the
+  warehouse's own context — the second archival took it over. *(Before #216 the same scenario
+  asserted the opposite, and was the only test that caught a missing `archived_with_warehouse =
+  false` write.)*
 - **The concurrent archive/reactivate test**: overlapping submissions on the same warehouse must
   queue and leave a consistent pair, never a warehouse available under archived doors. This is what
   the fixed lock order buys (research **D3**).

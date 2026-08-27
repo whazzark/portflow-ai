@@ -42,7 +42,6 @@ type ReactivateBody = {
       status: string
       archivedAt: string | null
       archiveComment: string | null
-      archivedWithWarehouse: boolean
       reactivatedAt: string | null
       reactivationComment: string | null
     }>
@@ -67,7 +66,7 @@ test.group('Warehouse reactivation endpoint', (group) => {
     assert.equal((await Warehouse.findOrFail(target.id)).status, 'ARCHIVED')
   })
 
-  test('reactivates an archived warehouse and restores exactly its cascaded doors', async ({
+  test('reactivates an archived warehouse and restores every one of its doors', async ({
     assert,
     client,
   }) => {
@@ -75,7 +74,7 @@ test.group('Warehouse reactivation endpoint', (group) => {
     const archivedAt = DateTime.now().minus({ days: 3 })
     const target = await warehouse('Socomac', 'archived')
     await target.merge({ archivedAt, archiveComment: 'Works' }).save()
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({
         warehouseId: target.id,
         name: 'Porte Quai',
@@ -99,7 +98,7 @@ test.group('Warehouse reactivation endpoint', (group) => {
     assert.equal(body.warehouse.reactivationComment, 'Zone reopened')
     assert.equal(body.warehouse.reactivatedByUserId, admin.id)
     assert.lengthOf(body.warehouse.footprint.points, 3)
-    assert.equal(body.reactivatedDoorCount, 1)
+    assert.equal(body.reactivatedDoorCount, 2)
 
     // The archive context stays readable beside the new reactivation context.
     assert.isNotNull(body.warehouse.archivedAt)
@@ -107,14 +106,13 @@ test.group('Warehouse reactivation endpoint', (group) => {
 
     const restored = body.warehouse.doors.find((door) => door.name === 'Porte Quai')
     assert.equal(restored?.status, 'AVAILABLE')
-    assert.isFalse(restored?.archivedWithWarehouse)
     assert.equal(restored?.reactivatedAt, body.warehouse.reactivatedAt)
     assert.equal(restored?.reactivationComment, 'Zone reopened')
     assert.isNotNull(restored?.archivedAt)
 
-    const untouched = body.warehouse.doors.find((door) => door.name === 'Porte Historique')
-    assert.equal(untouched?.status, 'ARCHIVED')
-    assert.isNull(untouched?.reactivatedAt)
+    const sibling = body.warehouse.doors.find((door) => door.name === 'Porte Historique')
+    assert.equal(sibling?.status, 'AVAILABLE')
+    assert.equal(sibling?.reactivatedAt, body.warehouse.reactivatedAt)
   })
 
   test('records no comment when the supplied one is whitespace only', async ({
@@ -139,7 +137,7 @@ test.group('Warehouse reactivation endpoint', (group) => {
   }) => {
     const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
     const target = await warehouse('Observed Shed', 'archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: target.id, name: 'Watched door' })
       .create()
 
@@ -214,7 +212,7 @@ test.group('Warehouse reactivation endpoint', (group) => {
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const target = await warehouse('Verbose Shed', 'archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: target.id, name: 'Quiet door' })
       .create()
 
@@ -252,7 +250,7 @@ test.group('Warehouse reactivation endpoint', (group) => {
   test('records exactly one reactivation when two submissions race', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const target = await warehouse('Contested Shed', 'archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: target.id, name: 'Contested door' })
       .create()
 
@@ -292,7 +290,7 @@ test.group('Warehouse reactivation endpoint', (group) => {
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const target = await warehouse('Racing Shed', 'archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: target.id, name: 'Racing door' })
       .create()
 

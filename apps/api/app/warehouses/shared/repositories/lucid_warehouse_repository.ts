@@ -364,8 +364,15 @@ export default class LucidWarehouseRepository extends WarehouseRepository {
 
   /**
    * Both writes share one timestamp, actor, and comment, and the affected-row guard makes the pair
-   * all-or-nothing: a warehouse can never end up archived while one of its available doors stays
-   * available (spec FR-027). Returns how many doors the cascade archived.
+   * all-or-nothing: a warehouse can never end up archived while one of its doors stays available
+   * (spec FR-027). Returns how many doors the cascade wrote.
+   *
+   * The door update is deliberately unguarded on status: **every** door of the warehouse is
+   * archived with it, and one already archived on its own has its time, actor, and comment
+   * overwritten by the warehouse's. The building is what the archival is about, so an archived
+   * warehouse holds exactly one archival — its own — rather than a patchwork of contexts recorded
+   * before it. That is what makes the door's provenance readable from the warehouse's status alone,
+   * and what lets `applyReactivation` below be its exact mirror.
    */
   private async applyArchival(
     trx: TransactionClientContract,
@@ -394,13 +401,11 @@ export default class LucidWarehouseRepository extends WarehouseRepository {
 
     const [affectedDoors] = await WarehouseDoor.query({ client: trx })
       .whereIn('warehouseId', eligibleIds)
-      .where('status', 'AVAILABLE')
       .update({
         status: 'ARCHIVED',
         archivedAt,
         archivedByUserId: command.archivedByUserId,
         archiveComment: command.archiveComment,
-        archivedWithWarehouse: true,
         updatedAt: archivedAt,
       })
 
@@ -408,19 +413,17 @@ export default class LucidWarehouseRepository extends WarehouseRepository {
   }
 
   /**
-   * The mirror of `applyArchival`, and the heart of this feature.
-   *
-   * The door predicate is what separates a door archived *by* this warehouse from one retired on
-   * its own: only `archived_with_warehouse = true` comes back. `archived_with_warehouse` is then
-   * cleared, or a door archived independently after this restore would be dragged back by the next
-   * one — the marker has to describe the door's current archival, not a past one.
+   * The mirror of `applyArchival`, and the heart of this feature — mirror in the strict sense: the
+   * archival took every door of the warehouse, so the restore gives every one of them back. There
+   * is no door under an archived warehouse that was not archived with it, which is why the update
+   * needs no provenance predicate to tell them apart.
    *
    * Neither update touches an `archived_*` column: the archive context is what makes the period
    * spent archived consultable afterwards.
    *
    * The affected-row guard is asymmetric on purpose, exactly as archival's is. The eligible
    * warehouse count is known before the write, so a mismatch proves a concurrent writer slipped in
-   * and the transaction must abort. How many doors carry the marker is only discoverable by the
+   * and the transaction must abort. How many doors the warehouses hold is only discoverable by the
    * update itself, so there is no expected value to compare against — it is returned instead.
    */
   private async applyReactivation(
@@ -450,11 +453,8 @@ export default class LucidWarehouseRepository extends WarehouseRepository {
 
     const [affectedDoors] = await WarehouseDoor.query({ client: trx })
       .whereIn('warehouseId', eligibleIds)
-      .where('status', 'ARCHIVED')
-      .where('archivedWithWarehouse', true)
       .update({
         status: 'AVAILABLE',
-        archivedWithWarehouse: false,
         reactivatedAt,
         reactivatedByUserId: command.reactivatedByUserId,
         reactivationComment: command.reactivationComment,

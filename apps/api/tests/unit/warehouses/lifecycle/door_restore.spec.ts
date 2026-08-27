@@ -54,15 +54,15 @@ test.group('Warehouse reactivation door restore', (group) => {
   })
   group.each.teardown(() => app.container.restore(SiteReferenceUsageChecker))
 
-  test('restores every door archived with the warehouse, sharing its lifecycle context', async ({
+  test('restores every door of the warehouse, sharing its lifecycle context', async ({
     assert,
   }) => {
     const actor = await UserFactory.apply('active').create()
     const warehouse = await warehouseWithFootprint('archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: warehouse.id, name: 'A door' })
       .create()
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: warehouse.id, name: 'B door' })
       .create()
 
@@ -81,56 +81,41 @@ test.group('Warehouse reactivation door restore', (group) => {
     }
   })
 
-  // The whole point of `archived_with_warehouse`: a door retired on its own must not come back
-  // when the building does (FR-008).
-  test('leaves a door archived on its own entirely untouched', async ({ assert }) => {
+  // The strict mirror of the cascade: the archival took every door of the warehouse, including one
+  // retired beforehand and taken over by it, so the restore gives every one of them back. Nothing
+  // under an archived warehouse is archived on its own any more.
+  test('restores a door that had been archived on its own before the cascade', async ({
+    assert,
+  }) => {
     const actor = await UserFactory.apply('active').create()
     const warehouse = await warehouseWithFootprint('archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: warehouse.id, name: 'Cascaded' })
       .create()
-    const soloArchivedAt = DateTime.now().minus({ days: 30 })
     await WarehouseDoorFactory.apply('archived')
       .merge({
         warehouseId: warehouse.id,
         name: 'Solo',
-        archivedAt: soloArchivedAt,
+        archivedAt: DateTime.now().minus({ days: 30 }),
         archiveComment: 'Retired on its own',
       })
       .create()
 
     const result = await reactivate(warehouse.id, actor.id, 'Zone reopened')
 
-    assert.equal(result.reactivatedDoorCount, 1)
+    assert.equal(result.reactivatedDoorCount, 2)
     const [cascaded, solo] = await doorsOf(warehouse.id)
     assert.equal(cascaded.status, 'AVAILABLE')
-    assert.equal(solo.status, 'ARCHIVED')
-    assert.equal(solo.archiveComment, 'Retired on its own')
-    // SQLite (the test database) stores second precision, so the instant is compared at that
-    // granularity rather than asserting a millisecond round trip the engine never promises.
-    assert.equal(solo.archivedAt?.toUnixInteger(), soloArchivedAt.toUnixInteger())
-    assert.isNull(solo.reactivatedAt)
-    assert.isNull(solo.reactivationComment)
-  })
-
-  test('clears the cascade record on every restored door', async ({ assert }) => {
-    const actor = await UserFactory.apply('active').create()
-    const warehouse = await warehouseWithFootprint('archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
-      .merge({ warehouseId: warehouse.id, name: 'A door' })
-      .create()
-
-    await reactivate(warehouse.id, actor.id)
-
-    const [door] = await doorsOf(warehouse.id)
-    assert.isFalse(door.archivedWithWarehouse)
+    assert.equal(solo.status, 'AVAILABLE')
+    assert.equal(solo.reactivationComment, 'Zone reopened')
+    assert.equal(solo.reactivatedAt?.toISO(), result.warehouse.reactivatedAt?.toISO())
   })
 
   test('preserves the archive context on every restored door', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const warehouse = await warehouseWithFootprint('archived')
     const archivedAt = DateTime.now().minus({ days: 7 })
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({
         warehouseId: warehouse.id,
         name: 'A door',
@@ -151,7 +136,7 @@ test.group('Warehouse reactivation door restore', (group) => {
   test('preserves every door identity attribute', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const warehouse = await warehouseWithFootprint('archived')
-    const created = await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    const created = await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: warehouse.id, name: 'A door', latitude: 49.4931, longitude: 0.108 })
       .create()
 
@@ -175,43 +160,31 @@ test.group('Warehouse reactivation door restore', (group) => {
     assert.equal(result.reactivatedDoorCount, 0)
   })
 
-  test('reactivates a warehouse whose doors were all archived on their own', async ({ assert }) => {
-    const actor = await UserFactory.apply('active').create()
-    const warehouse = await warehouseWithFootprint('archived')
-    await WarehouseDoorFactory.apply('archived')
-      .merge({ warehouseId: warehouse.id, name: 'Solo' })
-      .create()
-
-    const result = await reactivate(warehouse.id, actor.id)
-
-    assert.equal(result.warehouse.status, 'AVAILABLE')
-    assert.equal(result.reactivatedDoorCount, 0)
-    const [door] = await doorsOf(warehouse.id)
-    assert.equal(door.status, 'ARCHIVED')
-  })
-
-  test('leaves an available door of an archived warehouse untouched', async ({ assert }) => {
+  // An available door under an archived warehouse is unreachable through the interface — the
+  // cascade takes every door — so this states the invariant the unguarded update relies on rather
+  // than a state an administrator can produce: every door of the warehouse ends in the warehouse's
+  // own state, whatever it was in before.
+  test('leaves an available door of an archived warehouse available', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const warehouse = await warehouseWithFootprint('archived')
     await WarehouseDoorFactory.merge({ warehouseId: warehouse.id, name: 'Already open' }).create()
 
     const result = await reactivate(warehouse.id, actor.id)
 
-    assert.equal(result.reactivatedDoorCount, 0)
+    assert.equal(result.reactivatedDoorCount, 1)
     const [door] = await doorsOf(warehouse.id)
     assert.equal(door.status, 'AVAILABLE')
-    assert.isNull(door.reactivatedAt)
   })
 
   /**
-   * The regression the cascade record exists to prevent, and the only test that catches a missing
-   * `archived_with_warehouse = false` write. Every simpler test above passes without it.
+   * The full cycle, and what the two transitions being exact mirrors means over time.
    *
-   * Archive W (D cascades) → reactivate W (D returns, record must be cleared) → archive D on its
-   * own → archive W → reactivate W. If the record survived the first restore, D would be dragged
-   * back into service here despite having been retired independently.
+   * Archive W (D goes with it) → reactivate W (D comes back) → archive D on its own → archive W
+   * (the building takes D over, overwriting the context D recorded) → reactivate W. D returns to
+   * service with the building, because under an archived warehouse there is no such thing as a
+   * door archived on its own.
    */
-  test('does not resurrect a door archived on its own after an earlier cascade', async ({
+  test('returns a door archived on its own once its warehouse takes it over', async ({
     assert,
   }) => {
     const actor = await UserFactory.apply('active').create()
@@ -232,17 +205,22 @@ test.group('Warehouse reactivation door restore', (group) => {
     await archiveWarehouse()
     await reactivate(warehouse.id, actor.id)
 
-    // The door is now retired on its own, which the next cascade must not overwrite and the next
-    // restore must not undo.
+    // The door is now retired on its own — until the next archival of its warehouse takes it over.
     await door
-      .merge({ status: 'ARCHIVED', archivedAt: DateTime.now(), archivedWithWarehouse: false })
+      .merge({
+        status: 'ARCHIVED',
+        archivedAt: DateTime.now(),
+        archiveComment: 'Retired on its own',
+      })
       .save()
 
     await archiveWarehouse()
-    await reactivate(warehouse.id, actor.id)
+    const result = await reactivate(warehouse.id, actor.id, 'Zone reopened')
 
     const [stored] = await doorsOf(warehouse.id)
-    assert.equal(stored.status, 'ARCHIVED', 'a door retired on its own stays archived')
-    assert.isFalse(stored.archivedWithWarehouse)
+    assert.equal(stored.status, 'AVAILABLE', 'a door returns with the building that took it over')
+    assert.isNull(stored.archiveComment, 'the warehouse overwrote the context the door recorded')
+    assert.equal(stored.reactivationComment, 'Zone reopened')
+    assert.equal(result.reactivatedDoorCount, 1)
   })
 })

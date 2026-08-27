@@ -5,6 +5,13 @@ description: "Task list for Archive a Warehouse (GH-210)"
 
 # Tasks: Archive a Warehouse
 
+> **Amended by [#216 Reactivate a Warehouse Door](../../warehouse-doors/reactivate-a-warehouse-door/spec.md).**
+> The cascade now takes **every** door of the warehouse, replacing the archive context of one
+> already archived on its own, and `warehouse_doors.archived_with_warehouse` — added by this slice —
+> is dropped. Where this document reasons about sparing already-archived doors or about recording a
+> per-door provenance, read `spec.md`'s 2026-08-27 clarification instead. The text is kept as the
+> delivery record of what was built at the time.
+
 **Input**: Design documents from `specs/site-references/storage-facilities/warehouses/archive-a-warehouse/`
 
 **Prerequisites**: [plan.md](./plan.md), [spec.md](./spec.md), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/)

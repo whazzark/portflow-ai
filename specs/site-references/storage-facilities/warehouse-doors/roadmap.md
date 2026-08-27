@@ -10,7 +10,7 @@
 | #213 | Create a Warehouse Door | in progress | `create-a-warehouse-door/spec.md` |
 | #214 | Update a Warehouse Door | in progress | `update-a-warehouse-door/spec.md` |
 | #215 | Archive a Warehouse Door | in progress | `archive-a-warehouse-door/spec.md` |
-| #216 | Reactivate a Warehouse Door | backlog | pending selection |
+| #216 | Reactivate a Warehouse Door | in progress | `reactivate-a-warehouse-door/spec.md` |
 
 Every door remains contained by one warehouse. Each selected slice owns its API, interface,
 authorization, validation, persistence, and tests.

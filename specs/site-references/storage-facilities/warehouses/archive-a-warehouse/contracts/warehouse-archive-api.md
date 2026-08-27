@@ -52,7 +52,6 @@ that wrapper rather than beside it.
         "archivedAt": "2026-08-25T09:14:00.000Z",
         "archivedByUserId": "…",
         "archiveComment": "Building repurposed for storage of non-bulk goods",
-        "archivedWithWarehouse": true,
         "reactivatedAt": null, "reactivatedByUserId": null, "reactivationComment": null
       }
     ]
@@ -64,13 +63,13 @@ that wrapper rather than beside it.
 
 Response invariants, each directly testable:
 
-- Every door with `archivedWithWarehouse: true` carries **the same** `archivedAt`,
-  `archivedByUserId`, and `archiveComment` as the warehouse (FR-011).
-- Doors that were already archived appear with `archivedWithWarehouse: false` and their **original**
-  context, unchanged (FR-012).
+- **Every** door carries **the same** `archivedAt`, `archivedByUserId`, and `archiveComment` as the
+  warehouse (FR-011) — including one that was already archived on its own, whose context the archival
+  replaces (amended by #216; `archivedWithWarehouse` is dropped with that amendment).
 - `name`, `footprint.points` (every point, in `position` order), and `createdAt` are unchanged
   (FR-016); each door's `name`, `latitude`, `longitude` are unchanged (FR-017).
-- `archivedDoorCount` counts only the doors this call archived.
+- `archivedDoorCount` counts every door this call wrote, which is every door the warehouse holds
+  (amended by #216).
 
 ### Failures
 

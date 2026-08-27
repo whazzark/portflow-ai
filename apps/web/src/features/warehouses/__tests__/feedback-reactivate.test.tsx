@@ -4,7 +4,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
 import { warehouseQueries } from '@/features/warehouses/queries/warehouse-queries'
 import { server } from '@/test/msw/server'
-import { API_BASE_URL, MIXED_ARCHIVED_WAREHOUSE, WAREHOUSES } from './support/fixtures'
+import { API_BASE_URL, TWO_DOOR_ARCHIVED_WAREHOUSE, WAREHOUSES } from './support/fixtures'
 import { mockWarehouses, renderWarehouses } from './support/test-helpers'
 
 vi.mock(
@@ -12,13 +12,13 @@ vi.mock(
   async () => import('./support/mock-warehouse-map'),
 )
 
-const MIXED = MIXED_ARCHIVED_WAREHOUSE
-const CATALOGUE = [WAREHOUSES[0], MIXED]
-const REACTIVATE_URL = `${API_BASE_URL}/api/v1/warehouses/${MIXED.id}/reactivate`
+const RIVERSIDE = TWO_DOOR_ARCHIVED_WAREHOUSE
+const CATALOGUE = [WAREHOUSES[0], RIVERSIDE]
+const REACTIVATE_URL = `${API_BASE_URL}/api/v1/warehouses/${RIVERSIDE.id}/reactivate`
 
 async function submitReactivation(user: ReturnType<typeof userEvent.setup>, comment?: string) {
   await user.click(
-    await screen.findByRole('button', { name: `View warehouse ${MIXED.name} (Archived)` }),
+    await screen.findByRole('button', { name: `View warehouse ${RIVERSIDE.name} (Archived)` }),
   )
   await user.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
@@ -43,7 +43,7 @@ test('names the warehouse when a reactivation is refused as not found', async ()
   await submitReactivation(user)
 
   expect(
-    await screen.findByText(`Unable to reactivate warehouse “${MIXED.name}”`),
+    await screen.findByText(`Unable to reactivate warehouse “${RIVERSIDE.name}”`),
   ).toBeInTheDocument()
   expect(await screen.findByText('Warehouse not found')).toBeInTheDocument()
 })
@@ -142,7 +142,7 @@ test('keeps a refused dialog on its own direction when the warehouse turns avail
 
   // Someone else reactivated it and the list refreshes while the refused dialog is still open.
   const requestsBeforeRefresh = listRequests
-  catalogue = [WAREHOUSES[0], { ...MIXED, status: 'AVAILABLE' }]
+  catalogue = [WAREHOUSES[0], { ...RIVERSIDE, status: 'AVAILABLE' }]
   await queryClient.invalidateQueries({ queryKey: warehouseQueries.list().queryKey })
   await waitFor(() => expect(listRequests).toBeGreaterThan(requestsBeforeRefresh))
 

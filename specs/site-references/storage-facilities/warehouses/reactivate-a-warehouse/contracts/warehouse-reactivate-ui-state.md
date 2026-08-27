@@ -64,12 +64,12 @@ destructive act, and the sibling reactivation actions use the default variant.
 `describeDoorRestore(count)` mirrors `describeDoorCascade`, with correct agreement at 0 / 1 / n:
 
 - `0` → "No door returns to service with it."
-- `1` → "Its 1 door archived with it returns to service."
-- `n` → "Its {n} doors archived with it return to service."
+- `1` → "Its 1 door returns to service."
+- `n` → "Its {n} doors return to service."
 
-The count comes from `countRestorableDoors(warehouse)` — doors where
-`status === 'ARCHIVED' && archivedWithWarehouse === true` — and is **advisory**, exactly as the
-archive count is (research **D10**). The success toast reports `reactivatedDoorCount` from the
+The count comes from `countDoors(warehouse)` — every door the warehouse holds, since #216 made both
+directions take all of them — and is **advisory**, exactly as the archive count is (research
+**D10**). The success toast reports `reactivatedDoorCount` from the
 response, so a stale advisory count never becomes a false claim about what happened.
 
 ### Outcome

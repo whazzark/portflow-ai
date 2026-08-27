@@ -124,6 +124,9 @@ router
             // `:id = 'archive'`.
             router.post('/archive', [controllers.WarehouseDoors, 'archiveMany']).as('archive_many')
             router.post('/:id/archive', [controllers.WarehouseDoors, 'archive']).as('archive')
+            router
+              .post('/:id/reactivate', [controllers.WarehouseDoors, 'reactivate'])
+              .as('reactivate')
           })
           .prefix('/warehouse-doors')
           .as('warehouse_doors')
