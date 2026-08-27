@@ -23,25 +23,32 @@ export default class UserTransformer extends BaseTransformer<User> {
   }
 
   toObject() {
-    return this.pick(this.resource, [
-      'id',
-      'firstName',
-      'lastName',
-      'email',
-      'role',
-      'accessStatus',
-      'invitedAt',
-      'activatedAt',
-      'cancelledAt',
-      'deactivatedAt',
-      'reactivatedAt',
-      // biome-ignore lint/security/noSecrets: field name, not a secret
-      'invitedByUserId',
-      'activatedByUserId',
-      'cancelledByUserId',
-      'deactivatedByUserId',
-      'reactivatedByUserId',
-    ])
+    return {
+      ...this.pick(this.resource, [
+        'id',
+        'firstName',
+        'lastName',
+        'email',
+        'role',
+        'accessStatus',
+        'invitedAt',
+        'activatedAt',
+        'cancelledAt',
+        'deactivatedAt',
+        'reactivatedAt',
+        // biome-ignore lint/security/noSecrets: field name, not a secret
+        'invitedByUserId',
+        'activatedByUserId',
+        'cancelledByUserId',
+        'deactivatedByUserId',
+        'reactivatedByUserId',
+      ]),
+      // Derived, and composed alongside the picked set because `pick` cannot express it. The raw
+      // `passwordRenewalRequiredAt` is deliberately not serialized: it would say *when* an
+      // administrator acted, and the only two producers are a password reset and a reactivation.
+      // The interface needs one bit to choose a route; it gets one bit.
+      passwordRenewalRequired: this.resource.passwordRenewalRequiredAt !== null,
+    }
   }
 
   /**

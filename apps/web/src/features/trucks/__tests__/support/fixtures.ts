@@ -20,6 +20,7 @@ export const ACTIVE_OBSERVER: SessionUser = {
   cancelledByUserId: null,
   deactivatedByUserId: null,
   reactivatedByUserId: null,
+  passwordRenewalRequired: false,
 }
 
 export const ACTIVE_OPERATIONS_LEAD: SessionUser = {

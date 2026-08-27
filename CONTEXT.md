@@ -417,8 +417,16 @@ An authenticated connection that can be restored on the same browser for at most
 _Avoid_: permanent login, global session, device management
 
 **Password Reset**:
-The action of requiring an active user to choose a new password.
+The action of requiring an active user to choose a new password. It records a password renewal requirement; the user clears it through a password renewal.
 _Avoid_: password change, password recovery
+
+**Password Renewal Requirement**:
+The state marking that a user must choose a new password before using the application. It is recorded by a password reset or a user reactivation, is independent of the access status and of the role, survives logout, applies on every browser at once, and is cleared only by a completed password renewal.
+_Avoid_: password expiry, locked account, forced logout
+
+**Password Renewal**:
+The action by which a user carrying a password renewal requirement chooses a new password, clearing the requirement. It is the user-side counterpart of a password reset and of a user reactivation, which are the administrator-side actions that require it. Until it is completed, the session reaches nothing but the renewal, the session representation, and logout, and completing it revokes the user's remembered connections on every other browser.
+_Avoid_: password change, password reset, password recovery
 
 **User Invitation Cancellation**:
 The action of withdrawing access before a pending user has activated it.
@@ -445,7 +453,7 @@ The action of preventing a user from signing in while keeping their historical a
 _Avoid_: user deletion, user archiving
 
 **User Reactivation**:
-The action of restoring sign-in access to a deactivated user while requiring a new password.
+The action of restoring sign-in access to a deactivated user while requiring a new password. Like a password reset, it records a password renewal requirement that the user clears through a password renewal.
 _Avoid_: user restoration, account unlock
 
 **Operations Admin**:
