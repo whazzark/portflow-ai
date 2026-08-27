@@ -104,7 +104,11 @@ export function WarehouseDoorsPanel({
         <TabsList className="mx-4 mt-3 w-[calc(100%-2rem)]" aria-label="Warehouse door lifecycle">
           {(Object.keys(labels) as WarehouseDoorStatusFilter[]).map((key) => (
             <TabsTrigger key={key} value={key}>
-              {labels[key]} <span className="text-xs">{counts[key]}</span>
+              {labels[key]}{' '}
+              {/* Parenthesised, as every other lifecycle tab list already writes it — the
+                  customers, trucks, and transport-company directories. `text-xs` rather than their
+                  default size is the panel's own density, not a second convention. */}
+              <span className="text-muted-foreground text-xs tabular-nums">({counts[key]})</span>
             </TabsTrigger>
           ))}
         </TabsList>

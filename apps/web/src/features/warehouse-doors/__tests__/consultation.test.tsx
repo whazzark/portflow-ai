@@ -57,6 +57,9 @@ describe('warehouse door consultation', () => {
     expect(screen.getByRole('heading', { name: 'Doors' })).toBeInTheDocument()
     expect(screen.getByText('North Door')).toBeInTheDocument()
     expect(screen.queryByText('Old Door')).not.toBeInTheDocument()
+    // Parenthesised, as the customers, trucks, and transport-company tab lists already write it.
+    expect(screen.getByRole('tab', { name: 'Available (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Archived (1)' })).toBeInTheDocument()
     await user.click(screen.getByRole('tab', { name: /Archived/ }))
     expect(onStatusChange).toHaveBeenCalledWith('archived')
   })
