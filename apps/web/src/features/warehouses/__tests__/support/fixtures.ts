@@ -268,6 +268,12 @@ export const CREATED_DOOR: CreatedWarehouseDoorDto = {
   status: 'AVAILABLE',
   latitude: 48.853,
   longitude: 2.35,
+  // Empty on a new door, and carried by every door write response since #215, whose 200 is where
+  // an archival's context is observed.
+  archivedAt: null,
+  archivedByUserId: null,
+  archiveComment: null,
+  archivedWithWarehouse: false,
   createdAt: '2026-08-26T09:12:44.000Z',
   updatedAt: '2026-08-26T09:12:44.000Z',
 }
@@ -287,6 +293,10 @@ export const UPDATED_DOOR: UpdatedWarehouseDoorDto = {
   status: 'AVAILABLE',
   latitude: 48.854,
   longitude: 2.351,
+  archivedAt: null,
+  archivedByUserId: null,
+  archiveComment: null,
+  archivedWithWarehouse: false,
   createdAt: '2026-08-20T09:12:44.000Z',
   updatedAt: '2026-08-26T14:03:07.000Z',
 }
@@ -324,6 +334,49 @@ export const WAREHOUSES_WITH_CREATED_DOOR: WarehouseWithDoorsDto[] = [
         ...doorLifecycle(),
       },
     ],
+  },
+  WAREHOUSES[1],
+]
+
+/** What `POST /api/v1/warehouse-doors/:id/archive` returns: the standalone door DTO plus the
+ * archive context the transition just recorded. `archivedWithWarehouse` is false — the door was
+ * retired on its own, not caught by its warehouse's cascade. */
+export type ArchivedWarehouseDoorDto = Route.Response<'warehouse_doors.archive'>['data']
+
+/** The first fixture warehouse's first available door, archived. */
+export const ARCHIVABLE_DOOR = (WAREHOUSES[0].doors ?? [])[0]
+
+export const ARCHIVED_DOOR: ArchivedWarehouseDoorDto = {
+  id: ARCHIVABLE_DOOR.id,
+  warehouseId: WAREHOUSES[0].id,
+  name: ARCHIVABLE_DOOR.name,
+  status: 'ARCHIVED',
+  latitude: ARCHIVABLE_DOOR.latitude,
+  longitude: ARCHIVABLE_DOOR.longitude,
+  archivedAt: '2026-08-27T14:03:07.000Z',
+  archivedByUserId: '018f7f21-5d0e-7a55-9d0e-2c9a3f5b1a44',
+  archiveComment: 'Walled up during the 2026 works',
+  archivedWithWarehouse: false,
+  createdAt: '2026-08-20T09:12:44.000Z',
+  updatedAt: '2026-08-27T14:03:07.000Z',
+}
+
+/** The same door as the warehouse collection embeds it, for the refetch that follows an archival. */
+export const WAREHOUSES_WITH_ARCHIVED_DOOR: WarehouseWithDoorsDto[] = [
+  {
+    ...WAREHOUSES[0],
+    doors: (WAREHOUSES[0].doors ?? []).map((door) =>
+      door.id === ARCHIVED_DOOR.id
+        ? {
+            ...door,
+            status: 'ARCHIVED' as const,
+            ...doorLifecycle({
+              archivedAt: ARCHIVED_DOOR.archivedAt,
+              archiveComment: ARCHIVED_DOOR.archiveComment,
+            }),
+          }
+        : door,
+    ),
   },
   WAREHOUSES[1],
 ]

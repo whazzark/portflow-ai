@@ -153,7 +153,8 @@ describe('warehouse door consultation', () => {
 
     const door = screen.getByRole('button', { name: /North Door/ })
 
-    expect(door).toHaveTextContent('Available')
+    // The row no longer restates the status the lifecycle tab already names; what matters here is
+    // that an available door claims none of the archival it came back from.
     expect(door).not.toHaveTextContent('Archived on its own')
     expect(door).not.toHaveTextContent('Roof works')
   })

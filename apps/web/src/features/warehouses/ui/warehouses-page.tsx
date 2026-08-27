@@ -3,7 +3,10 @@ import { getRouteApi } from '@tanstack/react-router'
 import { PlusIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
+import {
+  BulkResourceLifecycleActions,
+  BulkResourceLifecycleDialog,
+} from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import {
   ACTION_BY_BULK_INTENT,
   type BulkLifecycleIntent,
@@ -25,6 +28,11 @@ import { CreateWarehouseDoorPanel } from '@/features/warehouse-doors/ui/create-w
 import { EditWarehouseDoorPanel } from '@/features/warehouse-doors/ui/edit-warehouse-door-panel'
 import { WarehouseDoorsPanel } from '@/features/warehouse-doors/ui/warehouse-doors-panel'
 import { useWarehouseDoorEditSession } from '@/features/warehouse-doors/use-warehouse-door-edit-session'
+import {
+  toBulkWarehouseDoorLifecycleOutcome,
+  WAREHOUSE_DOOR_PLURAL,
+  WAREHOUSE_DOOR_SINGULAR,
+} from '@/features/warehouse-doors/warehouse-door-lifecycle'
 import {
   DOOR_SINGULAR,
   defaultDoorStatus,
@@ -78,6 +86,9 @@ const withoutDoorCreation = (create: 'warehouse' | 'door' | undefined) =>
 const withoutDoorEditing = (edit: 'warehouse' | 'door' | undefined) =>
   edit === 'door' ? undefined : edit
 
+/** Referentially stable, so an unselected view never hands the panel and the map a new Set. */
+const EMPTY_DOOR_SELECTION: ReadonlySet<string> = new Set<string>()
+
 export function WarehousesPage() {
   const { create, doorId, doorStatus, edit, search, selecting, status, warehouseId } =
     warehousesRoute.useSearch()
@@ -87,6 +98,17 @@ export function WarehousesPage() {
   const isMobile = useIsMobile()
   const isSelecting = canManageWarehouses && selecting === 'warehouses'
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
+  // Doors are selected inside the warehouse they belong to, so unlike `selecting=warehouses` — which
+  // clears `warehouseId` on entry — this mode keeps the selection it acts on. One param holding one
+  // value is what makes the two mutually exclusive by shape rather than by an effect.
+  //
+  // Kept *with* the warehouse it was built in, exactly as a pending door placement is: a selection
+  // left behind by a switch to another warehouse is then simply not read, rather than having to be
+  // cleared by an effect that races the render.
+  const [doorSelection, setDoorSelection] = useState<{
+    warehouseId: string
+    ids: Set<string>
+  } | null>(null)
   const mutations = useWarehouseMutations()
   const query = useQuery(warehouseQueries.list())
   // A `create` param a non-administrator cannot act on stays inert: no panel, no armed map.
@@ -149,6 +171,25 @@ export function WarehousesPage() {
     isCreatingDoor && pendingDoor?.warehouseId === selected?.id ? pendingDoor.point : null
   const placePendingDoor = (point: LatLng) =>
     setPendingDoor(selected ? { warehouseId: selected.id, point } : null)
+
+  // Checking doors is offered, never entered: an administrator who opens an available warehouse's
+  // Available doors can check one straight away. What still withholds it is what would make a check
+  // meaningless — an archived warehouse, the Archived view, or a creation or update session, which
+  // replaces the list with a form and arms the map.
+  const canSelectDoors =
+    canManageWarehouses &&
+    selected?.status === 'AVAILABLE' &&
+    effectiveDoorStatus === 'available' &&
+    create === undefined &&
+    edit === undefined
+
+  const checkedDoorIds = useMemo(
+    () =>
+      canSelectDoors && doorSelection?.warehouseId === selected?.id
+        ? doorSelection.ids
+        : EMPTY_DOOR_SELECTION,
+    [canSelectDoors, doorSelection, selected?.id],
+  )
 
   const {
     isEditing,
@@ -262,9 +303,16 @@ export function WarehousesPage() {
     },
     [bulkIntent, checkableIds, navigate, visible],
   )
+  // The keyboard shortcuts stay the warehouse map's, untouched: `Ctrl+A` selects the warehouses on
+  // screen and `Escape` clears that selection. Doors get no binding of their own — two meanings for
+  // one keystroke on one page is worse than none, and the panel's "Select all" checkbox is the
+  // door equivalent, exactly as it is in the trucks and customers directories.
   useSelectAllShortcut({ enabled: canManageWarehouses, onSelectAll: selectAllVisible })
 
   const clearChecked = useCallback(() => setCheckedIds(new Set()), [])
+  // Opened from the Doors panel rather than from a floating bar: the selection lives in that list,
+  // and a bar hovering between the panel and the map legend is where an administrator never looks.
+  const [isArchivingDoors, setIsArchivingDoors] = useState(false)
   useClearSelectionShortcut({ enabled: isSelecting && checkedIds.size > 0, onClear: clearChecked })
 
   useEffect(() => {
@@ -338,6 +386,11 @@ export function WarehousesPage() {
     }
   }, [admittedDoor, edit, navigate, query.data, selectedStatus])
 
+  // Also what happens after a door is archived (#215): the door leaves the Available view, so its
+  // selection is dropped and the administrator stays on the warehouse with its Doors panel. Nothing
+  // is forced — no switch to the Archived view, no re-selection — because archival moves a door the
+  // administrator was already looking at one click away, and the toast already reports the outcome.
+  // Creation reveals a door that exists nowhere else, which is why it does the opposite.
   useEffect(() => {
     if (query.data && selected && doorId && !admittedDoor) {
       void navigate({
@@ -423,6 +476,25 @@ export function WarehousesPage() {
     }
     startSelecting(id)
   }
+  const toggleDoorChecked = (doorId: string) => {
+    if (!selected) {
+      return
+    }
+    const next = new Set(checkedDoorIds)
+    if (next.has(doorId)) {
+      next.delete(doorId)
+    } else {
+      next.add(doorId)
+    }
+    setDoorSelection({ warehouseId: selected.id, ids: next })
+  }
+  const selectAllDoorsIn = (checked: boolean, doorIds: string[]) => {
+    if (!selected) {
+      return
+    }
+    setDoorSelection({ warehouseId: selected.id, ids: new Set(checked ? doorIds : []) })
+  }
+
   const selectDoor = (nextDoorId: string) =>
     void navigate({
       search: (previous) => ({
@@ -708,6 +780,9 @@ export function WarehousesPage() {
             doors={admittedDoors}
             selectedDoorId={admittedDoor?.id}
             onDoorSelect={(door) => selectDoor(door.id)}
+            doorSelectMode={canSelectDoors}
+            checkedDoorIds={checkedDoorIds}
+            onToggleDoorChecked={toggleDoorChecked}
             selectMode={isSelecting}
             checkedIds={checkedIds}
             checkableIds={checkableIds}
@@ -776,6 +851,43 @@ export function WarehousesPage() {
           }
         />
       )}
+      <BulkResourceLifecycleDialog
+        action="archive"
+        // No `describeEffect`: a door cascades onto nothing, so the canonical sentence is already
+        // exactly true. No `blockerReasonLabels` either — the shared `IN_USE` label reads "used by
+        // an active or planned discharge", which is the plain truth for a door, unlike a warehouse
+        // that is blocked by one of *its* doors.
+        idPrefix="warehouse-door"
+        onOpenChange={setIsArchivingDoors}
+        onSuccess={(outcome) => {
+          // `IN_USE` is the one blocker an administrator can resolve and retry — close the
+          // discharge, end the assignment — so the selection narrows to exactly those. Every other
+          // reason is final on a retry, and a door archived elsewhere would sit checked in a view
+          // that no longer lists it.
+          setDoorSelection(
+            selected
+              ? {
+                  warehouseId: selected.id,
+                  ids: new Set(
+                    outcome.blocked
+                      .filter((blocked) => blocked.reason === 'IN_USE')
+                      .map((blocked) => blocked.id),
+                  ),
+                }
+              : null,
+          )
+        }}
+        open={isArchivingDoors}
+        plural={WAREHOUSE_DOOR_PLURAL}
+        refresh={doorMutations.refreshWarehouseDoors}
+        selectedIds={[...checkedDoorIds]}
+        singular={WAREHOUSE_DOOR_SINGULAR}
+        submit={async ({ ids, comment }) =>
+          toBulkWarehouseDoorLifecycleOutcome(
+            (await doorMutations.archiveMany.mutateAsync({ body: { ids, comment } })).data,
+          )
+        }
+      />
       <Sheet
         open={Boolean(selected) || isCreating}
         onOpenChange={(open) => {
@@ -881,7 +993,12 @@ export function WarehousesPage() {
                   warehouse={selected}
                   status={effectiveDoorStatus}
                   selectedDoorId={admittedDoor?.id}
-                  onStatusChange={(next) =>
+                  onStatusChange={(next) => {
+                    // A lifecycle view change drops the selection for good, the rule the warehouse
+                    // select mode already follows: the doors it held are not listed here, and
+                    // returning to Available must not resurrect a queue the administrator watched
+                    // disappear.
+                    setDoorSelection(null)
                     void navigate({
                       search: (previous) => ({
                         ...previous,
@@ -889,7 +1006,7 @@ export function WarehousesPage() {
                         doorId: undefined,
                       }),
                     })
-                  }
+                  }}
                   onDoorSelect={selectDoor}
                   onCreateDoor={
                     canManageWarehouses && selected.status === 'AVAILABLE'
@@ -898,8 +1015,24 @@ export function WarehousesPage() {
                   }
                   // Present for any administrator; each row is gated again by its own and its
                   // warehouse's lifecycle state, and renders no menu at all when it has nothing to
-                  // offer.
+                  // offer. Server-side authorization stays authoritative — this only mirrors it.
+                  canAdministerDoors={canManageWarehouses}
                   onEditDoor={canManageWarehouses ? startUpdatingDoor : undefined}
+                  selectMode={canSelectDoors}
+                  selectionAction={
+                    checkedDoorIds.size > 0 ? (
+                      <Button
+                        onClick={() => setIsArchivingDoors(true)}
+                        size="sm"
+                        variant="destructive"
+                      >
+                        Archive selected
+                      </Button>
+                    ) : undefined
+                  }
+                  checkedDoorIds={checkedDoorIds}
+                  onToggleChecked={toggleDoorChecked}
+                  onSelectAll={selectAllDoorsIn}
                 />
                 {/* One footer for every action on the warehouse. Editing is absent rather than
                     disabled for an archived warehouse, which is read-only until it is reactivated

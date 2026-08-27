@@ -1,3 +1,4 @@
+import type { DateTime } from 'luxon'
 import type WarehouseDoor from '#models/warehouse_door'
 
 export type WarehouseFootprintPoint = { latitude: number; longitude: number }
@@ -63,10 +64,63 @@ export type UpdateWarehouseDoorResult =
   | { kind: 'OUTSIDE_FOOTPRINT' }
   | { kind: 'DUPLICATE_NAME' }
 
+export type ArchiveWarehouseDoorCommand = {
+  id: string
+  archivedAt: DateTime
+  archivedByUserId: string
+  /** Already trimmed by the use case; a blank comment arrives as `null`, never as an empty string. */
+  archiveComment: string | null
+}
+
+/**
+ * Every arm but `ARCHIVED` is a transactional outcome rather than a pre-check, for the reason
+ * `updateAvailable` above already gives — and here it decides more than a message. A door archival
+ * races #210's cascade, which archives every available door of a warehouse in one transaction. A
+ * status read taken before the write could be stale by the time it lands, and the loser would
+ * archive the door a second time, overwriting the time, actor, comment, and provenance a later
+ * warehouse reactivation (#211) depends on. So the guarded `status = 'AVAILABLE'` write inside the
+ * transaction is the only thing that decides `ALREADY_ARCHIVED`, and it decides it exactly once.
+ */
+export type ArchiveWarehouseDoorResult =
+  | { kind: 'ARCHIVED'; door: WarehouseDoor }
+  | { kind: 'DOOR_NOT_FOUND' }
+  | { kind: 'ALREADY_ARCHIVED' }
+  | { kind: 'IN_USE' }
+  | { kind: 'WAREHOUSE_NOT_FOUND' }
+  | { kind: 'WAREHOUSE_ARCHIVED' }
+
+export type ArchiveWarehouseDoorsCommand = {
+  ids: string[]
+  archivedAt: DateTime
+  archivedByUserId: string
+  archiveComment: string | null
+}
+
+export type BulkWarehouseDoorLifecycleBlocker = {
+  id: string
+  /** The door's own name, so an outcome can identify it. Absent for `NOT_FOUND`: no row to name. */
+  name?: string
+  reason: 'NOT_FOUND' | 'IN_USE' | 'ALREADY_ARCHIVED' | 'ALREADY_AVAILABLE'
+}
+
+export type BulkWarehouseDoorLifecycleResult = {
+  /** In submission order, so the outcome reads the way the administrator built the selection. */
+  updatedDoors: WarehouseDoor[]
+  blockedDoors: BulkWarehouseDoorLifecycleBlocker[]
+}
+
 export default abstract class WarehouseDoorRepository {
   abstract create(command: CreateWarehouseDoorCommand): Promise<CreateWarehouseDoorResult>
 
   abstract updateAvailable(command: UpdateWarehouseDoorCommand): Promise<UpdateWarehouseDoorResult>
+
+  abstract archiveAvailable(
+    command: ArchiveWarehouseDoorCommand,
+  ): Promise<ArchiveWarehouseDoorResult>
+
+  abstract archiveAvailableMany(
+    command: ArchiveWarehouseDoorsCommand,
+  ): Promise<BulkWarehouseDoorLifecycleResult>
 
   abstract listAvailable(): Promise<WarehouseDoor[]>
 }

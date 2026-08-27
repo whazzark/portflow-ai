@@ -2,6 +2,7 @@ import { HttpResponse, http } from 'msw'
 import type { WarehouseDto } from '@/features/warehouses/types'
 import {
   API_BASE_URL,
+  type ArchivedWarehouseDoorDto,
   type CreatedWarehouseDoorDto,
   type UpdatedWarehouseDoorDto,
 } from './fixtures'
@@ -281,5 +282,69 @@ export function updateWarehouseDoorRecoveringHandler(updated: UpdatedWarehouseDo
           { status: 500 },
         )
       : HttpResponse.json({ data: updated })
+  })
+}
+
+const warehouseDoorArchiveUrl = (id: string) => `${warehouseDoorsUrl}/${id}/archive`
+
+/** The 200 body is the standalone door DTO plus the archive context the transition recorded. */
+export function archiveWarehouseDoorHandler(archived: ArchivedWarehouseDoorDto) {
+  return http.post(warehouseDoorArchiveUrl(archived.id), () =>
+    HttpResponse.json({ data: archived }),
+  )
+}
+
+export function archiveWarehouseDoorErrorHandler(
+  id: string,
+  error: { code: string; message: string },
+  status: number,
+) {
+  return http.post(warehouseDoorArchiveUrl(id), () => HttpResponse.json({ error }, { status }))
+}
+
+export const archiveWarehouseDoorAlreadyArchivedHandler = (id: string) =>
+  archiveWarehouseDoorErrorHandler(
+    id,
+    { code: 'E_WAREHOUSE_DOOR_ALREADY_ARCHIVED', message: 'Warehouse door is already archived' },
+    409,
+  )
+
+export const archiveWarehouseDoorInUseHandler = (id: string) =>
+  archiveWarehouseDoorErrorHandler(
+    id,
+    {
+      code: 'E_WAREHOUSE_DOOR_IN_USE',
+      message: 'Warehouse door is used by a planned or active discharge',
+    },
+    409,
+  )
+
+export const archiveWarehouseDoorNotFoundHandler = (id: string) =>
+  archiveWarehouseDoorErrorHandler(
+    id,
+    { code: 'E_WAREHOUSE_DOOR_NOT_FOUND', message: 'Warehouse door not found' },
+    404,
+  )
+
+export const archiveWarehouseDoorFailureHandler = (id: string, status = 500) =>
+  archiveWarehouseDoorErrorHandler(
+    id,
+    { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' },
+    status,
+  )
+
+/** Fails once, then succeeds — the retry-after-a-transient-failure path. */
+export function archiveWarehouseDoorRecoveringHandler(archived: ArchivedWarehouseDoorDto) {
+  let attempts = 0
+
+  return http.post(warehouseDoorArchiveUrl(archived.id), () => {
+    attempts += 1
+
+    return attempts === 1
+      ? HttpResponse.json(
+          { error: { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' } },
+          { status: 500 },
+        )
+      : HttpResponse.json({ data: archived })
   })
 }

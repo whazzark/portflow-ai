@@ -7,7 +7,7 @@
  * warehouse. Resources declare their noun; they never declare their own phrasing.
  */
 
-import { capitalize } from '@/helpers/resource-copy'
+import { confirmationMessage, namedRecord, refusalTitle } from '@/helpers/resource-copy'
 
 export type LifecycleAction = 'archive' | 'reactivate' | 'suspend' | 'return-to-service'
 
@@ -157,17 +157,24 @@ export function bulkLifecycleDialogTitle(action: LifecycleAction, plural: string
   return `${LIFECYCLE_ACTION_LABELS[action]} selected ${plural}?`
 }
 
-/** `Dock “North Dock” archived` — the record is named here for the same reason a refusal names
- * it: a toast is read out of context, and several actions may have been fired in a row. */
+/**
+ * `Dock “North Dock” archived` — the record is named here for the same reason a refusal names it: a
+ * toast is read out of context, and several actions may have been fired in a row.
+ *
+ * The sentence itself is `resource-copy.ts`'s, the one a creation and a rename are also reported
+ * with. A lifecycle change brings only its participle, so an administrator meets one way of being
+ * told a write landed, whichever write it was.
+ */
 export function lifecycleSuccessMessage(action: LifecycleAction, singular: string, name: string) {
-  return `${capitalize(singular)} “${name}” ${LIFECYCLE_PAST_PARTICIPLES[action]}`
+  return confirmationMessage(singular, name, LIFECYCLE_PAST_PARTICIPLES[action])
 }
 
 /** Names the resource, so an administrator who fired several actions can tell which was refused. */
 export function lifecycleFailureTitle(action: LifecycleAction, singular: string, name: string) {
-  return `Unable to ${LIFECYCLE_FAILURE_VERBS[action]} ${singular} “${name}”`
+  return refusalTitle(LIFECYCLE_FAILURE_VERBS[action], namedRecord(singular, name))
 }
 
+/** A selection has no single record to name, so the plural noun stands in as the subject. */
 export function bulkLifecycleFailureTitle(action: LifecycleAction, plural: string) {
-  return `Unable to ${LIFECYCLE_FAILURE_VERBS[action]} ${plural}`
+  return refusalTitle(LIFECYCLE_FAILURE_VERBS[action], plural)
 }

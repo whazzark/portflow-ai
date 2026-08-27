@@ -1,0 +1,415 @@
+openapi: 3.1.0
+info:
+  title: Portflow Warehouse Door Archive Contract
+  version: 1.0.0
+  description: >-
+    Write contract for Issue #215 Archive a Warehouse Door. Extends the warehouse-door write
+    contracts introduced by #213 (create) and #214 (update), themselves extensions of #212's read
+    contract. The WarehouseDoor schema below is #214's door object plus the four archive-context
+    members this slice adds to WarehouseDoorTransformer (research R5); the door objects embedded
+    under GET /api/v1/warehouses are produced by WarehouseTransformer and are unchanged by this
+    feature. Both operations require an authenticated, active organization or operations
+    administrator. Every eligibility rule is re-decided inside the write transaction, which locks
+    the containing warehouses (ordered by id) before the doors (ordered by id) — the order #210's
+    cascade takes — so a door can never be archived twice or have its archive context overwritten
+    by a concurrent warehouse archival (research R2, R3).
+paths:
+  /api/v1/warehouse-doors/archive:
+    post:
+      operationId: archiveWarehouseDoors
+      summary: Archive several warehouse doors in one action
+      description: >-
+        Archives every eligible door in the submission and leaves every ineligible one untouched,
+        reporting one specific reason per unchanged door. Declared before /{id}/archive in the
+        router, the ordering the warehouses and docks groups already carry. Every archived door in
+        one submission records the same archive time, administrator, and comment, and is recorded as
+        archived on its own (archivedWithWarehouse false), so a later reactivation of its warehouse
+        does not restore it. Either all eligible doors are archived or none are: a failure part-way
+        through rolls the whole transaction back. Doors of different warehouses may be submitted
+        together — each is evaluated against its own containing warehouse (research R12) — although
+        the interface only ever builds a selection within one warehouse.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArchiveWarehouseDoorsRequest"
+            examples:
+              withComment:
+                summary: Retire a condemned row of doors
+                value:
+                  ids:
+                    - 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f11
+                    - 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f12
+                  comment: North side condemned after the 2026 works
+              withoutComment:
+                summary: No comment supplied
+                value:
+                  ids:
+                    - 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f11
+      responses:
+        "200":
+          description: >-
+            The submission was processed. updatedDoors holds the doors archived, in submission
+            order; blockedDoors holds the ones left unchanged, each with exactly one reason. An
+            empty updatedDoors with a populated blockedDoors is a normal outcome, not an error.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BulkArchiveResult"
+              examples:
+                partial:
+                  summary: Two archived, three left unchanged
+                  value:
+                    data:
+                      updatedDoors:
+                        - id: 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f11
+                          warehouseId: 018f80c0-8799-7cb0-bb14-2d2c8d206a8c
+                          name: Door 1
+                          status: ARCHIVED
+                          latitude: 49.4931
+                          longitude: 0.1078
+                          archivedAt: "2026-08-27T14:03:07.000+02:00"
+                          archivedByUserId: 018f7f21-5d0e-7a55-9d0e-2c9a3f5b1a44
+                          archiveComment: North side condemned after the 2026 works
+                          archivedWithWarehouse: false
+                          createdAt: "2026-08-01T09:12:44.000+02:00"
+                          updatedAt: "2026-08-27T14:03:07.000+02:00"
+                      blockedDoors:
+                        - id: 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f13
+                          name: Door 3
+                          reason: IN_USE
+                        - id: 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f14
+                          name: Door 4
+                          reason: ALREADY_ARCHIVED
+                        - id: 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f15
+                          reason: NOT_FOUND
+                allBlocked:
+                  summary: Nothing archived, every door reported
+                  value:
+                    data:
+                      updatedDoors: []
+                      blockedDoors:
+                        - id: 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f13
+                          name: Door 3
+                          reason: IN_USE
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          description: >-
+            The submission itself is invalid and nothing was read or written: no id, a duplicate id,
+            a malformed uuid, or a comment longer than 1000 characters. Deliberately distinct from a
+            well-formed id that resolves to nothing, which is reported per door as NOT_FOUND.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                emptySelection:
+                  value:
+                    errors:
+                      - message: The ids field must have at least 1 items
+                        field: ids
+                        rule: array.minLength
+                duplicateSelection:
+                  value:
+                    errors:
+                      - message: The ids field has duplicate values
+                        field: ids
+                        rule: distinct
+                commentTooLong:
+                  value:
+                    errors:
+                      - message: The comment field must not be greater than 1000 characters
+                        field: comment
+                        rule: maxLength
+  /api/v1/warehouse-doors/{id}/archive:
+    post:
+      operationId: archiveWarehouseDoor
+      summary: Archive one warehouse door
+      description: >-
+        Archives one AVAILABLE door whose containing warehouse is AVAILABLE and which no Planned or
+        Active Discharge currently relies on. The door keeps its identity, name, position,
+        containing warehouse, creation time, and any earlier reactivation context; its containing
+        warehouse is not modified, including when the archived door was its last available one.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: >-
+            The door to archive. Deliberately not shape-validated: an identifier that cannot name a
+            row — malformed or merely absent — is one outcome for the client,
+            E_WAREHOUSE_DOOR_NOT_FOUND, never a server error.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArchiveWarehouseDoorRequest"
+            examples:
+              withComment:
+                value:
+                  comment: Walled up during the 2026 works
+              withoutComment:
+                value: {}
+      responses:
+        "200":
+          description: >-
+            The door was archived. status is ARCHIVED, the archive context is populated, and
+            archivedWithWarehouse is false — the door was retired on its own.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/WarehouseDoor"
+              examples:
+                archived:
+                  value:
+                    data:
+                      id: 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f11
+                      warehouseId: 018f80c0-8799-7cb0-bb14-2d2c8d206a8c
+                      name: Door 1
+                      status: ARCHIVED
+                      latitude: 49.4931
+                      longitude: 0.1078
+                      archivedAt: "2026-08-27T14:03:07.000+02:00"
+                      archivedByUserId: 018f7f21-5d0e-7a55-9d0e-2c9a3f5b1a44
+                      archiveComment: Walled up during the 2026 works
+                      archivedWithWarehouse: false
+                      createdAt: "2026-08-01T09:12:44.000+02:00"
+                      updatedAt: "2026-08-27T14:03:07.000+02:00"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: >-
+            The door does not exist, or its containing warehouse does not. No door was modified and
+            nothing is disclosed about other doors.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                doorNotFound:
+                  value:
+                    errors:
+                      - message: Warehouse door not found
+                        code: E_WAREHOUSE_DOOR_NOT_FOUND
+                warehouseNotFound:
+                  value:
+                    errors:
+                      - message: Warehouse not found
+                        code: E_WAREHOUSE_NOT_FOUND
+        "409":
+          description: >-
+            The door cannot be archived in its current state. Each condition is distinct so the
+            administrator can act on it: already archived (nothing to do, existing context
+            untouched), in use (release the work and retry), or the containing warehouse is archived
+            — a state unreachable from the interface, since archiving a warehouse cascades onto its
+            available doors, and defended here for crafted requests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                alreadyArchived:
+                  value:
+                    errors:
+                      - message: Warehouse door is already archived
+                        code: E_WAREHOUSE_DOOR_ALREADY_ARCHIVED
+                inUse:
+                  value:
+                    errors:
+                      - message: Warehouse door is used by a planned or active discharge
+                        code: E_WAREHOUSE_DOOR_IN_USE
+                warehouseArchived:
+                  value:
+                    errors:
+                      - message: Archived warehouses are read-only. Reactivate the warehouse first.
+                        code: E_WAREHOUSE_ARCHIVED
+        "422":
+          description: The comment exceeds 1000 characters. Nothing was written.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: adonis-session
+  responses:
+    Unauthenticated:
+      description: The session is missing, invalid, expired, or belongs to a user who is no longer active.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: >-
+        The authenticated user is active but is not an organization or operations administrator. No
+        door was modified.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    ArchiveWarehouseDoorRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        comment:
+          type: [string, "null"]
+          maxLength: 1000
+          description: >-
+            Optional. Surrounding whitespace is trimmed; an absent, empty, or whitespace-only value
+            records no comment at all rather than a blank one.
+    ArchiveWarehouseDoorsRequest:
+      type: object
+      additionalProperties: false
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          description: >-
+            The doors to archive. Lower-cased and de-duplicated by the shared lifecycle validator: an
+            empty array, a repeated id, or a malformed uuid is a 422 before any row is read. No
+            maximum is imposed, following the shared selection rule of the delivered bulk actions.
+        comment:
+          type: [string, "null"]
+          maxLength: 1000
+          description: One comment for the whole submission, copied onto every door it archives.
+    BulkArchiveResult:
+      type: object
+      required: [updatedDoors, blockedDoors]
+      properties:
+        updatedDoors:
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDoor"
+          description: The doors archived, in submission order.
+        blockedDoors:
+          type: array
+          items:
+            $ref: "#/components/schemas/BulkArchiveBlocker"
+          description: The doors left entirely unchanged, each with exactly one reason.
+    BulkArchiveBlocker:
+      type: object
+      required: [id, reason]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: >-
+            The door's own name, so the outcome can identify it to the administrator. Absent only
+            for NOT_FOUND, where no row exists to name.
+        reason:
+          type: string
+          enum: [NOT_FOUND, ALREADY_ARCHIVED, IN_USE]
+          description: >-
+            NOT_FOUND — the id resolves to no door. ALREADY_ARCHIVED — the door is archived, whether
+            on its own or through its warehouse; its existing context is untouched. IN_USE — the
+            door holds a current product lot assignment belonging to a Planned or Active Discharge
+            (#240 FR-006).
+    WarehouseDoor:
+      type: object
+      required:
+        - id
+        - warehouseId
+        - name
+        - status
+        - latitude
+        - longitude
+        - archivedAt
+        - archivedByUserId
+        - archiveComment
+        - archivedWithWarehouse
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        warehouseId:
+          type: string
+          format: uuid
+          description: Permanent; never changed by any warehouse-door operation.
+        name:
+          type: string
+          maxLength: 255
+          description: >-
+            Unique within the containing warehouse, case-insensitively and after trimming, across
+            both lifecycle states. Archiving does not release it.
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        archivedAt:
+          type: [string, "null"]
+          format: date-time
+        archivedByUserId:
+          type: [string, "null"]
+          format: uuid
+        archiveComment:
+          type: [string, "null"]
+        archivedWithWarehouse:
+          type: boolean
+          description: >-
+            False for a door archived on its own — what this slice writes — and true for one archived
+            through its warehouse's archival (#210). It is what lets a warehouse reactivation (#211)
+            restore exactly the doors that cascade archived.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+              code:
+                type: string
+              field:
+                type: string
+              rule:
+                type: string

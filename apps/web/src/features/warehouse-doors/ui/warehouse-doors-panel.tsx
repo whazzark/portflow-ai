@@ -1,5 +1,7 @@
 import { MapPinIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { WarehouseDoorStatusFilter } from '@/features/warehouse-doors/types'
 import { WarehouseDoorRowActions } from '@/features/warehouse-doors/ui/warehouse-door-row-actions'
@@ -24,7 +26,13 @@ export function WarehouseDoorsPanel({
   onStatusChange,
   onDoorSelect,
   onCreateDoor,
+  canAdministerDoors = false,
   onEditDoor,
+  selectMode = false,
+  checkedDoorIds,
+  onToggleChecked,
+  onSelectAll,
+  selectionAction,
 }: {
   warehouse: WarehouseWithDoorsDto
   status: WarehouseDoorStatusFilter
@@ -34,12 +42,36 @@ export function WarehouseDoorsPanel({
   /** Absent — rather than disabled — for anyone who may not add a door to this warehouse, and for
    * an archived warehouse, which is read-only until it is reactivated. */
   onCreateDoor?: () => void
-  /** Absent for anyone who may not administer this warehouse's doors; the per-row menu then
-   * renders nothing at all. Individual rows are gated again by their own lifecycle state. */
+  /** Whether this user may administer the warehouse's doors at all. False hides the per-row menu
+   * entirely — it is what carries the gate now that the menu holds a lifecycle action as well as
+   * `Edit`, which `onEditDoor` alone no longer describes. Individual rows are gated again by their
+   * own and their warehouse's lifecycle state, and the API re-decides both under lock. */
+  canAdministerDoors?: boolean
   onEditDoor?: (doorId: string) => void
+  /** Whether checking doors is offered at all. True for an administrator on an available
+   * warehouse's Available doors — there is no mode to enter, so a selection can start on the first
+   * click. Only available doors are checkable in this slice; selecting archived ones to bring them
+   * back is #216's. */
+  selectMode?: boolean
+  checkedDoorIds?: ReadonlySet<string>
+  onToggleChecked?: (doorId: string) => void
+  onSelectAll?: (checked: boolean, doorIds: string[]) => void
+  /** What the selection can be acted on with, rendered beside `Select all`. The caller passes it
+   * only once at least one door is checked, so the row stays quiet until there is something to act
+   * on. It sits here rather than in a floating bar because a bar hovering between this panel and
+   * the map legend is the one place an administrator does not look. */
+  selectionAction?: ReactNode
 }) {
   const counts = countWarehouseDoors(warehouse)
   const doors = sortDoors(filterWarehouseDoors(warehouse, status))
+  // Only the doors this view lists take part: a selection never reaches beyond the warehouse and
+  // the lifecycle view it was built in.
+  const selectableIds = selectMode
+    ? doors.filter((door) => door.status === 'AVAILABLE').map((door) => door.id)
+    : []
+  const checked = checkedDoorIds ?? new Set<string>()
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => checked.has(id))
+  const someSelected = selectableIds.some((id) => checked.has(id))
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -69,6 +101,18 @@ export function WarehouseDoorsPanel({
         </TabsList>
         {(Object.keys(labels) as WarehouseDoorStatusFilter[]).map((key) => (
           <TabsContent key={key} value={key} className="min-h-0 overflow-y-auto px-4 py-4">
+            {selectMode && selectableIds.length > 0 && (
+              <div className="mb-2 flex min-h-8 items-center gap-2">
+                <Checkbox
+                  aria-checked={someSelected && !allSelected ? 'mixed' : allSelected}
+                  aria-label={`Select all ${labels[key].toLowerCase()} doors`}
+                  checked={allSelected}
+                  onCheckedChange={(value) => onSelectAll?.(value === true, selectableIds)}
+                />
+                <span className="text-muted-foreground text-xs">Select all</span>
+                {selectionAction && <span className="ml-auto">{selectionAction}</span>}
+              </div>
+            )}
             {doors.length === 0 ? (
               <p className="text-muted-foreground text-sm">
                 No {labels[key].toLowerCase()} warehouse doors in this warehouse.
@@ -83,13 +127,21 @@ export function WarehouseDoorsPanel({
                   // background, and the hover and selected states for both children.
                   <li
                     className={classnames(
-                      'flex items-center gap-1 rounded-md border border-border bg-background pr-1 transition-colors',
+                      'flex items-center gap-1 rounded-md border border-border bg-background pr-1 pl-1 transition-colors',
                       'hover:bg-muted has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50',
                       'dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
                       door.id === selectedDoorId && 'border-primary bg-accent dark:bg-accent',
                     )}
                     key={door.id}
                   >
+                    {selectMode && door.status === 'AVAILABLE' && (
+                      <Checkbox
+                        aria-label={`Select door ${door.name}`}
+                        checked={checked.has(door.id)}
+                        className="ml-2"
+                        onCheckedChange={() => onToggleChecked?.(door.id)}
+                      />
+                    )}
                     <Button
                       aria-pressed={door.id === selectedDoorId}
                       className="h-auto min-w-0 flex-1 justify-start gap-2 bg-transparent px-3 py-3 text-left hover:bg-transparent focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent"
@@ -99,26 +151,39 @@ export function WarehouseDoorsPanel({
                       <MapPinIcon className="size-4 shrink-0" />
                       <span className="grid min-w-0">
                         <span className="truncate">{door.name}</span>
-                        <span className="text-muted-foreground text-xs">
-                          {door.status === 'AVAILABLE' ? 'Available' : 'Archived'} · {door.latitude}
-                          , {door.longitude}
-                        </span>
+                        {/* Neither the lifecycle status nor the coordinates are repeated here: the
+                            lifecycle tab above already says which state this list is showing, and a
+                            pair of decimals tells an administrator nothing the marker on the map
+                            does not show them better. Both remain available where they mean
+                            something — the marker's accessible label and tooltip carry the status,
+                            and the update panel carries the coordinates. */}
                         {door.status === 'ARCHIVED' && door.archivedAt && (
-                          <span className="truncate text-muted-foreground text-xs">
-                            {/* Naming the provenance is what keeps a door archived with its
-                                warehouse distinguishable from one retired on its own. Gated on the
-                                current status too: reactivation leaves `archivedAt` in place, so an
-                                available door would otherwise still claim it was archived. */}
-                            {door.archivedWithWarehouse
-                              ? 'Archived with this warehouse'
-                              : 'Archived on its own'}{' '}
-                            · {formatDateTime(door.archivedAt)}
-                            {door.archiveComment ? ` · ${door.archiveComment}` : ''}
-                          </span>
+                          <>
+                            <span className="truncate text-muted-foreground text-xs">
+                              {/* Naming the provenance is what keeps a door archived with its
+                                  warehouse distinguishable from one retired on its own. Gated on
+                                  the current status too: reactivation leaves `archivedAt` in place,
+                                  so an available door would otherwise still claim it was
+                                  archived. */}
+                              {door.archivedWithWarehouse
+                                ? 'Archived with this warehouse'
+                                : 'Archived on its own'}{' '}
+                              · {formatDateTime(door.archivedAt)}
+                            </span>
+                            {door.archiveComment && (
+                              // Its own line, and wrapped rather than truncated: a lifecycle comment
+                              // runs to 1,000 characters, and this row is the only place it can be
+                              // read — #212 forbids a door detail view, so an ellipsis here would
+                              // hide it for good.
+                              <span className="wrap-anywhere text-muted-foreground text-xs italic">
+                                {door.archiveComment}
+                              </span>
+                            )}
+                          </>
                         )}
                       </span>
                     </Button>
-                    {onEditDoor && (
+                    {canAdministerDoors && (
                       <WarehouseDoorRowActions
                         door={door}
                         onEdit={onEditDoor}

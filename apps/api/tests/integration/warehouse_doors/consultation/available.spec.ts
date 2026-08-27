@@ -48,6 +48,13 @@ test.group('GET /api/v1/warehouse-doors/available', (group) => {
         latitude: available.latitude,
         longitude: available.longitude,
         status: 'AVAILABLE',
+        // The archive context travels with every door the write contracts return, so the 200 from
+        // an archival (#215) can state what it recorded. Null here, and additive for this
+        // collection: no selector reads it.
+        archivedAt: null,
+        archivedByUserId: null,
+        archiveComment: null,
+        archivedWithWarehouse: false,
         createdAt: persisted.createdAt.toISO(),
         updatedAt: persisted.updatedAt.toISO(),
       },

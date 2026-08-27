@@ -205,6 +205,9 @@ export function WarehouseMap({
   doors = [],
   selectedDoorId,
   onDoorSelect,
+  doorSelectMode = false,
+  checkedDoorIds,
+  onToggleDoorChecked,
   placement,
   doorPlacement,
   editing,
@@ -224,6 +227,12 @@ export function WarehouseMap({
   doors?: WarehouseDoorDto[]
   selectedDoorId?: string
   onDoorSelect?: (door: WarehouseDoorDto) => void
+  /** While the door select mode is on, a marker click checks the door instead of highlighting it,
+   * and warehouse polygons stop being selectable so a stray click cannot switch warehouse
+   * mid-selection. */
+  doorSelectMode?: boolean
+  checkedDoorIds?: ReadonlySet<string>
+  onToggleDoorChecked?: (doorId: string) => void
   placement?: WarehouseMapPlacement
   doorPlacement?: WarehouseMapDoorPlacement
   editing?: WarehouseMapEditing
@@ -246,7 +255,9 @@ export function WarehouseMap({
   // A door placement of *either* kind owns the map: while a new door is being placed a click must
   // place it rather than select something, and while an existing one is being corrected a click
   // must select nothing at all. Only `armed` decides whether that click also places a point.
-  const suppressesSelection = isArmed || doorPlacement !== undefined
+  // The door select mode joins them: while it is on, the map acts on doors, so a polygon click
+  // must not move the selection out from under the administrator.
+  const suppressesSelection = isArmed || doorPlacement !== undefined || doorSelectMode
   // The door under correction is represented by its draft marker below instead of its ordinary one.
   const renderedDoors = doorPlacement?.doorId
     ? doors.filter((door) => door.id !== doorPlacement.doorId)
@@ -314,6 +325,16 @@ export function WarehouseMap({
               key={door.id}
               door={door}
               doors={renderedDoors}
+              // Defined only in select mode, and only for a door that may be archived: an archived
+              // door is not checkable in this slice.
+              checked={
+                doorSelectMode && door.status === 'AVAILABLE'
+                  ? (checkedDoorIds?.has(door.id) ?? false)
+                  : undefined
+              }
+              onToggleChecked={
+                doorSelectMode ? (checkable) => onToggleDoorChecked?.(checkable.id) : undefined
+              }
               // While a door is being placed, a click on an existing marker must place the pending
               // point rather than select that door — the map only places in this mode. While one is
               // being corrected, the marker takes no pointer event either: the click selects

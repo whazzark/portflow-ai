@@ -35,6 +35,9 @@ export function WarehouseMap({
   onSelect,
   doors = [],
   onDoorSelect,
+  doorSelectMode = false,
+  checkedDoorIds,
+  onToggleDoorChecked,
   placement,
   doorPlacement,
   editing,
@@ -54,6 +57,9 @@ export function WarehouseMap({
   doors?: WarehouseDoorDto[]
   selectedDoorId?: string
   onDoorSelect?: (door: WarehouseDoorDto) => void
+  doorSelectMode?: boolean
+  checkedDoorIds?: ReadonlySet<string>
+  onToggleDoorChecked?: (doorId: string) => void
   placement?: WarehouseMapPlacement
   doorPlacement?: WarehouseMapDoorPlacement
   editing?: WarehouseMapEditing
@@ -131,29 +137,52 @@ export function WarehouseMap({
           </button>
         )
       })}
-      {renderedDoors.map((door) => (
-        <button
-          key={door.id}
-          // While a door is being placed the real marker takes no pointer event at all, so the
-          // click lands on the map underneath and places the pending door instead of selecting
-          // this one. Mirrors `pointer-events-none` in `warehouse-door-marker.tsx`.
-          // While a door is being *corrected* the map places nothing, so the click reaches neither
-          // this marker nor the draft: it simply does nothing.
-          onClick={() => {
-            if (isPlacingDoor) {
-              doorPlacement?.onPlace(MOCK_DOOR_CLICK_POINTS[doorPlacement.pending ? 1 : 0])
-              return
+      {renderedDoors.map((door) => {
+        // Checkable only in select mode, and only when the door may be archived — an archived door
+        // is not selectable in this slice. Mirrors `warehouse-map.tsx`.
+        const checked =
+          doorSelectMode && door.status === 'AVAILABLE'
+            ? (checkedDoorIds?.has(door.id) ?? false)
+            : undefined
+
+        return (
+          <button
+            // Only in select mode: outside it the marker keeps the text content the delivered
+            // consultation and placement tests address it by, exactly as the real marker keeps its
+            // "View warehouse door …" label.
+            aria-label={
+              checked === undefined
+                ? undefined
+                : `${checked ? 'Deselect' : 'Select'} door ${door.name}`
             }
-            if (isEditingDoor) {
-              return
-            }
-            onDoorSelect?.(door)
-          }}
-          type="button"
-        >
-          {door.name} door marker
-        </button>
-      ))}
+            aria-pressed={checked}
+            data-checked={checked}
+            key={door.id}
+            // While a door is being placed the real marker takes no pointer event at all, so the
+            // click lands on the map underneath and places the pending door instead of selecting
+            // this one. Mirrors `pointer-events-none` in `warehouse-door-marker.tsx`.
+            // While a door is being *corrected* the map places nothing, so the click reaches neither
+            // this marker nor the draft: it simply does nothing.
+            onClick={() => {
+              if (isPlacingDoor) {
+                doorPlacement?.onPlace(MOCK_DOOR_CLICK_POINTS[doorPlacement.pending ? 1 : 0])
+                return
+              }
+              if (isEditingDoor) {
+                return
+              }
+              // Checks *and* highlights, as the real marker does: one target, both gestures.
+              if (checked !== undefined) {
+                onToggleDoorChecked?.(door.id)
+              }
+              onDoorSelect?.(door)
+            }}
+            type="button"
+          >
+            {door.name} door marker
+          </button>
+        )
+      })}
       {isPlacingDoor && (
         <>
           <button

@@ -318,6 +318,18 @@ const routes = {
     tokens: [{"old":"/api/v1/warehouse-doors/:id","type":0,"val":"api","end":""},{"old":"/api/v1/warehouse-doors/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouse-doors/:id","type":0,"val":"warehouse-doors","end":""},{"old":"/api/v1/warehouse-doors/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['warehouse_doors.update']['types'],
   },
+  'warehouse_doors.archive_many': {
+    methods: ["POST"],
+    pattern: '/api/v1/warehouse-doors/archive',
+    tokens: [{"old":"/api/v1/warehouse-doors/archive","type":0,"val":"api","end":""},{"old":"/api/v1/warehouse-doors/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouse-doors/archive","type":0,"val":"warehouse-doors","end":""},{"old":"/api/v1/warehouse-doors/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['warehouse_doors.archive_many']['types'],
+  },
+  'warehouse_doors.archive': {
+    methods: ["POST"],
+    pattern: '/api/v1/warehouse-doors/:id/archive',
+    tokens: [{"old":"/api/v1/warehouse-doors/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/warehouse-doors/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouse-doors/:id/archive","type":0,"val":"warehouse-doors","end":""},{"old":"/api/v1/warehouse-doors/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/warehouse-doors/:id/archive","type":0,"val":"archive","end":""}],
+    types: placeholder as Registry['warehouse_doors.archive']['types'],
+  },
   'warehouses.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/warehouses',
