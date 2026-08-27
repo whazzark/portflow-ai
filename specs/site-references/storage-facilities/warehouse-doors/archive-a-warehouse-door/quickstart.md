@@ -84,39 +84,50 @@ Authenticate as an authorized administrator and open `/warehouses`.
 
 ### Several doors
 
-14. **Entering the mode.** With an available warehouse selected, press `Select doors` in the Doors
-    panel header. Confirm checkboxes appear on every available door row with a `Select all` header
-    above them, the door markers become checkable, and `Create door` and the row menus still work.
-    *(FR-039, FR-040)*
+14. **No mode to enter.** Select an available warehouse. Confirm checkboxes are already on every
+    available door row with a `Select all` above them, the door markers are already checkable, and
+    `Create door` and the row menus still work. Confirm no `Select doors` control exists and the URL
+    gains nothing. *(FR-039, FR-040, research R7)*
 15. **Scope of the selection.** Check two doors, then switch to the Archived view: the selection
-    empties. Return, check two again, then select **another warehouse**: the selection empties and
-    the mode ends. Neither leaves a hidden door queued. *(FR-040)*
+    empties. Return to Available: it is **still** empty. Check two again, then select **another
+    warehouse** and come back: empty again. Neither leaves a hidden door queued. *(FR-040)*
 16. **Mode exclusivity.** With doors checked, activate `Create door`, then a door `Edit`, then
-    `Select warehouses`. Each must end the door selection before its own mode opens, and the URL must
-    never carry two modes at once. *(FR-041)*
-17. **Map and list agree.** Check a door in the list and confirm its marker rings; toggle a marker and
-    confirm the row's checkbox follows. Confirm a marker click no longer merely highlights while the
-    mode is on. *(FR-039, research R7)*
-18. **Keyboard.** With the mode on, use the select-all shortcut and confirm it selects the **doors**
-    listed, not the warehouses, and that the clear shortcut empties the door selection. Leave the
-    mode and confirm the warehouse bindings are back. *(research R8)*
-19. **Archiving a mixed selection.** Select four doors: two eligible, one in use, one already
-    archived. Confirm the bar reads `4 selected`, the confirmation counts four, and after submitting:
+    `Select warehouses`. Each must empty the selection before its own mode opens — and **cancelling**
+    the creation or the edit must not bring it back. *(FR-041)*
+17. **Count and clear.** Check two doors and confirm the selection row reads `2 selected` beside
+    `Archive selected`. Press `Clear selection`: every checkbox clears and the row goes quiet.
+    *(FR-039, FR-042)*
+18. **The row menu and the selection agree.** Check two doors in a warehouse that has a third, then
+    archive one of the checked doors through **its own row menu**. Confirm the row leaves the
+    Available list and the count drops to `1 selected`, so `Archive selected` cannot resubmit it.
+    *(FR-040)*
+19. **Map and list agree.** Check a door in the list and confirm its marker rings; click a marker and
+    confirm it both checks the row and highlights the door. With nothing checked, confirm another
+    warehouse's polygon is still clickable; with one door checked, confirm it is not. *(FR-039,
+    research R7)*
+20. **Keyboard.** Confirm the select-all and clear shortcuts still act on the **warehouses** on the
+    map, whether or not doors are checked: doors carry no binding of their own. *(research R8)*
+21. **Archiving a mixed selection.** Select four doors: two eligible, one in use, one already
+    archived. Confirm the row reads `4 selected`, the confirmation counts four, and after submitting:
     the two eligible ones are archived, the toast reports `2 doors archived; 2 doors unchanged` with
     a reason per door, and the two blocked ones are untouched. *(FR-032, FR-033, FR-038)*
-20. **Identical metadata.** Confirm both newly archived doors carry the **same** archive time, the
+22. **Identical metadata.** Confirm both newly archived doors carry the **same** archive time, the
     same administrator, and the same comment, and that both read `Archived on its own`.
     *(FR-034, FR-011)*
-21. **Retry path.** Confirm the in-use door is still checked after the submission and the
-    already-archived one is not; release the blocking work and retry the bar without reselecting.
-    *(FR-039, research R9)*
-22. **All blocked.** Select only blocked doors and submit. Expect nothing archived, a message saying
+23. **Retry path.** Confirm the in-use door is still checked after the submission and the
+    already-archived one is not; release the blocking work and retry `Archive selected` without
+    reselecting. *(FR-039, research R9)*
+24. **All blocked.** Select only blocked doors and submit. Expect nothing archived, a message saying
     so, and one reason per door. *(FR-032, FR-033)*
-23. **Unknown id.** Load `/warehouses?...&selecting=doors`, check doors, and have one of them deleted
-    or renamed out of existence server-side — or replay the request with an unknown uuid. Expect that
-    id reported `not found` while the others are still archived. *(FR-033)*
-24. **Authorization.** As the Observer, confirm `Select doors` is not rendered and that
-    `selecting=doors` in the URL is inert. *(FR-002, FR-030)*
+25. **Unknown id.** Check doors and have one of them deleted server-side — or replay the request with
+    an unknown uuid. Expect that id reported `not found` while the others are still archived.
+    *(FR-033)*
+26. **Door of an archived warehouse.** Only reachable by replaying the bulk request: craft a
+    submission naming an available door whose warehouse is archived. Expect it reported
+    `its warehouse is archived` while its eligible siblings are archived, matching the single path's
+    `E_WAREHOUSE_ARCHIVED`. *(FR-033)*
+27. **Authorization.** As the Observer, confirm no checkbox, no `Select all`, and no selection row is
+    rendered on any warehouse. *(FR-002, FR-030)*
 
 ## Contract checks with curl
 

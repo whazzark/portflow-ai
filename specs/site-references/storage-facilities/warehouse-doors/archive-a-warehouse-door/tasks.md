@@ -15,9 +15,11 @@ declares `create`, `updateAvailable`, and `listAvailable`; `WarehouseDoorPolicy`
 **No migration is needed** — `warehouse_doors` already carries `status`, `archived_at`,
 `archived_by_user_id`, `archive_comment`, and `archived_with_warehouse`, the last added by #210 for
 the cascade. **No new shared component is needed** — `ResourceRowActions` was adopted empty by #214
-for this slice to fill, and `ResourceLifecycleDialog` and `BulkResourceLifecycleActions` are consumed
-**with no override at all**: a door cascades onto nothing, and the default `IN_USE` blocker label is
-already accurate for a door (`research.md` R9, R10).
+for this slice to fill, and `ResourceLifecycleDialog` and `BulkResourceLifecycleDialog` are consumed
+with no `describeEffect` and no overridden blocker label: a door cascades onto nothing, and the
+default `IN_USE` label is already accurate for a door (`research.md` R9, R10). See
+**Deviations recorded after delivery** at the end of this file for where the plan below and the
+delivered slice differ.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -29,9 +31,10 @@ already accurate for a door (`research.md` R9, R10).
 
 ## Phase 1: Setup
 
-**Purpose**: Widen the warehouses route's URL contract to carry the fourth map mode.
+**Purpose**: Widen the warehouses route's URL contract to carry the fourth map mode. *(Superseded —
+no URL change was needed; see "Deviations recorded after delivery".)*
 
-- [X] T001 Widen `selecting` from `z.enum(['warehouses'])` to `z.enum(['warehouses', 'doors']).optional().catch(undefined)` in `warehouseSearchSchema` in `apps/web/src/routes/_authenticated/warehouses.tsx`, leaving every other param untouched, and extend the existing comment to record that `selecting=doors` is honoured only for an administrator, only alongside a `warehouseId` naming an **available** warehouse, and only in the Available door view — and that, unlike `selecting=warehouses`, it **keeps** `warehouseId` (`contracts/warehouse-door-archive-ui-state.md` §"URL contract", `research.md` R7)
+- [X] T001 ~~Widen `selecting` from `z.enum(['warehouses'])` to `z.enum(['warehouses', 'doors']).optional().catch(undefined)` in `warehouseSearchSchema` in `apps/web/src/routes/_authenticated/warehouses.tsx`, leaving every other param untouched, and extend the existing comment to record that `selecting=doors` is honoured only for an administrator, only alongside a `warehouseId` naming an **available** warehouse, and only in the Available door view — and that, unlike `selecting=warehouses`, it **keeps** `warehouseId` (`contracts/warehouse-door-archive-ui-state.md` §"URL contract", `research.md` R7)~~
 
 ---
 
@@ -107,10 +110,10 @@ specific reason (`spec.md` US2).
 
 ### Tests for User Story 2 (write and observe RED first)
 
-- [X] T022 [P] [US2] Extend `apps/api/tests/integration/warehouse_doors/lifecycle/archive.spec.ts` with the refusal matrix: 401 unauthenticated and non-active; 403 for each active non-administrator role; 404 for an unknown and for a malformed door id (never a 500); 409 `E_WAREHOUSE_DOOR_ALREADY_ARCHIVED` on a second attempt **and** on a door archived *with* its warehouse, whose `archivedWithWarehouse: true`, time, actor, and comment must all survive untouched; 409 `E_WAREHOUSE_DOOR_IN_USE`; 409 `E_WAREHOUSE_ARCHIVED` for a door of an archived warehouse; and, after every one of them, the stored row is unchanged column for column (`quickstart.md` scenarios 2, 11, 13, 24; FR-002 to FR-006, FR-025)
+- [X] T022 [P] [US2] Extend `apps/api/tests/integration/warehouse_doors/lifecycle/archive.spec.ts` with the refusal matrix: 401 unauthenticated and non-active; 403 for each active non-administrator role; 404 for an unknown and for a malformed door id (never a 500); 409 `E_WAREHOUSE_DOOR_ALREADY_ARCHIVED` on a second attempt **and** on a door archived *with* its warehouse, whose `archivedWithWarehouse: true`, time, actor, and comment must all survive untouched; 409 `E_WAREHOUSE_DOOR_IN_USE`; 409 `E_WAREHOUSE_ARCHIVED` for a door of an archived warehouse; and, after every one of them, the stored row is unchanged column for column (`quickstart.md` scenarios 2, 11, 13, 27; FR-002 to FR-006, FR-025)
 - [X] T023 [US2] Add a failing API integration test for the usage boundaries in `apps/api/tests/integration/warehouse_doors/lifecycle/archive.spec.ts`: a door involved only through a **Closed** discharge, one whose door assignment has **ended**, and one that belongs to a planned or active **shift without a current product lot assignment** are each archived successfully — the shared rule (`#240` FR-006) and nothing wider (`quickstart.md` scenario 12; FR-007, FR-008)
 - [X] T024 [P] [US2] Extend `apps/api/tests/unit/warehouse_doors/warehouse_door_policy.spec.ts` to the full matrix for `archive`: every role and every access status, including an inactive administrator
-- [X] T025 [P] [US2] Add a failing web permissions test in `apps/web/src/features/warehouse-doors/__tests__/archive/permissions.test.tsx`: no action menu at all for a non-administrator; none on an archived door row; none on any door of an archived warehouse; and a direct `?selecting=doors` URL is inert for a non-administrator (`quickstart.md` scenarios 1, 2, 24; FR-002, FR-027, FR-030)
+- [X] T025 [P] [US2] Add a failing web permissions test in `apps/web/src/features/warehouse-doors/__tests__/archive/permissions.test.tsx`: no action menu at all for a non-administrator; none on an archived door row; none on any door of an archived warehouse; and a direct `?selecting=doors` URL is inert for a non-administrator (`quickstart.md` scenarios 1, 2, 27; FR-002, FR-027, FR-030)
 
 ### Implementation for User Story 2
 
@@ -162,9 +165,9 @@ reason, and that the blocked ones can be retried on their own (`spec.md` US4).
 ### Tests for User Story 4 (write and observe RED first)
 
 - [X] T033 [P] [US4] Add failing API unit tests for the blocker helper in `apps/api/tests/unit/warehouse_doors/lifecycle/bulk_archive.spec.ts`: `NOT_FOUND` for an id resolving to nothing (and no `name`), `ALREADY_ARCHIVED` for an archived door, `IN_USE` for a used one, no blocker for an eligible one, and submission order preserved in the eligible set — mirroring `tests/unit/docks/lifecycle/bulk_archive.spec.ts` (`data-model.md` §"Blocker helper")
-- [X] T034 [P] [US4] Add a failing API integration test in `apps/api/tests/integration/warehouse_doors/lifecycle/bulk_archive.spec.ts`: a mixed submission returns 200 archiving only the eligible doors, with one reason per blocked door; every door archived by one submission carries the **same** `archivedAt`, `archivedByUserId`, and `archiveComment`, and `archivedWithWarehouse: false`; an all-blocked submission returns an empty `updatedDoors` rather than an error; a submission spanning two warehouses is accepted and each door answers for its own; 422 for an empty, duplicated, or malformed `ids` and for an over-long comment, with nothing read or written; and a failure part-way through leaves **no** door archived (`quickstart.md` scenarios 19–23; FR-031 to FR-038, `research.md` R12)
-- [X] T035 [P] [US4] Add a failing web selection test in `apps/web/src/features/warehouse-doors/__tests__/archive/selection.test.tsx`: `Select doors` appears in the Doors panel header only for an administrator on an available warehouse; pressing it sets `selecting=doors` while **keeping** `warehouseId`; available rows gain checkboxes under a `Select all` header; checking a row rings its marker and toggling a marker checks its row; switching to the Archived view, selecting another warehouse, or starting a create/edit session empties the selection and ends the mode; activating `Select warehouses` replaces the mode and clears `warehouseId` as it already does; and the select-all and clear shortcuts act on **doors** while the mode is on and on warehouses once it is off (`quickstart.md` scenarios 14–18; FR-039 to FR-042, `research.md` R7, R8)
-- [X] T036 [P] [US4] Add a failing web bulk test in `apps/web/src/features/warehouse-doors/__tests__/archive/bulk.test.tsx`: the bar appears at the first check reading `N selected` with `Archive selected` and `Clear selection`; the confirmation counts the selection and offers one comment; a partial outcome toasts `N doors archived; M doors unchanged` with `<name>: <reason>` per blocked door using the **default** labels; an all-blocked outcome reports that nothing changed; after a submission only the `IN_USE` ids stay checked; and a refused request keeps the dialog open with the selection and comment intact (`quickstart.md` scenarios 19–22; `contracts/warehouse-door-archive-ui-state.md` §"Outcome reporting", `research.md` R9)
+- [X] T034 [P] [US4] Add a failing API integration test in `apps/api/tests/integration/warehouse_doors/lifecycle/bulk_archive.spec.ts`: a mixed submission returns 200 archiving only the eligible doors, with one reason per blocked door; every door archived by one submission carries the **same** `archivedAt`, `archivedByUserId`, and `archiveComment`, and `archivedWithWarehouse: false`; an all-blocked submission returns an empty `updatedDoors` rather than an error; a submission spanning two warehouses is accepted and each door answers for its own; 422 for an empty, duplicated, or malformed `ids` and for an over-long comment, with nothing read or written; and a failure part-way through leaves **no** door archived (`quickstart.md` scenarios 21–26; FR-031 to FR-038, `research.md` R12)
+- [X] T035 [P] [US4] Add a failing web selection test in `apps/web/src/features/warehouse-doors/__tests__/archive/selection.test.tsx`: `Select doors` appears in the Doors panel header only for an administrator on an available warehouse; pressing it sets `selecting=doors` while **keeping** `warehouseId`; available rows gain checkboxes under a `Select all` header; checking a row rings its marker and toggling a marker checks its row; switching to the Archived view, selecting another warehouse, or starting a create/edit session empties the selection and ends the mode; activating `Select warehouses` replaces the mode and clears `warehouseId` as it already does; and the select-all and clear shortcuts act on **doors** while the mode is on and on warehouses once it is off (`quickstart.md` scenarios 14–20; FR-039 to FR-042, `research.md` R7, R8)
+- [X] T036 [P] [US4] Add a failing web bulk test in `apps/web/src/features/warehouse-doors/__tests__/archive/bulk.test.tsx`: the bar appears at the first check reading `N selected` with `Archive selected` and `Clear selection`; the confirmation counts the selection and offers one comment; a partial outcome toasts `N doors archived; M doors unchanged` with `<name>: <reason>` per blocked door using the **default** labels; an all-blocked outcome reports that nothing changed; after a submission only the `IN_USE` ids stay checked; and a refused request keeps the dialog open with the selection and comment intact (`quickstart.md` scenarios 21–24; `contracts/warehouse-door-archive-ui-state.md` §"Outcome reporting", `research.md` R9)
 
 ### Implementation for User Story 4
 
@@ -189,7 +192,7 @@ path. The slice is feature-complete.
 - [X] T047 [P] Run the regression guard from `quickstart.md`: `warehouse-doors/__tests__/{consultation,feedback,markers}.test.tsx`, `warehouse-doors/__tests__/{create,update}/*`, and `warehouses/__tests__/{consultation,warehouses-page,warehouse-map,select-mode,selection-scope,keyboard-shortcuts,bulk-archive}.test.tsx` must pass unchanged in substance, proving the fourth map mode altered nothing about how warehouses and doors are browsed, created, corrected, or bulk-archived
 - [X] T048 [P] Verify `warehouse_doors.available` (#212) and the 201 from `warehouse_doors.store` (#213) still serialize correctly with the four archive members added by T004, and that the doors embedded under `GET /api/v1/warehouses` are byte-for-byte unchanged
 - [X] T049 Run `pnpm check`, `pnpm typecheck`, `pnpm --filter @portflow/api test`, `pnpm --filter @portflow/web test`, and `pnpm test`, and fix everything they surface
-- [ ] T050 Walk `quickstart.md` scenarios 1–24 manually in the browser against seeded data, including the in-use refusal, the last-available-door case, and the mixed bulk selection (Constitution Principle VII)
+- [ ] T050 Walk `quickstart.md` scenarios 1–27 manually in the browser against seeded data, including the in-use refusal, the last-available-door case, and the mixed bulk selection (Constitution Principle VII)
 - [ ] T051 Obtain a fresh read-only review of the final diff and resolve or explicitly justify every confirmed finding (Constitution Principle VII)
 
 ---
@@ -265,18 +268,47 @@ User Story 2's usage check.
 5. Add User Story 4 → several doors in one action, with a partial outcome and a retry path.
 6. Polish → cross-slice guarantee, regression guard, full suite, manual walk, fresh review.
 
+### Deviations recorded after delivery
+
+The task descriptions above are kept as they were planned; delivery diverged from four of them, and
+`contracts/warehouse-door-archive-ui-state.md`, `research.md` (R7, R8, R9), `plan.md`, and
+`quickstart.md` have been realigned on what was actually built. The differences:
+
+- **T001 was not carried out, and is not needed.** `selecting` still reads `z.enum(['warehouses'])`.
+  Checking doors is offered, never entered — opening an available warehouse's Available doors as an
+  administrator already puts the checkboxes there — so there is no mode for a URL to carry, and the
+  checked set lives in component state (research R7). The permission, warehouse-status, door-view,
+  and concurrent-mode conditions T001 would have documented are unchanged; they now gate the offer
+  rather than a param value.
+- **T042 delivers no `Select doors` / `Stop selecting doors` header control**, for the same reason.
+  The `Select all` checkbox, the per-row checkboxes, and the selection row beside them are the whole
+  affordance.
+- **T044 renders `BulkResourceLifecycleDialog`, not `BulkResourceLifecycleActions`.** The toolbar
+  half of that component is the floating map bar; this selection lives in the Doors panel, so the
+  panel owns the toolbar's trio — `N selected`, `Archive selected`, `Clear selection` — and hands the
+  dialog the same props (research R9). It also passes one `blockerReasonLabels` entry after all:
+  `WAREHOUSE_ARCHIVED`, which the shared four have no label for.
+- **T044 rebinds no keyboard shortcut.** `useSelectAllShortcut` and `useClearSelectionShortcut` stay
+  bound to the warehouses on the map; rebinding follows from a mode, and there is none (research R8).
+
+Two consequences of "offered, never entered" are load-bearing and were **not** in the original plan:
+the map suppresses polygon selection only once a door is actually checked (otherwise every other
+warehouse is unclickable on every open available warehouse), and `warehouses-page.tsx` carries two
+effects — one dropping the checked set when its context goes, one pruning ids the Available list no
+longer holds — where a URL param would have made both fall out of the shape.
+
 ### Notes
 
 - `[P]` tasks touch different files and carry no dependency on an incomplete task in the same phase.
-- No migration, no new shared component, and no override on the shared lifecycle copy: T020 fills the
-  container #214 chose, T044 passes the bulk bar nothing but nouns, and both the confirmation
-  sentence and the `IN_USE` blocker label are already accurate for a door as written.
+- No migration and no new shared component: T020 fills the container #214 chose, and both the
+  confirmation sentence and the `IN_USE` blocker label are already accurate for a door as written.
 - T016 and T038 are the two tasks where correctness is bought: the warehouse-then-door lock order and
   the explicit `archivedWithWarehouse: false` are what keep #210's cascade and this slice from
   archiving the same door twice with conflicting context.
 - The blocker helper (T037) is written with the `expectedStatus` parameter its two delivered siblings
-  carry, so #216 reuses it rather than writing a third copy — but this slice delivers no reactivation
-  path (FR-043).
+  carry, plus a required `availableWarehouseIds` set: a door may only be moved while its containing
+  warehouse is available, whichever direction the transition goes. #216 reuses it rather than writing
+  a third copy — but this slice delivers no reactivation path (FR-043).
 - Commit after each task or logical group, using Conventional Commits on
   `feat/215-archive-warehouse-door`.
 - Stop at any checkpoint to validate a story independently.

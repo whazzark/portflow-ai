@@ -3,42 +3,44 @@
 **Feature**: [spec.md](../spec.md) | **Plan**: [plan.md](../plan.md) | **API**: [warehouse-doors-archive.openapi.yaml](./warehouse-doors-archive.openapi.yaml)
 
 Defines the observable state of `/warehouses` while doors are archived, one at a time or several at
-once. This is the contract the web tests assert against. It adds the **fourth map mode** on that
-route, and the second one scoped to the selected warehouse rather than to the page.
+once. This is the contract the web tests assert against.
 
 ## URL contract
 
-The route `/_authenticated/warehouses` widens one existing search param.
+The route `/_authenticated/warehouses` gains **no new search param and no new value**. Existing
+params (`status`, `search`, `warehouseId`, `doorId`, `doorStatus`, `create`, `edit`, `selecting`)
+keep exactly the meaning they had, `selecting` included: it still holds `'warehouses'` or nothing.
 
-| Param | Values | Meaning |
-|---|---|---|
-| `selecting` | `'warehouses'` \| `'doors'` \| absent | Which select mode is active. One param holding one value is what makes the two mutually exclusive by shape rather than by effect (FR-041). Deep-linkable. |
+Checking doors is **offered, never entered**, so there is no mode for a URL to carry. Opening an
+available warehouse's Available doors as an administrator is the whole gesture: the checkboxes are
+already there. What a URL would have to restore is therefore not a mode but a *queue of ids*, which
+is transient by nature — it names records the collection may no longer hold by the time the link is
+opened — so the checked set lives in component state and is not deep-linkable.
 
-Existing params (`status`, `search`, `warehouseId`, `doorId`, `doorStatus`, `create`, `edit`) keep
-their meaning. Door selection additionally **requires** `warehouseId` to name a warehouse present in
-the collection and `AVAILABLE`, and `doorStatus` to be `available` (or absent and defaulting to it).
+**Checking doors is offered** iff all of: the user is an administrator, a warehouse matching
+`warehouseId` is found and is `AVAILABLE`, the door view is `available` (`doorStatus` absent and
+defaulting to it counts), and no creation or update mode is armed (`create` and `edit` absent). Any
+other combination — a missing permission, a missing or unknown id, an archived warehouse, the
+Archived door view, a concurrent mode — renders **ordinary consultation**: no checkboxes, no
+selection row, markers that select rather than check (FR-002, FR-027, FR-040).
 
-**Door selection is active** iff all of: `selecting === 'doors'`, the user is an administrator, a
-warehouse matching `warehouseId` is found and is `AVAILABLE`, and no creation or update mode is armed
-(`create` and `edit` absent). Any other combination — a missing permission, a missing or unknown id,
-an archived warehouse, the Archived door view, a concurrent mode — renders **ordinary consultation**:
-no checkboxes, no bulk bar, markers that select rather than check (FR-002, FR-027, FR-040).
-
-Unlike `selecting='warehouses'`, which clears `warehouseId` when it is entered, `selecting='doors'`
-**keeps the warehouse selected**: the Doors panel is the surface it acts on (research R7).
+Being offered costs the administrator nothing on its own. In particular the warehouse polygons stay
+selectable while no door is checked; what a checked door suppresses is described under
+"Map behaviour" below.
 
 **Transitions**
 
 | From | Action | To |
 |---|---|---|
-| Consultation, available warehouse selected, administrator | `Select doors` in the Doors panel header | `selecting='doors'`, `warehouseId` and `doorStatus='available'` kept, `doorId` cleared |
-| Door selection | `Select doors` again, or `Clear selection` in the bar, or `Escape` | Checked set emptied; the mode ends on the control, stays on the clear (mirrors the warehouse mode) |
-| Door selection | Switch to the Archived door view | Checked set emptied — nothing is selectable there in this slice (FR-040, US4 §9) |
-| Door selection | Select another warehouse, or deselect the current one | Checked set emptied and `selecting` cleared: a door of another warehouse can never enter the set |
-| Door selection | Activate `Create door` or a door/warehouse `Edit` | Checked set emptied and `selecting` cleared before the session opens (FR-041) |
-| Door selection | Activate `Select warehouses` | `selecting='doors'` is replaced by `'warehouses'`, which clears `warehouseId` as it already does |
-| Door selection | Successful bulk archival | Checked set narrowed to the ids blocked `IN_USE`; the mode stays on so they can be retried (FR-039, research R9) |
-| Door selection | Refused or failed bulk archival | Unchanged — the whole selection and the typed comment are preserved (FR-025) |
+| Consultation, available warehouse selected, administrator | Check a door row, a door marker, or `Select all` | The id joins the checked set; the selection row gains `N selected`, `Archive selected`, and `Clear selection` |
+| Checked doors | `Clear selection` in the selection row, or unchecking the last row | Checked set emptied; nothing else changes — there was no mode to leave |
+| Checked doors | Switch to the Archived door view, and back | Checked set emptied for good — nothing is selectable there in this slice, and returning must not resurrect a queue the administrator watched disappear (FR-040, US4 §9) |
+| Checked doors | Select another warehouse, or deselect the current one | Checked set emptied: a door of another warehouse can never enter the set, and reopening the same warehouse starts from empty (FR-040) |
+| Checked doors | Activate `Create door` or a door/warehouse `Edit` | Checked set emptied before the session opens, and **cancelling that session does not bring it back** (FR-041) |
+| Checked doors | Activate `Select warehouses` | The warehouse mode clears `warehouseId` as it already does, which empties the checked set with the panel |
+| Checked doors | A door of the set leaves the Available list — archived from its own row menu, or by another administrator between two refetches | That id is dropped from the checked set: `Archive selected` never submits a door the view does not list (FR-040) |
+| Checked doors | Successful bulk archival | Checked set narrowed to the ids blocked `IN_USE`, so they can be retried without reselecting (FR-039, research R9) |
+| Checked doors | Refused or failed bulk archival | Unchanged — the whole selection and the typed comment are preserved (FR-025) |
 | Consultation | Successful single archival | Nothing forced: the door leaves the Available view, the existing effect clears `doorId`, the warehouse stays selected (research R11) |
 
 The Doors panel has no search, so no search-versus-selection rule exists here — unlike warehouses,
@@ -56,7 +58,7 @@ Every door row hosts `ResourceRowActions`, delivered empty by #214. This slice f
 | Administrator, door `ARCHIVED` | **Not rendered at all** — no edit, no lifecycle action yet (#216 fills this) |
 | Administrator, warehouse `ARCHIVED` | **Not rendered** — every door under it is archived |
 | Non-administrator | **Not rendered** (FR-002) |
-| Door selection active | Rendered as above; the two gestures coexist without one shadowing the other |
+| Doors checked | Rendered as above; the two gestures coexist without one shadowing the other. Archiving through the menu drops that door from the checked set with the row it removes |
 
 `Archive` opens `ResourceLifecycleDialog` — the same confirmation a dock, a truck, or a warehouse
 opens:
@@ -70,21 +72,27 @@ opens:
 | On success | Dialog closes, toast `Door archived`, warehouse collection invalidated |
 | On refusal | **Dialog stays open with the typed comment intact**; the refusal is shown as a toast naming the door, and the collection is refreshed so the view stops being stale (FR-024, FR-026) |
 
-### Several doors — the panel select mode
+### Several doors — the panel selection row
+
+There is no control to press first: the affordances below are present whenever checking is offered.
 
 | Element | Behaviour |
 |---|---|
-| `Select doors` | A control in the Doors panel header, beside `Create door`. Rendered only for an administrator on an available warehouse. Pressed state while the mode is on; label `Stop selecting doors` then |
 | `Select all` | A checkbox above the list, `aria-checked="mixed"` when the selection is partial, scoped to the available doors currently listed — the `truck-list.tsx` header |
 | Row checkbox | On every available door row, `aria-label="Select door <name>"` |
-| Door marker | Mirrors the row: ring plus `aria-pressed`, `aria-label="Select door <name>"` / `Deselect door <name>`, and a click toggles the check instead of highlighting the door (research R7) |
-| Bulk bar | `BulkResourceLifecycleActions` with `singular='door'`, `plural='doors'`, `idPrefix='warehouse-door'`, `action='archive'`. Appears once at least one door is checked: `N selected`, `Archive selected`, `Clear selection` |
-| Bulk confirmation | Title `Archive doors`; canonical sentence `N doors remain readable but are no longer available for new operations.`; one optional comment for the whole submission |
-| Keyboard | While the mode is on, select-all and clear are bound to **doors**, and the warehouse bindings are disabled (research R8) |
+| Door marker | Mirrors the row: ring plus `aria-pressed`, `aria-label="Select door <name>"` / `Deselect door <name>`, and a click both checks the door and highlights it — one target, both gestures (research R7) |
+| Selection row | Beside `Select all`, and only once at least one door is checked: `N selected`, `Archive selected`, and a `Clear selection` button. The shared toolbar's trio, word for word (FR-039, FR-042) — its home differs because this selection lives in the panel, not on the map |
+| `N selected` | Counts the whole checked set, not the rows on screen, so it always agrees with what `Archive selected` submits |
+| Bulk confirmation | `BulkResourceLifecycleDialog` with `singular='door'`, `plural='doors'`, `idPrefix='warehouse-door'`, `action='archive'`. Title `Archive doors`; canonical sentence `N doors remain readable but are no longer available for new operations.`; one optional comment for the whole submission |
+| Keyboard | Unchanged: select-all and clear stay bound to the **warehouses** on the map. Doors get no binding of their own — two meanings for one keystroke on one page is worse than none, and `Select all` is the door equivalent, as it is in the trucks and customers directories (research R8) |
+
+The dialog is used rather than `BulkResourceLifecycleActions` because that component *is* the
+floating map toolbar; the panel supplies the count, the trigger, and the clear itself, and hands the
+dialog the same props the toolbar would have.
 
 ### Outcome reporting
 
-The shared bar's own reporting, with no overrides (research R9):
+The shared dialog's own reporting, unchanged (research R9):
 
 | Outcome | Feedback |
 |---|---|
@@ -95,15 +103,19 @@ The shared bar's own reporting, with no overrides (research R9):
 
 Blocker reasons use the **default** labels — `used by an active or planned discharge`,
 `not found`, `already archived` — because a door is blocked by itself, unlike a warehouse, which had
-to override the first one.
+to override the first one. One label is *added* rather than overridden: `WAREHOUSE_ARCHIVED` reads
+`its warehouse is archived`, the bulk counterpart of the single path's refusal of the same name.
+Only a crafted submission reaches it, since the cascade leaves no available door under an archived
+warehouse — the same reason the single path guards it.
 
 ## Map behaviour
 
 | Condition | Door markers | Warehouse polygons |
 |---|---|---|
-| Consultation | Click selects the door (highlight) | Click selects the warehouse |
-| Door selection active | Click toggles the check; checked markers ring; archived doors are not listed and not rendered checkable | Click is suppressed while the mode is on, so a stray click cannot switch warehouse mid-selection |
-| Door creation / update armed | Unchanged from #213/#214 — the door select mode cannot be active at the same time | Unchanged |
+| Consultation, non-administrator or archived view | Click selects the door (highlight) | Click selects the warehouse |
+| Checking offered, nothing checked | Click checks the door **and** highlights it | Click selects the warehouse — unchanged. Checking is offered on every open available warehouse, so suppressing here would leave an administrator unable to switch warehouse at all |
+| At least one door checked | As above; checked markers ring; archived doors are not listed and not rendered checkable | Click is suppressed, so a stray click cannot move the warehouse out from under a selection in progress |
+| Door creation / update armed | Unchanged from #213/#214 — checking is not offered at the same time | Unchanged |
 
 Marker offsets, tooltips, hover behaviour, and the archived marker styling are #212's and are not
 modified.

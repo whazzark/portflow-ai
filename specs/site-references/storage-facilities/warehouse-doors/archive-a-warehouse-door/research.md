@@ -25,7 +25,7 @@ The collection route is declared **before** `/:id/archive` in `start/routes.ts`,
 transition uses (customers, transport companies, trucks, docks, weighing areas, warehouses). A
 lifecycle transition is not a partial update of the resource, which is why none of them is a `PATCH`
 on `/:id`, and this slice has no reason to be the first exception. Reusing the shape is also what
-lets `BulkResourceLifecycleActions` be wired with nothing but nouns (research R9).
+lets the shared bulk confirmation be wired with nothing but nouns (research R9).
 
 The single response is the **bare door**, like docks and weighing areas, and unlike
 `warehouses.archive`, which wraps the resource to report `archivedDoorCount`. A door archival
@@ -199,84 +199,98 @@ guarantee for crafted requests (spec FR-005) rather than as a state a user can p
 
 ---
 
-## R7 — Where a door selection is entered, and what a marker click means
+## R7 — How a door selection starts, and what a marker click means
 
-**Decision**: door selection is a **fourth, warehouse-scoped mode** on `/warehouses`, carried by
-widening the existing `selecting` param to `'warehouses' | 'doors'`. It is entered from a
-`Select doors` control in the **Doors panel header**, not from the map's control cluster. While it is
-active:
+**Decision**: checking doors is **offered, never entered**. There is no mode and no new search-param
+value: opening an available warehouse's Available doors as an administrator already puts a checkbox
+on every available row, a `Select all` above the list — the `truck-list.tsx` layout — and the
+checkable contract on every corresponding marker (a ring, `aria-pressed`, the `CheckpointMarker`
+`checked` contract). A marker click **checks the door and highlights it in the same gesture**.
 
-- every **available door row** of the selected warehouse carries a checkbox, with a `Select all`
-  header checkbox above the list — the `truck-list.tsx` layout;
-- every corresponding **door marker mirrors** the checked state (a ring, `aria-pressed`) and toggles
-  it on click, the `CheckpointMarker` `checked` contract;
-- the create-door and edit-door sessions are ended without saving, and `selecting='doors'` and
-  `selecting='warehouses'` cannot both hold, since one param holds one value (spec FR-041).
+Because it is offered rather than entered, being offered must cost nothing: the warehouse polygons
+stay selectable while no door is checked, and only a **non-empty** checked set suppresses them, so a
+stray click cannot move the warehouse out from under a selection in progress. A creation or update
+session withdraws the offer, and leaving that session starts from an empty set rather than restoring
+the previous one (spec FR-041).
 
 **Rationale**: doors are a map resource — an administrator condemns a physical door they can see —
 so the map has to be a selection surface, which is what docks and weighing areas established and
-what spec FR-042 requires. But the control cannot live in the map's control cluster next to
-`Select warehouses`: that cluster is page-scoped, and door selection is meaningless without a
-selected warehouse. Worse, `startSelecting()` for warehouses deliberately **clears `warehouseId`**,
-closing the Doors panel — so the two modes are not siblings in the same cluster, and putting them
-there would suggest they are. The Doors panel header already owns the door-scoped actions
-(`Create door`), so it is where the door-scoped mode belongs.
+what spec FR-042 requires. But the *mode* the three map slices carry exists to answer a question
+doors do not raise: which of the things on screen is this gesture about. A door selection is already
+scoped by the open warehouse and the open lifecycle view, so the mode would gate a decision that is
+never ambiguous — a control to press before the gesture the administrator came to make.
+
+A control in the map's control cluster is doubly wrong: that cluster is page-scoped, door selection
+is meaningless without a selected warehouse, and `startSelecting()` for warehouses deliberately
+**clears `warehouseId`**, closing the Doors panel. The Doors panel is where the door-scoped
+affordances belong, and once they live there the header control adds nothing the checkbox does not.
 
 The marker toggle is safe here in a way #214 rejected for a *click-to-place* gesture: that decision
-turned on a map click having to mean "select this door" among sibling markers, and in select mode a
-marker click means "check this door" for every checkpoint on the Checkpoints map already. What must
-not happen is a marker click meaning one thing in the list and another on the map, which is why the
-mode is explicit rather than implied by "something is checked".
+turned on a map click having to mean "select this door" among sibling markers, and checking *and*
+highlighting in one gesture keeps that meaning rather than replacing it — the row does the same.
 
 **Alternatives considered**:
 
+- **An explicit `selecting='doors'` mode** widening the existing param, entered from a `Select doors`
+  header control. Rejected as above: a mode gate on an unambiguous gesture, plus a deep-linkable URL
+  that would restore not a mode but a queue of ids the collection may no longer hold.
 - **List checkboxes only, no map involvement** (the trucks/customers variant of the same model).
-  Rejected: it is cheaper — no new param, no marker prop — but it makes the map a read-only witness
-  of a decision taken in a list, on the one site reference whose identity is a physical location.
-  Spec FR-042 names the three map slices as the model to follow.
-- **A `Select doors` entry in the map control cluster.** Rejected above: page-scoped cluster,
-  warehouse-scoped mode, and a `Select warehouses` neighbour that clears the very selection door
-  selection needs.
-- **A separate `selectingDoors` boolean param.** Rejected: two params could both be set, and the
-  exclusivity FR-041 requires would become an effect to enforce rather than a shape that cannot
-  express the violation.
+  Rejected: it is cheaper — no marker prop — but it makes the map a read-only witness of a decision
+  taken in a list, on the one site reference whose identity is a physical location. Spec FR-042 names
+  the three map slices as the model to follow.
+- **Suppressing the polygons whenever checking is offered.** Rejected: the offer stands on every open
+  available warehouse, so this leaves an administrator with an empty selection unable to click
+  another warehouse at all — they would have to close the panel first.
 
 ---
 
 ## R8 — Selection shortcuts, and the conflict with the warehouse ones
 
-**Decision**: while `selecting === 'doors'`, `useSelectAllShortcut` and `useClearSelectionShortcut`
-are bound to the **door** selection, and the warehouse bindings are disabled. Select-all targets the
-available doors of the selected warehouse currently listed; clear empties the door selection.
+**Decision**: `useSelectAllShortcut` and `useClearSelectionShortcut` stay bound to the **warehouse**
+selection, untouched. Doors get no keyboard binding of their own; the panel's `Select all` checkbox
+is the door equivalent.
 
-**Rationale**: both hooks are already mounted by `WarehousesPage` for warehouses, enabled on the
-administrator permission alone. Leaving them bound while a door selection is open would make one
-keystroke select every visible *warehouse* — which, because entering warehouse selection clears
-`warehouseId`, would close the Doors panel out from under the administrator mid-selection. One
-keyboard contract per active mode is the only coherent rule, and it falls out of the exclusivity
-FR-041 already requires.
+**Rationale**: rebinding follows from a mode, and R7 removes the mode. With checking merely offered,
+there is no state in which the page could say the keystroke is "about doors now" — it would have to
+guess from what is checked, and one keystroke that means two things depending on invisible state is
+worse than one that means one thing. The precedent is already in the codebase: the trucks and
+customers directories select in a list with a `Select all` header and no binding of their own, and
+FR-042's "same selection count and clearing" is met by the selection row's `N selected` and
+`Clear selection`, which are the affordances the requirement names.
+
+Leaving the warehouse bindings live is safe for the same reason the polygons stay clickable: they
+act on the map's own selection, which the administrator can see, and entering it clears `warehouseId`
+— an explicit, visible move, not a silent one.
 
 **Alternatives considered**:
 
-- **No shortcuts for doors.** Rejected: FR-042's "same way selection is entered and left" covers the
-  shortcuts, and the header `Select all` checkbox alone would leave the two modes asymmetric.
-- **Both bindings live, disambiguated by focus.** Rejected: focus is not where the mode lives, and
-  the resulting behaviour would be unexplainable in a sentence.
+- **Rebinding the two hooks to doors while something is checked.** Rejected: the binding would flip
+  under the administrator on the first checkbox, and flip back on the last uncheck.
+- **A second pair of bindings on different keys.** Rejected: two clear-selection keystrokes on one
+  page is a worse contract than one, and neither would be discoverable.
 
 ---
 
-## R9 — Reusing the bulk action bar, and what a partial outcome leaves checked
+## R9 — Reusing the bulk confirmation, and what a partial outcome leaves checked
 
-**Decision**: `BulkResourceLifecycleActions` is used as it stands, with `singular: 'door'`,
-`plural: 'doors'`, `idPrefix: 'warehouse-door'`, `action: 'archive'`, **no** `describeEffect`
-override and **no** `blockerReasonLabels` override. On success, the checked set is narrowed to the
-ids blocked with `IN_USE`; every other blocker is dropped.
+**Decision**: `BulkResourceLifecycleDialog` — the confirmation half of the shared component, split
+from its floating toolbar — is used as it stands, with `singular: 'door'`, `plural: 'doors'`,
+`idPrefix: 'warehouse-door'`, `action: 'archive'`, **no** `describeEffect` override and no
+`blockerReasonLabels` *override*: the only entry passed is the added `WAREHOUSE_ARCHIVED` label,
+which the shared four have no entry for at all. On success, the checked set is narrowed to the ids
+blocked with `IN_USE`; every other blocker is dropped.
 
 **Rationale**: the canonical bulk sentence — "N doors remain readable but are no longer available for
 new operations" — is exactly true of doors, so unlike warehouses there is no cascade clause to
 append. And the default blocker label, `used by an active or planned discharge`, is already right:
 warehouses had to override it precisely because a warehouse is blocked by *a door*, whereas a door is
-blocked by itself. Keeping both overrides absent is the evidence that the shared copy fits.
+blocked by itself. Keeping the overrides absent is the evidence that the shared copy fits.
+
+The *toolbar* half is what the panel does not reuse: `BulkResourceLifecycleActions` is the floating
+map bar, and this selection lives in the Doors panel, where a bar hovering between the panel and the
+map legend is the one place an administrator does not look (R7). What the panel therefore owns is the
+toolbar's own trio, word for word — `N selected`, `Archive selected`, `Clear selection` — which is
+what FR-042's "same selection count and clearing" asks for; only its home differs.
 
 Narrowing to `IN_USE` on success is the warehouses precedent and the same reasoning: it is the one
 blocker an administrator can resolve and retry (close the discharge, end the assignment), while
@@ -285,7 +299,7 @@ would sit in an Available view that no longer lists it.
 
 **Alternatives considered**:
 
-- **`singular: 'warehouse door'`.** Rejected: the bar would read "3 warehouse doors selected" inside
+- **`singular: 'warehouse door'`.** Rejected: the row would read "3 warehouse doors selected" inside
   a panel titled *Doors* under the warehouse's own name. The noun is unambiguous in context, and the
   row-level confirmation names the door itself.
 - **Clearing the whole selection on success.** Rejected: it discards the retry path spec FR-039

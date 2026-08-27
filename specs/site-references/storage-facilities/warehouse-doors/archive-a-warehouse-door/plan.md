@@ -8,10 +8,10 @@
 
 Let an authorized administrator retire an unloading door from operational use, one at a time or
 several at once, without touching anything that references it. From the Doors panel on `/warehouses`,
-an `Archive` entry in a door row's action menu opens the shared lifecycle confirmation; a
-`Select doors` control in the same panel header turns the available door rows and their map markers
-into a selection the shared bulk bar archives in one action, reporting one reason per door it could
-not take.
+an `Archive` entry in a door row's action menu opens the shared lifecycle confirmation; a checkbox on
+every available door row and its map marker — offered as soon as the warehouse opens, with no mode to
+enter — builds a selection the shared bulk confirmation archives in one action, reporting one reason
+per door it could not take.
 
 Most of the slice is assembly. What is genuinely new is the **first warehouse-door lifecycle write**:
 two endpoints, one policy ability, two use cases, two repository methods, a blocker helper, and two
@@ -26,9 +26,9 @@ exceptions.
    docks and warehouses already return.
 3. **The interface primitives already exist.** `ResourceRowActions` was adopted by #214 with an empty
    `actions` array *specifically* so this slice could fill it; `ResourceLifecycleDialog` and
-   `BulkResourceLifecycleActions` are the same components every other site reference uses, and both
-   fit doors with **no override at all** — no cascade clause to append, and the default in-use
-   blocker label is already accurate for a door (research R9).
+   `BulkResourceLifecycleDialog` are the same components every other site reference uses, and both
+   fit doors with **no override** — no cascade clause to append, and the default in-use blocker label
+   is already accurate for a door (research R9).
 
 Three decisions carry the design.
 
@@ -83,13 +83,13 @@ Three decisions carry the design.
 Re-evaluated after Phase 1 (`data-model.md`, `contracts/`, `quickstart.md`):
 
 - **II** — Confirmed PASS. Every change to shared code is *additive*: four members on
-  `WarehouseDoorTransformer` (research R5), one value on the `selecting` search param, and one
+  `WarehouseDoorTransformer` (research R5), no new search param or value (research R7), and one
   optional `checked` contract on `WarehouseDoorMarker` mirroring the one `CheckpointMarker` already
   has. No dock, weighing-area, checkpoint, truck, customer, transport-company, or warehouse behavior
-  changes. `ResourceRowActions`, `ResourceLifecycleDialog`, and `BulkResourceLifecycleActions` are
-  consumed **unmodified** — the second and third with no override, which is the evidence that the
-  shared lifecycle copy fits a door as written.
-- **IV** — Confirmed PASS. `quickstart.md` scenarios 1–24 are concrete RED targets that
+  changes. `ResourceRowActions`, `ResourceLifecycleDialog`, and `BulkResourceLifecycleDialog` are
+  consumed **unmodified** — the second and third with no `describeEffect` and no overridden blocker
+  label, which is the evidence that the shared lifecycle copy fits a door as written.
+- **IV** — Confirmed PASS. `quickstart.md` scenarios 1–27 are concrete RED targets that
   `/speckit-tasks` can order, split across API units, API integration, one cross-slice regression,
   and five web test files.
 - **V** — Confirmed PASS after re-check. The use cases are not empty: they normalize the comment and
@@ -146,30 +146,30 @@ apps/api/
     └── integration/warehouses/lifecycle/archive.spec.ts   # MODIFIED — a door archived on its own survives its warehouse's archival and is not restored by #211
 
 apps/web/src/
-├── components/lifecycle/                                  # Unchanged — dialog, bulk bar, row menu, and copy consumed as they stand
+├── components/lifecycle/                                  # Unchanged — dialogs, bulk bar, row menu, and copy consumed as they stand
 ├── features/warehouse-doors/
 │   ├── warehouse-door-lifecycle.tsx                       # NEW — lifecycle config, actions per status, bulk outcome adapter
 │   ├── mutations/use-warehouse-door-mutations.ts          # MODIFIED — archive + archiveMany, invalidating the warehouse collection
 │   ├── ui/warehouse-door-row-actions.tsx                  # MODIFIED — `Archive` beside `Edit`, with its confirmation
-│   ├── ui/warehouse-doors-panel.tsx                       # MODIFIED — `Select doors` header control, `Select all`, per-row checkboxes
+│   ├── ui/warehouse-doors-panel.tsx                       # MODIFIED — `Select all`, per-row checkboxes, and the selection row (count, action, clear)
 │   ├── map/warehouse-door-marker.tsx                      # MODIFIED — optional `checked` contract, as CheckpointMarker has
 │   └── __tests__/archive/{entry,confirmation,selection,bulk,permissions}.test.tsx  # NEW
 ├── features/warehouses/
-│   ├── map/warehouse-map.tsx                              # MODIFIED — pass door select state through to the markers; suppress polygon selection while it is on
-│   ├── ui/warehouses-page.tsx                             # MODIFIED — door select mode, checked set, exclusivity, shortcut rebinding, bulk bar wiring
+│   ├── map/warehouse-map.tsx                              # MODIFIED — pass door check state through to the markers; suppress polygon selection once a door is checked
+│   ├── ui/warehouses-page.tsx                             # MODIFIED — checked set, its context and pruning effects, exclusivity, bulk dialog wiring
 │   └── __tests__/support/{handlers,mock-warehouse-map}.tsx # MODIFIED — the two new endpoints and the door checkbox seam
-└── routes/_authenticated/warehouses.tsx                   # MODIFIED — `selecting` accepts `'doors'`
+└── routes/_authenticated/warehouses.tsx                   # Unchanged — no new search param or value
 ```
 
 **Structure Decision**: Extend the existing API and web workspaces along their binding vertical-slice
 conventions. On the API, archival is a `warehouse_doors/archive` workflow while authorization,
 validation, persistence, the blocker helper, and the DTO stay under `warehouse_doors/shared`, where
 #216 will reach for them next — the blocker helper in particular is written with the
-`expectedStatus` parameter its two delivered siblings carry, so reactivation reuses it rather than
-writing a third copy. On the web, everything door-specific — the lifecycle config, the row action,
-the panel, the marker, the mutations — lives in `features/warehouse-doors/`, while the mode's URL
-wiring, the checked set, and the bulk bar stay in `features/warehouses/`, which owns the page and its
-search params.
+`expectedStatus` parameter its two delivered siblings carry, plus the containing-warehouse guard both
+directions need, so reactivation reuses it rather than writing a third copy. On the web, everything
+door-specific — the lifecycle config, the row action, the panel, the marker, the mutations — lives in
+`features/warehouse-doors/`, while the checked set and the bulk confirmation stay in
+`features/warehouses/`, which owns the page the selection is scoped by.
 
 **Boundary note on the cross-feature reach**: `features/warehouse-doors/` already imports
 `features/warehouses/types` and its mutations already invalidate `warehouseQueries.list()`, because
@@ -195,13 +195,14 @@ Four decisions are worth recording without being violations:
   delivered features to save roughly forty lines; the generalization is a candidate once #216 and the
   remaining reactivation slices make the fourth and fifth callers concrete, and each copy is covered
   by its own unit test.
-- **A fourth map mode on `/warehouses`.** The page now carries warehouse drawing, door placement,
-  door correction, warehouse selection, and door selection. They stay mutually exclusive by *shape* —
-  `create`, `edit`, and `selecting` each hold one value — rather than by an effect that has to
-  reconcile them, and the fourth one adds a value to an existing param rather than a new param
-  (research R7). The alternative, list-only selection with no map involvement, is cheaper and was
-  rejected because a door's identity is a physical location, which spec FR-042 reflects.
-- **Keyboard shortcuts are rebound rather than duplicated.** `useSelectAllShortcut` and
-  `useClearSelectionShortcut` are already mounted for warehouses; while a door selection is open they
-  act on doors and the warehouse bindings are disabled (research R8). Leaving both live would let one
-  keystroke close the panel the administrator is selecting in.
+- **A selection without a mode.** The page carries warehouse drawing, door placement, door
+  correction, and warehouse selection — each a mode held by `create`, `edit`, or `selecting`, one
+  value apiece, so they stay mutually exclusive by *shape*. Door checking is deliberately not a
+  fifth: it is offered whenever it is meaningful and holds no param at all (research R7). The cost is
+  that its exclusivity cannot be expressed by shape, so `warehouses-page.tsx` carries two effects
+  instead — one dropping the checked set when its context goes, one pruning ids the Available list no
+  longer holds. Both are written as `setDoorSelection` updaters over the existing state, mirroring
+  the warehouse selection's own `checkableIds` pruning effect.
+- **Keyboard shortcuts are left alone.** `useSelectAllShortcut` and `useClearSelectionShortcut` stay
+  bound to warehouses; doors get the panel's `Select all` and `Clear selection` instead, the trucks
+  and customers model (research R8). Rebinding follows from a mode, and there is none to rebind on.
