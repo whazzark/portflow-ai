@@ -310,7 +310,7 @@ export class TruckSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ['accessStatus', 'activatedAt', 'activatedByUserId', 'cancelledAt', 'cancelledByUserId', 'createdAt', 'deactivatedAt', 'deactivatedByUserId', 'email', 'firstName', 'id', 'invitedAt', 'invitedByUserId', 'lastName', 'password', 'reactivatedAt', 'reactivatedByUserId', 'role', 'updatedAt'] as const
+  static $columns = ['accessStatus', 'activatedAt', 'activatedByUserId', 'cancelledAt', 'cancelledByUserId', 'createdAt', 'deactivatedAt', 'deactivatedByUserId', 'email', 'firstName', 'id', 'invitedAt', 'invitedByUserId', 'lastName', 'password', 'passwordRenewalRequiredAt', 'reactivatedAt', 'reactivatedByUserId', 'role', 'updatedAt'] as const
   $columns = UserSchema.$columns
   @column()
   declare accessStatus: string
@@ -342,6 +342,8 @@ export class UserSchema extends BaseModel {
   declare lastName: string
   @column({ serializeAs: null })
   declare password: string | null
+  @column.dateTime()
+  declare passwordRenewalRequiredAt: DateTime | null
   @column.dateTime()
   declare reactivatedAt: DateTime | null
   @column()

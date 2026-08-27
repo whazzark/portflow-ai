@@ -6,14 +6,22 @@ import { ensureSessionUser } from '@/libraries/tuyau/session'
 
 export const Route = createFileRoute('/_guest')({
   beforeLoad: async ({ context: { queryClient } }) => {
+    let sessionUser: Awaited<ReturnType<typeof ensureSessionUser>>
+
     try {
-      await ensureSessionUser(queryClient)
+      sessionUser = await ensureSessionUser(queryClient)
     } catch (error) {
       if (isUnauthorizedError(error)) {
         return
       }
 
       throw error
+    }
+
+    // Straight to the renewal step rather than to `/`, which `_authenticated` would only bounce
+    // again: a confined user reaching the sign-in screen is redirected once, not twice.
+    if (sessionUser.data.passwordRenewalRequired) {
+      throw redirect({ to: '/password-renewal' })
     }
 
     throw redirect({ to: '/', search: { section: 'rotations' } })

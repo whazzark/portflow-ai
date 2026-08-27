@@ -1,6 +1,13 @@
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
+import { DateTime } from 'luxon'
+
 import User from '#models/user'
 
-import UserRepository, { type CreateUserCommand } from './user_repository.ts'
+import UserRepository, {
+  type CreateUserCommand,
+  type RenewPasswordCommand,
+  type RenewPasswordResult,
+} from './user_repository.ts'
 
 export default class LucidUserRepository extends UserRepository {
   create(command: CreateUserCommand): Promise<User> {
@@ -30,5 +37,69 @@ export default class LucidUserRepository extends UserRepository {
       .orderBy('lastName', 'asc')
       .orderBy('firstName', 'asc')
       .orderBy('id', 'asc')
+  }
+
+  /**
+   * The guard, not a lock, is the concurrency control: a single-row conditional `UPDATE` is atomic
+   * on both PostgreSQL and SQLite, so `WHERE password_renewal_required_at IS NOT NULL` is what makes
+   * two racing renewals record exactly one password — the loser matches zero rows. The truck
+   * lifecycle writes reach for `SELECT … FOR UPDATE` because they must read a related row inside the
+   * same transaction; there is no second row to read here.
+   *
+   * The same zero-row outcome is also the refusal for a session that owes no renewal — one
+   * mechanism, two requirements.
+   *
+   * The transaction is not there for the guard. It is there because recording the password and
+   * revoking the other remembered connections are two statements that must not be separable: if the
+   * revocation failed after the `UPDATE` had committed, the password would be replaced while the
+   * connections established under the old one kept restoring access for their full 30 days — the
+   * exact window this slice exists to close, and the partial change FR-017 forbids. Hashing happens
+   * before this call, so scrypt never runs inside the transaction.
+   */
+  renewPassword(command: RenewPasswordCommand): Promise<RenewPasswordResult> {
+    return User.transaction(async (trx) => {
+      const [affectedRows] = await User.query({ client: trx })
+        .where('id', command.userId)
+        .whereNotNull('passwordRenewalRequiredAt')
+        .update({
+          password: command.hashedPassword,
+          passwordRenewalRequiredAt: null,
+          // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+          // bookkeeping timestamp is written by hand — the same treatment every other guarded write
+          // in this codebase gives it.
+          updatedAt: DateTime.now().toSQL({ includeOffset: false }),
+        })
+
+      if (Number(affectedRows) !== 1) {
+        return 'NOT_REQUIRED'
+      }
+
+      await this.revokeOtherRememberedConnections(trx, command)
+
+      return 'RENEWED'
+    })
+  }
+
+  /**
+   * Closes the window the renewal exists to close: a remembered connection restores access for up
+   * to 30 days without presenting a password, so every one established under the replaced
+   * credential must stop working. Only the connection this request came from survives.
+   *
+   * Reached only on a `RENEWED` outcome — a refused renewal revokes nothing (FR-017).
+   *
+   * Deleted through the query builder rather than `RememberMeToken`: the guard's token provider
+   * writes these rows itself, in a shape the model's date columns refuse to hydrate.
+   */
+  private async revokeOtherRememberedConnections(
+    trx: TransactionClientContract,
+    command: RenewPasswordCommand,
+  ) {
+    const revocation = trx.from('remember_me_tokens').where('tokenable_id', command.userId)
+
+    if (command.keptRememberedConnectionId !== null) {
+      revocation.whereNot('id', command.keptRememberedConnectionId)
+    }
+
+    await revocation.delete()
   }
 }

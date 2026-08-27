@@ -9,6 +9,7 @@ export interface ApiDefinition {
     login: typeof routes['auth.login']
     me: typeof routes['auth.me']
     logout: typeof routes['auth.logout']
+    passwordRenewal: typeof routes['auth.password_renewal']
   }
   customers: {
     store: typeof routes['customers.store']

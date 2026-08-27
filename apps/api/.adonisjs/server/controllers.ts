@@ -10,6 +10,7 @@ export const controllers = {
   Login: () => import('#controllers/login_controller'),
   Logout: () => import('#controllers/logout_controller'),
   Me: () => import('#controllers/me_controller'),
+  PasswordRenewal: () => import('#controllers/password_renewal_controller'),
   TransportCompanies: () => import('#controllers/transport_companies_controller'),
   Trucks: () => import('#controllers/trucks_controller'),
   Users: () => import('#controllers/users_controller'),
