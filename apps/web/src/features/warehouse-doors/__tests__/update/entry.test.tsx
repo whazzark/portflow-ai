@@ -37,16 +37,16 @@ test('offers an action menu on each available door row', async () => {
   ).toBeInTheDocument()
 })
 
-test('offers Edit, and only Edit, inside the menu', async () => {
+test('offers Edit inside the menu, first', async () => {
   const user = userEvent.setup()
   renderWarehouses(`/warehouses?status=all&warehouseId=${AVAILABLE.id}`)
 
   await user.click(await screen.findByRole('button', { name: `Actions for ${DOOR.name}` }))
 
   const items = await screen.findAllByRole('menuitem')
-  expect(items.map((item) => item.textContent)).toEqual(['Edit'])
-  // Archiving and reactivating belong to #215 and #216; this slice only chooses the container.
-  expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
+  // `Archive` joined it in #215, which is what the container was chosen for. Reactivation is #216's
+  // remaining slot.
+  expect(items.map((item) => item.textContent)).toEqual(['Edit', 'Archive'])
   expect(screen.queryByRole('menuitem', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 

@@ -45,7 +45,10 @@ test.group('ListAvailableWarehouseDoorsUseCase', (group) => {
     }).create()
     await WarehouseDoorFactory.merge({ warehouseId: archivedWarehouse.id }).create()
 
-    const result = await new LucidWarehouseDoorRepository().listAvailable()
+    // Built through the container: the repository takes the shared usage checker since #215, which
+    // archival reads inside its write transaction. `listAvailable` itself never consults it.
+    const repository = await app.container.make(LucidWarehouseDoorRepository)
+    const result = await repository.listAvailable()
 
     assert.include(
       result.map((door) => door.id),

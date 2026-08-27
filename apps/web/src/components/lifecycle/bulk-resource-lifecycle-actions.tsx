@@ -48,7 +48,7 @@ export const DEFAULT_BLOCKER_REASON_LABELS: Record<string, string> = {
   ALREADY_AVAILABLE: 'already available',
 }
 
-type BulkResourceLifecycleActionsProps = {
+type BulkResourceLifecycleSubmissionProps = {
   /** Lower-case resource noun, e.g. `dock`, `weighing area`, `warehouse`. Drives every label. */
   singular: string
   /** Lower-case plural of `singular`. */
@@ -58,7 +58,6 @@ type BulkResourceLifecycleActionsProps = {
   /** Which lifecycle transition the current selection is for. */
   action: LifecycleAction
   selectedIds: string[]
-  onClear: () => void
   onSuccess: (outcome: BulkLifecycleOutcome) => void
   /** Submits the bulk request for this resource and action, returning its normalized outcome. Each
    * resource feature adapts its own response shape (e.g. `{ updatedDocks, blockedDocks }`) onto
@@ -75,25 +74,36 @@ type BulkResourceLifecycleActionsProps = {
   blockerReasonLabels?: Record<string, string>
 }
 
-export function BulkResourceLifecycleActions({
+type BulkResourceLifecycleDialogProps = BulkResourceLifecycleSubmissionProps & {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+/**
+ * The confirmation half of a bulk lifecycle change: the dialog, the request, and the outcome
+ * reporting. Split from the toolbar below so a resource whose selection lives inside a panel can
+ * trigger it from there — the Doors panel does — while every one of them keeps the same copy, the
+ * same comment field, and the same partial-outcome message.
+ */
+export function BulkResourceLifecycleDialog({
   singular,
   plural,
   idPrefix,
   action,
   selectedIds,
-  onClear,
   onSuccess,
   submit: submitRequest,
   refresh,
   describeEffect,
   blockerReasonLabels,
-}: BulkResourceLifecycleActionsProps) {
+  open,
+  onOpenChange,
+}: BulkResourceLifecycleDialogProps) {
   const countLabel = (count: number) => `${count} ${count === 1 ? singular : plural}`
   const reasonLabels = { ...DEFAULT_BLOCKER_REASON_LABELS, ...blockerReasonLabels }
   const describeBlocked = (blocked: BulkLifecycleBlocker) =>
     `${blocked.name ?? blocked.id}: ${reasonLabels[blocked.reason] ?? blocked.reason}`
 
-  const [open, setOpen] = useState(false)
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -122,7 +132,7 @@ export function BulkResourceLifecycleActions({
     try {
       const outcome = await submitRequest({ ids: selectedIds, comment: comment || null })
 
-      setOpen(false)
+      onOpenChange(false)
       setComment('')
       onSuccess(outcome)
       void refresh()
@@ -140,6 +150,59 @@ export function BulkResourceLifecycleActions({
     }
   }
 
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{bulkLifecycleDialogTitle(action, plural)}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {describeEffect?.(action, selectedIds.length) ??
+              describeBulkLifecycleEffect(action, selectedIds.length, singular, plural)}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <Field>
+          <FieldLabel htmlFor={`bulk-${idPrefix}-lifecycle-comment`}>
+            {LIFECYCLE_COMMENT_LABEL}
+          </FieldLabel>
+          <Textarea
+            id={`bulk-${idPrefix}-lifecycle-comment`}
+            maxLength={1000}
+            onChange={(event) => setComment(event.target.value)}
+            value={comment}
+          />
+          <FieldDescription>{BULK_LIFECYCLE_COMMENT_DESCRIPTION}</FieldDescription>
+        </Field>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isSubmitting}
+            onClick={(event) => {
+              event.preventDefault()
+              void submit()
+            }}
+          >
+            {isSubmitting ? LIFECYCLE_PENDING_LABELS[action] : LIFECYCLE_ACTION_LABELS[action]}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+/**
+ * The floating toolbar the map-based selections use: a count, the action, and a way to clear. It is
+ * the trigger for the dialog above, not a second implementation of it.
+ */
+export function BulkResourceLifecycleActions({
+  onClear,
+  ...submission
+}: BulkResourceLifecycleSubmissionProps & {
+  /** Empties the selection without acting on it. The toolbar's own affordance: a panel-hosted
+   * trigger unchecks a row where the row is. */
+  onClear: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const { action, selectedIds, singular } = submission
   const visible = selectedIds.length > 0
 
   return (
@@ -170,41 +233,7 @@ export function BulkResourceLifecycleActions({
           </Button>
         </div>
       </div>
-      <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{bulkLifecycleDialogTitle(action, plural)}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {describeEffect?.(action, selectedIds.length) ??
-                describeBulkLifecycleEffect(action, selectedIds.length, singular, plural)}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <Field>
-            <FieldLabel htmlFor={`bulk-${idPrefix}-lifecycle-comment`}>
-              {LIFECYCLE_COMMENT_LABEL}
-            </FieldLabel>
-            <Textarea
-              id={`bulk-${idPrefix}-lifecycle-comment`}
-              maxLength={1000}
-              onChange={(event) => setComment(event.target.value)}
-              value={comment}
-            />
-            <FieldDescription>{BULK_LIFECYCLE_COMMENT_DESCRIPTION}</FieldDescription>
-          </Field>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isSubmitting}
-              onClick={(event) => {
-                event.preventDefault()
-                void submit()
-              }}
-            >
-              {isSubmitting ? LIFECYCLE_PENDING_LABELS[action] : LIFECYCLE_ACTION_LABELS[action]}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <BulkResourceLifecycleDialog {...submission} onOpenChange={setOpen} open={open} />
     </>
   )
 }

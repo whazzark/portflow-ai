@@ -1,3 +1,4 @@
+import type { Route } from '@tuyau/core/types'
 import type { WarehouseDoorDto, WarehouseStatus } from '@/features/warehouses/types'
 
 export type { WarehouseDoorDto }
@@ -15,3 +16,8 @@ export type WarehouseDoorContext = {
   warehouseStatus: WarehouseStatus
   doorStatus: WarehouseDoorStatusFilter
 }
+
+export type BulkWarehouseDoorLifecycleResult =
+  Route.Response<'warehouse_doors.archive_many'>['data']
+export type BulkWarehouseDoorLifecycleBlocker =
+  BulkWarehouseDoorLifecycleResult['blockedDoors'][number]

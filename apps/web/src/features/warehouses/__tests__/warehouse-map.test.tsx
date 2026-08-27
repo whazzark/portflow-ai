@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { WarehouseMap } from '@/features/warehouses/map/warehouse-map'
 import { presentWarehouses } from '@/features/warehouses/warehouse-search'
@@ -121,5 +121,42 @@ describe('warehouse map framing', () => {
         expect.objectContaining({ padding: 56 }),
       ),
     )
+  })
+})
+
+/** `WarehousePolygons` is stubbed out above, so the sr-only warehouse list is what stands in for a
+ * polygon click here — the two read the same `suppressesSelection`, which is the point. */
+describe('warehouse selection while doors are checkable', () => {
+  const warehouses = presentWarehouses(WAREHOUSES, 'all', '')
+  const listedWarehouse = () => screen.getByRole('button', { name: /North Shed/ })
+
+  test('keeps the warehouses selectable while the door checkboxes are merely offered', () => {
+    // `doorSelectMode` is true for every open available warehouse — checking is offered, never
+    // entered — so on its own it must cost the administrator nothing.
+    render(
+      <WarehouseMap
+        checkedDoorIds={new Set()}
+        doorSelectMode
+        onSelect={vi.fn()}
+        selected={warehouses[0]}
+        warehouses={warehouses}
+      />,
+    )
+
+    expect(listedWarehouse()).toBeEnabled()
+  })
+
+  test('suppresses warehouse selection once a door is actually checked', () => {
+    render(
+      <WarehouseMap
+        checkedDoorIds={new Set([(WAREHOUSES[0].doors ?? [])[0].id])}
+        doorSelectMode
+        onSelect={vi.fn()}
+        selected={warehouses[0]}
+        warehouses={warehouses}
+      />,
+    )
+
+    expect(listedWarehouse()).toBeDisabled()
   })
 })
