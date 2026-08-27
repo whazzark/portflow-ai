@@ -57,6 +57,9 @@ describe('warehouse door consultation', () => {
     expect(screen.getByRole('heading', { name: 'Doors' })).toBeInTheDocument()
     expect(screen.getByText('North Door')).toBeInTheDocument()
     expect(screen.queryByText('Old Door')).not.toBeInTheDocument()
+    // Parenthesised, as the customers, trucks, and transport-company tab lists already write it.
+    expect(screen.getByRole('tab', { name: 'Available (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Archived (1)' })).toBeInTheDocument()
     await user.click(screen.getByRole('tab', { name: /Archived/ }))
     expect(onStatusChange).toHaveBeenCalledWith('archived')
   })
@@ -153,7 +156,8 @@ describe('warehouse door consultation', () => {
 
     const door = screen.getByRole('button', { name: /North Door/ })
 
-    expect(door).toHaveTextContent('Available')
+    // The row no longer restates the status the lifecycle tab already names; what matters here is
+    // that an available door claims none of the archival it came back from.
     expect(door).not.toHaveTextContent('Archived on its own')
     expect(door).not.toHaveTextContent('Roof works')
   })

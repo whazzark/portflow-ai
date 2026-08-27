@@ -631,6 +631,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'warehouse_doors.archive_many': {
+    methods: ["POST"]
+    pattern: '/api/v1/warehouse-doors/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#warehouse_doors/shared/warehouse_door_validator').archiveWarehouseDoorsValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#warehouse_doors/shared/warehouse_door_validator').archiveWarehouseDoorsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['archiveMany']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['archiveMany']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'warehouse_doors.archive': {
+    methods: ["POST"]
+    pattern: '/api/v1/warehouse-doors/:id/archive'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#warehouse_doors/shared/warehouse_door_validator').archiveWarehouseDoorValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#warehouse_doors/shared/warehouse_door_validator').archiveWarehouseDoorValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['archive']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'warehouses.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/warehouses'

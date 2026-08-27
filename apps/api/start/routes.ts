@@ -120,6 +120,10 @@ router
             router.post('/', [controllers.WarehouseDoors, 'store']).as('store')
             router.get('/available', [controllers.WarehouseDoors, 'available']).as('available')
             router.patch('/:id', [controllers.WarehouseDoors, 'update']).as('update')
+            // Declared before `/:id/archive`, or `/warehouse-doors/archive` resolves as
+            // `:id = 'archive'`.
+            router.post('/archive', [controllers.WarehouseDoors, 'archiveMany']).as('archive_many')
+            router.post('/:id/archive', [controllers.WarehouseDoors, 'archive']).as('archive')
           })
           .prefix('/warehouse-doors')
           .as('warehouse_doors')

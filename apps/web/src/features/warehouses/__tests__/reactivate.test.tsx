@@ -162,5 +162,10 @@ test('shows the archive context beside the reactivation context', async () => {
     await screen.findByRole('button', { name: `View warehouse ${MIXED.name} (Archived)` }),
   )
 
-  expect(await screen.findByText('Zone closed for works')).toBeInTheDocument()
+  // Scoped to the warehouse's own Archive context: since #215 a door row prints its archive
+  // comment on its own line too, and the cascade gave this warehouse's door the very same text.
+  const archiveContext = (await screen.findByRole('heading', { name: 'Archive context' })).closest(
+    'section',
+  ) as HTMLElement
+  expect(within(archiveContext).getByText('Zone closed for works')).toBeInTheDocument()
 })

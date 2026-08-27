@@ -71,6 +71,8 @@ export interface ApiDefinition {
     store: typeof routes['warehouse_doors.store']
     available: typeof routes['warehouse_doors.available']
     update: typeof routes['warehouse_doors.update']
+    archiveMany: typeof routes['warehouse_doors.archive_many']
+    archive: typeof routes['warehouse_doors.archive']
   }
   warehouses: {
     index: typeof routes['warehouses.index']

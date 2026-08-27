@@ -1,5 +1,5 @@
 import vine from '@vinejs/vine'
-import { nonBlank } from '#shared/validators/lifecycle_validator'
+import { lifecycleComment, lifecycleIds, nonBlank } from '#shared/validators/lifecycle_validator'
 
 /**
  * `warehouseId` is deliberately *not* constrained to a UUID here. An identifier that cannot name a
@@ -48,3 +48,18 @@ export const updateWarehouseDoorValidator = vine.create(
       .requiredIfExists('latitude'),
   }),
 )
+
+/**
+ * The comment limit and the id-array rules are the shared ones — `lifecycleComment()` caps at 1,000
+ * characters and `lifecycleIds()` refuses an empty, duplicated, or malformed selection before any
+ * row is read. A door archival has no rule of its own to add: what makes a door ineligible is
+ * decided under lock, not in transport.
+ */
+export const archiveWarehouseDoorValidator = vine.create({
+  comment: lifecycleComment(),
+})
+
+export const archiveWarehouseDoorsValidator = vine.create({
+  ids: lifecycleIds(),
+  comment: lifecycleComment(),
+})

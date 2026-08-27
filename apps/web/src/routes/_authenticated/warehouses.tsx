@@ -20,6 +20,10 @@ const warehouseSearchSchema = z.object({
   search: z.string().catch(''),
   // Mirrors the Checkpoints `selecting` param. Honoured only for administrators; for anyone else
   // it resolves to no select mode and no bulk affordance renders.
+  //
+  // Doors carry no equivalent value: their selection is not a mode at all. Checking one is offered
+  // as soon as an administrator opens an available warehouse's Available doors, so there is nothing
+  // to enter, nothing to leave, and nothing to deep-link.
   selecting: z.enum(['warehouses']).optional().catch(undefined),
   status: z.enum(['all', 'available', 'archived']).catch('available'),
 })
