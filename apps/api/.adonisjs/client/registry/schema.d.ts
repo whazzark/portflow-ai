@@ -607,6 +607,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['available']>>>
     }
   }
+  'warehouse_doors.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/warehouse-doors/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#warehouse_doors/shared/warehouse_door_validator').updateWarehouseDoorValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#warehouse_doors/shared/warehouse_door_validator').updateWarehouseDoorValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'warehouses.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/warehouses'

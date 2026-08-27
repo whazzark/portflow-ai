@@ -306,6 +306,12 @@ const routes = {
     tokens: [{"old":"/api/v1/warehouse-doors/available","type":0,"val":"api","end":""},{"old":"/api/v1/warehouse-doors/available","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouse-doors/available","type":0,"val":"warehouse-doors","end":""},{"old":"/api/v1/warehouse-doors/available","type":0,"val":"available","end":""}],
     types: placeholder as Registry['warehouse_doors.available']['types'],
   },
+  'warehouse_doors.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/warehouse-doors/:id',
+    tokens: [{"old":"/api/v1/warehouse-doors/:id","type":0,"val":"api","end":""},{"old":"/api/v1/warehouse-doors/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouse-doors/:id","type":0,"val":"warehouse-doors","end":""},{"old":"/api/v1/warehouse-doors/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['warehouse_doors.update']['types'],
+  },
   'warehouses.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/warehouses',

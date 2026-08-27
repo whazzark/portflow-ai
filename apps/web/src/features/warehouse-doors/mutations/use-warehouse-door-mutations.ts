@@ -17,5 +17,15 @@ export function useWarehouseDoorMutations() {
     }),
   )
 
-  return { create }
+  const update = useMutation(
+    tuyauQuery.warehouseDoors.update.mutationOptions({
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          exact: true,
+          queryKey: warehouseQueries.list().queryKey,
+        }),
+    }),
+  )
+
+  return { create, update }
 }

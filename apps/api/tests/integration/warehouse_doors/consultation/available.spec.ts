@@ -49,6 +49,7 @@ test.group('GET /api/v1/warehouse-doors/available', (group) => {
         longitude: available.longitude,
         status: 'AVAILABLE',
         createdAt: persisted.createdAt.toISO(),
+        updatedAt: persisted.updatedAt.toISO(),
       },
     ])
     assert.notInclude(

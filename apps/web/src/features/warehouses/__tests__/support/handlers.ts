@@ -1,6 +1,10 @@
 import { HttpResponse, http } from 'msw'
 import type { WarehouseDto } from '@/features/warehouses/types'
-import { API_BASE_URL, type CreatedWarehouseDoorDto } from './fixtures'
+import {
+  API_BASE_URL,
+  type CreatedWarehouseDoorDto,
+  type UpdatedWarehouseDoorDto,
+} from './fixtures'
 
 export function warehousesHandler(warehouses: WarehouseDto[]) {
   return http.get(`${API_BASE_URL}/api/v1/warehouses`, () =>
@@ -201,5 +205,81 @@ export function createWarehouseDoorRecoveringHandler(created: CreatedWarehouseDo
           { status: 500 },
         )
       : HttpResponse.json({ data: created }, { status: 201 })
+  })
+}
+
+const warehouseDoorUrl = (id: string) => `${warehouseDoorsUrl}/${id}`
+
+/** The 200 body is the standalone door DTO — `warehouseId`, `createdAt`, and the advanced
+ * `updatedAt` included — not the shape embedded under a warehouse. */
+export function updateWarehouseDoorHandler(updated: UpdatedWarehouseDoorDto) {
+  return http.patch(warehouseDoorUrl(updated.id), () => HttpResponse.json({ data: updated }))
+}
+
+export function updateWarehouseDoorErrorHandler(
+  id: string,
+  error: { code: string; message: string },
+  status: number,
+) {
+  return http.patch(warehouseDoorUrl(id), () => HttpResponse.json({ error }, { status }))
+}
+
+export const updateWarehouseDoorConflictHandler = (id: string) =>
+  updateWarehouseDoorErrorHandler(
+    id,
+    {
+      code: 'E_WAREHOUSE_DOOR_NAME_CONFLICT',
+      message: 'Warehouse door name is already in use in this warehouse',
+    },
+    409,
+  )
+
+export const updateWarehouseDoorOutsideFootprintHandler = (id: string) =>
+  updateWarehouseDoorErrorHandler(
+    id,
+    {
+      code: 'E_WAREHOUSE_DOOR_OUTSIDE_FOOTPRINT',
+      message: 'Warehouse door must be placed within its warehouse footprint',
+    },
+    422,
+  )
+
+export const updateWarehouseDoorArchivedHandler = (id: string) =>
+  updateWarehouseDoorErrorHandler(
+    id,
+    {
+      code: 'E_WAREHOUSE_DOOR_ARCHIVED',
+      message: 'Archived warehouse doors are read-only. Reactivate the door first.',
+    },
+    409,
+  )
+
+export const updateWarehouseDoorNotFoundHandler = (id: string) =>
+  updateWarehouseDoorErrorHandler(
+    id,
+    { code: 'E_WAREHOUSE_DOOR_NOT_FOUND', message: 'Warehouse door not found' },
+    404,
+  )
+
+export const updateWarehouseDoorFailureHandler = (id: string, status = 500) =>
+  updateWarehouseDoorErrorHandler(
+    id,
+    { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' },
+    status,
+  )
+
+/** Fails once, then succeeds — the retry-after-a-transient-failure path. */
+export function updateWarehouseDoorRecoveringHandler(updated: UpdatedWarehouseDoorDto) {
+  let attempts = 0
+
+  return http.patch(warehouseDoorUrl(updated.id), () => {
+    attempts += 1
+
+    return attempts === 1
+      ? HttpResponse.json(
+          { error: { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' } },
+          { status: 500 },
+        )
+      : HttpResponse.json({ data: updated })
   })
 }

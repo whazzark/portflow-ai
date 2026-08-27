@@ -45,10 +45,19 @@ export type WarehouseMapPlacement = {
 }
 
 export type WarehouseMapDoorPlacement = {
+  /** True while a *new* door is being placed, so a map click sets the point. False while an
+   * existing door is being corrected: it is repositioned by dragging its own marker or by typing
+   * coordinates, never by a click, which among sibling door markers reads as "select that one". */
   armed: boolean
   pending: LatLng | null
   onPlace: (point: LatLng) => void
   onMove: (point: LatLng) => void
+  /** Caption under the marker. "New door" while creating; the door's own name while correcting. */
+  label?: string
+  /** The door this placement stands in for while it is corrected; absent while creating. Its
+   * ordinary marker is withheld, so a stale stored position and the live draft never both claim
+   * the same door. */
+  doorId?: string
 }
 
 /** Composes the shared click-to-place hook with the shared pending marker, exactly as
@@ -62,7 +71,11 @@ function WarehouseDoorPlacementLayer({ placement }: { placement: WarehouseMapDoo
   }
 
   return (
-    <PendingPlacementMarker label="New door" onMove={placement.onMove} position={placement.pending}>
+    <PendingPlacementMarker
+      label={placement.label ?? 'New door'}
+      onMove={placement.onMove}
+      position={placement.pending}
+    >
       <span
         className="grid size-8 place-items-center rounded-full border-2 border-white bg-primary text-primary-foreground shadow-lg dark:border-neutral-900"
         data-pending-placement-marker
@@ -230,8 +243,14 @@ export function WarehouseMap({
   // administrator on every vertex. Door placement changes no polygon — the bounds stay the selected
   // warehouse's stored footprint — so it keeps the fit and only stops other things being selected.
   const isArmed = (placement?.armed ?? false) || editing !== undefined
-  const isDoorPlacementArmed = doorPlacement?.armed ?? false
-  const suppressesSelection = isArmed || isDoorPlacementArmed
+  // A door placement of *either* kind owns the map: while a new door is being placed a click must
+  // place it rather than select something, and while an existing one is being corrected a click
+  // must select nothing at all. Only `armed` decides whether that click also places a point.
+  const suppressesSelection = isArmed || doorPlacement !== undefined
+  // The door under correction is represented by its draft marker below instead of its ordinary one.
+  const renderedDoors = doorPlacement?.doorId
+    ? doors.filter((door) => door.id !== doorPlacement.doorId)
+    : doors
   const initialCenter = useMemo<[number, number]>(() => {
     const point = warehouses[0]?.footprint.points[0]
     return point ? [point.longitude, point.latitude] : [-1.2264, 46.1591]
@@ -290,14 +309,16 @@ export function WarehouseMap({
             administrator is shaping around, so hiding them would make a refusal feel arbitrary. */}
         {selected &&
           onDoorSelect &&
-          doors.map((door) => (
+          renderedDoors.map((door) => (
             <WarehouseDoorMarker
               key={door.id}
               door={door}
-              doors={doors}
+              doors={renderedDoors}
               // While a door is being placed, a click on an existing marker must place the pending
-              // point rather than select that door — the map only places in this mode.
-              onSelect={isDoorPlacementArmed ? undefined : onDoorSelect}
+              // point rather than select that door — the map only places in this mode. While one is
+              // being corrected, the marker takes no pointer event either: the click selects
+              // nothing and moves nothing, because only a drag repositions the draft.
+              onSelect={doorPlacement !== undefined ? undefined : onDoorSelect}
               selected={door.id === selectedDoorId}
               onHoverChange={(hovered) => setHoveredDoorId(hovered ? door.id : undefined)}
             />

@@ -34,8 +34,12 @@ export function ResourceRowActions({
    * Builds the confirmation for the chosen action. It is a callback rather than an element so the
    * feature's mutation hooks run inside the dialog and only while one is open: a directory can list
    * thousands of rows, and an idle row must not carry a mutation observer per lifecycle action.
+   *
+   * Optional, because a resource whose lifecycle slices are not delivered yet passes an empty
+   * `actions` and therefore has no confirmation to build. Requiring it there would force a callback
+   * that can never fire, which states the opposite of what is true.
    */
-  renderDialog: (props: { action: LifecycleAction; onClose: () => void }) => ReactNode
+  renderDialog?: (props: { action: LifecycleAction; onClose: () => void }) => ReactNode
 }) {
   const [openAction, setOpenAction] = useState<LifecycleAction | null>(null)
   const canEdit = editable && onEdit !== undefined
@@ -76,7 +80,7 @@ export function ResourceRowActions({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      {openAction && renderDialog({ action: openAction, onClose: () => setOpenAction(null) })}
+      {openAction && renderDialog?.({ action: openAction, onClose: () => setOpenAction(null) })}
     </>
   )
 }
