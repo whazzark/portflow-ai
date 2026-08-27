@@ -72,7 +72,7 @@ test('rejects an over-long weighing area name without saving', async () => {
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
   await waitFor(() => expect(nameInput).toHaveAttribute('aria-invalid', 'true'))
-  expect(screen.queryByText('Weighing area updated')).not.toBeInTheDocument()
+  expect(screen.queryByText(`Weighing area “${ALPHA_SCALE.name}” updated`)).not.toBeInTheDocument()
 })
 
 test('rejects a manually edited out-of-range coordinate and disables submission', async () => {
@@ -166,5 +166,5 @@ test('recovers from a rejected submission by correcting and resubmitting without
   await user.type(nameInput, 'Corrected Scale')
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
-  expect(await screen.findByText('Weighing area updated')).toBeInTheDocument()
+  expect(await screen.findByText('Weighing area “Corrected Scale” updated')).toBeInTheDocument()
 })

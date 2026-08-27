@@ -43,15 +43,17 @@ test('archives the warehouse and reports the cascade', async () => {
       capturedBody = await request.json()
       return HttpResponse.json({
         data: {
-          ...NORTH_SHED,
-          status: 'ARCHIVED',
-          doors: NORTH_SHED.doors?.map((door) =>
-            door.status === 'AVAILABLE'
-              ? { ...door, status: 'ARCHIVED', archivedWithWarehouse: true }
-              : door,
-          ),
+          warehouse: {
+            ...NORTH_SHED,
+            status: 'ARCHIVED',
+            doors: NORTH_SHED.doors?.map((door) =>
+              door.status === 'AVAILABLE'
+                ? { ...door, status: 'ARCHIVED', archivedWithWarehouse: true }
+                : door,
+            ),
+          },
+          archivedDoorCount: 1,
         },
-        archivedDoorCount: 1,
       })
     }),
   )
@@ -62,7 +64,9 @@ test('archives the warehouse and reports the cascade', async () => {
   await user.type(within(dialog).getByRole('textbox'), 'Building repurposed')
   await user.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText(/Warehouse archived/)).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Warehouse “${NORTH_SHED.name}” archived with 1 door`),
+  ).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Building repurposed' })
 })
 

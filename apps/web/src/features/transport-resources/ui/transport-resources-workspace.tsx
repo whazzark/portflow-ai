@@ -28,6 +28,7 @@ import { TransportCompaniesError } from '@/features/transport-companies/ui/trans
 import { TransportCompanyDetails } from '@/features/transport-companies/ui/transport-company-details'
 import { TransportCompanySection } from '@/features/transport-companies/ui/transport-company-section'
 import { TrucksPage } from '@/features/trucks/ui/trucks-page'
+import { resourceSuccessMessage } from '@/helpers/resource-copy'
 
 const transportResourcesRoute = getRouteApi('/_authenticated/transport-resources')
 
@@ -339,7 +340,9 @@ export function TransportResourcesWorkspace() {
                 return result.data
               }}
               onSuccess={(created) => {
-                toast.success('Transport company created')
+                toast.success(
+                  resourceSuccessMessage('create', TRANSPORT_COMPANY_SINGULAR, created.name),
+                )
                 void navigate({
                   search: (previous) => ({
                     ...previous,
@@ -364,8 +367,10 @@ export function TransportResourcesWorkspace() {
                   search: (previous) => ({ ...previous, companyDetailsMode: 'view' }),
                 })
               }
-              onSuccess={() => {
-                toast.success('Transport company updated')
+              onSuccess={(updated) => {
+                toast.success(
+                  resourceSuccessMessage('update', TRANSPORT_COMPANY_SINGULAR, updated.name),
+                )
                 void navigate({
                   search: (previous) => ({ ...previous, companyDetailsMode: 'view' }),
                 })

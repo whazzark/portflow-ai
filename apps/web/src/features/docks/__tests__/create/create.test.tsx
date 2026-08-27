@@ -52,7 +52,7 @@ test('places, names, and creates a dock, then shows it as the selected read-only
   await user.type(screen.getByRole('textbox', { name: 'Dock name' }), created.name)
   await user.click(screen.getByRole('button', { name: 'Create dock' }))
 
-  expect(await screen.findByText('Dock created')).toBeInTheDocument()
+  expect(await screen.findByText(`Dock “${created.name}” created`)).toBeInTheDocument()
   expect(await screen.findByRole('heading', { name: created.name })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({
     checkpoint: `dock:${created.id}`,
@@ -149,5 +149,5 @@ test('creates a dock by typing coordinates directly, without any map click (keyb
 
   await user.click(screen.getByRole('button', { name: 'Create dock' }))
 
-  expect(await screen.findByText('Dock created')).toBeInTheDocument()
+  expect(await screen.findByText(`Dock “${created.name}” created`)).toBeInTheDocument()
 })

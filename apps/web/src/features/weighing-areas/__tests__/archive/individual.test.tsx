@@ -90,7 +90,9 @@ test('archives a weighing area with a comment', async () => {
   await user.type(screen.getByRole('textbox', { name: /comment/i }), 'Weighbridge decommissioned')
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('Weighing area archived')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Weighing area “${ALPHA_SCALE.name}” archived`),
+  ).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Weighbridge decommissioned' })
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument(),
@@ -120,6 +122,8 @@ test('archives a weighing area without a comment', async () => {
   await screen.findByRole('heading', { name: 'Archive weighing area?' })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('Weighing area archived')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Weighing area “${ALPHA_SCALE.name}” archived`),
+  ).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: null })
 })

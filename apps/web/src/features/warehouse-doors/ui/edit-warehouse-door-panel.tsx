@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { FieldDescription, FieldGroup } from '@/components/ui/field'
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import type { WarehouseDoorDto } from '@/features/warehouse-doors/types'
+import { DOOR_SINGULAR } from '@/features/warehouse-doors/warehouse-door-presentation'
 import { isInsideFootprint } from '@/features/warehouses/geometry/footprint-validation'
 import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
 import { resourceFailureTitle } from '@/helpers/resource-copy'
@@ -71,7 +72,7 @@ export function EditWarehouseDoorPanel({
   })
   // The name the session opened on, not the one being typed: a refused rename must still point at
   // the door the administrator was correcting.
-  const failureTitle = resourceFailureTitle('update', 'door', originName)
+  const failureTitle = resourceFailureTitle('update', DOOR_SINGULAR, originName)
 
   const form = useAppForm({
     defaultValues: { name: originName },

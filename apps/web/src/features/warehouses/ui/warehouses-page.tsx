@@ -26,6 +26,7 @@ import { EditWarehouseDoorPanel } from '@/features/warehouse-doors/ui/edit-wareh
 import { WarehouseDoorsPanel } from '@/features/warehouse-doors/ui/warehouse-doors-panel'
 import { useWarehouseDoorEditSession } from '@/features/warehouse-doors/use-warehouse-door-edit-session'
 import {
+  DOOR_SINGULAR,
   defaultDoorStatus,
   filterWarehouseDoors,
   findAdmittedDoor,
@@ -54,6 +55,7 @@ import {
   WarehouseLifecycleActions,
 } from '@/features/warehouses/warehouse-lifecycle'
 import { presentWarehouses, warehouseMatchesSearch } from '@/features/warehouses/warehouse-search'
+import { resourceSuccessMessage } from '@/helpers/resource-copy'
 import { useIsMobile } from '@/hooks/use-mobile'
 
 const warehousesRoute = getRouteApi('/_authenticated/warehouses')
@@ -478,6 +480,7 @@ export function WarehousesPage() {
   // never costs the administrator their filter.
   const handleUpdated = (warehouse: { id: string; name: string }) => {
     clearEditSession()
+    toast.success(resourceSuccessMessage('update', WAREHOUSE_SINGULAR, warehouse.name))
 
     void navigate({
       search: (previous) => ({
@@ -496,8 +499,8 @@ export function WarehousesPage() {
     return result.data
   }
   // The new warehouse is revealed whatever the previous lifecycle view or search would have hidden.
-  const handleCreated = (warehouse: { id: string }) => {
-    toast.success('Warehouse created')
+  const handleCreated = (warehouse: { id: string; name: string }) => {
+    toast.success(resourceSuccessMessage('create', WAREHOUSE_SINGULAR, warehouse.name))
     void navigate({
       search: (previous) => ({
         ...previous,
@@ -592,15 +595,15 @@ export function WarehousesPage() {
   // The corrected door stays selected. Unlike #209 there is nothing to reveal it from: `search`
   // matches warehouses, so no door name takes part in the filter and a rename can hide nothing;
   // and the update cannot change a door's status, so the lifecycle view still contains it.
-  const handleDoorUpdated = () => {
+  const handleDoorUpdated = (door: { name: string }) => {
     clearDoorEditSession()
-    toast.success('Door updated')
+    toast.success(resourceSuccessMessage('update', DOOR_SINGULAR, door.name))
     void navigate({ search: (previous) => ({ ...previous, edit: undefined }) })
   }
 
   // The lifecycle view stays on Available, where placement put it, and follows the new door.
-  const handleDoorCreated = (door: { id: string }) => {
-    toast.success('Door created')
+  const handleDoorCreated = (door: { id: string; name: string }) => {
+    toast.success(resourceSuccessMessage('create', DOOR_SINGULAR, door.name))
     void navigate({
       search: (previous) => ({
         ...previous,

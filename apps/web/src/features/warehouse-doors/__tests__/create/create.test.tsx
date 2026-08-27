@@ -107,5 +107,5 @@ test('confirms the creation with a notification', async () => {
   server.use(warehousesHandler(WAREHOUSES_WITH_CREATED_DOOR))
   await user.click(screen.getByRole('button', { name: 'Create door' }))
 
-  expect(await screen.findByText('Door created')).toBeInTheDocument()
+  expect(await screen.findByText(`Door “${CREATED_DOOR.name}” created`)).toBeInTheDocument()
 })

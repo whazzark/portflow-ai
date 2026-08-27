@@ -185,5 +185,5 @@ test('applies the correction exactly once when a failed submission is retried', 
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
   await waitFor(() => expect(router.state.location.search).not.toHaveProperty('edit'))
-  expect(await screen.findByText('Door updated')).toBeInTheDocument()
+  expect(await screen.findByText(`Door “${UPDATED_DOOR.name}” updated`)).toBeInTheDocument()
 })

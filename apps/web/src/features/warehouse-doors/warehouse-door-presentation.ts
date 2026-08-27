@@ -1,6 +1,10 @@
 import type { WarehouseDoorDto, WarehouseDoorStatusFilter } from '@/features/warehouse-doors/types'
 import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
 
+/** Doors carry no lifecycle of their own, so their display noun lives here rather than in a
+ * `*-lifecycle` module like every other site reference's. */
+export const DOOR_SINGULAR = 'door'
+
 export function defaultDoorStatus(
   warehouseStatus: 'AVAILABLE' | 'ARCHIVED',
 ): WarehouseDoorStatusFilter {

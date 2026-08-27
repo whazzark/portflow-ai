@@ -139,7 +139,7 @@ test('creates successfully when the submitted name matches an existing dock name
   await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), 'North Dock')
   await user.click(screen.getByRole('button', { name: 'Create weighing area' }))
 
-  expect(await screen.findByText('Weighing area created')).toBeInTheDocument()
+  expect(await screen.findByText('Weighing area “North Dock” created')).toBeInTheDocument()
 })
 
 test('rejects a manually edited out-of-range coordinate and disables submission', async () => {

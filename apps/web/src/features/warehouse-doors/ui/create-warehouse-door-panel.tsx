@@ -8,6 +8,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { FieldDescription, FieldGroup } from '@/components/ui/field'
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { DOOR_SINGULAR } from '@/features/warehouse-doors/warehouse-door-presentation'
 import { isInsideFootprint } from '@/features/warehouses/geometry/footprint-validation'
 import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
 import { resourceFailureTitle } from '@/helpers/resource-copy'
@@ -20,7 +21,7 @@ const OUTSIDE_FOOTPRINT_MESSAGE =
 
 const PLACEMENT_REQUIRED_MESSAGE = 'Click the map inside the warehouse to place the door.'
 
-export type CreatedWarehouseDoor = { id: string }
+export type CreatedWarehouseDoor = { id: string; name: string }
 
 export function CreateWarehouseDoorPanel({
   warehouse,
@@ -98,7 +99,7 @@ export function CreateWarehouseDoorPanel({
         } else {
           // Neither the typed name nor the pending marker is cleared, so a retry after a transient
           // failure re-sends the same submission rather than starting over.
-          toast.error(resourceFailureTitle('create', 'door', value.name.trim()), {
+          toast.error(resourceFailureTitle('create', DOOR_SINGULAR, value.name.trim()), {
             description: apiError.message,
           })
         }

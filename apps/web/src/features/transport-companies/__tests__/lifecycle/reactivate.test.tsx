@@ -91,7 +91,9 @@ test('reactivating moves the company to the Available tab with its lifecycle con
   })
   fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('Transport company reactivated')).toBeInTheDocument()
+  expect(
+    await screen.findByText('Transport company “Coastal Haulage” reactivated'),
+  ).toBeInTheDocument()
   const tabs = await companyTabs()
   expect(
     await within(tabs).findByRole('tab', {

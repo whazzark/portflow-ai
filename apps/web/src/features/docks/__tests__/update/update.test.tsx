@@ -77,7 +77,7 @@ test('saves a rename without touching position, status, identity, or creation ti
   await user.type(nameInput, updated.name)
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
-  expect(await screen.findByText('Dock updated')).toBeInTheDocument()
+  expect(await screen.findByText(`Dock “${updated.name}” updated`)).toBeInTheDocument()
   expect(await screen.findByRole('heading', { name: updated.name })).toBeInTheDocument()
   expect(screen.getByText(String(NORTH_DOCK.latitude))).toBeInTheDocument()
   expect(screen.getByText(String(NORTH_DOCK.longitude))).toBeInTheDocument()
@@ -115,7 +115,7 @@ test('applies a combined name and position change together', async () => {
 
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
-  expect(await screen.findByText('Dock updated')).toBeInTheDocument()
+  expect(await screen.findByText(`Dock “${updated.name}” updated`)).toBeInTheDocument()
   expect(capturedBody).toMatchObject({
     name: updated.name,
     latitude: updated.latitude,
@@ -141,6 +141,6 @@ test('allows saving with no changes and does not report a duplicate', async () =
 
   await user.click(saveButton)
 
-  expect(await screen.findByText('Dock updated')).toBeInTheDocument()
+  expect(await screen.findByText(`Dock “${NORTH_DOCK.name}” updated`)).toBeInTheDocument()
   expect(screen.queryByText(/already in use/i)).not.toBeInTheDocument()
 })

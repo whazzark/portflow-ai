@@ -19,3 +19,28 @@ export type ResourceWriteAction = 'create' | 'update'
 export function resourceFailureTitle(action: ResourceWriteAction, singular: string, name: string) {
   return `Unable to ${action} ${singular} “${name}”`
 }
+
+const WRITE_PAST_PARTICIPLES: Record<ResourceWriteAction, string> = {
+  create: 'created',
+  update: 'updated',
+}
+
+/**
+ * `Customer “Acme Logistics” created`.
+ *
+ * The mirror of `resourceFailureTitle`: the same submission reported either way names the same
+ * record. A success quotes the name the record now carries, which for an update is the corrected
+ * one — that correction is precisely what the toast is confirming.
+ */
+export function resourceSuccessMessage(
+  action: ResourceWriteAction,
+  singular: string,
+  name: string,
+) {
+  return `${capitalize(singular)} “${name}” ${WRITE_PAST_PARTICIPLES[action]}`
+}
+
+/** The noun opens the sentence, so it is capitalized wherever a resource message is built. */
+export function capitalize(value: string) {
+  return value.charAt(0).toLocaleUpperCase() + value.slice(1)
+}

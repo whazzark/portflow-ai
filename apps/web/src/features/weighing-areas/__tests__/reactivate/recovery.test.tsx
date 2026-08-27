@@ -77,7 +77,9 @@ test('an over-long comment is refused in a toast, keeps the dialog open, and a s
   })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('Weighing area reactivated')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Weighing area “${RETIRED_SCALE.name}” reactivated`),
+  ).toBeInTheDocument()
 })
 
 test('an already-available refusal surfaces in a toast with its own distinct reason', async () => {
@@ -147,5 +149,7 @@ test('a transient failure surfaces in a toast and a retry after recovery succeed
 
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('Weighing area reactivated')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Weighing area “${RETIRED_SCALE.name}” reactivated`),
+  ).toBeInTheDocument()
 })
