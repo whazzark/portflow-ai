@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { PlusIcon } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import {
@@ -22,7 +22,9 @@ import { isAdministrator } from '@/features/auth/policies/permissions'
 import { useWarehouseDoorMutations } from '@/features/warehouse-doors/mutations/use-warehouse-door-mutations'
 import type { WarehouseDoorStatusFilter } from '@/features/warehouse-doors/types'
 import { CreateWarehouseDoorPanel } from '@/features/warehouse-doors/ui/create-warehouse-door-panel'
+import { EditWarehouseDoorPanel } from '@/features/warehouse-doors/ui/edit-warehouse-door-panel'
 import { WarehouseDoorsPanel } from '@/features/warehouse-doors/ui/warehouse-doors-panel'
+import { useWarehouseDoorEditSession } from '@/features/warehouse-doors/use-warehouse-door-edit-session'
 import {
   defaultDoorStatus,
   filterWarehouseDoors,
@@ -68,6 +70,12 @@ const statusForIntent = (intent: BulkLifecycleIntent): WarehouseStatus =>
 const withoutDoorCreation = (create: 'warehouse' | 'door' | undefined) =>
   create === 'door' ? undefined : create
 
+/** Same reasoning for the update mode: `edit=door` is scoped to the one door it was opened for, so
+ * it is dropped whenever that selection changes or goes away. A `edit=warehouse` is scoped to the
+ * warehouse and survives a door selection changing under it. */
+const withoutDoorEditing = (edit: 'warehouse' | 'door' | undefined) =>
+  edit === 'door' ? undefined : edit
+
 export function WarehousesPage() {
   const { create, doorId, doorStatus, edit, search, selecting, status, warehouseId } =
     warehousesRoute.useSearch()
@@ -85,6 +93,8 @@ export function WarehousesPage() {
   // refuses an archived warehouse because those are read-only until reactivated.
   // Either creation mode owns the sheet, so neither leaves room for an update session.
   const isEditRequested = canManageWarehouses && edit === 'warehouse' && create === undefined
+  // Same gate for the door update: a creation mode owns the sheet, so neither leaves room for one.
+  const isDoorEditRequested = canManageWarehouses && edit === 'door' && create === undefined
   const [pendingPoints, setPendingPoints] = useState<LatLng[]>([])
   // A finished outline stops taking new points; removing one reopens it for further drawing.
   const [isOutlineComplete, setIsOutlineComplete] = useState(false)
@@ -94,6 +104,8 @@ export function WarehousesPage() {
     null,
   )
   const doorMutations = useWarehouseDoorMutations()
+  // The lifecycle view placement was entered from, kept so cancelling can restore it.
+  const doorStatusBeforeCreating = useRef<WarehouseDoorStatusFilter | undefined>(undefined)
 
   // Leaving the mode — cancelling, navigating away, or landing on the route without the param —
   // discards every pending boundary point rather than carrying it into a later session.
@@ -146,6 +158,19 @@ export function WarehousesPage() {
     restoreOrigin,
     clear: clearEditSession,
   } = useWarehouseEditSession({ requested: isEditRequested, selected })
+
+  const {
+    isEditing: isEditingDoor,
+    session: doorEditSession,
+    draft: doorDraft,
+    setDraft: setDoorDraft,
+    restoreOrigin: restoreDoorOrigin,
+    clear: clearDoorEditSession,
+  } = useWarehouseDoorEditSession({
+    requested: isDoorEditRequested,
+    warehouse: selected,
+    door: admittedDoor,
+  })
 
   // The status of any currently checked warehouse fixes what a selection is for — Available means
   // an archive is in progress, Archived means a reactivation is — since the selection is
@@ -271,6 +296,17 @@ export function WarehousesPage() {
     }
   }, [create, edit, navigate, warehouseId])
 
+  // A door-scoped `edit` outliving its door would arm the update for whichever door is selected
+  // next — including one arrived at from a shared URL — so it goes as soon as `doorId` does.
+  useEffect(() => {
+    if (edit === 'door' && !doorId) {
+      void navigate({
+        replace: true,
+        search: (previous) => ({ ...previous, edit: withoutDoorEditing(previous.edit) }),
+      })
+    }
+  }, [doorId, edit, navigate])
+
   // Dormant rather than dropped, a door-scoped `create` would arm placement the moment the archived
   // warehouse it points at is reactivated (#211) — an action the administrator never asked for. So
   // the param goes as soon as the selection turns out to be one that cannot take a new door.
@@ -282,6 +318,23 @@ export function WarehousesPage() {
       })
     }
   }, [create, navigate, selectedStatus])
+
+  // Same for the update: dormant rather than dropped, `edit=door` would arm the session the moment
+  // an archived door or its archived warehouse was reactivated (#211, #216) — an action the
+  // administrator never asked for.
+  useEffect(() => {
+    if (
+      edit === 'door' &&
+      query.data &&
+      admittedDoor !== undefined &&
+      (selectedStatus === 'ARCHIVED' || admittedDoor.status === 'ARCHIVED')
+    ) {
+      void navigate({
+        replace: true,
+        search: (previous) => ({ ...previous, edit: withoutDoorEditing(previous.edit) }),
+      })
+    }
+  }, [admittedDoor, edit, navigate, query.data, selectedStatus])
 
   useEffect(() => {
     if (query.data && selected && doorId && !admittedDoor) {
@@ -381,6 +434,7 @@ export function WarehousesPage() {
   const startCreating = () => {
     // Activating creation ends an update in progress without saving it: at most one map mode.
     clearEditSession()
+    clearDoorEditSession()
     void navigate({
       search: (previous) => ({
         ...previous,
@@ -462,6 +516,8 @@ export function WarehousesPage() {
   // administrator needs on the map to place a new one between them.
   const startCreatingDoor = () => {
     clearEditSession()
+    clearDoorEditSession()
+    doorStatusBeforeCreating.current = doorStatus
     void navigate({
       search: (previous) => ({
         ...previous,
@@ -472,8 +528,17 @@ export function WarehousesPage() {
       }),
     })
   }
+  // Cancelling undoes the forced view along with the mode: an administrator who reached placement
+  // from the Archived tab is put back on it, rather than left on Available with nothing to explain
+  // why the list changed. A created door keeps Available, where it is the one that matters.
   const cancelCreatingDoor = () =>
-    void navigate({ search: (previous) => ({ ...previous, create: undefined }) })
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        create: undefined,
+        doorStatus: doorStatusBeforeCreating.current,
+      }),
+    })
   const createWarehouseDoor = async (value: {
     name: string
     latitude: number
@@ -485,6 +550,54 @@ export function WarehousesPage() {
 
     return result.data
   }
+  const startUpdatingDoor = (nextDoorId: string) => {
+    // Activating a door update ends any warehouse update in progress without saving it: at most one
+    // map mode. Selecting the door and opening its session are one navigation, so the action does
+    // not require the row to have been selected first.
+    clearEditSession()
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        create: undefined,
+        doorId: nextDoorId,
+        edit: 'door' as const,
+      }),
+    })
+  }
+  const cancelUpdatingDoor = () => {
+    clearDoorEditSession()
+    void navigate({ search: (previous) => ({ ...previous, edit: undefined }) })
+  }
+  // The door the session was opened for is gone: drop the selection with it, so the administrator
+  // lands on a consistent view of the warehouse's remaining doors rather than on a ghost.
+  const handleDoorUpdateNotFound = () => {
+    clearDoorEditSession()
+    void navigate({
+      replace: true,
+      search: (previous) => ({ ...previous, doorId: undefined, edit: undefined }),
+    })
+  }
+  const updateWarehouseDoor = async (value: {
+    name: string
+    latitude: number
+    longitude: number
+  }) => {
+    const result = await doorMutations.update.mutateAsync({
+      params: { id: doorEditSession?.doorId ?? '' },
+      body: value,
+    })
+
+    return result.data
+  }
+  // The corrected door stays selected. Unlike #209 there is nothing to reveal it from: `search`
+  // matches warehouses, so no door name takes part in the filter and a rename can hide nothing;
+  // and the update cannot change a door's status, so the lifecycle view still contains it.
+  const handleDoorUpdated = () => {
+    clearDoorEditSession()
+    toast.success('Door updated')
+    void navigate({ search: (previous) => ({ ...previous, edit: undefined }) })
+  }
+
   // The lifecycle view stays on Available, where placement put it, and follows the new door.
   const handleDoorCreated = (door: { id: string }) => {
     toast.success('Door created')
@@ -549,7 +662,19 @@ export function WarehousesPage() {
                     onPlace: placePendingDoor,
                     onMove: placePendingDoor,
                   }
-                : undefined
+                : isEditingDoor && doorEditSession && doorDraft
+                  ? {
+                      // Unarmed: a door under correction is moved by dragging its own marker or by
+                      // typing coordinates. Among sibling door markers a map click reads as "select
+                      // that one", so it must place nothing at all.
+                      armed: false,
+                      pending: doorDraft,
+                      onPlace: setDoorDraft,
+                      onMove: setDoorDraft,
+                      label: doorEditSession.originName,
+                      doorId: doorEditSession.doorId,
+                    }
+                  : undefined
             }
             placement={{
               armed: isCreating,
@@ -662,6 +787,10 @@ export function WarehousesPage() {
             cancelCreatingDoor()
             return
           }
+          if (isEditingDoor) {
+            cancelUpdatingDoor()
+            return
+          }
           if (isEditing) {
             cancelUpdating()
             return
@@ -712,6 +841,20 @@ export function WarehousesPage() {
               pending={pendingDoorPoint}
               warehouse={selected}
             />
+          ) : isEditingDoor && selected && admittedDoor && doorEditSession && doorDraft ? (
+            <EditWarehouseDoorPanel
+              door={admittedDoor}
+              draft={doorDraft}
+              onCancel={cancelUpdatingDoor}
+              onDraftChange={setDoorDraft}
+              onNotFound={handleDoorUpdateNotFound}
+              onRestorePosition={restoreDoorOrigin}
+              onSuccess={handleDoorUpdated}
+              onUpdate={updateWarehouseDoor}
+              origin={doorEditSession.origin}
+              originName={doorEditSession.originName}
+              warehouse={selected}
+            />
           ) : isEditing && selected && editSession ? (
             <EditWarehousePanel
               onCancel={cancelUpdating}
@@ -750,6 +893,10 @@ export function WarehousesPage() {
                       ? startCreatingDoor
                       : undefined
                   }
+                  // Present for any administrator; each row is gated again by its own and its
+                  // warehouse's lifecycle state, and renders no menu at all when it has nothing to
+                  // offer.
+                  onEditDoor={canManageWarehouses ? startUpdatingDoor : undefined}
                 />
                 {/* One footer for every action on the warehouse. Editing is absent rather than
                     disabled for an archived warehouse, which is read-only until it is reactivated

@@ -269,7 +269,45 @@ export const CREATED_DOOR: CreatedWarehouseDoorDto = {
   latitude: 48.853,
   longitude: 2.35,
   createdAt: '2026-08-26T09:12:44.000Z',
+  updatedAt: '2026-08-26T09:12:44.000Z',
 }
+
+/** What `PATCH /api/v1/warehouse-doors/:id` returns: the same standalone DTO as the 201, plus the
+ * advanced `updatedAt` that records the correction. */
+export type UpdatedWarehouseDoorDto = Route.Response<'warehouse_doors.update'>['data']
+
+/** The first fixture warehouse's first door, corrected: renamed and nudged, still inside the
+ * footprint, still Available under the same warehouse. */
+export const EDITABLE_DOOR = (WAREHOUSES[0].doors ?? [])[0]
+
+export const UPDATED_DOOR: UpdatedWarehouseDoorDto = {
+  id: EDITABLE_DOOR.id,
+  warehouseId: WAREHOUSES[0].id,
+  name: 'North Door (corrected)',
+  status: 'AVAILABLE',
+  latitude: 48.854,
+  longitude: 2.351,
+  createdAt: '2026-08-20T09:12:44.000Z',
+  updatedAt: '2026-08-26T14:03:07.000Z',
+}
+
+/** The same door as the warehouse collection embeds it, for the refetch that follows an update. */
+export const WAREHOUSES_WITH_UPDATED_DOOR: WarehouseWithDoorsDto[] = [
+  {
+    ...WAREHOUSES[0],
+    doors: (WAREHOUSES[0].doors ?? []).map((door) =>
+      door.id === UPDATED_DOOR.id
+        ? {
+            ...door,
+            name: UPDATED_DOOR.name,
+            latitude: UPDATED_DOOR.latitude,
+            longitude: UPDATED_DOOR.longitude,
+          }
+        : door,
+    ),
+  },
+  WAREHOUSES[1],
+]
 
 /** The same door as the warehouse collection embeds it, for the refetch that follows creation. */
 export const WAREHOUSES_WITH_CREATED_DOOR: WarehouseWithDoorsDto[] = [

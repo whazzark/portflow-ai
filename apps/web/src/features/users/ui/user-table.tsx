@@ -111,6 +111,10 @@ export function UserTable({
     columns,
     state: { globalFilter: search, sorting },
     onSortingChange,
+    // The directory is always sorted by one column or the other, because the URL carries a `sort`
+    // and an `order` at all times. Left at its default, a third click on a header would clear the
+    // sorting the URL cannot express, and the table would silently fall back to another column.
+    enableSortingRemoval: false,
     meta: { onSelect },
     getRowId: (user) => user.id,
     getCoreRowModel: getCoreRowModel(),

@@ -12,7 +12,10 @@ const warehouseSearchSchema = z.object({
   create: z.enum(['warehouse', 'door']).optional().catch(undefined),
   doorId: z.string().optional().catch(undefined),
   doorStatus: z.enum(['available', 'archived']).optional().catch(undefined),
-  edit: z.literal('warehouse').optional().catch(undefined),
+  // `door` is honoured only alongside a `warehouseId` naming an available warehouse and a `doorId`
+  // naming an available door of it: a door update is scoped to one door, not to the page. One param
+  // holding one value is also what keeps the two update modes from ever being armed together.
+  edit: z.enum(['warehouse', 'door']).optional().catch(undefined),
   warehouseId: z.string().optional().catch(undefined),
   search: z.string().catch(''),
   // Mirrors the Checkpoints `selecting` param. Honoured only for administrators; for anyone else

@@ -13,3 +13,38 @@ export const createWarehouseDoorValidator = vine.create({
   latitude: vine.number().min(-90).max(90),
   longitude: vine.number().min(-180).max(180),
 })
+
+/**
+ * Every member is optional on its own, but the body must carry at least one, and the two
+ * coordinates must travel together: a position is replaced as a whole, so a lone latitude is a
+ * transport error rather than a half-move the use case would have to reason about.
+ *
+ * Deliberately stricter than `updateDockValidator`, which leaves its coordinates untied and so
+ * accepts a latitude with no longitude.
+ */
+export const updateWarehouseDoorValidator = vine.create(
+  vine.object({
+    name: vine
+      .string()
+      .use(nonBlank())
+      .minLength(1)
+      .maxLength(255)
+      .optional()
+      .requiredWhen((field) => Object.hasOwn(field.parent, field.name))
+      .requiredIfMissing(['latitude', 'longitude']),
+    latitude: vine
+      .number()
+      .min(-90)
+      .max(90)
+      .optional()
+      .requiredWhen((field) => Object.hasOwn(field.parent, field.name))
+      .requiredIfExists('longitude'),
+    longitude: vine
+      .number()
+      .min(-180)
+      .max(180)
+      .optional()
+      .requiredWhen((field) => Object.hasOwn(field.parent, field.name))
+      .requiredIfExists('latitude'),
+  }),
+)

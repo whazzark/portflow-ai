@@ -108,6 +108,7 @@ router
       .group(() => {
         router.post('/', [controllers.WarehouseDoors, 'store']).as('store')
         router.get('/available', [controllers.WarehouseDoors, 'available']).as('available')
+        router.patch('/:id', [controllers.WarehouseDoors, 'update']).as('update')
       })
       .prefix('/warehouse-doors')
       .as('warehouse_doors')

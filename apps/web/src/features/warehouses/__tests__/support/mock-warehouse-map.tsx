@@ -67,6 +67,15 @@ export function WarehouseMap({
 }) {
   const isArmed = placement?.armed ?? false
   const isPlacingDoor = doorPlacement?.armed ?? false
+  // A door being corrected passes an *unarmed* placement: it is repositioned by dragging its own
+  // marker, never by clicking the map. Mirrors `armed: false` in `warehouses-page.tsx`.
+  const isEditingDoor = doorPlacement !== undefined && !doorPlacement.armed
+  const doorPlacementLabel = doorPlacement?.label ?? 'New door'
+  // The door under correction is represented by its draft marker instead of its ordinary one, so a
+  // stale stored position and the live draft never both claim it. Mirrors `warehouse-map.tsx`.
+  const renderedDoors = doorPlacement?.doorId
+    ? doors.filter((door) => door.id !== doorPlacement.doorId)
+    : doors
   const points = placement?.points ?? []
   const editedPoints = editing?.points ?? []
   const canRemove = editedPoints.length > (editing?.minimumPoints ?? 3)
@@ -103,7 +112,7 @@ export function WarehouseMap({
             // selectable — mirrors `useResourceMapPlacement` arming the real canvas.
             // A warehouse under correction owns the map too: its own ring is being edited, so no
             // other warehouse is selectable either.
-            disabled={isArmed || isPlacingDoor || editing !== undefined}
+            disabled={isArmed || doorPlacement !== undefined || editing !== undefined}
             key={warehouse.id}
             onClick={(event: MouseEvent<HTMLButtonElement>) => {
               if (isCheckable && event.shiftKey && onShiftSelect) {
@@ -122,17 +131,24 @@ export function WarehouseMap({
           </button>
         )
       })}
-      {doors.map((door) => (
+      {renderedDoors.map((door) => (
         <button
           key={door.id}
           // While a door is being placed the real marker takes no pointer event at all, so the
           // click lands on the map underneath and places the pending door instead of selecting
           // this one. Mirrors `pointer-events-none` in `warehouse-door-marker.tsx`.
-          onClick={() =>
-            isPlacingDoor
-              ? doorPlacement?.onPlace(MOCK_DOOR_CLICK_POINTS[doorPlacement.pending ? 1 : 0])
-              : onDoorSelect?.(door)
-          }
+          // While a door is being *corrected* the map places nothing, so the click reaches neither
+          // this marker nor the draft: it simply does nothing.
+          onClick={() => {
+            if (isPlacingDoor) {
+              doorPlacement?.onPlace(MOCK_DOOR_CLICK_POINTS[doorPlacement.pending ? 1 : 0])
+              return
+            }
+            if (isEditingDoor) {
+              return
+            }
+            onDoorSelect?.(door)
+          }}
           type="button"
         >
           {door.name} door marker
@@ -153,7 +169,7 @@ export function WarehouseMap({
               <span data-testid="pending-door">
                 {doorPlacement.pending.latitude}, {doorPlacement.pending.longitude}
               </span>
-              <span>New door</span>
+              <span>{doorPlacementLabel}</span>
               <button
                 onClick={() =>
                   doorPlacement.onMove({
@@ -170,6 +186,41 @@ export function WarehouseMap({
                 type="button"
               >
                 Simulate dragging the pending door outside the footprint
+              </button>
+            </>
+          )}
+        </>
+      )}
+      {isEditingDoor && (
+        <>
+          {/* A click landing anywhere on the map must leave the draft alone: only a drag moves it. */}
+          <button onClick={() => {}} type="button">
+            Simulate map click away from the door being edited
+          </button>
+          {doorPlacement?.pending && (
+            <>
+              <span data-testid="draft-door">
+                {doorPlacement.pending.latitude}, {doorPlacement.pending.longitude}
+              </span>
+              <span>{doorPlacementLabel}</span>
+              <button
+                onClick={() =>
+                  doorPlacement.onMove({
+                    latitude: (doorPlacement.pending?.latitude ?? 0) + 0.0005,
+                    // Toward the fixture triangle's apex rather than its left edge, so a drag stays
+                    // comfortably inside the footprint instead of landing on its boundary.
+                    longitude: (doorPlacement.pending?.longitude ?? 0) + 0.005,
+                  })
+                }
+                type="button"
+              >
+                Simulate dragging the door being edited
+              </button>
+              <button
+                onClick={() => doorPlacement.onMove({ latitude: 10, longitude: 10 })}
+                type="button"
+              >
+                Simulate dragging the door being edited outside the footprint
               </button>
             </>
           )}

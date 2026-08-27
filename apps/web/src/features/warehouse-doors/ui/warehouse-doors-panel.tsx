@@ -2,6 +2,7 @@ import { MapPinIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { WarehouseDoorStatusFilter } from '@/features/warehouse-doors/types'
+import { WarehouseDoorRowActions } from '@/features/warehouse-doors/ui/warehouse-door-row-actions'
 import {
   countWarehouseDoors,
   filterWarehouseDoors,
@@ -23,6 +24,7 @@ export function WarehouseDoorsPanel({
   onStatusChange,
   onDoorSelect,
   onCreateDoor,
+  onEditDoor,
 }: {
   warehouse: WarehouseWithDoorsDto
   status: WarehouseDoorStatusFilter
@@ -32,6 +34,9 @@ export function WarehouseDoorsPanel({
   /** Absent — rather than disabled — for anyone who may not add a door to this warehouse, and for
    * an archived warehouse, which is read-only until it is reactivated. */
   onCreateDoor?: () => void
+  /** Absent for anyone who may not administer this warehouse's doors; the per-row menu then
+   * renders nothing at all. Individual rows are gated again by their own lifecycle state. */
+  onEditDoor?: (doorId: string) => void
 }) {
   const counts = countWarehouseDoors(warehouse)
   const doors = sortDoors(filterWarehouseDoors(warehouse, status))
@@ -71,15 +76,25 @@ export function WarehouseDoorsPanel({
             ) : (
               <ul aria-label={`${labels[key]} warehouse doors`} className="grid gap-2">
                 {doors.map((door) => (
-                  <li key={door.id}>
+                  // The card is the `<li>`, not the row button, so the action menu sits *inside*
+                  // it while staying a sibling of the button: a row is itself a `<Button>`, and an
+                  // action nested in one would put a button inside a button. The button below is
+                  // therefore transparent and borderless, and the card owns the border, the
+                  // background, and the hover and selected states for both children.
+                  <li
+                    className={classnames(
+                      'flex items-center gap-1 rounded-md border border-border bg-background pr-1 transition-colors',
+                      'hover:bg-muted has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50',
+                      'dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
+                      door.id === selectedDoorId && 'border-primary bg-accent dark:bg-accent',
+                    )}
+                    key={door.id}
+                  >
                     <Button
                       aria-pressed={door.id === selectedDoorId}
-                      className={classnames(
-                        'h-auto w-full justify-start gap-2 px-3 py-3 text-left transition-colors',
-                        door.id === selectedDoorId && 'border-primary bg-accent',
-                      )}
+                      className="h-auto min-w-0 flex-1 justify-start gap-2 bg-transparent px-3 py-3 text-left hover:bg-transparent focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent"
                       onClick={() => onDoorSelect(door.id)}
-                      variant="outline"
+                      variant="ghost"
                     >
                       <MapPinIcon className="size-4 shrink-0" />
                       <span className="grid min-w-0">
@@ -103,6 +118,13 @@ export function WarehouseDoorsPanel({
                         )}
                       </span>
                     </Button>
+                    {onEditDoor && (
+                      <WarehouseDoorRowActions
+                        door={door}
+                        onEdit={onEditDoor}
+                        warehouseStatus={warehouse.status}
+                      />
+                    )}
                   </li>
                 ))}
               </ul>
