@@ -175,3 +175,18 @@ test('stops a polygon click moving the warehouse under a selection in progress',
   ).toBeDisabled()
 })
 
+
+test('counts the selection and clears it in one gesture', async () => {
+  const user = userEvent.setup()
+  renderWarehouses(path())
+
+  await user.click(await screen.findByRole('checkbox', { name: `Select door ${DOOR.name}` }))
+  expect(await screen.findByText('1 selected')).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: 'Clear selection' }))
+
+  expect(screen.getByRole('checkbox', { name: `Select door ${DOOR.name}` })).not.toBeChecked()
+  expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
+  expect(screen.queryByText('1 selected')).not.toBeInTheDocument()
+})
+

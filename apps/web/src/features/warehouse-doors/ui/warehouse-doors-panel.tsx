@@ -1,4 +1,4 @@
-import { MapPinIcon } from 'lucide-react'
+import { MapPinIcon, XIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -32,6 +32,7 @@ export function WarehouseDoorsPanel({
   checkedDoorIds,
   onToggleChecked,
   onSelectAll,
+  onClearSelection,
   selectionAction,
 }: {
   warehouse: WarehouseWithDoorsDto
@@ -56,6 +57,10 @@ export function WarehouseDoorsPanel({
   checkedDoorIds?: ReadonlySet<string>
   onToggleChecked?: (doorId: string) => void
   onSelectAll?: (checked: boolean, doorIds: string[]) => void
+  /** Empties the selection without acting on it. Offered beside the count for the same reason the
+   * shared bulk toolbar offers it: unchecking rows one at a time cannot reach an id whose row the
+   * list no longer holds, so without it a selection can become impossible to put down. */
+  onClearSelection?: () => void
   /** What the selection can be acted on with, rendered beside `Select all`. The caller passes it
    * only once at least one door is checked, so the row stays quiet until there is something to act
    * on. It sits here rather than in a floating bar because a bar hovering between this panel and
@@ -72,6 +77,10 @@ export function WarehouseDoorsPanel({
   const checked = checkedDoorIds ?? new Set<string>()
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => checked.has(id))
   const someSelected = selectableIds.some((id) => checked.has(id))
+  // Counted over the whole selection rather than over the listed rows, so a door the list has since
+  // dropped is still accounted for — and still clearable — instead of silently inflating what
+  // `Archive selected` submits.
+  const checkedCount = checked.size
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -110,7 +119,24 @@ export function WarehouseDoorsPanel({
                   onCheckedChange={(value) => onSelectAll?.(value === true, selectableIds)}
                 />
                 <span className="text-muted-foreground text-xs">Select all</span>
+                {/* The shared bulk toolbar's own trio — a count, the action, and a way to clear —
+                    kept word for word so doors read like every other site reference (FR-039,
+                    FR-042); only its home differs, because this selection lives in the panel. */}
+                {checkedCount > 0 && (
+                  <span className="font-medium text-xs tabular-nums">{checkedCount} selected</span>
+                )}
                 {selectionAction && <span className="ml-auto">{selectionAction}</span>}
+                {checkedCount > 0 && onClearSelection && (
+                  <Button
+                    aria-label="Clear selection"
+                    className={selectionAction ? undefined : 'ml-auto'}
+                    onClick={onClearSelection}
+                    size="icon-sm"
+                    variant="ghost"
+                  >
+                    <XIcon aria-hidden="true" />
+                  </Button>
+                )}
               </div>
             )}
             {doors.length === 0 ? (

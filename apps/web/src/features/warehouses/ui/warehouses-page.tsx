@@ -494,6 +494,7 @@ export function WarehousesPage() {
     }
     setDoorSelection({ warehouseId: selected.id, ids: new Set(checked ? doorIds : []) })
   }
+  const clearDoorSelection = () => setDoorSelection(null)
 
   const selectDoor = (nextDoorId: string) =>
     void navigate({
@@ -1033,6 +1034,7 @@ export function WarehousesPage() {
                   checkedDoorIds={checkedDoorIds}
                   onToggleChecked={toggleDoorChecked}
                   onSelectAll={selectAllDoorsIn}
+                  onClearSelection={clearDoorSelection}
                 />
                 {/* One footer for every action on the warehouse. Editing is absent rather than
                     disabled for an archived warehouse, which is read-only until it is reactivated
