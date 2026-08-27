@@ -30,6 +30,7 @@ import { WarehouseDoorsPanel } from '@/features/warehouse-doors/ui/warehouse-doo
 import { useWarehouseDoorEditSession } from '@/features/warehouse-doors/use-warehouse-door-edit-session'
 import {
   toBulkWarehouseDoorLifecycleOutcome,
+  WAREHOUSE_DOOR_BLOCKER_REASON_LABELS,
   WAREHOUSE_DOOR_PLURAL,
   WAREHOUSE_DOOR_SINGULAR,
 } from '@/features/warehouse-doors/warehouse-door-lifecycle'
@@ -893,9 +894,10 @@ export function WarehousesPage() {
       <BulkResourceLifecycleDialog
         action="archive"
         // No `describeEffect`: a door cascades onto nothing, so the canonical sentence is already
-        // exactly true. No `blockerReasonLabels` either — the shared `IN_USE` label reads "used by
-        // an active or planned discharge", which is the plain truth for a door, unlike a warehouse
-        // that is blocked by one of *its* doors.
+        // exactly true. The labels override nothing either — the shared `IN_USE` reads "used by an
+        // active or planned discharge", which is the plain truth for a door, unlike a warehouse
+        // that is blocked by one of *its* doors — it only adds the reason the shared four omit.
+        blockerReasonLabels={WAREHOUSE_DOOR_BLOCKER_REASON_LABELS}
         idPrefix="warehouse-door"
         onOpenChange={setIsArchivingDoors}
         onSuccess={(outcome) => {

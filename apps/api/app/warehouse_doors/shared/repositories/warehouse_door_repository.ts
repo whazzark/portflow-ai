@@ -100,7 +100,9 @@ export type BulkWarehouseDoorLifecycleBlocker = {
   id: string
   /** The door's own name, so an outcome can identify it. Absent for `NOT_FOUND`: no row to name. */
   name?: string
-  reason: 'NOT_FOUND' | 'IN_USE' | 'ALREADY_ARCHIVED' | 'ALREADY_AVAILABLE'
+  /** `WAREHOUSE_ARCHIVED` is the bulk counterpart of the single path's refusal of the same name:
+   * an available door under an archived warehouse, which only a crafted submission can name. */
+  reason: 'NOT_FOUND' | 'IN_USE' | 'ALREADY_ARCHIVED' | 'ALREADY_AVAILABLE' | 'WAREHOUSE_ARCHIVED'
 }
 
 export type BulkWarehouseDoorLifecycleResult = {

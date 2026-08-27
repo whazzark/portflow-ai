@@ -223,6 +223,31 @@ test.group('Warehouse door bulk archival endpoint', (group) => {
     assert.equal((await WarehouseDoor.findOrFail(target.id)).status, 'AVAILABLE')
   })
 
+  test('refuses a door of an archived warehouse, archiving its eligible siblings', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await administrator()
+    const closed = await warehouse('archived')
+    const open = await warehouse()
+    // Unreachable from the interface — the cascade archives every available door — so it is built
+    // directly here, exactly as the single-door path's own guard is proven.
+    const stranded = await door(closed.id, 'Stranded door')
+    const eligible = await door(open.id, 'Door 1')
+
+    const response = await client
+      .post(URL)
+      .loginAs(admin)
+      .json({ ids: [stranded.id, eligible.id], comment: 'Row closed' })
+
+    response.assertStatus(200)
+    assert.deepEqual(response.body().data.blockedDoors, [
+      { id: stranded.id, name: 'Stranded door', reason: 'WAREHOUSE_ARCHIVED' },
+    ])
+    assert.equal((await WarehouseDoor.findOrFail(stranded.id)).status, 'AVAILABLE')
+    assert.equal((await WarehouseDoor.findOrFail(eligible.id)).status, 'ARCHIVED')
+  })
+
   test('leaves a door archived with its warehouse untouched, provenance included', async ({
     assert,
     client,

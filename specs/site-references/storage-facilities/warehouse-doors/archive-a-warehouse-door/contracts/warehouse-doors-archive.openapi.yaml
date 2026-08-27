@@ -329,12 +329,15 @@ components:
             for NOT_FOUND, where no row exists to name.
         reason:
           type: string
-          enum: [NOT_FOUND, ALREADY_ARCHIVED, IN_USE]
+          enum: [NOT_FOUND, ALREADY_ARCHIVED, WAREHOUSE_ARCHIVED, IN_USE]
           description: >-
             NOT_FOUND — the id resolves to no door. ALREADY_ARCHIVED — the door is archived, whether
-            on its own or through its warehouse; its existing context is untouched. IN_USE — the
-            door holds a current product lot assignment belonging to a Planned or Active Discharge
-            (#240 FR-006).
+            on its own or through its warehouse; its existing context is untouched.
+            WAREHOUSE_ARCHIVED — the door is still available but its containing warehouse is
+            archived, the same refusal POST /{id}/archive answers with E_WAREHOUSE_ARCHIVED. The
+            cascade normally makes this state impossible, so only a crafted submission reaches it.
+            IN_USE — the door holds a current product lot assignment belonging to a Planned or
+            Active Discharge (#240 FR-006).
     WarehouseDoor:
       type: object
       required:

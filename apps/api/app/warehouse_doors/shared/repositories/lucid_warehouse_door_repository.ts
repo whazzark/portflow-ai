@@ -332,6 +332,12 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
    * neither can deadlock against #210's cascade. The doors' warehouses are learned by an unlocked
    * pre-read, safe because containment is permanent.
    *
+   * That warehouse read is guarded on `AVAILABLE`, exactly as the single path's is: a door may only
+   * be archived while its own warehouse is available, and a warehouse that fails the guard is left
+   * unlocked precisely because no door of it will be written. Postgres re-checks the predicate after
+   * the lock is granted, so a cascade that commits while this submission waits drops the warehouse
+   * out of the set rather than letting its doors through.
+   *
    * Doors of different warehouses may be submitted together: each answers for its own containing
    * warehouse (`research.md` R12). The interface only ever builds a selection within one warehouse,
    * but that is a property of the Doors panel, not a rule of the domain.
@@ -347,7 +353,12 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
       const submitted = await WarehouseDoor.query({ client: trx }).whereIn('id', command.ids)
       const warehouseIds = [...new Set(submitted.map((door) => door.warehouseId))].sort()
 
-      await Warehouse.query({ client: trx }).whereIn('id', warehouseIds).orderBy('id').forUpdate()
+      const availableWarehouses = await Warehouse.query({ client: trx })
+        .whereIn('id', warehouseIds)
+        .where('status', 'AVAILABLE')
+        .orderBy('id')
+        .forUpdate()
+      const availableWarehouseIds = new Set(availableWarehouses.map((entry) => entry.id))
 
       // Re-read under lock: the pre-read above only learned which warehouses to lock, and a
       // cascade could have archived any of these doors in between.
@@ -361,7 +372,13 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
         referenceIds: command.ids,
         client: trx,
       })
-      const blockers = findBulkBlockers(command.ids, doorsById, 'AVAILABLE', usedIds)
+      const blockers = findBulkBlockers(
+        command.ids,
+        doorsById,
+        'AVAILABLE',
+        availableWarehouseIds,
+        usedIds,
+      )
 
       const blockedIds = new Set(blockers.map((blocker) => blocker.id))
       const eligibleIds = command.ids.filter((id) => !blockedIds.has(id))

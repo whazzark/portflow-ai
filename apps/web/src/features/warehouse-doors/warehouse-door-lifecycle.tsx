@@ -16,6 +16,13 @@ import type { WarehouseStatus } from '@/features/warehouses/types'
 export const WAREHOUSE_DOOR_SINGULAR = 'door'
 export const WAREHOUSE_DOOR_PLURAL = 'doors'
 
+/** The one reason a door adds to the shared four. Its warehouse is archived while the door itself
+ * is not — a state the cascade makes unreachable from the interface, so this exists to keep a
+ * crafted submission's outcome readable rather than to name something an administrator will meet. */
+export const WAREHOUSE_DOOR_BLOCKER_REASON_LABELS = {
+  WAREHOUSE_ARCHIVED: 'its warehouse is archived',
+}
+
 /**
  * A door is archivable only while both it and its containing warehouse are available — the same
  * pair the row already gates `Edit` on, and what the API re-decides under lock.
@@ -77,7 +84,8 @@ export function WarehouseDoorLifecycleDialog({
 /**
  * Adapts the bulk endpoint's envelope onto the shape the shared action bar reads. Nothing else is
  * translated: the blocker reasons keep the shared default labels, because a door is blocked by
- * itself — unlike a warehouse, which had to override `IN_USE` to say "a door is used by…".
+ * itself — unlike a warehouse, which had to override `IN_USE` to say "a door is used by…". The one
+ * addition is `WAREHOUSE_ARCHIVED` above, which the shared four have no entry for at all.
  */
 export function toBulkWarehouseDoorLifecycleOutcome(
   result: BulkWarehouseDoorLifecycleResult,
