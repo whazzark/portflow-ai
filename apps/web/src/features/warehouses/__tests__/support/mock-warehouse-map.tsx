@@ -73,6 +73,9 @@ export function WarehouseMap({
 }) {
   const isArmed = placement?.armed ?? false
   const isPlacingDoor = doorPlacement?.armed ?? false
+  // Mirrors `suppressesSelection` in `warehouse-map.tsx`: a selection that holds at least one door
+  // owns the map, while merely being *offered* the checkboxes suppresses nothing.
+  const hasCheckedDoors = (checkedDoorIds?.size ?? 0) > 0
   // A door being corrected passes an *unarmed* placement: it is repositioned by dragging its own
   // marker, never by clicking the map. Mirrors `armed: false` in `warehouses-page.tsx`.
   const isEditingDoor = doorPlacement !== undefined && !doorPlacement.armed
@@ -117,8 +120,10 @@ export function WarehouseMap({
             // While a footprint is being drawn the map swallows clicks, so no warehouse is
             // selectable — mirrors `useResourceMapPlacement` arming the real canvas.
             // A warehouse under correction owns the map too: its own ring is being edited, so no
-            // other warehouse is selectable either.
-            disabled={isArmed || doorPlacement !== undefined || editing !== undefined}
+            // other warehouse is selectable either. So does a door selection that holds something.
+            disabled={
+              isArmed || doorPlacement !== undefined || editing !== undefined || hasCheckedDoors
+            }
             key={warehouse.id}
             onClick={(event: MouseEvent<HTMLButtonElement>) => {
               if (isCheckable && event.shiftKey && onShiftSelect) {

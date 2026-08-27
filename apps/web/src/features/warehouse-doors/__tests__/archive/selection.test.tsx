@@ -145,3 +145,33 @@ test('withdraws the selection while a door creation session owns the panel', asy
     expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument(),
   )
 })
+
+test('leaves the other warehouses selectable while no door is checked', async () => {
+  const user = userEvent.setup()
+  const { router } = renderWarehouses(path())
+
+  // Checking doors is offered on every open available warehouse, so it must cost nothing until a
+  // door is actually checked: switching warehouse is the ordinary gesture, not an escape from a
+  // mode.
+  const other = await screen.findByRole('button', {
+    name: `View warehouse ${ARCHIVED_WAREHOUSE.name} (Archived)`,
+  })
+  expect(other).toBeEnabled()
+
+  await user.click(other)
+
+  await waitFor(() => expect(router.state.location.search.warehouseId).toBe(ARCHIVED_WAREHOUSE.id))
+})
+
+
+test('stops a polygon click moving the warehouse under a selection in progress', async () => {
+  const user = userEvent.setup()
+  renderWarehouses(path())
+
+  await user.click(await screen.findByRole('checkbox', { name: `Select door ${DOOR.name}` }))
+
+  expect(
+    screen.getByRole('button', { name: `View warehouse ${ARCHIVED_WAREHOUSE.name} (Archived)` }),
+  ).toBeDisabled()
+})
+

@@ -227,9 +227,11 @@ export function WarehouseMap({
   doors?: WarehouseDoorDto[]
   selectedDoorId?: string
   onDoorSelect?: (door: WarehouseDoorDto) => void
-  /** While the door select mode is on, a marker click checks the door instead of highlighting it,
-   * and warehouse polygons stop being selectable so a stray click cannot switch warehouse
-   * mid-selection. */
+  /** While checking doors is offered, a marker click checks the door instead of only highlighting
+   * it. On its own it suppresses nothing else: it is true for any administrator the moment an
+   * available warehouse's Available doors are open, so treating it as a mode would make every other
+   * warehouse permanently unselectable. What suppresses the polygons is a selection actually being
+   * built — see `checkedDoorIds` below. */
   doorSelectMode?: boolean
   checkedDoorIds?: ReadonlySet<string>
   onToggleDoorChecked?: (doorId: string) => void
@@ -255,9 +257,13 @@ export function WarehouseMap({
   // A door placement of *either* kind owns the map: while a new door is being placed a click must
   // place it rather than select something, and while an existing one is being corrected a click
   // must select nothing at all. Only `armed` decides whether that click also places a point.
-  // The door select mode joins them: while it is on, the map acts on doors, so a polygon click
-  // must not move the selection out from under the administrator.
-  const suppressesSelection = isArmed || doorPlacement !== undefined || doorSelectMode
+  // A door selection joins them once it holds something: from that point on the map acts on doors,
+  // so a polygon click must not move the selection out from under the administrator. Checked doors
+  // rather than `doorSelectMode` is what draws that line — checking is offered, never entered, so
+  // the mode flag alone is true for every open available warehouse and would leave an administrator
+  // with an empty selection unable to switch to another warehouse at all.
+  const hasCheckedDoors = (checkedDoorIds?.size ?? 0) > 0
+  const suppressesSelection = isArmed || doorPlacement !== undefined || hasCheckedDoors
   // The door under correction is represented by its draft marker below instead of its ordinary one.
   const renderedDoors = doorPlacement?.doorId
     ? doors.filter((door) => door.id !== doorPlacement.doorId)
