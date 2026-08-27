@@ -99,12 +99,12 @@ export function WarehousesPage() {
   const isSelecting = canManageWarehouses && selecting === 'warehouses'
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
   // Doors are selected inside the warehouse they belong to, so unlike `selecting=warehouses` — which
-  // clears `warehouseId` on entry — this mode keeps the selection it acts on. One param holding one
-  // value is what makes the two mutually exclusive by shape rather than by an effect.
+  // clears `warehouseId` on entry — this keeps the selection it acts on.
   //
-  // Kept *with* the warehouse it was built in, exactly as a pending door placement is: a selection
-  // left behind by a switch to another warehouse is then simply not read, rather than having to be
-  // cleared by an effect that races the render.
+  // Carried *with* the warehouse it was built in, exactly as a pending door placement is, so no
+  // render ever reads a selection built somewhere else. That alone is not enough for a selection,
+  // though: unlike a pending point, one left behind would come back the moment its context did —
+  // see the two effects below, which drop it for good.
   const [doorSelection, setDoorSelection] = useState<{
     warehouseId: string
     ids: Set<string>
@@ -156,6 +156,7 @@ export function WarehousesPage() {
   // the administrator may manage doors and `warehouseId` resolves to an *available* warehouse.
   // Anything else — no permission, no or unknown id, an archived warehouse — renders consultation.
   const selectedStatus = selected?.status
+  const selectedId = selected?.id
   const isCreatingDoor =
     canManageWarehouses && create === 'door' && selected?.status === 'AVAILABLE'
   // Leaving the mode — cancelling, dismissing the sheet, navigating away — discards the pending
@@ -183,12 +184,22 @@ export function WarehousesPage() {
     create === undefined &&
     edit === undefined
 
+  // Withholds a selection whose context has just gone — the render before the effects below drop
+  // it — so no checkbox, no map ring, and no `Archive selected` ever outlives it by a frame.
   const checkedDoorIds = useMemo(
     () =>
-      canSelectDoors && doorSelection?.warehouseId === selected?.id
+      doorSelection && canSelectDoors && doorSelection.warehouseId === selectedId
         ? doorSelection.ids
         : EMPTY_DOOR_SELECTION,
-    [canSelectDoors, doorSelection, selected?.id],
+    [canSelectDoors, doorSelection, selectedId],
+  )
+  // The doors a selection may hold: the available ones this warehouse currently lists. Keyed on the
+  // ids so the set stays referentially stable across renders that changed nothing — the warehouse
+  // selection's own `checkableIds` above does the same.
+  const checkableDoorIdsKey = canSelectDoors ? admittedDoors.map((door) => door.id).join(',') : ''
+  const checkableDoorIds = useMemo(
+    () => new Set(checkableDoorIdsKey ? checkableDoorIdsKey.split(',') : []),
+    [checkableDoorIdsKey],
   )
 
   const {
@@ -399,6 +410,33 @@ export function WarehousesPage() {
       })
     }
   }, [admittedDoor, doorId, navigate, query.data, selected])
+
+  // A door selection lives only in the context it was built in, and leaving that context ends it
+  // for good — the rule the warehouse select mode already follows. Withholding it instead would
+  // let it resurrect: cancelling a creation, switching lifecycle view and back, or reopening the
+  // same warehouse would each bring back a queue the administrator watched disappear (FR-041), and
+  // an id checked in a warehouse can never be allowed to reappear under another (FR-040).
+  useEffect(() => {
+    setDoorSelection((current) =>
+      current === null || (canSelectDoors && current.warehouseId === selectedId) ? current : null,
+    )
+  }, [canSelectDoors, selectedId])
+
+  // Drops ids the Available list no longer holds — a door archived from its own row menu, or by
+  // another administrator between two refetches. Without it the id would stay checked with no row
+  // to show for it, and `Archive selected` would resubmit a door the view does not list, earning a
+  // spurious "already archived" in the outcome (FR-040). The warehouse selection prunes itself the
+  // same way against `checkableIds`.
+  useEffect(() => {
+    setDoorSelection((current) => {
+      if (!current || current.ids.size === 0) {
+        return current
+      }
+      const ids = new Set([...current.ids].filter((id) => checkableDoorIds.has(id)))
+
+      return ids.size === current.ids.size ? current : { ...current, ids }
+    })
+  }, [checkableDoorIds])
 
   if (query.isError) {
     return <WarehousesError onRetry={() => void query.refetch()} />
@@ -995,11 +1033,9 @@ export function WarehousesPage() {
                   status={effectiveDoorStatus}
                   selectedDoorId={admittedDoor?.id}
                   onStatusChange={(next) => {
-                    // A lifecycle view change drops the selection for good, the rule the warehouse
-                    // select mode already follows: the doors it held are not listed here, and
-                    // returning to Available must not resurrect a queue the administrator watched
-                    // disappear.
-                    setDoorSelection(null)
+                    // No selection to clear here: the Archived view is not one a selection can live
+                    // in, so the context effect above drops it — and keeps it dropped when the
+                    // administrator returns to Available.
                     void navigate({
                       search: (previous) => ({
                         ...previous,
