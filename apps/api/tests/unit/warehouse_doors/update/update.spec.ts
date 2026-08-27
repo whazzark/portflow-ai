@@ -170,6 +170,20 @@ test.group('UpdateWarehouseDoorUseCase', (group) => {
     assert.isEmpty(commands)
   })
 
+  test('rejects a coordinate submitted without its pair', async ({ assert }) => {
+    const commands = stubRepository(updatedResult())
+
+    await assert.rejects(
+      () => handle({ id: DOOR_ID, latitude: INSIDE.latitude }),
+      /Warehouse door coordinates are out of range/,
+    )
+    await assert.rejects(
+      () => handle({ id: DOOR_ID, longitude: INSIDE.longitude }),
+      /Warehouse door coordinates are out of range/,
+    )
+    assert.isEmpty(commands)
+  })
+
   test('maps every repository refusal to its own exception', async ({ assert }) => {
     const refusals = [
       { kind: 'DOOR_NOT_FOUND', message: /Warehouse door not found/ },

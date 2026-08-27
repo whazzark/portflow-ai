@@ -48,14 +48,18 @@ export default class UpdateWarehouseDoorUseCase {
       throw new InvalidWarehouseDoorNameException()
     }
 
-    // Latitude and longitude travel together, so one being present settles the other.
-    const hasPosition = input.latitude !== undefined && input.longitude !== undefined
-    const latitude = input.latitude
-    const longitude = input.longitude
+    // Latitude and longitude travel together: a position is replaced as a whole, so a lone
+    // coordinate is refused here rather than quietly dropped. The validator already pairs them at
+    // the HTTP edge, but `handle` is a seam of its own, and answering a half-move with a silent
+    // no-op update would hide the caller's mistake behind a success.
+    const { latitude, longitude } = input
+    const hasPosition = latitude !== undefined && longitude !== undefined
+    const hasHalfPosition = !hasPosition && (latitude !== undefined || longitude !== undefined)
 
     if (
-      (latitude !== undefined && !isLegalSiteReferenceLatitude(latitude)) ||
-      (longitude !== undefined && !isLegalSiteReferenceLongitude(longitude))
+      hasHalfPosition ||
+      (hasPosition &&
+        (!isLegalSiteReferenceLatitude(latitude) || !isLegalSiteReferenceLongitude(longitude)))
     ) {
       throw new InvalidWarehouseDoorCoordinatesException()
     }
@@ -69,13 +73,7 @@ export default class UpdateWarehouseDoorUseCase {
       // entirely on a name-only update: the stored position is already inside, and #209 refuses any
       // reshape that would leave it outside, so a rename has nothing to answer for.
       ...(hasPosition
-        ? {
-            contains: (points) =>
-              containsPoint(points, {
-                latitude: latitude as number,
-                longitude: longitude as number,
-              }),
-          }
+        ? { contains: (points) => containsPoint(points, { latitude, longitude }) }
         : {}),
     })
 
