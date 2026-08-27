@@ -3,7 +3,9 @@ import { z } from 'zod'
 
 import { FieldGroup } from '@/components/ui/field'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
+import { TRUCK_SINGULAR } from '@/features/trucks/truck-lifecycle'
 import type { TruckDto } from '@/features/trucks/types'
+import { resourceFailureTitle } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
@@ -82,9 +84,12 @@ export function TruckForm({ truck, companies, onCreate, onUpdate, onSuccess }: T
         if (!applyValidationError(formApi, error)) {
           const apiError = parseApiError(error)
 
-          toast.error(truck ? 'Unable to update truck' : 'Unable to create truck', {
-            description: apiError.message,
-          })
+          toast.error(
+            truck
+              ? resourceFailureTitle('update', TRUCK_SINGULAR, truck.registration)
+              : resourceFailureTitle('create', TRUCK_SINGULAR, value.registration.trim()),
+            { description: apiError.message },
+          )
         }
       }
     },

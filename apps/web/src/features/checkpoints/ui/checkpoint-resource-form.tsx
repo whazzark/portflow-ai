@@ -41,7 +41,7 @@ export function CheckpointResourceForm<TResource>({
   onNotFound,
   submitLabel,
   pendingLabel,
-  errorTitle,
+  failureTitle,
 }: {
   kind: CheckpointKind
   initialValues?: { name: string; latitude: number; longitude: number } | null
@@ -53,7 +53,9 @@ export function CheckpointResourceForm<TResource>({
   onNotFound?: () => void
   submitLabel: string
   pendingLabel: string
-  errorTitle: string
+  /** Built from the submitted name, because a creation has no stored one to quote. An update
+   * ignores it and names the checkpoint as it stands. */
+  failureTitle: (submittedName: string) => string
 }) {
   const isEditing = initialValues !== null
   const resourceNoun = CHECKPOINT_KIND_LABELS[kind].toLowerCase()
@@ -78,9 +80,11 @@ export function CheckpointResourceForm<TResource>({
         return
       }
 
+      const submittedName = value.name.trim()
+
       try {
         const result = await onSubmit({
-          name: value.name.trim(),
+          name: submittedName,
           latitude: pending.latitude,
           longitude: pending.longitude,
         })
@@ -102,10 +106,10 @@ export function CheckpointResourceForm<TResource>({
               },
             })
           } else if (apiError.code === ERROR_CODE.notFound(kind) && onNotFound) {
-            toast.error(errorTitle, { description: apiError.message })
+            toast.error(failureTitle(submittedName), { description: apiError.message })
             onNotFound()
           } else {
-            toast.error(errorTitle, { description: apiError.message })
+            toast.error(failureTitle(submittedName), { description: apiError.message })
           }
         }
       }

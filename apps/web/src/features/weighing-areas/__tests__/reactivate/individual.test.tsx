@@ -89,7 +89,9 @@ test('reactivates an archived weighing area with a comment and reflects it witho
   )
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('Weighing area reactivated')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Weighing area “${RETIRED_SCALE.name}” reactivated`),
+  ).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Back in service after calibration' })
   // The invalidated list query re-renders the sheet from authoritative state: the weighing area is
   // now available, so it offers editing and archiving rather than reactivation.
@@ -121,7 +123,9 @@ test('reactivates an archived weighing area without a comment', async () => {
   await screen.findByRole('heading', { name: 'Reactivate weighing area?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('Weighing area reactivated')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Weighing area “${RETIRED_SCALE.name}” reactivated`),
+  ).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: null })
 })
 

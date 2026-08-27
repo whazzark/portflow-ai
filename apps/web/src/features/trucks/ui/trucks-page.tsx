@@ -29,6 +29,7 @@ import { EditTruckPanel } from '@/features/trucks/ui/edit-truck-panel'
 import { TruckDetails } from '@/features/trucks/ui/truck-details'
 import { TruckSection } from '@/features/trucks/ui/truck-section'
 import { TrucksError } from '@/features/trucks/ui/trucks-error'
+import { resourceSuccessMessage } from '@/helpers/resource-copy'
 
 const transportResourcesRoute = getRouteApi('/_authenticated/transport-resources')
 
@@ -373,7 +374,7 @@ export function TrucksPage() {
             return result.data
           }}
           onSuccess={(created) => {
-            toast.success('Truck created')
+            toast.success(resourceSuccessMessage('create', TRUCK_SINGULAR, created.registration))
             setIsCreateOpen(false)
             selectTruck(created.id)
           }}
@@ -406,8 +407,8 @@ export function TrucksPage() {
       companiesError={availableCompaniesQuery.isError}
       onCancel={stopEditingTruck}
       onRetryCompanies={() => void availableCompaniesQuery.refetch()}
-      onSuccess={() => {
-        toast.success('Truck updated')
+      onSuccess={(updated) => {
+        toast.success(resourceSuccessMessage('update', TRUCK_SINGULAR, updated.registration))
         stopEditingTruck()
       }}
       onUpdate={async (value) => {

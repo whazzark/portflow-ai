@@ -80,5 +80,7 @@ test('archives a company from its row without opening the detail pane', async ()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
   await waitFor(() => expect(state.attempts).toBe(1))
-  expect(await screen.findByText('Transport company archived')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Transport company “${AVAILABLE.name}” archived`),
+  ).toBeInTheDocument()
 })

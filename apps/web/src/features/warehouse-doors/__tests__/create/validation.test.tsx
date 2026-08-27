@@ -162,7 +162,7 @@ test('reports a transient failure without creating or losing anything', async ()
   await user.type(screen.getByRole('textbox', { name: 'Door name' }), 'South Door')
   await user.click(submit())
 
-  expect(await screen.findByText('Unable to create door')).toBeInTheDocument()
+  expect(await screen.findByText('Unable to create door “South Door”')).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Door name' })).toHaveValue('South Door')
   expect(screen.getByTestId('pending-door')).toBeInTheDocument()
 })
@@ -176,7 +176,7 @@ test('creates exactly one door when a failed submission is retried', async () =>
   await placeDoor(user)
   await user.type(screen.getByRole('textbox', { name: 'Door name' }), 'South Door')
   await user.click(submit())
-  await screen.findByText('Unable to create door')
+  await screen.findByText('Unable to create door “South Door”')
 
   // The refetch that follows a successful retry must already carry the door, or the page rightly
   // drops a `doorId` its collection does not contain.

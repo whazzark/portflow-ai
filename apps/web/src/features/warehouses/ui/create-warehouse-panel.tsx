@@ -16,11 +16,11 @@ import {
   FOOTPRINT_PROBLEM_MESSAGES,
 } from '@/features/warehouses/geometry/footprint-validation'
 import type { WarehouseDto } from '@/features/warehouses/types'
+import { WAREHOUSE_SINGULAR } from '@/features/warehouses/warehouse-lifecycle'
+import { resourceFailureTitle } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
-
-const ERROR_TITLE = 'Unable to create warehouse'
 
 /** Touch is tracked per axis, not per row: a field only shows its error once it has been edited,
  * and typing a latitude must not flag the longitude beside it as missing. */
@@ -198,7 +198,9 @@ export function CreateWarehousePanel({
         } else if (apiError.code === 'E_WAREHOUSE_INVALID_FOOTPRINT') {
           formApi.setErrorMap({ onSubmit: { fields: {}, form: apiError.message } })
         } else {
-          toast.error(ERROR_TITLE, { description: apiError.message })
+          toast.error(resourceFailureTitle('create', WAREHOUSE_SINGULAR, value.name.trim()), {
+            description: apiError.message,
+          })
         }
       }
     },

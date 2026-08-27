@@ -61,7 +61,7 @@ test('a refusal keeps the dialog open with the typed comment, and a corrected re
   fireEvent.change(comment, { target: { value: 'Shortened' } })
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('Customer archived')).toBeInTheDocument()
+  expect(await screen.findByText(`Customer “${ACME.companyName}” archived`)).toBeInTheDocument()
 })
 
 test('an in-use refusal names its own reason and leaves the customer available', async () => {

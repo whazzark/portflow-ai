@@ -70,7 +70,7 @@ test('a refusal keeps the dialog open with the typed comment, and a corrected re
   })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('Dock archived')).toBeInTheDocument()
+  expect(await screen.findByText(`Dock “${NORTH_DOCK.name}” archived`)).toBeInTheDocument()
 })
 
 test('an in-use refusal names its own reason and leaves the dock available', async () => {

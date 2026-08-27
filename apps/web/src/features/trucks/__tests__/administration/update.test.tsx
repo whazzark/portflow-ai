@@ -216,7 +216,9 @@ test('shows a distinct error when a provider change is locked by a discharge com
   fireEvent.click(await screen.findByRole('option', { name: 'Bêta Logistique' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-  expect(await screen.findByText('Unable to update truck')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Unable to update truck “${target.registration}”`),
+  ).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Edit truck' })).toBeInTheDocument()
 })
 
@@ -243,6 +245,8 @@ test('shows a distinct error when the submitted transport company is invalid', a
   fireEvent.click(await screen.findByRole('option', { name: 'Bêta Logistique' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-  expect(await screen.findByText('Unable to update truck')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Unable to update truck “${target.registration}”`),
+  ).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Edit truck' })).toBeInTheDocument()
 })

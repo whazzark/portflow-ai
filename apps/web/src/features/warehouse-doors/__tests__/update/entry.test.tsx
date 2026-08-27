@@ -97,7 +97,7 @@ test('saves a corrected name and keeps the door selected', async () => {
     warehouseId: AVAILABLE.id,
   })
   expect(await screen.findByText(UPDATED_DOOR.name)).toBeInTheDocument()
-  expect(await screen.findByText('Door updated')).toBeInTheDocument()
+  expect(await screen.findByText(`Door “${UPDATED_DOOR.name}” updated`)).toBeInTheDocument()
 })
 
 test('saves a repositioned door without touching its name', async () => {
@@ -112,7 +112,7 @@ test('saves a repositioned door without touching its name', async () => {
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
   await waitFor(() => expect(router.state.location.search).not.toHaveProperty('edit'))
-  expect(await screen.findByText('Door updated')).toBeInTheDocument()
+  expect(await screen.findByText(`Door “${UPDATED_DOOR.name}” updated`)).toBeInTheDocument()
 })
 
 test('accepts a resubmission of the current name and position unchanged', async () => {

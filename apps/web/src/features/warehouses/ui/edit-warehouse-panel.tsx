@@ -19,11 +19,11 @@ import {
   MINIMUM_FOOTPRINT_POINTS,
 } from '@/features/warehouses/geometry/footprint-validation'
 import type { WarehouseDto } from '@/features/warehouses/types'
+import { WAREHOUSE_SINGULAR } from '@/features/warehouses/warehouse-lifecycle'
+import { resourceFailureTitle } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
-
-const ERROR_TITLE = 'Unable to update warehouse'
 
 type Row = {
   latitude: string
@@ -162,6 +162,9 @@ export function EditWarehousePanel({
   const nameSchema = z.object({
     name: z.string().trim().min(1, 'Warehouse name is required.').max(255),
   })
+  // The name the session opened on, not the one being typed: a refused rename must still point at
+  // the warehouse the administrator was correcting.
+  const failureTitle = resourceFailureTitle('update', WAREHOUSE_SINGULAR, originName)
 
   const form = useAppForm({
     defaultValues: { name: originName },
@@ -186,7 +189,7 @@ export function EditWarehousePanel({
         ) {
           formApi.setErrorMap({ onSubmit: { fields: { name: apiError.message }, form: '' } })
         } else if (apiError.code === 'E_WAREHOUSE_NOT_FOUND') {
-          toast.error(ERROR_TITLE, { description: apiError.message })
+          toast.error(failureTitle, { description: apiError.message })
           onNotFound()
         } else if (
           apiError.code === 'E_WAREHOUSE_INVALID_FOOTPRINT' ||
@@ -195,7 +198,7 @@ export function EditWarehousePanel({
         ) {
           formApi.setErrorMap({ onSubmit: { fields: {}, form: apiError.message } })
         } else {
-          toast.error(ERROR_TITLE, { description: apiError.message })
+          toast.error(failureTitle, { description: apiError.message })
         }
       }
     },

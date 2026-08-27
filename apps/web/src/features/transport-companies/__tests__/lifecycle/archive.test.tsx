@@ -87,7 +87,9 @@ test('archiving moves the company to the Archived tab with its lifecycle context
   })
   fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText('Transport company archived')).toBeInTheDocument()
+  expect(
+    await screen.findByText('Transport company “Atlantic Transport” archived'),
+  ).toBeInTheDocument()
   const tabs = await companyTabs()
   expect(
     await within(tabs).findByRole('tab', {

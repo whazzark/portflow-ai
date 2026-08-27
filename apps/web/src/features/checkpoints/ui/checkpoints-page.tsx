@@ -51,6 +51,7 @@ import {
   toBulkLifecycleOutcome as toDockBulkLifecycleOutcome,
   toDockCheckpoint,
 } from '@/features/docks/dock-checkpoint-adapter'
+import { DOCK_SINGULAR } from '@/features/docks/dock-lifecycle'
 import { useDockMutations } from '@/features/docks/mutations/use-dock-mutations'
 import { dockQueries } from '@/features/docks/queries/dock-queries'
 import type { DockDto } from '@/features/docks/types'
@@ -61,6 +62,8 @@ import {
   toBulkLifecycleOutcome as toWeighingAreaBulkLifecycleOutcome,
   toWeighingAreaCheckpoint,
 } from '@/features/weighing-areas/weighing-area-checkpoint-adapter'
+import { WEIGHING_AREA_SINGULAR } from '@/features/weighing-areas/weighing-area-lifecycle'
+import { resourceSuccessMessage } from '@/helpers/resource-copy'
 
 /** Maps the `selecting` search param's on-the-wire value to the kind it names. */
 const SELECTING_KIND_BY_PARAM: Record<string, CheckpointKind> = {
@@ -452,9 +455,14 @@ export function CheckpointsPage() {
       }),
     })
   }
-  const handleDockCreated = (dock: DockDto) => handleCreated('DOCK', dock.id, 'Dock created')
+  const handleDockCreated = (dock: DockDto) =>
+    handleCreated('DOCK', dock.id, resourceSuccessMessage('create', DOCK_SINGULAR, dock.name))
   const handleWeighingAreaCreated = (area: WeighingAreaDto) =>
-    handleCreated('WEIGHING_AREA', area.id, 'Weighing area created')
+    handleCreated(
+      'WEIGHING_AREA',
+      area.id,
+      resourceSuccessMessage('create', WEIGHING_AREA_SINGULAR, area.name),
+    )
 
   const startEditing = () => {
     if (!selection) {
@@ -551,8 +559,10 @@ export function CheckpointsPage() {
       search: (previous) => ({ ...previous, edit: undefined }),
     })
   }
-  const handleDockUpdated = () => handleUpdated('Dock updated')
-  const handleWeighingAreaUpdated = () => handleUpdated('Weighing area updated')
+  const handleDockUpdated = (dock: DockDto) =>
+    handleUpdated(resourceSuccessMessage('update', DOCK_SINGULAR, dock.name))
+  const handleWeighingAreaUpdated = (area: WeighingAreaDto) =>
+    handleUpdated(resourceSuccessMessage('update', WEIGHING_AREA_SINGULAR, area.name))
   const handleEditNotFound = () => {
     clearEditSession()
     void navigate({

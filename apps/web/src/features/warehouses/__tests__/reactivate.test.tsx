@@ -93,7 +93,9 @@ test('reactivates the warehouse and reports the restored doors', async () => {
   await user.type(within(dialog).getByRole('textbox'), 'Zone reopened')
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('Warehouse reactivated with 1 door')).toBeInTheDocument()
+  expect(
+    await screen.findByText(`Warehouse “${MIXED.name}” reactivated with 1 door`),
+  ).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Zone reopened' })
 })
 
@@ -108,7 +110,7 @@ test('reports a reactivation that restored no door without naming a count', asyn
   const dialog = await openReactivateDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('Warehouse reactivated')).toBeInTheDocument()
+  expect(await screen.findByText(`Warehouse “${MIXED.name}” reactivated`)).toBeInTheDocument()
 })
 
 test('sends no comment when the field is left empty', async () => {
@@ -126,7 +128,7 @@ test('sends no comment when the field is left empty', async () => {
   const dialog = await openReactivateDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
-  await screen.findByText(/Warehouse reactivated/)
+  await screen.findByText(`Warehouse “${MIXED.name}” reactivated with 1 door`)
   expect(capturedBody).toMatchObject({ comment: null })
 })
 

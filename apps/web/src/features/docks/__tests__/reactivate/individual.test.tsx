@@ -84,7 +84,7 @@ test('reactivates a dock with a comment', async () => {
   )
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('Dock reactivated')).toBeInTheDocument()
+  expect(await screen.findByText(`Dock “${RETIRED_DOCK.name}” reactivated`)).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Quay reopened after resurfacing' })
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument(),
@@ -111,7 +111,7 @@ test('reactivates a dock without a comment', async () => {
   await screen.findByRole('heading', { name: 'Reactivate dock?' })
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText('Dock reactivated')).toBeInTheDocument()
+  expect(await screen.findByText(`Dock “${RETIRED_DOCK.name}” reactivated`)).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: null })
 })
 

@@ -214,7 +214,9 @@ test('shows a distinct toast for a duplicate name conflict', async () => {
   fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
 
-  expect(await screen.findByText('Unable to create transport company')).toBeInTheDocument()
+  expect(
+    await screen.findByText('Unable to create transport company “Atlantic Transport”'),
+  ).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Create transport company' })).toBeInTheDocument()
 })
 
@@ -255,7 +257,9 @@ test('allows correcting and resubmitting after a refusal, creating exactly one c
   })
   fillContactFields()
   fireEvent.click(screen.getByRole('button', { name: 'Create transport company' }))
-  expect(await screen.findByText('Unable to create transport company')).toBeInTheDocument()
+  expect(
+    await screen.findByText('Unable to create transport company “Atlantic Transport”'),
+  ).toBeInTheDocument()
 
   fireEvent.change(screen.getByRole('textbox', { name: 'Company name' }), {
     target: { value: 'Corrected Name' },

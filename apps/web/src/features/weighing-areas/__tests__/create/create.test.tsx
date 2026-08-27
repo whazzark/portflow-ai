@@ -77,7 +77,7 @@ test('places, names, and creates a weighing area, then shows it as the selected 
   await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), created.name)
   await user.click(screen.getByRole('button', { name: 'Create weighing area' }))
 
-  expect(await screen.findByText('Weighing area created')).toBeInTheDocument()
+  expect(await screen.findByText(`Weighing area “${created.name}” created`)).toBeInTheDocument()
   expect(await screen.findByRole('heading', { name: created.name })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({
     checkpoint: `weighing-area:${created.id}`,
@@ -176,5 +176,5 @@ test('creates a weighing area by typing coordinates directly, without any map cl
 
   await user.click(screen.getByRole('button', { name: 'Create weighing area' }))
 
-  expect(await screen.findByText('Weighing area created')).toBeInTheDocument()
+  expect(await screen.findByText(`Weighing area “${created.name}” created`)).toBeInTheDocument()
 })

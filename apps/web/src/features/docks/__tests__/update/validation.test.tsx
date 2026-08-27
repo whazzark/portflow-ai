@@ -67,7 +67,7 @@ test('rejects an over-long dock name without saving', async () => {
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
   await waitFor(() => expect(nameInput).toHaveAttribute('aria-invalid', 'true'))
-  expect(screen.queryByText('Dock updated')).not.toBeInTheDocument()
+  expect(screen.queryByText(`Dock “${NORTH_DOCK.name}” updated`)).not.toBeInTheDocument()
 })
 
 test('rejects a manually edited out-of-range coordinate and disables submission', async () => {
@@ -149,5 +149,5 @@ test('recovers from a rejected submission by correcting and resubmitting without
   await user.type(nameInput, 'Corrected Dock')
   await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
-  expect(await screen.findByText('Dock updated')).toBeInTheDocument()
+  expect(await screen.findByText('Dock “Corrected Dock” updated')).toBeInTheDocument()
 })

@@ -7,6 +7,8 @@
  * warehouse. Resources declare their noun; they never declare their own phrasing.
  */
 
+import { capitalize } from '@/helpers/resource-copy'
+
 export type LifecycleAction = 'archive' | 'reactivate' | 'suspend' | 'return-to-service'
 
 /** Screens that drive a whole selection in one direction — the map select modes — name that
@@ -155,9 +157,10 @@ export function bulkLifecycleDialogTitle(action: LifecycleAction, plural: string
   return `${LIFECYCLE_ACTION_LABELS[action]} selected ${plural}?`
 }
 
-/** `Dock archived` — the noun is capitalized as the first word of the sentence. */
-export function lifecycleSuccessMessage(action: LifecycleAction, singular: string) {
-  return `${capitalize(singular)} ${LIFECYCLE_PAST_PARTICIPLES[action]}`
+/** `Dock “North Dock” archived` — the record is named here for the same reason a refusal names
+ * it: a toast is read out of context, and several actions may have been fired in a row. */
+export function lifecycleSuccessMessage(action: LifecycleAction, singular: string, name: string) {
+  return `${capitalize(singular)} “${name}” ${LIFECYCLE_PAST_PARTICIPLES[action]}`
 }
 
 /** Names the resource, so an administrator who fired several actions can tell which was refused. */
@@ -167,8 +170,4 @@ export function lifecycleFailureTitle(action: LifecycleAction, singular: string,
 
 export function bulkLifecycleFailureTitle(action: LifecycleAction, plural: string) {
   return `Unable to ${LIFECYCLE_FAILURE_VERBS[action]} ${plural}`
-}
-
-function capitalize(value: string) {
-  return value.charAt(0).toLocaleUpperCase() + value.slice(1)
 }

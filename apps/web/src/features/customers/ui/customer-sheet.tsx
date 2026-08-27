@@ -7,11 +7,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { CUSTOMER_SINGULAR } from '@/features/customers/customer-lifecycle'
 import { useCustomerMutations } from '@/features/customers/mutations/use-customer-mutations'
 import type { CustomerDto } from '@/features/customers/types'
 import { CreateCustomerPanel } from '@/features/customers/ui/create-customer-panel'
 import { CustomerDetails } from '@/features/customers/ui/customer-details'
 import { EditCustomerPanel } from '@/features/customers/ui/edit-customer-panel'
+import { resourceSuccessMessage } from '@/helpers/resource-copy'
 
 type CustomerSheetProps = {
   customer?: CustomerDto
@@ -43,7 +45,9 @@ export function CustomerSheet({
               return result.data
             }}
             onSuccess={(created) => {
-              toast.success('Customer created')
+              toast.success(
+                resourceSuccessMessage('create', CUSTOMER_SINGULAR, created.companyName),
+              )
               onChange({ customerId: created.id, mode: 'view' })
             }}
           />
@@ -73,7 +77,9 @@ export function CustomerSheet({
               return result.data
             }}
             onSuccess={(updated) => {
-              toast.success('Customer updated')
+              toast.success(
+                resourceSuccessMessage('update', CUSTOMER_SINGULAR, updated.companyName),
+              )
               onChange({ customerId: updated.id, mode: 'view' })
             }}
           />
