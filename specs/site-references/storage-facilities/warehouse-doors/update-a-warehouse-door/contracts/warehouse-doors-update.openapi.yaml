@@ -1,0 +1,267 @@
+openapi: 3.1.0
+info:
+  title: Portflow Warehouse Door Update Contract
+  version: 1.0.0
+  description: >-
+    Write contract for Issue #214 Update a Warehouse Door. Extends the write contract introduced by
+    #213 (specs/site-references/storage-facilities/warehouse-doors/create-a-warehouse-door/contracts/warehouse-doors-create.openapi.yaml),
+    itself an extension of #212's read contract. The WarehouseDoor schema below is #213's door object
+    plus updatedAt, which this slice adds to WarehouseDoorTransformer (research R5). The door objects
+    embedded under GET /api/v1/warehouses are unchanged by this feature.
+paths:
+  /api/v1/warehouse-doors/{id}:
+    patch:
+      operationId: updateWarehouseDoor
+      summary: Correct an available door's name and GPS location
+      description: >-
+        Updates the name, the position, or both, of one AVAILABLE door whose containing warehouse is
+        AVAILABLE. The body is partial: at least one member must be present, and latitude and
+        longitude must be submitted together, because a position is replaced as a whole. The door's
+        identity, containing warehouse, lifecycle status, creation time, and lifecycle context are
+        not addressable through this payload. Requires an authenticated, active organization or
+        operations administrator. The containing warehouse's status and footprint are read under lock
+        inside the write transaction, so a concurrent archival or footprint replacement cannot be
+        raced; the door row is then updated under its own AVAILABLE guard, so the whole submission is
+        applied or none of it is.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: >-
+            The door to correct. Deliberately not shape-validated: an identifier that cannot name a
+            row — malformed or merely absent — is one outcome for the client,
+            E_WAREHOUSE_DOOR_NOT_FOUND, never a server error.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWarehouseDoorRequest"
+            examples:
+              renameOnly:
+                summary: Correct the name, leaving the position untouched
+                value:
+                  name: Door 4
+              repositionOnly:
+                summary: Move the door, leaving the name untouched
+                value:
+                  latitude: 49.4935
+                  longitude: 0.1086
+              both:
+                summary: Correct the name and the position in one submission
+                value:
+                  name: Door 4
+                  latitude: 49.4935
+                  longitude: 0.1086
+      responses:
+        "200":
+          description: >-
+            The door was updated. Identity, warehouseId, status, and createdAt are unchanged;
+            updatedAt has advanced.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/WarehouseDoor"
+              examples:
+                updated:
+                  value:
+                    data:
+                      id: 018f80c1-1c40-7d21-9a2e-6b4f0d9d2f11
+                      warehouseId: 018f80c0-8799-7cb0-bb14-2d2c8d206a8c
+                      name: Door 4
+                      status: AVAILABLE
+                      latitude: 49.4935
+                      longitude: 0.1086
+                      createdAt: "2026-08-26T09:12:44.000+02:00"
+                      updatedAt: "2026-08-26T14:03:07.000+02:00"
+        "401":
+          description: The session is missing, invalid, expired, or belongs to a user who is no longer active.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The user is active but lacks warehouse-door management permission.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: >-
+            No door has this identifier — a syntactically invalid identifier resolves here too — or
+            the door's containing warehouse has vanished. Neither discloses information about other
+            doors.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                doorNotFound:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_NOT_FOUND
+                        message: Warehouse door not found
+                warehouseNotFound:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_NOT_FOUND
+                        message: Warehouse not found
+        "409":
+          description: >-
+            The door is archived and therefore read-only, its containing warehouse is archived and
+            therefore ineligible, or the resulting trimmed name is already used by another door of
+            that warehouse — available or archived, compared without letter case. The three are
+            distinct codes because the remedies differ.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                archivedDoor:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_ARCHIVED
+                        message: Archived warehouse doors are read-only. Reactivate the door first.
+                archivedWarehouse:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_ARCHIVED
+                        message: Archived warehouses are read-only. Reactivate the warehouse first.
+                duplicateName:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_NAME_CONFLICT
+                        message: Warehouse door name is already in use in this warehouse
+        "422":
+          description: >-
+            The payload failed structural validation — empty body, a coordinate submitted without its
+            pair, or a member out of range — or the trimmed name is empty or too long, or the
+            resulting position falls outside the containing warehouse's footprint.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                blankName:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_NAME_INVALID
+                        message: Warehouse door name must not be empty
+                outsideFootprint:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_OUTSIDE_FOOTPRINT
+                        message: Warehouse door must be placed within its warehouse footprint
+                emptyBody:
+                  summary: No member submitted at all
+                  value:
+                    errors:
+                      - code: E_VALIDATION_ERROR
+                        field: name
+                        message: The name field must be defined
+                lonelyCoordinate:
+                  summary: A latitude submitted without its longitude
+                  value:
+                    errors:
+                      - code: E_VALIDATION_ERROR
+                        field: longitude
+                        message: The longitude field must be defined
+                outOfRange:
+                  value:
+                    errors:
+                      - code: E_VALIDATION_ERROR
+                        field: latitude
+                        message: The latitude field must be at most 90
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: adonis-session
+  schemas:
+    UpdateWarehouseDoorRequest:
+      type: object
+      # Every member is optional on its own, but the body must carry at least one, and the two
+      # coordinates must travel together. Unknown members are stripped by the validator rather than
+      # refused, so a caller sending `warehouseId`, `status`, or `createdAt` cannot re-parent the
+      # door, change its lifecycle state, or rewrite its history — those members are simply ignored.
+      additionalProperties: true
+      anyOf:
+        - required: [name]
+        - required: [latitude, longitude]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: >-
+            Trimmed before validating and storing, and compared without letter case for uniqueness
+            within the containing warehouse, across both available and archived doors. The accepted
+            casing is preserved for display. Resubmitting the door's own current name — or a
+            different casing of it — succeeds and is not reported as a duplicate. A name already used
+            by a door of a different warehouse, or by a warehouse, dock, or weighing area, is
+            accepted.
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+          description: Required when longitude is present. The resulting position must lie within or on the boundary of the containing warehouse's footprint.
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+          description: Required when latitude is present.
+    WarehouseDoor:
+      type: object
+      required: [id, warehouseId, name, status, latitude, longitude, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unchanged by an update.
+        warehouseId:
+          type: string
+          format: uuid
+          description: Unchanged by an update — containment is permanent.
+        name:
+          type: string
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+          description: Unchanged by an update; always AVAILABLE in a 200 from this endpoint.
+        latitude:
+          type: number
+        longitude:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+          description: Unchanged by an update. Added to WarehouseDoorTransformer by #213.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Advanced by every successful update. Added to WarehouseDoorTransformer by this slice; additive for existing consumers.
+    ErrorResponse:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [message]
+            properties:
+              code:
+                type: string
+              field:
+                type: string
+              message:
+                type: string
