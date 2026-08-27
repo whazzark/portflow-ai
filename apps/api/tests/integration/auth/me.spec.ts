@@ -61,6 +61,21 @@ test.group('Auth me', () => {
     assert.isUndefined(response.body().data.password)
   })
 
+  test('reports whether the current user owes a password renewal', async ({ assert, client }) => {
+    const confinedUser = await UserFactory.apply('passwordRenewalRequired').create()
+    const activeUser = await UserFactory.apply('active').create()
+
+    const confinedResponse = await client.get('/api/v1/auth/me').loginAs(confinedUser)
+    const activeResponse = await client.get('/api/v1/auth/me').loginAs(activeUser)
+
+    confinedResponse.assertStatus(200)
+    assert.isTrue(confinedResponse.body().data.passwordRenewalRequired)
+    assert.isUndefined(confinedResponse.body().data.passwordRenewalRequiredAt)
+
+    activeResponse.assertStatus(200)
+    assert.isFalse(activeResponse.body().data.passwordRenewalRequired)
+  })
+
   test('restores a remembered connection after its session disappears', async ({
     assert,
     client,

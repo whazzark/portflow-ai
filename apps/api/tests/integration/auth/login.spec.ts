@@ -59,6 +59,36 @@ test.group('Auth login', () => {
     response.assertSessionMissing('auth_web')
   })
 
+  test('reports that an active user owing a password renewal must choose a new one', async ({
+    assert,
+    client,
+  }) => {
+    const confinedUser = await UserFactory.apply('passwordRenewalRequired').create()
+
+    const response = await client
+      .post('/api/v1/auth/login')
+      .json({ email: confinedUser.email, password: USER_FACTORY_PASSWORD })
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.id, confinedUser.id)
+    assert.isTrue(response.body().data.passwordRenewalRequired)
+    response.assertSession('auth_web', confinedUser.id)
+  })
+
+  test('reports that an active user owing no password renewal has nothing to choose', async ({
+    assert,
+    client,
+  }) => {
+    const activeUser = await UserFactory.apply('active').create()
+
+    const response = await client
+      .post('/api/v1/auth/login')
+      .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD })
+
+    response.assertStatus(200)
+    assert.isFalse(response.body().data.passwordRenewalRequired)
+  })
+
   test('rejects a malformed login payload with a validation error', async ({ assert, client }) => {
     const response = await client
       .post('/api/v1/auth/login')

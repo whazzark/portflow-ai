@@ -8,6 +8,7 @@ export const ACTIVE_USER = {
   firstName: 'Claire',
   lastName: 'Martin',
   email: 'active.user@portflow.test',
+  passwordRenewalRequired: false,
 }
 
 export function mockAuthenticatedSession() {

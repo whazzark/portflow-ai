@@ -35,6 +35,7 @@ export const UserFactory = factory
       deactivatedByUserId: null,
       reactivatedAt: null,
       reactivatedByUserId: null,
+      passwordRenewalRequiredAt: null,
     }
   })
   .state('active', async (user) => {
@@ -63,6 +64,24 @@ export const UserFactory = factory
     user.accessStatus = 'CANCELLED'
     user.cancelledAt = DateTime.now()
     user.cancelledByUserId = null
+  })
+  /**
+   * Repeats the `active` state's assignments rather than composing with it: `01_user_seeder.ts`
+   * calls `UserFactory.apply(fixture.state)` with a single state name, and widening the seeder to
+   * accept a list would change a shared file for one fixture's benefit.
+   */
+  .state('passwordRenewalRequired', async (user) => {
+    user.accessStatus = 'ACTIVE'
+    user.password = await hashedFactoryPassword
+    user.activatedAt = DateTime.now()
+    user.activatedByUserId = null
+    user.cancelledAt = null
+    user.cancelledByUserId = null
+    user.deactivatedAt = null
+    user.deactivatedByUserId = null
+    user.reactivatedAt = null
+    user.reactivatedByUserId = null
+    user.passwordRenewalRequiredAt = DateTime.now()
   })
   .state('reactivated', async (user) => {
     user.accessStatus = 'ACTIVE'
