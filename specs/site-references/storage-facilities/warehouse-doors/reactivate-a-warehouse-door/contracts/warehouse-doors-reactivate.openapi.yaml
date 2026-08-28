@@ -1,0 +1,270 @@
+openapi: 3.1.0
+info:
+  title: Portflow Warehouse Door Reactivation Contract
+  version: 1.0.0
+  description: >-
+    Write contract for Issue #216 Reactivate a Warehouse Door. Extends the warehouse-door write
+    contract introduced by #213 (create) and #214 (update), itself an extension of #212's read
+    contract. This slice adds one route and changes no existing schema: the WarehouseDoor object
+    below is exactly what WarehouseDoorTransformer already serializes, and the door objects embedded
+    under GET /api/v1/warehouses are unchanged by this feature.
+
+    Scope note: there is deliberately no collection route. Doors are reactivated one at a time (spec
+    Assumptions, research R2), which is also why no route-ordering guard is needed here — unlike
+    /api/v1/warehouses, where /archive and /reactivate must be declared before /:id/... .
+paths:
+  /api/v1/warehouse-doors/{id}/reactivate:
+    post:
+      operationId: reactivateWarehouseDoor
+      summary: Put one independently archived door back into service
+      description: >-
+        Flips one ARCHIVED door to AVAILABLE and records the reactivation time, the responsible
+        administrator, and an optional comment. Eligibility is the conjunction of three conditions,
+        all decided under lock inside the write transaction: the door is ARCHIVED, it was archived on
+        its own rather than through its warehouse, and its containing warehouse is AVAILABLE.
+
+        The actor and the time come from the authenticated session and the server clock; neither is
+        addressable from the body. The door's identity, name, position, containing warehouse,
+        creation time, and archive context are preserved.
+
+        Requires an authenticated, active organization or operations administrator.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: >-
+            The door to reactivate. Deliberately not shape-validated: an identifier that cannot name
+            a row — malformed or merely absent — is one outcome for the client,
+            E_WAREHOUSE_DOOR_NOT_FOUND, never a server error.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReactivateWarehouseDoorRequest"
+            examples:
+              withComment:
+                summary: Record why the door comes back
+                value:
+                  comment: Works finished, door back in service
+              withoutComment:
+                summary: No explanation given
+                value: {}
+              blankComment:
+                summary: Whitespace only — stored as no comment, not as a blank one
+                value:
+                  comment: "   "
+      responses:
+        "200":
+          description: >-
+            The door is available. The response carries the stored row after the write, so status,
+            updatedAt, and the reactivation context all reflect the transition — beside the archive
+            context it preserved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDoor"
+        "401":
+          description: Not authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: >-
+            Authenticated but not permitted — access not active, or an active role without
+            warehouse-door management permission. No door is changed and no door data is disclosed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: >-
+            E_WAREHOUSE_DOOR_NOT_FOUND — no such door, or an identifier that cannot name a row.
+            E_WAREHOUSE_NOT_FOUND — the containing warehouse disappeared, or became available,
+            between the failed lock and the fallback read; a retry resolves it (research R4).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                doorNotFound:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_NOT_FOUND
+                        message: Warehouse door not found
+                warehouseNotFound:
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_NOT_FOUND
+                        message: Warehouse not found
+        "409":
+          description: >-
+            The door exists but cannot be reactivated. Two distinct conditions, each naming its own
+            remedy (spec FR-006, FR-007; research R3).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                alreadyAvailable:
+                  summary: Nothing to do — possibly a concurrent reactivation that already won
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_ALREADY_AVAILABLE
+                        message: Warehouse door is already available
+                archivedWithWarehouse:
+                  summary: >-
+                    The containing warehouse is archived, so this door was archived with it —
+                    reactivating the warehouse brings the door back in the same action
+                  value:
+                    errors:
+                      - code: E_WAREHOUSE_DOOR_ARCHIVED_WITH_WAREHOUSE
+                        message: >-
+                          This warehouse door was archived with its warehouse. Reactivate the
+                          warehouse and the door returns with it.
+        "422":
+          description: >-
+            The comment exceeds the shared 1,000-character lifecycle limit, or is not a string.
+            Validated by lifecycleComment(), the same rule every site reference uses.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: adonis-session
+  schemas:
+    ReactivateWarehouseDoorRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        comment:
+          type: [string, "null"]
+          maxLength: 1000
+          description: >-
+            Optional explanation for the transition. Trimmed before storage; absent, empty, and
+            whitespace-only are all stored as null (spec FR-010). The body itself may be omitted.
+      examples:
+        - comment: Works finished, door back in service
+        - {}
+    WarehouseDoor:
+      type: object
+      description: >-
+        #215's shape plus the reactivation members this slice adds to WarehouseDoorTransformer: the
+        200 is where an administrator observes what the transition recorded, and a body stating
+        status AVAILABLE and nothing else would omit it. The archive members stay beside them —
+        reactivation preserves the archive context rather than nulling it, so one body carries the
+        whole lifecycle of a door that came back. The web client still discards this body and
+        refetches the warehouse collection, which embeds every member the Doors panel renders
+        (research R12).
+      required:
+        [
+          id,
+          warehouseId,
+          name,
+          status,
+          latitude,
+          longitude,
+          archivedAt,
+          archivedByUserId,
+          archiveComment,
+          reactivatedAt,
+          reactivatedByUserId,
+          reactivationComment,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        warehouseId:
+          type: string
+          format: uuid
+          description: Unchanged by a reactivation; a door belongs permanently to one warehouse.
+        name:
+          type: string
+          description: Unchanged by a reactivation.
+        status:
+          type: string
+          enum: [AVAILABLE, ARCHIVED]
+          description: AVAILABLE in every 200 from this route.
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        archivedAt:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            Preserved, not nulled: the archival that this reactivation ends stays on record.
+        archivedByUserId:
+          type: [string, "null"]
+          format: uuid
+          description: Preserved, for the same reason as archivedAt.
+        archiveComment:
+          type: [string, "null"]
+          description: Preserved, for the same reason as archivedAt.
+        reactivatedAt:
+          type: [string, "null"]
+          format: date-time
+          description: The time this reactivation was recorded. Never null in a 200 from this route.
+        reactivatedByUserId:
+          type: [string, "null"]
+          format: uuid
+          description: >-
+            The administrator who returned the door to service. Never null in a 200 from this route.
+        reactivationComment:
+          type: [string, "null"]
+          description: >-
+            The trimmed comment, or null when none was submitted (spec FR-010).
+        createdAt:
+          type: string
+          format: date-time
+          description: Unchanged by a reactivation.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Advanced to the reactivation time, as #210's cascade does (research R5).
+    Error:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [message]
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+    ValidationError:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [message]
+            properties:
+              field:
+                type: string
+                examples: [comment]
+              rule:
+                type: string
+                examples: [maxLength]
+              message:
+                type: string

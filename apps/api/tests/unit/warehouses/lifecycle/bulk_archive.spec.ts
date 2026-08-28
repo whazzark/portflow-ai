@@ -137,7 +137,6 @@ test.group('ArchiveWarehousesUseCase', (group) => {
       doors.every(
         (door) =>
           door.status === 'ARCHIVED' &&
-          door.archivedWithWarehouse &&
           door.archiveComment === 'One submission' &&
           door.archivedAt?.toISO() === archivedAt,
       ),
@@ -159,7 +158,7 @@ test.group('ArchiveWarehousesUseCase', (group) => {
     assert.lengthOf(result.blockedWarehouses, 2)
   })
 
-  test('leaves an already archived door of an eligible warehouse untouched', async ({ assert }) => {
+  test('takes over an already archived door of an eligible warehouse', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const other = await UserFactory.apply('active').create()
     const target = await warehouse('Mixed Shed')
@@ -180,10 +179,9 @@ test.group('ArchiveWarehousesUseCase', (group) => {
       comment: 'Bulk cleanup',
     })
 
-    const untouched = await WarehouseDoor.findOrFail(preexisting.id)
-    assert.equal(untouched.archiveComment, 'Retired on its own')
-    assert.equal(untouched.archivedByUserId, other.id)
-    assert.isFalse(untouched.archivedWithWarehouse)
+    const taken = await WarehouseDoor.findOrFail(preexisting.id)
+    assert.equal(taken.archiveComment, 'Bulk cleanup')
+    assert.equal(taken.archivedByUserId, actor.id)
   })
 
   test('records nothing at all when the submission fails part-way through', async ({ assert }) => {

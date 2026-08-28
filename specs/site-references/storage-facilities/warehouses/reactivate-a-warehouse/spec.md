@@ -16,6 +16,19 @@
 
 **Domain**: site-references
 
+## Clarifications
+
+### Session 2026-08-27 — amended by [#216](../../warehouse-doors/reactivate-a-warehouse-door/spec.md)
+
+- Q: Which doors does a warehouse reactivation restore? → A: **Amended.** Every door the warehouse
+  holds. Archiving a warehouse now takes every one of its doors — replacing the context of any door
+  archived on its own — so its reactivation is the exact mirror and gives every one of them back.
+  There is no independently archived door under an archived warehouse to leave alone.
+
+**FR-007, FR-008, and FR-009 below are superseded by this answer**, and the
+`archived_with_warehouse` record they turned on is dropped by #216. Their original wording is kept,
+struck through, so the change is legible rather than silently rewritten.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Bring One Archived Warehouse and Its Cascaded Doors Back Into Service (Priority: P1)
@@ -34,9 +47,8 @@ behavior that distinguishes warehouse reactivation from every sibling reactivati
 
 **Independent Test**: Sign in as an organization administrator or operations administrator, open an
 archived warehouse on the warehouse map, reactivate it with or without a comment, and verify the
-warehouse becomes available, exactly the doors archived with it become available again, doors
-archived on their own beforehand stay archived, and the warehouse keeps its identity, name,
-complete footprint, creation time, and its record of having been archived.
+warehouse becomes available, every one of its doors becomes available again, and the warehouse keeps
+its identity, name, complete footprint, creation time, and its record of having been archived.
 
 **Acceptance Scenarios**:
 
@@ -46,13 +58,12 @@ complete footprint, creation time, and its record of having been archived.
 2. **Given** an archived warehouse whose doors were archived with it, **When** it is reactivated,
    **Then** every one of those doors becomes available again in the same action and carries the same
    reactivation time, the same responsible administrator, and the same comment as the warehouse.
-3. **Given** an archived warehouse holding both doors archived with it and doors that had been
-   archived on their own beforehand, **When** it is reactivated, **Then** only the doors archived
-   with the warehouse become available, and every independently archived door stays archived with
-   its own archive time, actor, and comment untouched.
-4. **Given** an archived warehouse with no door at all, or one whose doors were all archived
-   independently before it, **When** it is reactivated, **Then** the reactivation succeeds and the
-   absence of doors to restore is not reported as a failure.
+3. **Given** an archived warehouse holding a door that had been archived on its own before the
+   warehouse was archived, **When** the warehouse is reactivated, **Then** that door becomes
+   available with every other — the warehouse's archival had already taken it over (amended by
+   #216).
+4. **Given** an archived warehouse with no door at all, **When** it is reactivated, **Then** the
+   reactivation succeeds and the absence of doors to restore is not reported as a failure.
 5. **Given** the administrator supplies a comment while reactivating, **When** the reactivation
    succeeds, **Then** that comment is recorded as the reactivation comment on the warehouse and on
    every door restored with it, and is shown in the warehouse's details.
@@ -164,8 +175,8 @@ every attempt is refused before any warehouse or door changes and no partial eff
    data is disclosed, and no reactivation action was offered to them.
 5. **Given** a warehouse that is already available, **When** an authorized administrator attempts to
    reactivate it individually, **Then** the attempt is refused as already available, and its
-   existing lifecycle context and every one of its doors are left unchanged — in particular, no door
-   archived on its own is restored as a side-effect.
+   existing lifecycle context and every one of its doors are left unchanged — in particular, no
+   archived door of that warehouse is restored as a side-effect.
 6. **Given** an identifier that resolves to no warehouse, or one belonging to another operating
    site, **When** an authorized administrator attempts to reactivate it individually, **Then** the
    attempt is refused as not found, without disclosing information about other warehouses.
@@ -248,17 +259,22 @@ every attempt is refused before any warehouse or door changes and no partial eff
 - **FR-006**: A successful reactivation MUST change the warehouse's lifecycle status from archived
   to available and MUST record the reactivation time, the responsible administrator, and the
   supplied reactivation comment.
-- **FR-007**: A successful reactivation MUST change back to available exactly those doors of the
-  warehouse recorded as archived through their warehouse, recording on each of them the same
-  reactivation time, the same responsible administrator, and the same comment as the warehouse.
-- **FR-008**: A successful reactivation MUST leave entirely unchanged every door of that warehouse
+- **FR-007**: A successful reactivation MUST change back to available **every** door of the
+  warehouse, recording on each of them the same reactivation time, the same responsible
+  administrator, and the same comment as the warehouse. *(Amended by #216: was "exactly those doors
+  recorded as archived through their warehouse".)*
+- **FR-008**: ~~A successful reactivation MUST leave entirely unchanged every door of that warehouse
   that was archived on its own rather than through its warehouse, including its lifecycle status and
-  its existing archive time, actor, and comment.
-- **FR-009**: A door restored by its warehouse's reactivation MUST no longer be recorded as archived
+  its existing archive time, actor, and comment.~~ **Superseded by #216**: an archived warehouse
+  holds no such door — its own archival took every door it contains — so every one of them returns
+  to service with it.
+- **FR-009**: ~~A door restored by its warehouse's reactivation MUST no longer be recorded as archived
   through its warehouse, so that a later archival of the same warehouse cascades according to the
-  doors available at that moment rather than to a stale record.
-- **FR-010**: A warehouse containing no door, or containing only doors archived on their own, MUST
-  be reactivatable, and the absence of doors to restore MUST NOT be reported as a failure.
+  doors available at that moment rather than to a stale record.~~ **Superseded by #216**: with both
+  directions taking every door, there is no record to clear, and the `archived_with_warehouse`
+  column is dropped.
+- **FR-010**: A warehouse containing no door MUST be reactivatable, and the absence of doors to
+  restore MUST NOT be reported as a failure.
 - **FR-011**: The system MUST accept an optional reactivation comment, MUST trim surrounding
   whitespace from it, and MUST record no comment when the supplied value is absent, empty, or
   whitespace-only.
@@ -375,14 +391,13 @@ every attempt is refused before any warehouse or door changes and no partial eff
 - **Warehouse Footprint**: The warehouse's geographic polygon, including every boundary point.
   Reactivation does not alter it, and it does not need to be re-validated against other warehouses,
   since footprints may overlap.
-- **Warehouse Door**: An unloading door permanently belonging to one warehouse. A door recorded as
-  archived through its warehouse returns to available with that warehouse and stops carrying that
-  record; a door archived on its own stays archived and untouched. No door's identity, name,
-  location, containing warehouse, or history is altered.
-- **Warehouse Door Archival Origin**: The record, established by Archive a Warehouse (#210), of
-  whether an archived door was archived through its warehouse or on its own. It is the sole
-  determinant of which doors a warehouse reactivation restores, and it is cleared on every door the
-  reactivation restores.
+- **Warehouse Door**: An unloading door permanently belonging to one warehouse. Every door of a
+  reactivated warehouse returns to available with it, carrying the warehouse's own reactivation
+  context (amended by #216). No door's identity, name, location, containing warehouse, or history is
+  altered.
+- **Warehouse Door Archival Origin**: Whether an archived door was archived through its warehouse or
+  on its own. Since #216 it is nothing recorded on the door: an archived warehouse holds only doors
+  archived with it, so the containing warehouse's status states the origin.
 - **Warehouse Lifecycle Context**: The reactivation information recorded by this feature —
   reactivation time, responsible administrator, and optional comment — alongside the archive context
   recorded by #210, which reactivation preserves. A warehouse and the doors restored with it share
@@ -409,12 +424,11 @@ every attempt is refused before any warehouse or door changes and no partial eff
   administrators and operations administrators on archived warehouses succeed, and the available
   status of the warehouse and of its restored doors is visible in consultation within 2 seconds
   under normal operating conditions without a manual reload.
-- **SC-002**: In every successful reactivation, 100% of the doors recorded as archived through that
-  warehouse become available with an identical reactivation time, actor, and comment, and 100% of
-  its independently archived doors keep their archived status and their original archive time,
-  actor, and comment unchanged.
-- **SC-003**: In acceptance testing, 100% of archived warehouses that have no door, or whose doors
-  were all archived independently, are reactivated successfully with zero doors restored and zero
+- **SC-002**: In every successful reactivation, 100% of the warehouse's doors become available with
+  an identical reactivation time, actor, and comment, and 100% of them keep their archive time,
+  actor, and comment readable beside it (amended by #216).
+- **SC-003**: In acceptance testing, 100% of archived warehouses that have no door are reactivated
+  successfully with zero doors restored and zero
   errors reported.
 - **SC-004**: In acceptance testing, 100% of multiple reactivations on a selection made entirely of
   archived warehouses reactivate every warehouse in the selection, with its cascaded doors, in one
@@ -445,8 +459,8 @@ every attempt is refused before any warehouse or door changes and no partial eff
   door, and the warehouse and its restored doors appear again in every collection offering
   warehouses or doors for new operational work.
 - **SC-012**: In all acceptance datasets, a warehouse archived, reactivated, and archived again
-  cascades on the second archival to exactly the doors available at that moment, and its second
-  reactivation restores exactly that set — 0% of runs restore a door archived on its own.
+  cascades on each archival to every door it holds, and each reactivation restores every one of them
+  — 100% of runs leave the warehouse and its doors on the same side of the lifecycle.
 - **SC-013**: Every tested refusal condition — authorization, not found, already available,
   over-long comment, empty selection, duplicated selection, malformed identifier, and transient
   failure — produces distinct and accurate feedback, and every transient failure can be recovered
@@ -473,13 +487,10 @@ every attempt is refused before any warehouse or door changes and no partial eff
   optional shared comment model with the same 1,000-character limit, same door cascade, same
   partial-success contract, same rejection of empty, duplicated, or malformed selections. Only the
   eligibility direction and the blocker set differ.
-- The door cascade is restored, not recomputed. Archive a Warehouse (#210 FR-013) records on each
-  cascaded door that it was archived through its warehouse precisely so that this slice restores
-  exactly that set. A door archived on its own beforehand is deliberately not resurrected with the
-  building; recovering it is Reactivate a Warehouse Door (#216), a separate slice.
-- Clearing that record on every restored door (FR-009) keeps the marker meaningful across repeated
-  lifecycle transitions: without it, a door archived independently after a warehouse reactivation
-  would be wrongly restored by the next one.
+- "Exact mirror" is literal since #216: the archival takes every door of the warehouse, so the
+  restore gives every one of them back. Recovering a door on its own remains Reactivate a Warehouse
+  Door (#216), and it applies only while the containing warehouse is available — which is the only
+  state in which a door is archived on its own at all.
 - Reactivation has no usage-based blocker. An archived warehouse holds no door with a current
   product lot assignment belonging to a Planned or Active Discharge by construction, so the
   `IN_USE` reason that blocks archival cannot arise on this path, and the blocker set is exactly

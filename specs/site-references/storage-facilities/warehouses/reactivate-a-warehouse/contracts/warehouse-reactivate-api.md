@@ -56,7 +56,6 @@ comment" (FR-011).
         "latitude": 0, "longitude": 0,
         "archivedAt": "2026-08-01T09:00:00.000Z",     // preserved
         "archivedByUserId": "…", "archiveComment": "Works",
-        "archivedWithWarehouse": false,               // cleared on restore (FR-009)
         "reactivatedAt": "2026-08-25T14:12:00.000Z",
         "reactivatedByUserId": "…", "reactivationComment": "Zone C reopened after works"
       }
@@ -65,6 +64,9 @@ comment" (FR-011).
   "reactivatedDoorCount": 1
 }
 ```
+
+Since #216 the response carries no `archivedWithWarehouse` member: the restore takes every door of
+the warehouse, so the provenance is the containing warehouse's own status.
 
 `reactivatedDoorCount` reports what the restore **actually** did at submission time, which need not
 equal the advisory count the confirmation showed (research **D5**). This mirrors the

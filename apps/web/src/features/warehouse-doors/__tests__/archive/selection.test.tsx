@@ -73,7 +73,6 @@ function mockRowArchival() {
           archivedAt: ARCHIVED_AT,
           archivedByUserId: '018f7f21-5d0e-7a55-9d0e-2c9a3f5b1a44',
           archiveComment: null,
-          archivedWithWarehouse: false,
           createdAt: '2026-08-20T09:12:44.000Z',
           updatedAt: ARCHIVED_AT,
         },

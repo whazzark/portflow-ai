@@ -74,12 +74,11 @@ export type ArchiveWarehouseDoorCommand = {
 
 /**
  * Every arm but `ARCHIVED` is a transactional outcome rather than a pre-check, for the reason
- * `updateAvailable` above already gives — and here it decides more than a message. A door archival
- * races #210's cascade, which archives every available door of a warehouse in one transaction. A
- * status read taken before the write could be stale by the time it lands, and the loser would
- * archive the door a second time, overwriting the time, actor, comment, and provenance a later
- * warehouse reactivation (#211) depends on. So the guarded `status = 'AVAILABLE'` write inside the
- * transaction is the only thing that decides `ALREADY_ARCHIVED`, and it decides it exactly once.
+ * `updateAvailable` above already gives — and here it decides more than a message. A status read
+ * taken before the write could be stale by the time it lands, and the loser of two simultaneous
+ * archivals would archive the door a second time, overwriting the time, actor, and comment the
+ * winner recorded. So the guarded `status = 'AVAILABLE'` write inside the transaction is the only
+ * thing that decides `ALREADY_ARCHIVED`, and it decides it exactly once.
  */
 export type ArchiveWarehouseDoorResult =
   | { kind: 'ARCHIVED'; door: WarehouseDoor }
@@ -111,6 +110,31 @@ export type BulkWarehouseDoorLifecycleResult = {
   blockedDoors: BulkWarehouseDoorLifecycleBlocker[]
 }
 
+export type ReactivateWarehouseDoorCommand = {
+  id: string
+  reactivatedAt: DateTime
+  reactivatedByUserId: string
+  /** Already trimmed by the use case; `null` for absent, empty, and whitespace-only alike. */
+  reactivationComment: string | null
+}
+
+/**
+ * Every arm but `REACTIVATED` is a repository outcome rather than a pre-check, for the same reason
+ * `UpdateWarehouseDoorResult`'s are: the guarded warehouse read and the guarded door write can each
+ * lose a race, and the transaction is the only place that sees it.
+ *
+ * `WAREHOUSE_ARCHIVED` carries more here than it does on the write paths above: an archived
+ * warehouse holds no door but those archived with it, so the refusal is never "reactivate the
+ * warehouse, then the door" but always "reactivate the warehouse, and the door returns with it".
+ * The use case answers it with the door's own exception for exactly that reason.
+ */
+export type ReactivateWarehouseDoorResult =
+  | { kind: 'REACTIVATED'; door: WarehouseDoor }
+  | { kind: 'DOOR_NOT_FOUND' }
+  | { kind: 'ALREADY_AVAILABLE' }
+  | { kind: 'WAREHOUSE_NOT_FOUND' }
+  | { kind: 'WAREHOUSE_ARCHIVED' }
+
 export default abstract class WarehouseDoorRepository {
   abstract create(command: CreateWarehouseDoorCommand): Promise<CreateWarehouseDoorResult>
 
@@ -123,6 +147,10 @@ export default abstract class WarehouseDoorRepository {
   abstract archiveAvailableMany(
     command: ArchiveWarehouseDoorsCommand,
   ): Promise<BulkWarehouseDoorLifecycleResult>
+
+  abstract reactivateArchived(
+    command: ReactivateWarehouseDoorCommand,
+  ): Promise<ReactivateWarehouseDoorResult>
 
   abstract listAvailable(): Promise<WarehouseDoor[]>
 }

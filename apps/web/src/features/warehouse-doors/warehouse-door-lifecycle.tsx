@@ -27,24 +27,34 @@ export const WAREHOUSE_DOOR_BLOCKER_REASON_LABELS = {
  * A door is archivable only while both it and its containing warehouse are available — the same
  * pair the row already gates `Edit` on, and what the API re-decides under lock.
  *
- * Reactivation is #216's: an archived door offers nothing here, so `ResourceRowActions` renders no
- * menu at all rather than one with a dead entry.
+ * It comes back on its own under exactly one condition beyond being archived: its warehouse is
+ * available. Archiving a warehouse takes every door it holds (#210) and reactivating it gives every
+ * one of them back (#211), so a door under an archived warehouse is archived *with* it by
+ * definition — its remedy is the warehouse's own reactivation, which restores it in the same
+ * action, not a second submission here.
+ *
+ * Under an archived warehouse a door therefore offers nothing at all, and `ResourceRowActions`
+ * renders no menu rather than one with a dead entry.
  */
 export function warehouseDoorLifecycleActions(
-  doorStatus: WarehouseDoorDto['status'],
+  door: WarehouseDoorDto,
   warehouseStatus: WarehouseStatus,
 ): LifecycleAction[] {
-  return doorStatus === 'AVAILABLE' && warehouseStatus === 'AVAILABLE' ? ['archive'] : []
+  if (warehouseStatus !== 'AVAILABLE') {
+    return []
+  }
+
+  return door.status === 'AVAILABLE' ? ['archive'] : ['reactivate']
 }
 
 /**
  * Neither `describeEffect` nor `describeSuccess` is overridden. A warehouse overrides the first
  * because archiving one cascades onto its doors, and a door cascades onto nothing — the canonical
  * sentence, "<name> remains readable but is no longer available for new operations.", is already
- * exactly true. And the canonical toast already names the door: `lifecycleSuccessMessage` and
- * `lifecycleFailureTitle` quote the record on both paths, which is what lets an administrator
- * archiving one row out of a list of near-identical siblings confirm they retired the one they
- * meant.
+ * exactly true; a door reactivation has nothing to add to the canonical wording either. And the
+ * canonical toast already names the door: `lifecycleSuccessMessage` and `lifecycleFailureTitle`
+ * quote the record on both paths, which is what lets an administrator archiving one row out of a
+ * list of near-identical siblings confirm they retired the one they meant.
  *
  * No refusal-message map lives here either, deliberately. `ResourceLifecycleDialog` already
  * shows the API's own message — "Warehouse door is used by a planned or active discharge", "Warehouse door is
@@ -61,12 +71,19 @@ export function useWarehouseDoorLifecycleConfig(door: WarehouseDoorDto): Resourc
   return {
     singular: WAREHOUSE_DOOR_SINGULAR,
     name: door.name,
-    isPending: mutations.archive.isPending,
+    isPending: mutations.archive.isPending || mutations.reactivate.isPending,
     refresh: mutations.refreshWarehouseDoors,
-    submit: (_action, body) => mutations.archive.mutateAsync({ params: { id: door.id }, body }),
+    submit: (action, body) =>
+      action === 'reactivate'
+        ? mutations.reactivate.mutateAsync({ params: { id: door.id }, body })
+        : mutations.archive.mutateAsync({ params: { id: door.id }, body }),
   }
 }
 
+/**
+ * The confirmation on its own, for the row menu: it owns the mutation hooks so a door row runs none
+ * of them until an administrator actually opens a confirmation.
+ */
 export function WarehouseDoorLifecycleDialog({
   action,
   door,

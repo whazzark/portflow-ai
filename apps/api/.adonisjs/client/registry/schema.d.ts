@@ -655,6 +655,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['archive']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'warehouse_doors.reactivate': {
+    methods: ["POST"]
+    pattern: '/api/v1/warehouse-doors/:id/reactivate'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#warehouse_doors/shared/warehouse_door_validator').reactivateWarehouseDoorValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#warehouse_doors/shared/warehouse_door_validator').reactivateWarehouseDoorValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['reactivate']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/warehouse_doors_controller').default['reactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'warehouses.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/warehouses'

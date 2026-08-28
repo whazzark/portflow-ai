@@ -376,7 +376,7 @@ export class WarehouseDoorProductLotAssignmentSchema extends BaseModel {
 }
 
 export class WarehouseDoorSchema extends BaseModel {
-  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'archivedWithWarehouse', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt', 'warehouseId'] as const
+  static $columns = ['archiveComment', 'archivedAt', 'archivedByUserId', 'createdAt', 'id', 'latitude', 'longitude', 'name', 'reactivatedAt', 'reactivatedByUserId', 'reactivationComment', 'status', 'updatedAt', 'warehouseId'] as const
   $columns = WarehouseDoorSchema.$columns
   @column()
   declare archiveComment: string | null
@@ -384,8 +384,6 @@ export class WarehouseDoorSchema extends BaseModel {
   declare archivedAt: DateTime | null
   @column()
   declare archivedByUserId: string | null
-  @column()
-  declare archivedWithWarehouse: boolean
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })

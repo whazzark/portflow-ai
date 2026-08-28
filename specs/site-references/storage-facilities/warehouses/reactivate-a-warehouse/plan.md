@@ -1,5 +1,12 @@
 # Implementation Plan: Reactivate a Warehouse
 
+> **Amended by [#216 Reactivate a Warehouse Door](../../warehouse-doors/reactivate-a-warehouse-door/spec.md).**
+> Archiving a warehouse now takes **every** door it holds and reactivating it gives every one of
+> them back, so `warehouse_doors.archived_with_warehouse` is dropped. Where this document reasons
+> about the marker, about restoring "exactly the cascaded set", or about leaving independently
+> archived doors alone, read `spec.md`'s 2026-08-27 clarification instead. The text is kept as the
+> delivery record of what was built at the time.
+
 **Branch**: `feat/211-reactivate-warehouse` | **Date**: 2026-08-25 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/site-references/storage-facilities/warehouses/reactivate-a-warehouse/spec.md`

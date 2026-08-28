@@ -54,8 +54,7 @@ import { WarehouseMapControls } from '@/features/warehouses/ui/warehouse-map-con
 import { WarehousesError } from '@/features/warehouses/ui/warehouses-error'
 import { useWarehouseEditSession } from '@/features/warehouses/use-warehouse-edit-session'
 import {
-  countAvailableDoorsIn,
-  countRestorableDoorsIn,
+  countDoorsIn,
   describeBulkWarehouseEffect,
   toBulkWarehouseLifecycleOutcome,
   WAREHOUSE_BLOCKER_REASON_LABELS,
@@ -852,9 +851,7 @@ export function WarehousesPage() {
             describeBulkWarehouseEffect(
               action,
               checkedWarehouses.length,
-              action === 'reactivate'
-                ? countRestorableDoorsIn(checkedWarehouses)
-                : countAvailableDoorsIn(checkedWarehouses),
+              countDoorsIn(checkedWarehouses),
             )
           }
           idPrefix="warehouse"

@@ -21,8 +21,14 @@
 ### Session 2026-08-25
 
 - Q: Does this slice cover archiving one warehouse only, or also several selected warehouses in one action? → A: Both, matching the single-and-multiple contract already delivered for customers (`GH-195`), transport companies (`GH-220`), trucks (`GH-225`), docks (`GH-200`), and weighing areas (`GH-205`).
-- Q: How does warehouse archival interact with the warehouse's doors? → A: Archiving a warehouse also archives every one of its available doors, in the same action and with the same lifecycle context. No door is deleted, renamed, moved, detached from its warehouse, or stripped of its history, and no door already archived is altered.
+- Q: How does warehouse archival interact with the warehouse's doors? → A: Archiving a warehouse also archives every one of its available doors, in the same action and with the same lifecycle context. No door is deleted, renamed, moved, detached from its warehouse, or stripped of its history, and no door already archived is altered. *(The last clause is amended by the 2026-08-27 session below: an already archived door is taken over too.)*
 - Q: What then makes a warehouse ineligible for archival? → A: The warehouse must be available, and none of its doors may be currently in use by a Planned or Active Discharge, because archiving such a door would invalidate live operational work.
+
+### Session 2026-08-27 — amended by [#216](../../warehouse-doors/reactivate-a-warehouse-door/spec.md)
+
+- Q: What happens to a door that was already archived on its own when its warehouse is archived? → A: **Amended.** It is archived with the warehouse like every other door, and its archive time, actor, and comment are **replaced** by the warehouse's. An archived warehouse holds exactly one archival — its own — across every door it contains, which is what lets its reactivation be the exact mirror and what makes a per-door provenance record unnecessary.
+
+**FR-012 and FR-013 below are superseded by this answer**, and the `archived_with_warehouse` column FR-013 introduced is dropped by #216. Their original wording is kept, struck through, so the change is legible rather than silently rewritten.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -40,7 +46,7 @@ the primary outcome of the slice.
 **Independent Test**: Sign in as an organization administrator or operations administrator, archive
 an available warehouse none of whose doors is currently in use, and verify the warehouse leaves the
 available collection, appears under the archived status with its archive context, keeps its name and
-complete footprint, and that each of its formerly available doors is now archived under it with the
+complete footprint, and that each of its doors is now archived under it with the
 same archive context and an unchanged name, location, and containing warehouse.
 
 **Acceptance Scenarios**:
@@ -53,8 +59,8 @@ same archive context and an unchanged name, location, and containing warehouse.
    archives it, **Then** every one of those doors becomes archived in the same action, carrying the
    same archive time, the same responsible administrator, and the same comment as the warehouse.
 3. **Given** a warehouse containing both available and already archived doors, **When** it is
-   archived, **Then** its available doors become archived and its already archived doors keep their
-   existing archive time, actor, and comment unchanged.
+   archived, **Then** every one of them is archived under the warehouse's own archive time, actor,
+   and comment — the already archived ones having theirs replaced (amended by #216).
 4. **Given** a warehouse containing no door at all, **When** an authorized administrator archives it,
    **Then** the archival succeeds.
 5. **Given** a warehouse has been archived, **When** its details are opened, **Then** its stable
@@ -113,7 +119,7 @@ reason.
    no other warehouse or door is modified.
 7. **Given** an authorized administrator opens the archive confirmation for an eligible warehouse,
    **When** the confirmation is displayed, **Then** it names the warehouse, states how many of its
-   available doors will be archived with it, states that the warehouse and those doors remain
+   doors will be archived with it, states that the warehouse and those doors remain
    readable but are no longer available for new operations, and offers an optional comment.
 8. **Given** an administrator opens the archive confirmation, **When** the administrator abandons it,
    **Then** the warehouse and every one of its doors remain entirely unchanged.
@@ -141,7 +147,7 @@ and its doors exactly once.
 
 1. **Given** an archival was refused because a door of the warehouse is in use, **When** the blocking
    Discharge is closed or that door assignment ends and the administrator retries, **Then** the
-   archival succeeds and the warehouse's available doors are archived with it.
+   archival succeeds and the warehouse's doors are archived with it.
 2. **Given** an administrator is viewing a warehouse that another administrator archived in the
    meantime, **When** the administrator submits an archival, **Then** the attempt is refused as
    already archived and the refreshed view shows the warehouse's authoritative archived state and
@@ -177,7 +183,7 @@ it easy to lose track of which ones were blocked.
 
 **Independent Test**: Select a mixed set of warehouses — some eligible, one with a door currently
 assigned in a Planned or Active Discharge, one already archived, one unknown identifier — archive
-them in one action, and verify that exactly the eligible ones and their available doors become
+them in one action, and verify that exactly the eligible ones and their doors become
 archived with identical archive metadata, that every other warehouse and all of its doors are
 untouched and reported with its own specific reason, and that the blocked ones can be retried on
 their own.
@@ -227,15 +233,15 @@ their own.
   usage is assessed at submission time.
 - A warehouse containing no door at all is archivable; the absence of doors is not a failure and is
   not reported as an empty-cascade error.
-- A warehouse all of whose doors are already archived is archivable, and no door's archive context is
-  overwritten by the warehouse's archival.
-- The number of doors displayed in the confirmation is the number of currently available doors
+- A warehouse all of whose doors are already archived is archivable, and every one of those doors is
+  re-archived under the warehouse's own context (amended by #216).
+- The number of doors displayed in the confirmation is the number of doors the warehouse holds,
   assessed at submission time; if that number changed since the confirmation was opened, the
   authoritative submission-time set is archived and the reported outcome reflects it.
 - Two administrators archive the same available warehouse at nearly the same time: exactly one
   archival is recorded, the doors are archived exactly once, and the other attempt is refused as
-  already archived with no archive context overwritten. The same holds when one of them is archiving
-  it as part of a larger selection.
+  already archived without overwriting the winner's context. The same holds when one of them is
+  archiving it as part of a larger selection.
 - An archive comment containing only whitespace is treated as no comment rather than stored as a blank
   comment, on the warehouse and on every door archived with it.
 - An archive comment longer than the permitted maximum length is refused with a specific validation
@@ -300,14 +306,18 @@ their own.
 - **FR-010**: A successful archival MUST change the warehouse's lifecycle status from available to
   archived and MUST record the archive time, the responsible administrator, and the supplied archive
   comment.
-- **FR-011**: A successful archival MUST change every currently available door of that warehouse to
-  archived, recording on each of them the same archive time, the same responsible administrator, and
-  the same comment as the warehouse.
-- **FR-012**: A successful archival MUST leave every door of that warehouse that is already archived
-  entirely unchanged, including its existing archive time, actor, and comment.
-- **FR-013**: The system MUST record, for each door archived as part of its warehouse's archival, that
+- **FR-011**: A successful archival MUST change **every** door of that warehouse to archived,
+  recording on each of them the same archive time, the same responsible administrator, and the same
+  comment as the warehouse. *(Amended by #216: "every currently available door" → every door.)*
+- **FR-012**: ~~A successful archival MUST leave every door of that warehouse that is already archived
+  entirely unchanged, including its existing archive time, actor, and comment.~~ **Superseded by
+  #216**: a door already archived on its own is taken over by the warehouse's archival, and its
+  archive time, actor, and comment are replaced by the warehouse's. Nothing else about it changes.
+- **FR-013**: ~~The system MUST record, for each door archived as part of its warehouse's archival, that
   it was archived through its warehouse rather than on its own, so that a later warehouse
-  reactivation can restore exactly those doors.
+  reactivation can restore exactly those doors.~~ **Superseded by #216**: the reactivation restores
+  every door of the warehouse, so there is nothing to tell apart. The containing warehouse's status
+  is the provenance, and the `archived_with_warehouse` column this requirement introduced is dropped.
 - **FR-014**: The system MUST accept an optional archive comment, MUST trim surrounding whitespace
   from it, and MUST record no comment when the supplied value is absent, empty, or whitespace-only.
 - **FR-015**: The system MUST reject an archive comment that exceeds the maximum lifecycle comment
@@ -332,7 +342,7 @@ their own.
 - **FR-022**: Archiving a warehouse MUST NOT release its name for reuse, and archiving its doors MUST
   NOT release their names within that warehouse.
 - **FR-023**: The archive experience MUST require an explicit confirmation that names the warehouse,
-  states how many of its available doors will be archived with it, states that the warehouse and those
+  states how many of its doors will be archived with it, states that the warehouse and those
   doors remain readable but are no longer available for new operations, and offers an optional
   comment. The archival wording is the one every site reference uses, owned by
   `apps/web/src/components/lifecycle/lifecycle-copy.ts`; the door cascade is appended to it.
@@ -346,7 +356,7 @@ their own.
   later attempt refused as already archived, whether the warehouse was submitted on its own or as part
   of a multiple archival.
 - **FR-027**: A warehouse archival MUST be recorded in full or not at all: a failure MUST never leave a
-  warehouse archived while some of its available doors remain available, nor doors archived while
+  warehouse archived while some of its doors remain available, nor doors archived while
   their warehouse remains available.
 - **FR-028**: A refused or failed archival MUST leave the stored lifecycle state and lifecycle context
   of the warehouse and of every one of its doors exactly as they were before the attempt.
@@ -367,7 +377,7 @@ their own.
   to every submitted warehouse as a single archival, assessed at submission time against authoritative
   stored state rather than against the collection the administrator was looking at.
 - **FR-035**: A multiple archival MUST archive every eligible warehouse in the submission, together
-  with its available doors, and leave every ineligible warehouse and all of its doors unchanged,
+  with its doors, and leave every ineligible warehouse and all of its doors unchanged,
   rather than refusing the whole submission because one warehouse is ineligible.
 - **FR-036**: A multiple archival MUST report, for each warehouse it left unchanged, an identifying
   label and exactly one specific reason distinguishing not found, already archived, and door in use.
@@ -377,7 +387,7 @@ their own.
 - **FR-038**: A multiple archival MUST record either all of its eligible archivals or none of them, so
   a failure part-way through never leaves some warehouses archived and others silently skipped.
 - **FR-039**: A multiple archival MUST NOT partially archive an individual warehouse: each one is
-  either archived together with all of its available doors and its complete lifecycle metadata, or
+  either archived together with all of its doors and its complete lifecycle metadata, or
   left entirely untouched.
 - **FR-040**: The system MUST reject, before any warehouse or door changes, a submission that names no
   warehouse, that names the same warehouse more than once, or that carries a malformed identifier.
@@ -411,9 +421,9 @@ their own.
 - **Warehouse Footprint**: The warehouse's geographic polygon, including every boundary point.
   Archival does not alter it, and it remains consultable for the archived warehouse.
 - **Warehouse Door**: An unloading door permanently belonging to one warehouse. When its warehouse is
-  archived, an available door becomes archived with it and records that it was archived through its
-  warehouse; an already archived door is untouched. No door's identity, name, location, containing
-  warehouse, or history is altered.
+  archived, every door goes with it and carries the warehouse's own archive context — a door already
+  archived on its own has its context replaced (amended by #216). No door's identity, name, location,
+  containing warehouse, or history is altered.
 - **Warehouse Lifecycle Context**: The archive information recorded by this feature — archive time,
   responsible administrator, and optional comment — alongside any previously recorded reactivation
   context, which archival preserves. A warehouse and the doors archived with it share identical
@@ -453,7 +463,7 @@ their own.
   its doors left unchanged and a specific door-in-use reason shown; and 100% of warehouses whose doors
   are involved only through Closed Discharges or ended assignments, whose doors are all archived, or
   that have no door, are archived successfully.
-- **SC-004**: In every successful archival, 100% of the warehouse's available doors are archived in
+- **SC-004**: In every successful archival, 100% of the warehouse's doors are archived in
   the same action with an identical archive time, actor, and comment, and 100% of its already archived
   doors keep their original archive time, actor, and comment unchanged.
 - **SC-005**: In acceptance testing, 100% of archived warehouses retain their name, complete footprint
@@ -468,7 +478,7 @@ their own.
   warehouse produce exactly one recorded archival of the warehouse and of each of its doors, with zero
   archive contexts overwritten, whether the competing attempts are single or multiple.
 - **SC-008**: Across every tested failure and refusal path, 0% of runs leave a warehouse archived
-  while one of its available doors remains available, or a door archived while its warehouse remains
+  while one of its doors remains available, or a door archived while its warehouse remains
   available.
 - **SC-009**: Every tested refusal condition — authorization, not found, already archived, door in
   use, over-long comment, empty selection, duplicated selection, malformed identifier, and transient

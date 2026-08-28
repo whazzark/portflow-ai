@@ -3,7 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
 import { server } from '@/test/msw/server'
-import { API_BASE_URL, MIXED_ARCHIVED_WAREHOUSE, REACTIVATE_WAREHOUSES } from './support/fixtures'
+import {
+  API_BASE_URL,
+  REACTIVATE_WAREHOUSES,
+  TWO_DOOR_ARCHIVED_WAREHOUSE,
+} from './support/fixtures'
 import { mockWarehouses, renderWarehouses } from './support/test-helpers'
 
 vi.mock(
@@ -12,7 +16,7 @@ vi.mock(
 )
 
 const AVAILABLE = REACTIVATE_WAREHOUSES[0]
-const MIXED = REACTIVATE_WAREHOUSES[1]
+const RIVERSIDE = REACTIVATE_WAREHOUSES[1]
 const RETIRED = REACTIVATE_WAREHOUSES[2]
 const BULK_URL = `${API_BASE_URL}/api/v1/warehouses/reactivate`
 
@@ -34,7 +38,7 @@ test('offers a reactivation action once archived warehouses are selected', async
   const user = userEvent.setup()
   renderWarehouses()
 
-  await checkWarehouses(user, MIXED.name, RETIRED.name)
+  await checkWarehouses(user, RIVERSIDE.name, RETIRED.name)
 
   expect(screen.getByRole('button', { name: 'Reactivate selected' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
@@ -46,12 +50,12 @@ test('sums the doors returning to service across the whole selection', async () 
   const user = userEvent.setup()
   renderWarehouses()
 
-  // Mixed Shed restores 1 door (the other was archived on its own); Retired Shed restores 1.
-  await checkWarehouses(user, MIXED.name, RETIRED.name)
+  // Riverside Shed restores both of its doors, Retired Shed its one.
+  await checkWarehouses(user, RIVERSIDE.name, RETIRED.name)
   const dialog = await openBulkDialog(user)
 
   expect(dialog).toHaveTextContent('These 2 warehouses')
-  expect(dialog).toHaveTextContent('Their 2 doors archived with them return to service')
+  expect(dialog).toHaveTextContent('Their 3 doors return to service')
 })
 
 test('reactivates a fully eligible selection and reports the count', async () => {
@@ -63,7 +67,7 @@ test('reactivates a fully eligible selection and reports the count', async () =>
       return HttpResponse.json({
         data: {
           updatedWarehouses: [
-            { ...MIXED, status: 'AVAILABLE' },
+            { ...RIVERSIDE, status: 'AVAILABLE' },
             { ...RETIRED, status: 'AVAILABLE' },
           ],
           blockedWarehouses: [],
@@ -74,7 +78,7 @@ test('reactivates a fully eligible selection and reports the count', async () =>
   const user = userEvent.setup()
   renderWarehouses()
 
-  await checkWarehouses(user, MIXED.name, RETIRED.name)
+  await checkWarehouses(user, RIVERSIDE.name, RETIRED.name)
   const dialog = await openBulkDialog(user)
   await user.type(within(dialog).getByRole('textbox'), 'Zone C reopened')
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
@@ -89,7 +93,7 @@ test('reports each blocked warehouse with its own reason', async () => {
     http.post(BULK_URL, () =>
       HttpResponse.json({
         data: {
-          updatedWarehouses: [{ ...MIXED, status: 'AVAILABLE' }],
+          updatedWarehouses: [{ ...RIVERSIDE, status: 'AVAILABLE' }],
           blockedWarehouses: [{ id: RETIRED.id, name: RETIRED.name, reason: 'ALREADY_AVAILABLE' }],
         },
       }),
@@ -98,7 +102,7 @@ test('reports each blocked warehouse with its own reason', async () => {
   const user = userEvent.setup()
   renderWarehouses()
 
-  await checkWarehouses(user, MIXED.name, RETIRED.name)
+  await checkWarehouses(user, RIVERSIDE.name, RETIRED.name)
   const dialog = await openBulkDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
@@ -128,13 +132,13 @@ test('clears the selection after a partial outcome instead of turning it into an
     http.post(BULK_URL, () => {
       catalogue = [
         AVAILABLE,
-        { ...MIXED, status: 'AVAILABLE' },
+        { ...RIVERSIDE, status: 'AVAILABLE' },
         { ...RETIRED, status: 'AVAILABLE' },
       ]
 
       return HttpResponse.json({
         data: {
-          updatedWarehouses: [{ ...MIXED, status: 'AVAILABLE' }],
+          updatedWarehouses: [{ ...RIVERSIDE, status: 'AVAILABLE' }],
           blockedWarehouses: [{ id: RETIRED.id, name: RETIRED.name, reason: 'ALREADY_AVAILABLE' }],
         },
       })
@@ -143,7 +147,7 @@ test('clears the selection after a partial outcome instead of turning it into an
   const user = userEvent.setup()
   renderWarehouses()
 
-  await checkWarehouses(user, MIXED.name, RETIRED.name)
+  await checkWarehouses(user, RIVERSIDE.name, RETIRED.name)
   const dialog = await openBulkDialog(user)
   const requestsBeforeSubmission = listRequests
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
@@ -168,7 +172,7 @@ test('reports an all-blocked submission as nothing changed', async () => {
         data: {
           updatedWarehouses: [],
           blockedWarehouses: [
-            { id: MIXED.id, name: MIXED.name, reason: 'ALREADY_AVAILABLE' },
+            { id: RIVERSIDE.id, name: RIVERSIDE.name, reason: 'ALREADY_AVAILABLE' },
             { id: RETIRED.id, reason: 'NOT_FOUND' },
           ],
         },
@@ -178,7 +182,7 @@ test('reports an all-blocked submission as nothing changed', async () => {
   const user = userEvent.setup()
   renderWarehouses()
 
-  await checkWarehouses(user, MIXED.name, RETIRED.name)
+  await checkWarehouses(user, RIVERSIDE.name, RETIRED.name)
   const dialog = await openBulkDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
@@ -199,7 +203,7 @@ test('reports a failed submission without claiming anything was reactivated', as
   const user = userEvent.setup()
   renderWarehouses()
 
-  await checkWarehouses(user, MIXED.name)
+  await checkWarehouses(user, RIVERSIDE.name)
   const dialog = await openBulkDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
@@ -211,7 +215,7 @@ test('keeps an available warehouse out of a reactivation selection', async () =>
   const user = userEvent.setup()
   renderWarehouses()
 
-  await checkWarehouses(user, MIXED.name)
+  await checkWarehouses(user, RIVERSIDE.name)
 
   expect(
     screen.queryByRole('button', { name: `Select warehouse ${AVAILABLE.name}` }),
@@ -230,12 +234,14 @@ test('uses the archive wording when the selection is of available warehouses', a
 })
 
 test('defaults an empty selection to reactivation while the archived filter is active', async () => {
-  mockWarehouses(undefined, [MIXED_ARCHIVED_WAREHOUSE])
+  mockWarehouses(undefined, [TWO_DOOR_ARCHIVED_WAREHOUSE])
   const user = userEvent.setup()
   renderWarehouses('/warehouses?status=archived')
 
   await user.click(await screen.findByRole('button', { name: 'Select warehouses' }))
-  await user.click(await screen.findByRole('button', { name: `Select warehouse ${MIXED.name}` }))
+  await user.click(
+    await screen.findByRole('button', { name: `Select warehouse ${RIVERSIDE.name}` }),
+  )
 
   expect(screen.getByRole('button', { name: 'Reactivate selected' })).toBeInTheDocument()
 })

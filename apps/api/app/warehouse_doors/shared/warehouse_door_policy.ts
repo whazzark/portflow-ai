@@ -15,6 +15,10 @@ export default class WarehouseDoorPolicy extends BasePolicy {
     return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
   }
 
+  reactivate(user: User): AuthorizerResponse {
+    return user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN'
+  }
+
   listAvailable(user: User): AuthorizerResponse {
     return user.accessStatus === 'ACTIVE'
   }

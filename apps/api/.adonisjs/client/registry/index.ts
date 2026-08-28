@@ -330,6 +330,12 @@ const routes = {
     tokens: [{"old":"/api/v1/warehouse-doors/:id/archive","type":0,"val":"api","end":""},{"old":"/api/v1/warehouse-doors/:id/archive","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouse-doors/:id/archive","type":0,"val":"warehouse-doors","end":""},{"old":"/api/v1/warehouse-doors/:id/archive","type":1,"val":"id","end":""},{"old":"/api/v1/warehouse-doors/:id/archive","type":0,"val":"archive","end":""}],
     types: placeholder as Registry['warehouse_doors.archive']['types'],
   },
+  'warehouse_doors.reactivate': {
+    methods: ["POST"],
+    pattern: '/api/v1/warehouse-doors/:id/reactivate',
+    tokens: [{"old":"/api/v1/warehouse-doors/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/warehouse-doors/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/warehouse-doors/:id/reactivate","type":0,"val":"warehouse-doors","end":""},{"old":"/api/v1/warehouse-doors/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/warehouse-doors/:id/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['warehouse_doors.reactivate']['types'],
+  },
   'warehouses.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/warehouses',

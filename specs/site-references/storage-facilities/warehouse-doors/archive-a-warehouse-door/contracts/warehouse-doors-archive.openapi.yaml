@@ -22,9 +22,10 @@ paths:
         Archives every eligible door in the submission and leaves every ineligible one untouched,
         reporting one specific reason per unchanged door. Declared before /{id}/archive in the
         router, the ordering the warehouses and docks groups already carry. Every archived door in
-        one submission records the same archive time, administrator, and comment, and is recorded as
-        archived on its own (archivedWithWarehouse false), so a later reactivation of its warehouse
-        does not restore it. Either all eligible doors are archived or none are: a failure part-way
+        one submission records the same archive time, administrator, and comment. A door archived
+        here is archived on its own, which is what an archived door of an available warehouse is;
+        nothing on the door records it (amended by #216). Either all eligible doors are archived or
+        none are: a failure part-way
         through rolls the whole transaction back. Doors of different warehouses may be submitted
         together — each is evaluated against its own containing warehouse (research R12) — although
         the interface only ever builds a selection within one warehouse.
@@ -78,7 +79,6 @@ paths:
                           archivedAt: "2026-08-27T14:03:07.000+02:00"
                           archivedByUserId: 018f7f21-5d0e-7a55-9d0e-2c9a3f5b1a44
                           archiveComment: North side condemned after the 2026 works
-                          archivedWithWarehouse: false
                           createdAt: "2026-08-01T09:12:44.000+02:00"
                           updatedAt: "2026-08-27T14:03:07.000+02:00"
                       blockedDoors:
@@ -167,8 +167,9 @@ paths:
       responses:
         "200":
           description: >-
-            The door was archived. status is ARCHIVED, the archive context is populated, and
-            archivedWithWarehouse is false — the door was retired on its own.
+            The door was archived. status is ARCHIVED and the archive context is populated. The
+            door was retired on its own, which its warehouse still being available is what says
+            (amended by #216).
           content:
             application/json:
               schema:
@@ -190,7 +191,6 @@ paths:
                       archivedAt: "2026-08-27T14:03:07.000+02:00"
                       archivedByUserId: 018f7f21-5d0e-7a55-9d0e-2c9a3f5b1a44
                       archiveComment: Walled up during the 2026 works
-                      archivedWithWarehouse: false
                       createdAt: "2026-08-01T09:12:44.000+02:00"
                       updatedAt: "2026-08-27T14:03:07.000+02:00"
         "401":
@@ -350,7 +350,6 @@ components:
         - archivedAt
         - archivedByUserId
         - archiveComment
-        - archivedWithWarehouse
         - createdAt
         - updatedAt
       properties:
@@ -386,12 +385,6 @@ components:
           format: uuid
         archiveComment:
           type: [string, "null"]
-        archivedWithWarehouse:
-          type: boolean
-          description: >-
-            False for a door archived on its own — what this slice writes — and true for one archived
-            through its warehouse's archival (#210). It is what lets a warehouse reactivation (#211)
-            restore exactly the doors that cascade archived.
         createdAt:
           type: string
           format: date-time

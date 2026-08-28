@@ -37,12 +37,24 @@ export function useWarehouseDoorMutations() {
     }),
   )
 
+  const reactivate = useMutation(
+    tuyauQuery.warehouseDoors.reactivate.mutationOptions({
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          exact: true,
+          queryKey: warehouseQueries.list().queryKey,
+        }),
+    }),
+  )
+
   // Bulk archival reports partial success, so the action bar owns when to refresh — it invalidates
   // after reading the outcome rather than on every settled request.
   const archiveMany = useMutation(tuyauQuery.warehouseDoors.archiveMany.mutationOptions())
 
   // Called after a refusal as well as after a success, so a view made stale by another
-  // administrator's archival catches up rather than keeping an action it can no longer offer.
+  // administrator's archival or reactivation catches up rather than keeping an action it can no
+  // longer offer — exactly the already-available and archived-warehouse races a refused
+  // reactivation reports.
   const refreshWarehouseDoors = async () => {
     await queryClient.invalidateQueries({
       exact: true,
@@ -50,5 +62,5 @@ export function useWarehouseDoorMutations() {
     })
   }
 
-  return { archive, archiveMany, create, update, refreshWarehouseDoors }
+  return { archive, archiveMany, create, reactivate, update, refreshWarehouseDoors }
 }

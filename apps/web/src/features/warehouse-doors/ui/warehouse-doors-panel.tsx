@@ -190,12 +190,14 @@ export function WarehouseDoorsPanel({
                         {door.status === 'ARCHIVED' && door.archivedAt && (
                           <>
                             <span className="truncate text-muted-foreground text-xs">
-                              {/* Naming the provenance is what keeps a door archived with its
-                                  warehouse distinguishable from one retired on its own. Gated on
-                                  the current status too: reactivation leaves `archivedAt` in place,
-                                  so an available door would otherwise still claim it was
+                              {/* The provenance is read off the containing warehouse rather than
+                                  off the door: archiving a warehouse takes every door it holds, so
+                                  an archived warehouse holds none but doors archived with it, and
+                                  an available one none but doors retired on their own. Gated on the
+                                  door's current status too: reactivation leaves `archivedAt` in
+                                  place, so an available door would otherwise still claim it was
                                   archived. */}
-                              {door.archivedWithWarehouse
+                              {warehouse.status === 'ARCHIVED'
                                 ? 'Archived with this warehouse'
                                 : 'Archived on its own'}{' '}
                               · {formatDateTime(door.archivedAt)}
@@ -207,6 +209,23 @@ export function WarehouseDoorsPanel({
                               // hide it for good.
                               <span className="wrap-anywhere text-muted-foreground text-xs italic">
                                 {door.archiveComment}
+                              </span>
+                            )}
+                          </>
+                        )}
+                        {door.status === 'AVAILABLE' && door.reactivatedAt && (
+                          <>
+                            <span className="truncate text-muted-foreground text-xs">
+                              {/* The mirror of the line above, and gated the same way. Without it a
+                                  door that had been archived and brought back would report nothing
+                                  at all, since the archive line is withheld once it is available.
+                                  No actor: the embedded door carries `reactivatedByUserId`, not a
+                                  resolved user — exactly as the archive line does. */}
+                              Reactivated · {formatDateTime(door.reactivatedAt)}
+                            </span>
+                            {door.reactivationComment && (
+                              <span className="wrap-anywhere text-muted-foreground text-xs italic">
+                                {door.reactivationComment}
                               </span>
                             )}
                           </>

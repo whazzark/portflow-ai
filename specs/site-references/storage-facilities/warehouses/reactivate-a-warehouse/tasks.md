@@ -5,6 +5,13 @@ description: "Task list for Reactivate a Warehouse (GH-211)"
 
 # Tasks: Reactivate a Warehouse
 
+> **Amended by [#216 Reactivate a Warehouse Door](../../warehouse-doors/reactivate-a-warehouse-door/spec.md).**
+> Archiving a warehouse now takes **every** door it holds and reactivating it gives every one of
+> them back, so `warehouse_doors.archived_with_warehouse` is dropped. Where this document reasons
+> about the marker, about restoring "exactly the cascaded set", or about leaving independently
+> archived doors alone, read `spec.md`'s 2026-08-27 clarification instead. The text is kept as the
+> delivery record of what was built at the time.
+
 **Input**: Design documents from `specs/site-references/storage-facilities/warehouses/reactivate-a-warehouse/`
 
 **Prerequisites**: [plan.md](./plan.md), [spec.md](./spec.md), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/)

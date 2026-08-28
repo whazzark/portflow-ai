@@ -34,7 +34,8 @@ export const warehouseLifecycle = (
   ...overrides,
 })
 
-/** The same for a door, plus the archive provenance introduced by GH-210. */
+/** The same for a door. No provenance member travels with it: whether a door was archived on its
+ * own or with its warehouse is read off the containing warehouse's status. */
 export const doorLifecycle = (
   overrides: Partial<WarehouseDoorDto> = {},
 ): Omit<WarehouseDoorDto, 'id' | 'name' | 'status' | 'latitude' | 'longitude'> => ({
@@ -44,7 +45,6 @@ export const doorLifecycle = (
   reactivatedAt: null,
   reactivatedByUserId: null,
   reactivationComment: null,
-  archivedWithWarehouse: false,
   ...overrides,
 })
 
@@ -99,7 +99,7 @@ export const WAREHOUSES: WarehouseWithDoorsDto[] = [
         status: 'ARCHIVED',
         latitude: 43.295,
         longitude: 5.365,
-        ...doorLifecycle({ archivedAt: '2026-06-01T09:00:00.000Z', archivedWithWarehouse: true }),
+        ...doorLifecycle({ archivedAt: '2026-06-01T09:00:00.000Z' }),
       },
     ],
   },
@@ -158,13 +158,14 @@ export const BULK_WAREHOUSES: WarehouseWithDoorsDto[] = [
   WAREHOUSES[1],
 ]
 
-/** An archived warehouse holding both kinds of archived door, which is the distinction
- * reactivation turns on: `Cascaded Door` was archived by this warehouse's archival and comes back
- * with it, while `Solo Door` was archived on its own and must stay archived (GH-211 FR-007/FR-008).
- * Kept out of `WAREHOUSES` so the delivered consultation tests keep their exact door counts. */
-export const MIXED_ARCHIVED_WAREHOUSE: WarehouseWithDoorsDto = {
+/** An archived warehouse holding two doors, both of them archived with it — the only shape an
+ * archived warehouse has, since its archival takes every door it holds and its reactivation gives
+ * every one of them back (GH-210, GH-211 FR-007). They therefore share the building's own archive
+ * context. Kept out of `WAREHOUSES` so the delivered consultation tests keep their exact door
+ * counts. */
+export const TWO_DOOR_ARCHIVED_WAREHOUSE: WarehouseWithDoorsDto = {
   id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
-  name: 'Mixed Shed',
+  name: 'Riverside Shed',
   status: 'ARCHIVED',
   ...warehouseLifecycle({
     archivedAt: '2026-07-01T09:00:00.000Z',
@@ -180,25 +181,24 @@ export const MIXED_ARCHIVED_WAREHOUSE: WarehouseWithDoorsDto = {
   doors: [
     {
       id: '66666666-6666-4666-8666-666666666666',
-      name: 'Cascaded Door',
+      name: 'Quay Door',
       status: 'ARCHIVED',
       latitude: 45.755,
       longitude: 4.855,
       ...doorLifecycle({
         archivedAt: '2026-07-01T09:00:00.000Z',
         archiveComment: 'Zone closed for works',
-        archivedWithWarehouse: true,
       }),
     },
     {
       id: '77777777-7777-4777-8777-777777777777',
-      name: 'Solo Door',
+      name: 'Yard Door',
       status: 'ARCHIVED',
       latitude: 45.7552,
       longitude: 4.8552,
       ...doorLifecycle({
-        archivedAt: '2026-02-01T09:00:00.000Z',
-        archiveComment: 'Door retired on its own',
+        archivedAt: '2026-07-01T09:00:00.000Z',
+        archiveComment: 'Zone closed for works',
       }),
     },
   ],
@@ -208,7 +208,7 @@ export const MIXED_ARCHIVED_WAREHOUSE: WarehouseWithDoorsDto = {
  * to make checkable, and two archived ones a selection can span. */
 export const REACTIVATE_WAREHOUSES: WarehouseWithDoorsDto[] = [
   WAREHOUSES[0],
-  MIXED_ARCHIVED_WAREHOUSE,
+  TWO_DOOR_ARCHIVED_WAREHOUSE,
   WAREHOUSES[1],
 ]
 
@@ -268,12 +268,14 @@ export const CREATED_DOOR: CreatedWarehouseDoorDto = {
   status: 'AVAILABLE',
   latitude: 48.853,
   longitude: 2.35,
-  // Empty on a new door, and carried by every door write response since #215, whose 200 is where
-  // an archival's context is observed.
+  // Empty on a new door, and carried by every door write response since #215 and #216, whose 200s
+  // are where an archival's and a reactivation's context are observed.
   archivedAt: null,
   archivedByUserId: null,
   archiveComment: null,
-  archivedWithWarehouse: false,
+  reactivatedAt: null,
+  reactivatedByUserId: null,
+  reactivationComment: null,
   createdAt: '2026-08-26T09:12:44.000Z',
   updatedAt: '2026-08-26T09:12:44.000Z',
 }
@@ -296,7 +298,9 @@ export const UPDATED_DOOR: UpdatedWarehouseDoorDto = {
   archivedAt: null,
   archivedByUserId: null,
   archiveComment: null,
-  archivedWithWarehouse: false,
+  reactivatedAt: null,
+  reactivatedByUserId: null,
+  reactivationComment: null,
   createdAt: '2026-08-20T09:12:44.000Z',
   updatedAt: '2026-08-26T14:03:07.000Z',
 }
@@ -339,8 +343,7 @@ export const WAREHOUSES_WITH_CREATED_DOOR: WarehouseWithDoorsDto[] = [
 ]
 
 /** What `POST /api/v1/warehouse-doors/:id/archive` returns: the standalone door DTO plus the
- * archive context the transition just recorded. `archivedWithWarehouse` is false — the door was
- * retired on its own, not caught by its warehouse's cascade. */
+ * archive context the transition just recorded. */
 export type ArchivedWarehouseDoorDto = Route.Response<'warehouse_doors.archive'>['data']
 
 /** The first fixture warehouse's first available door, archived. */
@@ -356,7 +359,11 @@ export const ARCHIVED_DOOR: ArchivedWarehouseDoorDto = {
   archivedAt: '2026-08-27T14:03:07.000Z',
   archivedByUserId: '018f7f21-5d0e-7a55-9d0e-2c9a3f5b1a44',
   archiveComment: 'Walled up during the 2026 works',
-  archivedWithWarehouse: false,
+  // Never archived and reactivated in the same breath: a door retired for the first time carries
+  // no reactivation context at all.
+  reactivatedAt: null,
+  reactivatedByUserId: null,
+  reactivationComment: null,
   createdAt: '2026-08-20T09:12:44.000Z',
   updatedAt: '2026-08-27T14:03:07.000Z',
 }
@@ -374,6 +381,53 @@ export const WAREHOUSES_WITH_ARCHIVED_DOOR: WarehouseWithDoorsDto[] = [
               archivedAt: ARCHIVED_DOOR.archivedAt,
               archiveComment: ARCHIVED_DOOR.archiveComment,
             }),
+          }
+        : door,
+    ),
+  },
+  WAREHOUSES[1],
+]
+
+/** The door of an available warehouse that was archived on its own — the only shape #216 accepts. */
+export const REACTIVATABLE_DOOR = (WAREHOUSES[0].doors ?? [])[1]
+
+/** What `POST /api/v1/warehouse-doors/:id/reactivate` returns: the standalone door DTO carrying
+ * both halves of the lifecycle. The archive context travels untouched beside the reactivation one
+ * — reactivation preserves it, so the whole history of a door that came back reads off one body. */
+export type ReactivatedWarehouseDoorDto = Route.Response<'warehouse_doors.reactivate'>['data']
+
+export const REACTIVATED_DOOR: ReactivatedWarehouseDoorDto = {
+  id: REACTIVATABLE_DOOR.id,
+  warehouseId: WAREHOUSES[0].id,
+  name: REACTIVATABLE_DOOR.name,
+  status: 'AVAILABLE',
+  latitude: REACTIVATABLE_DOOR.latitude,
+  longitude: REACTIVATABLE_DOOR.longitude,
+  archivedAt: REACTIVATABLE_DOOR.archivedAt,
+  archivedByUserId: REACTIVATABLE_DOOR.archivedByUserId,
+  archiveComment: REACTIVATABLE_DOOR.archiveComment,
+  reactivatedAt: '2026-08-27T10:00:00.000Z',
+  reactivatedByUserId: '018f7f21-5d0e-7a55-9d0e-2c9a3f5b1a44',
+  reactivationComment: 'Back in service after works',
+  createdAt: '2026-08-20T09:12:44.000Z',
+  updatedAt: '2026-08-27T10:00:00.000Z',
+}
+
+/**
+ * The same door as the warehouse collection embeds it after the refetch. It deliberately keeps its
+ * `archivedAt` and `archiveComment`: reactivation preserves the archive context, and the row must
+ * stop presenting it purely because the *status* changed.
+ */
+export const WAREHOUSES_WITH_REACTIVATED_DOOR: WarehouseWithDoorsDto[] = [
+  {
+    ...WAREHOUSES[0],
+    doors: (WAREHOUSES[0].doors ?? []).map((door) =>
+      door.id === REACTIVATED_DOOR.id
+        ? {
+            ...door,
+            status: 'AVAILABLE' as const,
+            reactivatedAt: '2026-08-27T10:00:00.000Z',
+            reactivationComment: 'Back in service after works',
           }
         : door,
     ),

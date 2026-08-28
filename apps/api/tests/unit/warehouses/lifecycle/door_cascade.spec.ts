@@ -43,7 +43,7 @@ test.group('Warehouse archival door cascade', (group) => {
   })
   group.each.teardown(() => app.container.restore(SiteReferenceUsageChecker))
 
-  test('archives every available door with the warehouse lifecycle context', async ({ assert }) => {
+  test('archives every door with the warehouse lifecycle context', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const warehouse = await warehouseWithFootprint()
     await WarehouseDoorFactory.merge({ warehouseId: warehouse.id, name: 'A door' }).create()
@@ -59,7 +59,6 @@ test.group('Warehouse archival door cascade', (group) => {
     assert.equal(result.archivedDoorCount, 2)
     const doors = await doorsOf(warehouse.id)
     assert.isTrue(doors.every((door) => door.status === 'ARCHIVED'))
-    assert.isTrue(doors.every((door) => door.archivedWithWarehouse))
     assert.isTrue(doors.every((door) => door.archivedByUserId === actor.id))
     assert.isTrue(doors.every((door) => door.archiveComment === 'Building repurposed'))
     assert.isTrue(
@@ -67,7 +66,10 @@ test.group('Warehouse archival door cascade', (group) => {
     )
   })
 
-  test('leaves an already archived door entirely untouched', async ({ assert }) => {
+  // The rule the cascade turns on: the building's archival is the one an archived warehouse holds,
+  // so a door retired on its own beforehand is taken over by it rather than left with a context of
+  // its own. Reactivating the warehouse then gives that door back with every other.
+  test('overwrites the context of a door already archived on its own', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const other = await UserFactory.apply('active').create()
     const warehouse = await warehouseWithFootprint()
@@ -89,15 +91,12 @@ test.group('Warehouse archival door cascade', (group) => {
       comment: 'Building repurposed',
     })
 
-    assert.equal(result.archivedDoorCount, 1)
-    const untouched = await WarehouseDoor.findOrFail(previouslyArchived.id)
-    assert.equal(untouched.archivedByUserId, other.id)
-    assert.equal(untouched.archiveComment, 'Retired on its own')
-    assert.equal(
-      untouched.archivedAt?.toMillis(),
-      DateTime.fromISO('2026-01-15T08:00:00.000Z').toMillis(),
-    )
-    assert.isFalse(untouched.archivedWithWarehouse)
+    assert.equal(result.archivedDoorCount, 2)
+    const taken = await WarehouseDoor.findOrFail(previouslyArchived.id)
+    assert.equal(taken.status, 'ARCHIVED')
+    assert.equal(taken.archivedByUserId, actor.id)
+    assert.equal(taken.archiveComment, 'Building repurposed')
+    assert.equal(taken.archivedAt?.toISO(), result.warehouse.archivedAt?.toISO())
   })
 
   test('archives a warehouse that has no door at all', async ({ assert }) => {
@@ -115,7 +114,7 @@ test.group('Warehouse archival door cascade', (group) => {
     assert.equal(result.archivedDoorCount, 0)
   })
 
-  test('archives a warehouse whose doors are all already archived', async ({ assert }) => {
+  test('re-archives a warehouse whose doors are all already archived', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const warehouse = await warehouseWithFootprint()
     await WarehouseDoorFactory.apply('archived')
@@ -130,7 +129,7 @@ test.group('Warehouse archival door cascade', (group) => {
     })
 
     assert.equal(result.warehouse.status, 'ARCHIVED')
-    assert.equal(result.archivedDoorCount, 0)
+    assert.equal(result.archivedDoorCount, 1)
   })
 
   test('preserves every door identity, name, location and prior reactivation', async ({
@@ -163,7 +162,6 @@ test.group('Warehouse archival door cascade', (group) => {
     assert.equal(reloaded.reactivationComment, 'Returned to service')
     assert.isNotNull(reloaded.reactivatedAt)
     assert.equal(reloaded.status, 'ARCHIVED')
-    assert.isTrue(reloaded.archivedWithWarehouse)
   })
 
   test('leaves doors of other warehouses alone', async ({ assert }) => {
@@ -185,6 +183,5 @@ test.group('Warehouse archival door cascade', (group) => {
 
     const untouched = await WarehouseDoor.findOrFail(neighbourDoor.id)
     assert.equal(untouched.status, 'AVAILABLE')
-    assert.isFalse(untouched.archivedWithWarehouse)
   })
 })

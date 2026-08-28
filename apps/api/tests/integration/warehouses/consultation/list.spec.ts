@@ -69,7 +69,7 @@ test.group('Warehouse consultation', (group) => {
         status: string
         latitude: number
         longitude: number
-        archivedWithWarehouse: boolean
+        archivedAt: string | null
       }>
     }>
     assert.deepEqual(
@@ -108,8 +108,8 @@ test.group('Warehouse consultation', (group) => {
       ],
     )
     // The lifecycle context added by GH-210 travels with every door.
-    assert.isFalse(returnedDoors?.doors[0].archivedWithWarehouse)
-    assert.isFalse(returnedDoors?.doors[1].archivedWithWarehouse)
+    assert.isNull(returnedDoors?.doors[0].archivedAt)
+    assert.isNotNull(returnedDoors?.doors[1].archivedAt)
   })
 
   test('does not expose a warehouse with an incomplete footprint', async ({ client }) => {

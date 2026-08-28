@@ -88,7 +88,7 @@ test.group('Warehouse bulk reactivation endpoint', (group) => {
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
     const eligible = await warehouse('Eligible Shed', 'archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: eligible.id, name: 'Cascaded door' })
       .create()
     const available = await warehouse('Open Shed')
@@ -112,7 +112,6 @@ test.group('Warehouse bulk reactivation endpoint', (group) => {
     const [door] = await WarehouseDoor.query().where('warehouseId', eligible.id)
     assert.equal(door.status, 'AVAILABLE')
     assert.equal(door.reactivationComment, 'Zone C reopened')
-    assert.isFalse(door.archivedWithWarehouse)
   })
 
   test('rejects an empty selection before evaluating anything', async ({ assert, client }) => {
@@ -178,7 +177,7 @@ test.group('Warehouse bulk reactivation endpoint', (group) => {
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const target = await warehouse('Verbose Shed', 'archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: target.id, name: 'Quiet door' })
       .create()
 
@@ -223,7 +222,7 @@ test.group('Warehouse bulk reactivation endpoint', (group) => {
   }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const contested = await warehouse('Contested Shed', 'archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: contested.id, name: 'Contested door' })
       .create()
 

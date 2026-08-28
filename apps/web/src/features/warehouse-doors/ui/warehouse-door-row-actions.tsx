@@ -10,10 +10,10 @@ import type { WarehouseStatus } from '@/features/warehouses/types'
  * The per-row administration menu for a warehouse door, mirroring `TruckRowActions`.
  *
  * #214 chose this container with an empty `actions` array precisely so archiving (#215) would
- * arrive as an entry beside `Edit` rather than as a restructuring of the Doors panel. Reactivation
- * (#216) fills the remaining slot the same way. Until then `ResourceRowActions` renders nothing at
- * all for a row it cannot act on, which is exactly the "absent, not disabled" rule an archived door
- * needs.
+ * arrive as an entry beside `Edit` rather than as a restructuring of the Doors panel; reactivation
+ * (#216) fills the remaining slot the same way. A row that allows neither renders nothing at all —
+ * `ResourceRowActions` drops the whole trigger — which is exactly the "absent, not disabled" rule a
+ * door archived with its warehouse needs.
  */
 export function WarehouseDoorRowActions({
   door,
@@ -26,7 +26,7 @@ export function WarehouseDoorRowActions({
 }) {
   return (
     <ResourceRowActions
-      actions={warehouseDoorLifecycleActions(door.status, warehouseStatus)}
+      actions={warehouseDoorLifecycleActions(door, warehouseStatus)}
       // A door is correctable only while both it and its containing warehouse are available —
       // exactly what the API re-decides under lock.
       editable={door.status === 'AVAILABLE' && warehouseStatus === 'AVAILABLE'}

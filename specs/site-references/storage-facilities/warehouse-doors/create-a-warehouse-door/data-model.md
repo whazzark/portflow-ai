@@ -18,7 +18,7 @@ This slice **persists no new entity and requires no migration**. It writes one r
 | `status` | Yes — always `'AVAILABLE'` | Column default; never taken from the payload (FR-015) |
 | `created_at` / `updated_at` | Yes — by Lucid | `created_at` is the recorded creation time (FR-016) |
 | `archived_at`, `archived_by_user_id`, `archive_comment` | No — left `NULL` | Written by #215 |
-| `archived_with_warehouse` | No — left at its default | Written by #210's cascade |
+| ~~`archived_with_warehouse`~~ | ~~No — left at its default~~ | **Dropped by #216**: the containing warehouse's status states the provenance |
 | `reactivated_at`, `reactivated_by_user_id`, `reactivation_comment` | No — left `NULL` | Written by #216 |
 
 ### `warehouses` (read only, under lock)

@@ -38,8 +38,8 @@ write must preload them.
 | `warehouse_id` | uuid, FK | Selector for the restore set; never modified (FR-014) |
 | `name` | text | Preserved (FR-014) |
 | `latitude` / `longitude` | numeric | Preserved (FR-014) |
-| `status` | `'AVAILABLE' \| 'ARCHIVED'` | **Written** `ARCHIVED → AVAILABLE`, for the restore set only |
-| `archived_with_warehouse` | boolean, `NOT NULL DEFAULT false` | **Read** as part of the restore predicate; **written** to `false` on every restored door (FR-009) |
+| `status` | `'AVAILABLE' \| 'ARCHIVED'` | **Written** `ARCHIVED → AVAILABLE`, for **every** door of the warehouse (amended by #216) |
+| ~~`archived_with_warehouse`~~ | ~~boolean, `NOT NULL DEFAULT false`~~ | ~~Read as part of the restore predicate; written to `false` on every restored door (FR-009)~~ — **dropped by #216** |
 | `archived_at` | timestamp, null | **Preserved** (FR-015) |
 | `archived_by_user_id` | uuid, null | **Preserved** |
 | `archive_comment` | text, null | **Preserved** |
@@ -48,10 +48,11 @@ write must preload them.
 | `reactivation_comment` | text, null | **Written** — identical to the warehouse's |
 | `updated_at` | timestamp | **Written** — same value |
 
-`archived_with_warehouse` is normalized to a real boolean on read by
-`@column({ consume: (value) => Boolean(value) })`, because SQLite (the Japa test database, ADR 0002)
-returns `1`/`0`. Any predicate written in application code must therefore compare against `true`,
-not a truthy integer.
+> **Amended by [#216](../../warehouse-doors/reactivate-a-warehouse-door/data-model.md).** The
+> archival takes every door of the warehouse, so the restore gives every one of them back. The
+> provenance column — and the boolean normalizer that existed only to make it comparable across
+> Postgres and SQLite — is dropped with that amendment. The original design is kept below, marked,
+> rather than rewritten.
 
 ### Records not touched
 
@@ -67,15 +68,15 @@ The single most important expression in this slice:
 
 ```
 warehouse_id IN (:eligibleWarehouseIds)
-  AND status = 'ARCHIVED'
-  AND archived_with_warehouse = true
 ```
 
-- `status = 'ARCHIVED'` makes the update idempotent under a concurrent restore.
-- `archived_with_warehouse = true` is what separates FR-007 (restore) from FR-008 (leave alone).
+Since #216 there is no second conjunct, and no third: every door of a warehouse that just became
+available goes with it, exactly as every door went down with it. The `eligibleWarehouseIds` set —
+computed under `FOR UPDATE` from warehouses that were `ARCHIVED` — is what makes the update
+idempotent under a concurrent restore, because a second run finds no eligible warehouse at all.
 
-Both conjuncts are required. Dropping the second resurrects independently archived doors; dropping
-the first lets a re-run rewrite the reactivation context of a door already restored.
+*(Was: `AND status = 'ARCHIVED' AND archived_with_warehouse = true`, the second conjunct separating
+FR-007 from the superseded FR-008.)*
 
 ---
 
@@ -116,9 +117,9 @@ and reactivate over the same warehouse queue instead of deadlocking.
 | I2 | A door is never available while its warehouse is archived | Door update keyed on `eligibleIds`, which are warehouses that just became available | FR-021 |
 | I3 | Exactly one reactivation is recorded per warehouse under concurrency | `FOR UPDATE` lock + `status='ARCHIVED'` predicate + affected-row guard | FR-020 |
 | I4 | A warehouse and every door restored with it share one timestamp, actor, comment | One command object feeds both updates | FR-007, FR-032 |
-| I5 | Independently archived doors are never modified | `archived_with_warehouse = true` conjunct | FR-008 |
+| ~~I5~~ | ~~Independently archived doors are never modified~~ | **Dropped with FR-008 by #216**: an archived warehouse holds none | ~~FR-008~~ |
 | I6 | Archive context survives reactivation on both tables | No `archived_*` column appears in either `SET` clause | FR-015 |
-| I7 | A restored door cannot be resurrected by a later warehouse reactivation | `archived_with_warehouse = false` in the door `SET` clause | FR-009 |
+| ~~I7~~ | ~~A restored door cannot be resurrected by a later warehouse reactivation~~ | **Dropped with FR-009 by #216**: a later reactivation restores every door anyway | ~~FR-009~~ |
 | I8 | A refused reactivation changes nothing | Blockers computed before any write; transaction rolls back on throw | FR-022 |
 
 ---
@@ -136,19 +137,20 @@ Repeatable without limit. Each direction overwrites its own context columns and 
 other's, so a warehouse cycled several times shows the most recent archival and the most recent
 reactivation side by side — not a history log (spec Assumptions).
 
-**Warehouse door** — same two states, but reachable four ways, which is what `archived_with_warehouse`
-disambiguates:
+**Warehouse door** — same two states, reachable four ways, and which way is in force is read off the
+containing warehouse's own status (amended by #216):
 
 ```
-AVAILABLE ──its warehouse is archived (#210 cascade)──▶ ARCHIVED, archived_with_warehouse = true
-AVAILABLE ──archived on its own (#215)───────────────▶ ARCHIVED, archived_with_warehouse = false
-ARCHIVED (marker true)  ──its warehouse is reactivated (#211)──▶ AVAILABLE, marker cleared to false
-ARCHIVED (marker false) ──reactivated on its own (#216)───────▶ AVAILABLE
+AVAILABLE ──its warehouse is archived (#210 cascade, every door)──▶ ARCHIVED
+AVAILABLE ──archived on its own (#215, warehouse available)──────▶ ARCHIVED
+ARCHIVED, warehouse archived  ──its warehouse is reactivated (#211, every door)──▶ AVAILABLE
+ARCHIVED, warehouse available ──reactivated on its own (#216)────────────────────▶ AVAILABLE
 ```
 
 This slice owns exactly the third arrow. The second and fourth belong to `#215`/`#216` and are out
-of scope; the first is delivered. The marker being cleared on the third arrow is what keeps the
-first two distinguishable on the *next* cycle.
+of scope; the first is delivered. Nothing on the door has to keep the two archived rows apart: the
+first and third can only happen under an archived warehouse, the second and fourth only under an
+available one.
 
 ---
 

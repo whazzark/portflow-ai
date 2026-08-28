@@ -29,17 +29,17 @@ async function openBulkDialog(user: ReturnType<typeof userEvent.setup>) {
   return screen.findByRole('alertdialog')
 }
 
-test('sums the available doors of the whole selection in the confirmation', async () => {
+test('sums the doors of the whole selection in the confirmation', async () => {
   mockWarehouses(undefined, BULK_WAREHOUSES)
   const user = userEvent.setup()
   renderWarehouses()
 
-  // North holds 1 available door, East holds 2, West holds none.
+  // North holds 2 doors (one already archived), East holds 2, West holds none.
   await checkWarehouses(user, NORTH.name, EAST.name, WEST.name)
   const dialog = await openBulkDialog(user)
 
   expect(dialog).toHaveTextContent('3 warehouses')
-  expect(dialog).toHaveTextContent('3 available doors are archived with them')
+  expect(dialog).toHaveTextContent('Their 4 doors are archived with them')
 })
 
 test('archives a fully eligible selection and reports the count', async () => {

@@ -14,6 +14,8 @@ import WarehouseDoorRepository, {
   type BulkWarehouseDoorLifecycleResult,
   type CreateWarehouseDoorCommand,
   type CreateWarehouseDoorResult,
+  type ReactivateWarehouseDoorCommand,
+  type ReactivateWarehouseDoorResult,
   type UpdateWarehouseDoorCommand,
   type UpdateWarehouseDoorResult,
 } from './warehouse_door_repository.ts'
@@ -72,7 +74,6 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
             archivedAt: null,
             archivedByUserId: null,
             archiveComment: null,
-            archivedWithWarehouse: false,
             reactivatedAt: null,
             reactivatedByUserId: null,
             reactivationComment: null,
@@ -215,13 +216,13 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
    * The lock order is **warehouse then door**, the order `create` and `updateAvailable` above take
    * and the one #210's cascade takes when it archives a warehouse together with its doors. Any
    * other order would deadlock against that cascade; this one makes the two queue instead, so a
-   * door caught by both ends up archived exactly once, under one context, with the loser answering
-   * `ALREADY_ARCHIVED` rather than overwriting what the winner recorded.
+   * door caught by both settles under exactly one context: the cascade winning first leaves this
+   * write answering `WAREHOUSE_ARCHIVED`, and this write winning first leaves the cascade to
+   * overwrite what it recorded — which is the cascade's own rule, not a lost update.
    *
-   * `archivedWithWarehouse` is written `false` rather than left to the column default. The flag
-   * describes *the archival that is current*, not the row's history — a door archived by a cascade
-   * and later reactivated carries a cleared flag — and stating it here is what keeps a warehouse
-   * reactivation (#211) from restoring a door that was retired on its own.
+   * A door archived here is archived *on its own*, and its containing warehouse being available is
+   * what says so. Nothing records the provenance: archiving the warehouse later would take this
+   * door too and overwrite the context recorded here with the building's own (#210).
    */
   async archiveAvailable(
     command: ArchiveWarehouseDoorCommand,
@@ -283,7 +284,6 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
           archivedAt,
           archivedByUserId: command.archivedByUserId,
           archiveComment: command.archiveComment,
-          archivedWithWarehouse: false,
           // A query-builder update bypasses Lucid's timestamp hooks, so the transition would
           // otherwise never be recorded.
           updatedAt: archivedAt,
@@ -393,7 +393,6 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
             archivedAt,
             archivedByUserId: command.archivedByUserId,
             archiveComment: command.archiveComment,
-            archivedWithWarehouse: false,
             updatedAt: archivedAt,
           })
 
@@ -409,6 +408,134 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
         blockedDoors: blockers,
       }
     })
+  }
+
+  /**
+   * Returns one door archived on its own to service, leaving its warehouse and every sibling alone.
+   *
+   * The warehouse is locked first — the order `create`, `updateAvailable`, and #210's cascade all
+   * take — so a concurrent warehouse archival or reactivation queues instead of deadlocking. No
+   * footprint is preloaded and no usage is scanned: reactivation asks no containment question
+   * (#209 refuses any reshape that would exclude an existing door, whatever its status), and an
+   * archived door holds no assignment in a planned or active discharge by construction.
+   *
+   * The guarded `UPDATE` is the sole arbiter of eligibility, and the locked warehouse read above is
+   * what confines this path to a door archived on its own: an archived warehouse holds no door but
+   * those archived with it, and those come back with the building (#211), never one at a time.
+   */
+  async reactivateArchived(
+    command: ReactivateWarehouseDoorCommand,
+  ): Promise<ReactivateWarehouseDoorResult> {
+    // An identifier that cannot name a row is simply not found: without this the `uuid` column makes
+    // Postgres raise `22P02`, turning a malformed id into a 500 instead of a 404.
+    if (!isUuid(command.id)) {
+      return { kind: 'DOOR_NOT_FOUND' }
+    }
+
+    // Unlocked, and before the transaction opens, purely to learn which warehouse to lock. Safe
+    // because containment is permanent (`CONTEXT.md`): the id it yields cannot go stale, and every
+    // decision that depends on it is taken again below, under lock.
+    const door = await WarehouseDoor.find(command.id)
+
+    if (!door) {
+      return { kind: 'DOOR_NOT_FOUND' }
+    }
+
+    const reactivatedAt = command.reactivatedAt.toSQL({ includeOffset: false })
+
+    // The transaction reports *which guard* refused rather than what to answer. The two fail for
+    // unrelated reasons — the warehouse is not available, or the door is not archived — and only
+    // the stage that refused knows which row a second read should be about.
+    const outcome = await WarehouseDoor.transaction<
+      'REACTIVATED' | 'WAREHOUSE_REFUSED' | 'DOOR_REFUSED'
+    >(async (trx) => {
+      const warehouse = await Warehouse.query({ client: trx })
+        .where('id', door.warehouseId)
+        .where('status', 'AVAILABLE')
+        .forUpdate()
+        .first()
+
+      if (!warehouse) {
+        return 'WAREHOUSE_REFUSED'
+      }
+
+      const [affectedRows] = await WarehouseDoor.query({ client: trx })
+        .where('id', command.id)
+        .where('status', 'ARCHIVED')
+        // The archive context is deliberately left in place, so the full lifecycle stays
+        // consultable once the door is back in service.
+        .update({
+          status: 'AVAILABLE',
+          reactivatedAt,
+          reactivatedByUserId: command.reactivatedByUserId,
+          reactivationComment: command.reactivationComment,
+          // A query-builder update bypasses Lucid's timestamp hooks, so the transition would
+          // otherwise never be recorded.
+          updatedAt: reactivatedAt,
+        })
+
+      return affectedRows > 0 ? 'REACTIVATED' : 'DOOR_REFUSED'
+    })
+
+    if (outcome === 'REACTIVATED') {
+      // Re-read rather than returning the pre-read instance: the caller serializes the stored row,
+      // including the status and `updatedAt` this write just advanced.
+      const current = await WarehouseDoor.find(command.id)
+
+      return current ? { kind: 'REACTIVATED', door: current } : { kind: 'DOOR_NOT_FOUND' }
+    }
+
+    if (outcome === 'DOOR_REFUSED') {
+      // The refusal is the door's alone, so the warehouse is never consulted: it was read
+      // `AVAILABLE` under `FOR UPDATE` a moment earlier. Asking again would let a door re-archived
+      // in this window fall through to the warehouse branch below and answer "warehouse not found"
+      // for a warehouse that plainly exists and is available. Same reasoning as `archiveAvailable`
+      // one level down: the guarded write matched nothing because the door was not archived when
+      // it ran, or has since been deleted.
+      const current = await WarehouseDoor.find(command.id)
+
+      return current ? { kind: 'ALREADY_AVAILABLE' } : { kind: 'DOOR_NOT_FOUND' }
+    }
+
+    return this.explainWarehouseRefusal(command.id, door.warehouseId)
+  }
+
+  /**
+   * Names which blocker stopped a reactivation whose guarded warehouse lock matched nothing. Both
+   * rows are re-read because either may have moved since: the point is to answer with the state as
+   * it actually is, not as the failed guard assumed.
+   *
+   * The door is consulted before the warehouse so that a warehouse reactivation committing in this
+   * window — which restores the cascaded doors with it — is reported as `ALREADY_AVAILABLE` rather
+   * than as a warehouse problem the administrator no longer has.
+   */
+  private async explainWarehouseRefusal(
+    doorId: string,
+    warehouseId: string,
+  ): Promise<ReactivateWarehouseDoorResult> {
+    const door = await WarehouseDoor.find(doorId)
+
+    if (!door) {
+      return { kind: 'DOOR_NOT_FOUND' }
+    }
+
+    if (door.status === 'AVAILABLE') {
+      return { kind: 'ALREADY_AVAILABLE' }
+    }
+
+    const warehouse = await Warehouse.find(warehouseId)
+
+    // A warehouse reactivated between the two reads is reported as not found rather than archived:
+    // "reactivate it first" would be guidance the administrator cannot act on, whereas a retry
+    // resolves it. Same reasoning as `create` and `updateAvailable`.
+    if (!warehouse || warehouse.status === 'AVAILABLE') {
+      return { kind: 'WAREHOUSE_NOT_FOUND' }
+    }
+
+    // An archived warehouse holds no door but those archived with it (#210 takes every one), so
+    // this refusal always means the same thing and always has the same one-step remedy: reactivate
+    // the warehouse, and the door returns with it.
+    return { kind: 'WAREHOUSE_ARCHIVED' }
   }
 
   listAvailable(): Promise<WarehouseDoor[]> {

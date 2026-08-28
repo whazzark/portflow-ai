@@ -4,6 +4,7 @@ import {
   API_BASE_URL,
   type ArchivedWarehouseDoorDto,
   type CreatedWarehouseDoorDto,
+  type ReactivatedWarehouseDoorDto,
   type UpdatedWarehouseDoorDto,
 } from './fixtures'
 
@@ -346,5 +347,87 @@ export function archiveWarehouseDoorRecoveringHandler(archived: ArchivedWarehous
           { status: 500 },
         )
       : HttpResponse.json({ data: archived })
+  })
+}
+
+const reactivateWarehouseDoorUrl = (id: string) => `${warehouseDoorsUrl}/${id}/reactivate`
+
+/** The 200 body is the standalone door DTO, now AVAILABLE. */
+export function reactivateWarehouseDoorHandler(reactivated: ReactivatedWarehouseDoorDto) {
+  return http.post(reactivateWarehouseDoorUrl(reactivated.id), () =>
+    HttpResponse.json({ data: reactivated }),
+  )
+}
+
+export function reactivateWarehouseDoorErrorHandler(
+  id: string,
+  error: { code: string; message: string; details?: Array<{ field: string; message: string }> },
+  status: number,
+) {
+  return http.post(reactivateWarehouseDoorUrl(id), () => HttpResponse.json({ error }, { status }))
+}
+
+export const reactivateWarehouseDoorAlreadyAvailableHandler = (id: string) =>
+  reactivateWarehouseDoorErrorHandler(
+    id,
+    {
+      code: 'E_WAREHOUSE_DOOR_ALREADY_AVAILABLE',
+      message: 'Warehouse door is already available',
+    },
+    409,
+  )
+
+export const reactivateWarehouseDoorArchivedWithWarehouseHandler = (id: string) =>
+  reactivateWarehouseDoorErrorHandler(
+    id,
+    {
+      code: 'E_WAREHOUSE_DOOR_ARCHIVED_WITH_WAREHOUSE',
+      message:
+        'This warehouse door was archived with its warehouse. Reactivate the warehouse and the door returns with it.',
+    },
+    409,
+  )
+
+export const reactivateWarehouseDoorNotFoundHandler = (id: string) =>
+  reactivateWarehouseDoorErrorHandler(
+    id,
+    { code: 'E_WAREHOUSE_DOOR_NOT_FOUND', message: 'Warehouse door not found' },
+    404,
+  )
+
+/** A 422's top-level message is only "Validation failure"; the field-level detail is the useful one. */
+export const reactivateWarehouseDoorCommentTooLongHandler = (id: string) =>
+  reactivateWarehouseDoorErrorHandler(
+    id,
+    {
+      code: 'E_VALIDATION_ERROR',
+      message: 'Validation failure',
+      details: [
+        { field: 'comment', message: 'The comment field must not be greater than 1000 characters' },
+      ],
+    },
+    422,
+  )
+
+export const reactivateWarehouseDoorFailureHandler = (id: string, status = 500) =>
+  reactivateWarehouseDoorErrorHandler(
+    id,
+    { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' },
+    status,
+  )
+
+/** Fails once, then succeeds — the retry-after-a-transient-failure path. */
+export function reactivateWarehouseDoorRecoveringHandler(reactivated: ReactivatedWarehouseDoorDto) {
+  let attempts = 0
+
+  return http.post(reactivateWarehouseDoorUrl(reactivated.id), () => {
+    attempts += 1
+
+    return attempts === 1
+      ? HttpResponse.json(
+          { error: { code: 'E_INTERNAL_SERVER_ERROR', message: 'Something went wrong' } },
+          { status: 500 },
+        )
+      : HttpResponse.json({ data: reactivated })
   })
 }

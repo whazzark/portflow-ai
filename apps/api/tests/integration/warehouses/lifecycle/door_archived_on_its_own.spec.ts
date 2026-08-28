@@ -11,9 +11,11 @@ import UnusedChecker from '#site_references/shared/unused_checker'
 
 /**
  * The seam between archiving a door on its own (#215) and archiving or reactivating its warehouse
- * (#210, #211). Archiving a warehouse cascades onto every one of its *available* doors; the two
- * lifecycles therefore meet on the same rows, and `archived_with_warehouse` is what keeps them
- * from overwriting each other.
+ * (#210, #211). Archiving a warehouse cascades onto every one of its doors without exception, so
+ * the two lifecycles meet on the same rows and the building's archival wins: it takes over a door
+ * retired beforehand, context and all, and gives it back when it is reactivated. What separates a
+ * door archived on its own from one archived with its warehouse is therefore nothing recorded on
+ * the door — it is the containing warehouse's own status.
  */
 const FOOTPRINT = [
   { latitude: 49.4938, longitude: 0.1077 },
@@ -45,7 +47,7 @@ test.group('Warehouse archival and a door archived on its own', (group) => {
   })
   group.each.teardown(() => app.container.restore(SiteReferenceUsageChecker))
 
-  test('leaves a door retired on its own untouched when its warehouse is archived later', async ({
+  test('takes over a door retired on its own when its warehouse is archived later', async ({
     assert,
     client,
   }) => {
@@ -58,25 +60,24 @@ test.group('Warehouse archival and a door archived on its own', (group) => {
       .post(`/api/v1/warehouse-doors/${retired.id}/archive`)
       .loginAs(admin)
       .json({ comment: 'Walled up' })
-    const own = await WarehouseDoor.findOrFail(retired.id)
 
     await client
       .post(`/api/v1/warehouses/${warehouse.id}/archive`)
       .loginAs(admin)
       .json({ comment: 'Building repurposed' })
 
-    const afterCascade = await WarehouseDoor.findOrFail(retired.id)
-    // The cascade only takes AVAILABLE doors, so this one keeps its own context and provenance.
-    assert.isFalse(afterCascade.archivedWithWarehouse)
-    assert.equal(afterCascade.archiveComment, 'Walled up')
-    assert.equal(afterCascade.archivedAt?.toISO(), own.archivedAt?.toISO())
-
+    // One archived warehouse, one archival: both doors carry the building's context, whatever
+    // either of them was in beforehand.
+    const takenOver = await WarehouseDoor.findOrFail(retired.id)
     const cascaded = await WarehouseDoor.findOrFail(stillAvailable.id)
-    assert.isTrue(cascaded.archivedWithWarehouse)
+    const building = await Warehouse.findOrFail(warehouse.id)
+    assert.equal(takenOver.archiveComment, 'Building repurposed')
+    assert.equal(takenOver.archivedAt?.toISO(), building.archivedAt?.toISO())
     assert.equal(cascaded.archiveComment, 'Building repurposed')
+    assert.equal(cascaded.archivedAt?.toISO(), building.archivedAt?.toISO())
   })
 
-  test('does not restore a door retired on its own when its warehouse is reactivated', async ({
+  test('restores a door retired on its own when its warehouse is reactivated', async ({
     assert,
     client,
   }) => {
@@ -90,11 +91,9 @@ test.group('Warehouse archival and a door archived on its own', (group) => {
     await client.post(`/api/v1/warehouses/${warehouse.id}/reactivate`).loginAs(admin).json({})
 
     assert.equal((await Warehouse.findOrFail(warehouse.id)).status, 'AVAILABLE')
-    // Exactly the doors the cascade archived come back.
+    // The reactivation is the archival's mirror, so every door the building took comes back.
     assert.equal((await WarehouseDoor.findOrFail(cascaded.id)).status, 'AVAILABLE')
-    const stillArchived = await WarehouseDoor.findOrFail(retired.id)
-    assert.equal(stillArchived.status, 'ARCHIVED')
-    assert.isFalse(stillArchived.archivedWithWarehouse)
+    assert.equal((await WarehouseDoor.findOrFail(retired.id)).status, 'AVAILABLE')
   })
 
   test('refuses archiving a door on its own once its warehouse archived it', async ({
@@ -115,13 +114,12 @@ test.group('Warehouse archival and a door archived on its own', (group) => {
 
     response.assertStatus(409)
     const persisted = await WarehouseDoor.findOrFail(target.id)
-    // The refusal overwrites nothing: one archival, one context, one provenance.
-    assert.isTrue(persisted.archivedWithWarehouse)
+    // The refusal overwrites nothing: an archived warehouse holds one archival, its own.
     assert.equal(persisted.archivedAt?.toISO(), cascaded.archivedAt?.toISO())
     assert.equal(persisted.archiveComment, cascaded.archiveComment)
   })
 
-  test('archives the warehouse of a door retired on its own without counting it twice', async ({
+  test('counts every door of the warehouse it archives, retired ones included', async ({
     assert,
     client,
   }) => {
@@ -137,7 +135,7 @@ test.group('Warehouse archival and a door archived on its own', (group) => {
       .json({})
 
     response.assertStatus(200)
-    // Only the door that was still available is reported by the cascade.
-    assert.equal(response.body().data.archivedDoorCount, 1)
+    // Both doors are reported: the cascade wrote both, one of them for the second time.
+    assert.equal(response.body().data.archivedDoorCount, 2)
   })
 })

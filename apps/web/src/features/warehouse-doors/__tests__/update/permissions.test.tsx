@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import {
   WAREHOUSE_ADMIN,
@@ -29,14 +30,19 @@ test('withholds the row menu from a user without warehouse management permission
   expect(screen.queryByRole('button', { name: `Actions for ${DOOR.name}` })).not.toBeInTheDocument()
 })
 
-test('renders no menu at all on an archived door, rather than a dead item', async () => {
+test('offers no Edit on an archived door, rather than a dead item', async () => {
+  const user = userEvent.setup()
   mockWarehouses(WAREHOUSE_ADMIN)
   renderWarehouses(`/warehouses?status=all&warehouseId=${AVAILABLE.id}&doorStatus=archived`)
 
   expect(await screen.findByText(ARCHIVED_DOOR.name)).toBeInTheDocument()
-  expect(
-    screen.queryByRole('button', { name: `Actions for ${ARCHIVED_DOOR.name}` }),
-  ).not.toBeInTheDocument()
+  // The menu itself exists again since #216 gave this door — archived on its own, under an
+  // available warehouse — a `Reactivate` entry. What must stay absent is `Edit`: an archived door
+  // is read-only until it is brought back.
+  await user.click(screen.getByRole('button', { name: `Actions for ${ARCHIVED_DOOR.name}` }))
+
+  const items = await screen.findAllByRole('menuitem')
+  expect(items.map((item) => item.textContent)).toEqual(['Reactivate'])
 })
 
 test('renders no menu under an archived warehouse', async () => {

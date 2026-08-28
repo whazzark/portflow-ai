@@ -19,8 +19,11 @@ export type ArchiveWarehousesCommand = {
 }
 
 /**
- * `archivedDoorCount` reports how many doors the cascade actually archived, so the caller can
- * describe what happened rather than echo the count the client was shown before submitting.
+ * `archivedDoorCount` reports how many doors the cascade wrote, which is every door of the
+ * warehouse: one already archived on its own is counted too, because the cascade rewrites its
+ * context with the building's rather than skipping it (`applyArchival`). Counting the write at
+ * submission time is what lets the caller describe what happened rather than echo the count the
+ * client was shown before submitting.
  *
  * `IN_USE` is a repository outcome and not only a use-case exception: the conditional write can
  * lose a race after the use case's pre-check, and the transaction is the only place that sees it.

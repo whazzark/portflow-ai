@@ -115,7 +115,7 @@ test.group('Warehouse bulk archival endpoint', (group) => {
     )
     const cascaded = await WarehouseDoor.query().where('warehouseId', eligible.id).firstOrFail()
     assert.equal(cascaded.status, 'ARCHIVED')
-    assert.isTrue(cascaded.archivedWithWarehouse)
+    assert.equal(cascaded.archiveComment, 'Cleanup')
   })
 
   test('reports an all-blocked submission as an outcome rather than an error', async ({

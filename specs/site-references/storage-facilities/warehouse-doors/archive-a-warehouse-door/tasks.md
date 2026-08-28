@@ -1,5 +1,12 @@
 # Tasks: Archive a Warehouse Door
 
+> **Amended by [#216 Reactivate a Warehouse Door](../reactivate-a-warehouse-door/spec.md).** A door
+> is archived *on its own* exactly while its containing warehouse is available, and nothing on the
+> door records that: `warehouse_doors.archived_with_warehouse` is dropped, a later archival of the
+> warehouse takes this door over, and the warehouse's reactivation brings it back. Where this
+> document reasons about writing or reading that provenance, read `spec.md`'s amendment note
+> instead. The text is kept as the delivery record of what was built at the time.
+
 **Input**: Design documents from `specs/site-references/storage-facilities/warehouse-doors/archive-a-warehouse-door/`
 
 **Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`

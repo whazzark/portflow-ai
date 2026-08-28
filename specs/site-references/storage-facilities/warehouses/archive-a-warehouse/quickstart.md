@@ -12,8 +12,9 @@ docker compose -f docker/docker-compose.yml up -d     # PostgreSQL 17
 pnpm --filter @portflow/api db:fresh                  # migrate + seed (dev/test fixtures)
 ```
 
-`db:fresh` is required at least once **after** the `archived_with_warehouse` migration lands, so
-`apps/api/database/schema.ts` regenerates with the new column.
+`db:fresh` is required at least once after each migration of this slice, so
+`apps/api/database/schema.ts` regenerates. (#216 later drops `archived_with_warehouse` again; on a
+current checkout the column is simply absent.)
 
 ```bash
 pnpm dev            # api on :3333, web on :3000
@@ -47,10 +48,10 @@ test setup to prove FR-009's vacuous pass.
 ## Validate the API directly
 
 ```bash
-# eligible → 200, warehouse ARCHIVED, its available doors ARCHIVED with the same context
+# eligible → 200, warehouse ARCHIVED, its doors ARCHIVED with the same context
 curl -sX POST localhost:3333/api/v1/warehouses/$SOCOMAC_ID/archive \
   -b cookies.txt -H 'content-type: application/json' \
-  -d '{"comment":"Repurposed"}' | jq '{status:.data.status, doors:[.data.doors[]|{name,status,archivedWithWarehouse,archivedAt}], archivedDoorCount}'
+  -d '{"comment":"Repurposed"}' | jq '{status:.data.status, doors:[.data.doors[]|{name,status,archivedAt}], archivedDoorCount}'
 
 # already archived → 409 E_WAREHOUSE_ALREADY_ARCHIVED, nothing changed
 curl -sX POST localhost:3333/api/v1/warehouses/$SOCOMAC_ID/archive -b cookies.txt -d '{}'

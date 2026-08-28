@@ -40,84 +40,67 @@ export function warehouseLifecycleBlocks(warehouse: WarehouseWithDoorsDto): Life
 }
 
 /** Counted from the doors already embedded in the warehouse, so the confirmation needs no extra
- * request. It is advisory: the authoritative set is assessed when the archival is submitted, and
- * the reported outcome — not this number — says what was archived. */
-export function countAvailableDoors(warehouse: WarehouseWithDoorsDto) {
-  return (warehouse.doors ?? []).filter((door) => door.status === 'AVAILABLE').length
+ * request. It is advisory: the authoritative set is assessed when the transition is submitted, and
+ * the reported outcome — not this number — says what was written.
+ *
+ * One count serves both directions, because both take every door the warehouse holds: archiving it
+ * archives all of them, reactivating it brings all of them back. Nothing filters on the door's own
+ * status — a door archived on its own is taken over by the archival like any other, and a warehouse
+ * that is archived holds no available door to skip. */
+export function countDoors(warehouse: WarehouseWithDoorsDto) {
+  return (warehouse.doors ?? []).length
 }
 
-/** The mirror for reactivation. Only a door archived *with* this warehouse comes back with it, so
- * a door retired on its own is excluded — and the status check matters as much as the record:
- * reactivation leaves `archivedWithWarehouse` cleared, but an available door must never be counted
- * as returning to service. Advisory in exactly the same way. */
-export function countRestorableDoors(warehouse: WarehouseWithDoorsDto) {
-  return (warehouse.doors ?? []).filter(
-    (door) => door.status === 'ARCHIVED' && door.archivedWithWarehouse,
-  ).length
+/** Total doors across a selection, advisory in exactly the same way. */
+export function countDoorsIn(warehouses: WarehouseWithDoorsDto[]) {
+  return warehouses.reduce((total, warehouse) => total + countDoors(warehouse), 0)
 }
 
-/** Total available doors across a selection, advisory in exactly the same way. */
-export function countAvailableDoorsIn(warehouses: WarehouseWithDoorsDto[]) {
-  return warehouses.reduce((total, warehouse) => total + countAvailableDoors(warehouse), 0)
-}
-
-/** The doors archived with their warehouse across a selection — exactly what a bulk reactivation
- * restores. Advisory in the same way the cascade count is. */
-export function countRestorableDoorsIn(warehouses: WarehouseWithDoorsDto[]) {
-  return warehouses.reduce((total, warehouse) => total + countRestorableDoors(warehouse), 0)
-}
-
-export function describeDoorCascade(availableDoors: number) {
-  if (availableDoors === 0) {
-    return 'It has no available door to archive with it.'
+export function describeDoorCascade(doors: number) {
+  if (doors === 0) {
+    return 'It has no door to archive with it.'
   }
 
-  return availableDoors === 1
-    ? 'Its 1 available door is archived with it and stays readable.'
-    : `Its ${availableDoors} available doors are archived with it and stay readable.`
+  return doors === 1
+    ? 'Its 1 door is archived with it and stays readable.'
+    : `Its ${doors} doors are archived with it and stay readable.`
 }
 
-export function describeDoorRestore(restorableDoors: number) {
-  if (restorableDoors === 0) {
+export function describeDoorRestore(doors: number) {
+  if (doors === 0) {
     return 'No door returns to service with it.'
   }
 
-  return restorableDoors === 1
-    ? 'Its 1 door archived with it returns to service.'
-    : `Its ${restorableDoors} doors archived with it return to service.`
+  return doors === 1 ? 'Its 1 door returns to service.' : `Its ${doors} doors return to service.`
 }
 
-export function describeBulkDoorRestore(warehouseCount: number, restorableDoors: number) {
+export function describeBulkDoorRestore(warehouseCount: number, doors: number) {
   // Both counts vary independently and either can be 1, so every clause agrees on its own subject
   // rather than borrowing the door count's number for the warehouse sentence.
   const them = warehouseCount === 1 ? 'it' : 'them'
 
-  if (restorableDoors === 0) {
+  if (doors === 0) {
     return `No door returns to service with ${them}.`
   }
 
-  const doors =
-    restorableDoors === 1
-      ? `1 door archived with ${them} returns`
-      : `${restorableDoors} doors archived with ${them} return`
-
-  return `${warehouseCount === 1 ? 'Its' : 'Their'} ${doors} to service.`
+  return `${warehouseCount === 1 ? 'Its' : 'Their'} ${
+    doors === 1 ? '1 door returns' : `${doors} doors return`
+  } to service.`
 }
 
-export function describeBulkDoorCascade(warehouseCount: number, availableDoors: number) {
+export function describeBulkDoorCascade(warehouseCount: number, doors: number) {
   // Both counts vary independently and either can be 1, so every clause agrees on its own subject
   // rather than borrowing the door count's number for the warehouse sentence.
   const oneWarehouse = warehouseCount === 1
   const them = oneWarehouse ? 'it' : 'them'
 
-  if (availableDoors === 0) {
-    return `${oneWarehouse ? 'It has' : 'They have'} no available door to archive with ${them}.`
+  if (doors === 0) {
+    return `${oneWarehouse ? 'It has' : 'They have'} no door to archive with ${them}.`
   }
 
-  const doors =
-    availableDoors === 1 ? '1 available door is' : `${availableDoors} available doors are`
-
-  return `${oneWarehouse ? 'Its' : 'Their'} ${doors} archived with ${them}.`
+  return `${oneWarehouse ? 'Its' : 'Their'} ${
+    doors === 1 ? '1 door is' : `${doors} doors are`
+  } archived with ${them}.`
 }
 
 /** The two directions return different envelopes; only the response itself proves which came back. */
@@ -140,8 +123,8 @@ function useWarehouseLifecycleConfig(
     describeEffect: (action) =>
       `${describeLifecycleEffect(action, warehouse.name)} ${
         action === 'reactivate'
-          ? describeDoorRestore(countRestorableDoors(warehouse))
-          : describeDoorCascade(countAvailableDoors(warehouse))
+          ? describeDoorRestore(countDoors(warehouse))
+          : describeDoorCascade(countDoors(warehouse))
       }`,
     // The advisory count above is what the administrator was shown; this reports what the server
     // actually touched.

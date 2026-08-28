@@ -29,16 +29,22 @@ status-independent, which is why FR-022 (archival does not release the name) nee
 
 ### `warehouse_doors` — one new column
 
+> **Amended by [#216](../../warehouse-doors/reactivate-a-warehouse-door/data-model.md).** The
+> cascade now takes **every** door of the warehouse, replacing the archive context of one already
+> archived on its own, and the column this slice added is dropped: with #211 restoring every door
+> too, the containing warehouse's status *is* the provenance. The original design is kept below,
+> marked, rather than rewritten.
+
 | Column | Type | Written by this feature |
 |---|---|---|
 | `id` | uuid PK | never |
 | `warehouse_id` | uuid → `warehouses` `ON DELETE RESTRICT` | never (FR-017) |
 | `name`, `latitude`, `longitude` | | never (FR-017) |
-| `status` | enum `AVAILABLE` \| `ARCHIVED` | `AVAILABLE` → `ARCHIVED`, **cascade only** |
+| `status` | enum `AVAILABLE` \| `ARCHIVED` | → `ARCHIVED` for **every** door, **cascade only** (amended by #216) |
 | `archived_at` | timestamp null | set to the warehouse's archive time (FR-011) |
 | `archived_by_user_id` | uuid null | set to the same administrator (FR-011) |
 | `archive_comment` | text null | set to the same comment (FR-011) |
-| **`archived_with_warehouse`** | **boolean NOT NULL DEFAULT false** | **NEW — `true` for cascaded doors (FR-013)** |
+| ~~**`archived_with_warehouse`**~~ | ~~boolean NOT NULL DEFAULT false~~ | ~~NEW — `true` for cascaded doors (FR-013)~~ — **dropped by #216** |
 | `reactivated_*` | | never — preserved (FR-017) |
 | `created_at` | timestamp | never |
 | `updated_at` | timestamp | set to the same submission time |
@@ -50,18 +56,15 @@ status-independent, which is why FR-022 (archival does not release the name) nee
 After running it, regenerate `apps/api/database/schema.ts` via `node ace migration:run` (the file
 carries a "DO NOT EDIT manually" banner).
 
-**Invariant this column establishes** (FR-013):
+**Invariant this column established** (FR-013) — and which, since #216, holds of the warehouse's
+status alone, in **both** directions, which is why the column is gone:
 
 ```
-archived_with_warehouse = true  ⇒  status = 'ARCHIVED'
-                                ∧  the containing warehouse's status = 'ARCHIVED'
-                                ∧  archived_at, archived_by_user_id, archive_comment
-                                   equal the containing warehouse's
+the containing warehouse's status = 'ARCHIVED'  ⇔  every one of its doors has
+                                                   status = 'ARCHIVED'
+                                                ∧  archived_at, archived_by_user_id,
+                                                   archive_comment equal the warehouse's
 ```
-
-The reverse does not hold: an archived door under an archived warehouse may have
-`archived_with_warehouse = false` if it was archived on its own beforehand. That is precisely the
-distinction `#211` needs.
 
 ### Read-only inputs
 
@@ -96,8 +99,9 @@ A warehouse with **no doors**, or whose doors are **all already archived**, pass
 ### Warehouse door (cascade only)
 
 ```
-AVAILABLE ──(warehouse archived)──▶ ARCHIVED, archived_with_warehouse = true
-ARCHIVED  ──(warehouse archived)──▶ ARCHIVED, entirely untouched          (FR-012)
+AVAILABLE ──(warehouse archived)──▶ ARCHIVED, under the warehouse's context
+ARCHIVED  ──(warehouse archived)──▶ ARCHIVED, context replaced by the warehouse's
+                                              (amended by #216; was: untouched, FR-012)
 ```
 
 There is no independent door transition in this slice (research **D11**).

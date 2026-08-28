@@ -5,12 +5,14 @@ import ArchiveWarehouseDoorUseCase from '#warehouse_doors/archive/archive_wareho
 import ArchiveWarehouseDoorsUseCase from '#warehouse_doors/archive/archive_warehouse_doors_use_case'
 import ListAvailableWarehouseDoorsUseCase from '#warehouse_doors/available/list_available_warehouse_doors_use_case'
 import CreateWarehouseDoorUseCase from '#warehouse_doors/create/create_warehouse_door_use_case'
+import ReactivateWarehouseDoorUseCase from '#warehouse_doors/reactivate/reactivate_warehouse_door_use_case'
 import WarehouseDoorPolicy from '#warehouse_doors/shared/warehouse_door_policy'
 import WarehouseDoorTransformer from '#warehouse_doors/shared/warehouse_door_transformer'
 import {
   archiveWarehouseDoorsValidator,
   archiveWarehouseDoorValidator,
   createWarehouseDoorValidator,
+  reactivateWarehouseDoorValidator,
   updateWarehouseDoorValidator,
 } from '#warehouse_doors/shared/warehouse_door_validator'
 import UpdateWarehouseDoorUseCase from '#warehouse_doors/update/update_warehouse_door_use_case'
@@ -23,6 +25,7 @@ export default class WarehouseDoorsController {
     private updateWarehouseDoorUseCase: UpdateWarehouseDoorUseCase,
     private archiveWarehouseDoorUseCase: ArchiveWarehouseDoorUseCase,
     private archiveWarehouseDoorsUseCase: ArchiveWarehouseDoorsUseCase,
+    private reactivateWarehouseDoorUseCase: ReactivateWarehouseDoorUseCase,
   ) {}
 
   async store({ bouncer, request, response, serialize }: HttpContext) {
@@ -94,9 +97,28 @@ export default class WarehouseDoorsController {
     })
   }
 
+  async reactivate({ auth, bouncer, params, request, serialize }: HttpContext) {
+    const user = auth.use('web').getUserOrFail()
+
+    await bouncer.with(WarehouseDoorPolicy).authorize('reactivate')
+
+    const payload = await request.validateUsing(reactivateWarehouseDoorValidator)
+
+    const door = await this.reactivateWarehouseDoorUseCase.handle({
+      id: params.id,
+      reactivatedByUserId: user.id,
+      reactivatedAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize(WarehouseDoorTransformer.transform(door))
+  }
+
   async available({ bouncer, serialize }: HttpContext) {
     await bouncer.with(WarehouseDoorPolicy).authorize('listAvailable')
+
     const doors = await this.listAvailableWarehouseDoorsUseCase.handle()
+
     return serialize(WarehouseDoorTransformer.transform(doors))
   }
 }

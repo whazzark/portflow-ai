@@ -102,21 +102,18 @@ test.group('Warehouse door archival endpoint', (group) => {
       archivedAt: string
       archivedByUserId: string
       archiveComment: string
-      archivedWithWarehouse: boolean
     }
 
     assert.equal(body.id, target.id)
     assert.equal(body.status, 'ARCHIVED')
     assert.equal(body.archiveComment, 'Walled up during the 2026 works')
     assert.equal(body.archivedByUserId, admin.id)
-    assert.isFalse(body.archivedWithWarehouse)
     assert.isNotNull(body.archivedAt)
 
     const persisted = await WarehouseDoor.findOrFail(target.id)
     assert.equal(persisted.status, 'ARCHIVED')
     assert.equal(persisted.archiveComment, 'Walled up during the 2026 works')
     assert.equal(persisted.archivedByUserId, admin.id)
-    assert.isFalse(persisted.archivedWithWarehouse)
     // Preserved: only the lifecycle columns move.
     assert.equal(persisted.name, target.name)
     assert.equal(persisted.warehouseId, containing.id)
@@ -254,19 +251,18 @@ test.group('Warehouse door archival endpoint', (group) => {
     assert.equal(persisted.archivedAt?.toISO(), first.archivedAt?.toISO())
   })
 
-  test('refuses archiving a door already archived with its warehouse, keeping its provenance', async ({
+  test('refuses archiving a door already archived with its warehouse, keeping its context', async ({
     assert,
     client,
   }) => {
     const admin = await administrator()
     const containing = await warehouse('archived')
-    const target = await door(containing.id, 'Cascaded door', 'archivedWithWarehouse')
+    const target = await door(containing.id, 'Cascaded door', 'archived')
 
     const response = await client.post(url(target.id)).loginAs(admin).json({ comment: 'Retry' })
 
     response.assertStatus(409)
     const persisted = await WarehouseDoor.findOrFail(target.id)
-    assert.isTrue(persisted.archivedWithWarehouse)
     assert.notEqual(persisted.archiveComment, 'Retry')
   })
 
@@ -378,7 +374,6 @@ test.group('Warehouse door archival endpoint', (group) => {
       assert.isNull(persisted.archivedAt)
       assert.isNull(persisted.archivedByUserId)
       assert.isNull(persisted.archiveComment)
-      assert.isFalse(persisted.archivedWithWarehouse)
     }
   })
 

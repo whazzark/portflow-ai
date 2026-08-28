@@ -20,7 +20,6 @@ export const WarehouseDoorFactory = factory
     archivedAt: null,
     archivedByUserId: null,
     archiveComment: null,
-    archivedWithWarehouse: false,
     reactivatedAt: null,
     reactivatedByUserId: null,
     reactivationComment: null,
@@ -28,13 +27,6 @@ export const WarehouseDoorFactory = factory
   .state('archived', (door) => {
     door.status = 'ARCHIVED'
     door.archivedAt ??= DateTime.now()
-  })
-  // A door archived by its warehouse's archival rather than on its own. Reactivating the
-  // warehouse (#211) restores exactly these doors.
-  .state('archivedWithWarehouse', (door) => {
-    door.status = 'ARCHIVED'
-    door.archivedAt ??= DateTime.now()
-    door.archivedWithWarehouse = true
   })
   .state('reactivated', (door) => {
     door.status = 'AVAILABLE'
