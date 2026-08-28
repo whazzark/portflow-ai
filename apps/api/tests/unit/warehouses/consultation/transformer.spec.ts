@@ -59,9 +59,7 @@ test.group('Warehouse transformer lifecycle context', (group) => {
     assert.lengthOf(transformed.footprint.points, 3)
   })
 
-  test('exposes each door lifecycle context including its archive provenance', async ({
-    assert,
-  }) => {
+  test('exposes each door lifecycle context', async ({ assert }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
     const warehouse = await WarehouseFactory.apply('archived')
       .merge({ name: 'North Shed' })
@@ -69,7 +67,7 @@ test.group('Warehouse transformer lifecycle context', (group) => {
     await WarehouseFootprintPoint.createMany(
       FOOTPRINT.map((point, position) => ({ warehouseId: warehouse.id, position, ...point })),
     )
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({
         warehouseId: warehouse.id,
         name: 'Cascaded door',
@@ -90,15 +88,13 @@ test.group('Warehouse transformer lifecycle context', (group) => {
     const cascaded = transformed.doors.find((door) => door.name === 'Cascaded door')
     const own = transformed.doors.find((door) => door.name === 'Own door')
 
-    assert.isTrue(cascaded?.archivedWithWarehouse)
     assert.equal(cascaded?.archiveComment, 'Building repurposed')
     assert.equal(cascaded?.archivedByUserId, admin.id)
     assert.isNotNull(cascaded?.archivedAt)
-    assert.isFalse(own?.archivedWithWarehouse)
     assert.equal(own?.archiveComment, 'Door retired on its own')
   })
 
-  test('reports available doors as carrying no archive provenance', async ({ assert }) => {
+  test('reports available doors as carrying no archive context', async ({ assert }) => {
     const warehouse = await WarehouseFactory.merge({ name: 'Working Shed' }).create()
     await WarehouseFootprintPoint.createMany(
       FOOTPRINT.map((point, position) => ({ warehouseId: warehouse.id, position, ...point })),
@@ -108,7 +104,6 @@ test.group('Warehouse transformer lifecycle context', (group) => {
     const transformed = await transformWarehouse(warehouse.id)
 
     assert.equal(transformed.doors[0].status, 'AVAILABLE')
-    assert.isFalse(transformed.doors[0].archivedWithWarehouse)
     assert.isNull(transformed.doors[0].archivedAt)
     assert.isNull(transformed.doors[0].archiveComment)
   })

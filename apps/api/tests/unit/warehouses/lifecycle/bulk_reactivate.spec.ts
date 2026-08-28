@@ -79,7 +79,7 @@ test.group('ReactivateWarehousesUseCase', (group) => {
   test('never reports a usage blocker', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const target = await warehouse('Busy Shed', 'archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: target.id, name: 'A door' })
       .create()
 
@@ -109,10 +109,10 @@ test.group('ReactivateWarehousesUseCase', (group) => {
     const actor = await UserFactory.apply('active').create()
     const first = await warehouse('Shared First', 'archived')
     const second = await warehouse('Shared Second', 'archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: first.id, name: 'First door' })
       .create()
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: second.id, name: 'Second door' })
       .create()
 
@@ -128,7 +128,6 @@ test.group('ReactivateWarehousesUseCase', (group) => {
       assert.equal(door.status, 'AVAILABLE')
       assert.equal(door.reactivatedAt?.toISO(), reference.reactivatedAt?.toISO())
       assert.equal(door.reactivationComment, 'One reopening')
-      assert.isFalse(door.archivedWithWarehouse)
     }
   })
 
@@ -142,21 +141,20 @@ test.group('ReactivateWarehousesUseCase', (group) => {
     assert.isNull((await Warehouse.findOrFail(blocked.id)).reactivationComment)
   })
 
-  test('restores only the doors archived with their own warehouse', async ({ assert }) => {
+  test('restores every door of each reactivated warehouse', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const target = await warehouse('Mixed Shed', 'archived')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: target.id, name: 'Cascaded' })
       .create()
     await WarehouseDoorFactory.apply('archived')
-      .merge({ warehouseId: target.id, name: 'Solo' })
+      .merge({ warehouseId: target.id, name: 'Solo', archiveComment: 'Retired on its own' })
       .create()
 
     await reactivate([target.id], actor.id)
 
     const doors = await WarehouseDoor.query().where('warehouseId', target.id).orderBy('name', 'asc')
-    assert.equal(doors[0].status, 'AVAILABLE')
-    assert.equal(doors[1].status, 'ARCHIVED')
+    assert.isTrue(doors.every((door) => door.status === 'AVAILABLE'))
   })
 
   test('changes nothing when every warehouse in the selection is blocked', async ({ assert }) => {
@@ -173,7 +171,7 @@ test.group('ReactivateWarehousesUseCase', (group) => {
   test('leaves a blocked warehouse doors untouched', async ({ assert }) => {
     const actor = await UserFactory.apply('active').create()
     const blocked = await warehouse('Open With Archived Door')
-    await WarehouseDoorFactory.apply('archivedWithWarehouse')
+    await WarehouseDoorFactory.apply('archived')
       .merge({ warehouseId: blocked.id, name: 'Stale door' })
       .create()
 
@@ -181,7 +179,7 @@ test.group('ReactivateWarehousesUseCase', (group) => {
 
     const [door] = await WarehouseDoor.query().where('warehouseId', blocked.id)
     assert.equal(door.status, 'ARCHIVED')
-    assert.isTrue(door.archivedWithWarehouse)
+    assert.isNull(door.reactivatedAt)
   })
 
   test('trims the shared comment and records none when it is whitespace only', async ({

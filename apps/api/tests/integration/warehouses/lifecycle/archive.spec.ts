@@ -74,7 +74,6 @@ test.group('Warehouse archival endpoint', (group) => {
         doors: Array<{
           name: string
           status: string
-          archivedWithWarehouse: boolean
           archiveComment: string | null
           archivedAt: string | null
         }>
@@ -86,16 +85,18 @@ test.group('Warehouse archival endpoint', (group) => {
     assert.equal(body.warehouse.archiveComment, 'Building repurposed')
     assert.equal(body.warehouse.archivedByUserId, admin.id)
     assert.lengthOf(body.warehouse.footprint.points, 3)
-    assert.equal(body.archivedDoorCount, 1)
+    assert.equal(body.archivedDoorCount, 2)
 
     const cascaded = body.warehouse.doors.find((door) => door.name === 'Porte Quai')
-    assert.isTrue(cascaded?.archivedWithWarehouse)
     assert.equal(cascaded?.status, 'ARCHIVED')
     assert.equal(cascaded?.archiveComment, 'Building repurposed')
     assert.equal(cascaded?.archivedAt, body.warehouse.archivedAt)
 
+    // The door archived before the building is taken over by it: one archived warehouse, one
+    // archival context across every door it holds.
     const preexisting = body.warehouse.doors.find((door) => door.name === 'Porte Historique')
-    assert.isFalse(preexisting?.archivedWithWarehouse)
+    assert.equal(preexisting?.archiveComment, 'Building repurposed')
+    assert.equal(preexisting?.archivedAt, body.warehouse.archivedAt)
   })
 
   test('archives with no comment when none is supplied', async ({ assert, client }) => {
@@ -251,7 +252,6 @@ test.group('Warehouse archival endpoint', (group) => {
     const doors = await WarehouseDoor.query().where('warehouseId', target.id)
     assert.lengthOf(doors, 1)
     assert.equal(doors[0].status, 'ARCHIVED')
-    assert.isTrue(doors[0].archivedWithWarehouse)
     assert.equal(doors[0].archiveComment, stored.archiveComment)
   })
 })

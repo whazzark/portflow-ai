@@ -1,5 +1,12 @@
 # Feature Specification: Archive a Warehouse Door
 
+> **Amended by [#216 Reactivate a Warehouse Door](../reactivate-a-warehouse-door/spec.md).** A door
+> is archived *on its own* exactly while its containing warehouse is available; nothing on the door
+> records that. Archiving the warehouse afterwards takes this door over — replacing its archive time,
+> actor, and comment with the building's — and reactivating the warehouse brings it back with every
+> other door. `warehouse_doors.archived_with_warehouse`, which the requirements below write, is
+> dropped. The passages this changes are marked in place.
+
 **Feature Branch**: `feat/215-archive-warehouse-door`
 
 **Created**: 2026-08-27
@@ -56,9 +63,9 @@ warehouse, and every record that referenced it.
 3. **Given** an administrator archives a door without supplying a comment, **When** the archival
    completes, **Then** the door is archived with its archive time and responsible administrator
    recorded and no comment shown.
-4. **Given** a door has been archived on its own, **When** it is consulted under its warehouse,
-   **Then** it is presented as archived on its own rather than archived with its warehouse, and it
-   keeps its stable identity, name, GPS location, containing warehouse, and creation time unchanged.
+4. **Given** a door has been archived on its own — its warehouse still being available — **When** it
+   is consulted under that warehouse, **Then** it is presented as archived on its own rather than
+   archived with its warehouse, and it keeps its stable identity, name, GPS location, containing warehouse, and creation time unchanged.
 5. **Given** a door has been archived, **When** the warehouse's door lifecycle views are consulted,
    **Then** the available count no longer includes it, the archived count does, and its marker is
    presented as archived at the same position inside the warehouse footprint.
@@ -111,7 +118,7 @@ refusal states a specific, actionable reason.
    historical relationship remains readable.
 5. **Given** a door that is already archived, whether on its own or with its warehouse, **When** an
    authorized administrator attempts to archive it again, **Then** the attempt is refused as already
-   archived and its existing archive time, actor, comment, and provenance are left unchanged.
+   archived and its existing archive time, actor, and comment are left unchanged.
 6. **Given** a door whose containing warehouse is archived, **When** an authorized administrator
    attempts to archive it, **Then** the attempt is refused and no door or warehouse changes state.
 7. **Given** an identifier that resolves to no door, or a door belonging to another operating site,
@@ -197,7 +204,8 @@ and reported with its own specific reason, and that the blocked ones can be retr
    still archived.
 5. **Given** several doors are archived in one action, **When** they are consulted, **Then** every
    one of them carries the same archive time, the same responsible administrator, and the same
-   comment, and every one of them is described as archived on its own.
+   comment, and every one of them is described as archived on its own — their warehouse being
+   available, which is what that description reads off (amended by #216).
 6. **Given** every door in the selection is blocked, **When** the selection is archived, **Then**
    nothing is archived, the administrator is told that nothing changed, and each blocking reason is
    reported individually.
@@ -228,23 +236,23 @@ and reported with its own specific reason, and that the blocked ones can be retr
 - The archived door is the last available door of its warehouse: the archival succeeds, the
   warehouse stays available with an empty available door view, and no warehouse lifecycle rule is
   triggered.
-- A door archived on its own is later caught by its warehouse's archival: it is left entirely
-  untouched, keeping its own archive time, actor, comment, and its archived-on-its-own provenance,
-  so a later warehouse reactivation does not restore it.
-- A door archived with its warehouse is submitted for archival on its own: the attempt is refused as
-  already archived and its cascade provenance is not rewritten.
+- A door archived on its own is later caught by its warehouse's archival: the warehouse takes it
+  over, replacing its archive time, actor, and comment with the building's, and a later warehouse
+  reactivation brings it back with every other door (amended by #216).
+- A door of an archived warehouse is submitted for archival on its own: the attempt is refused
+  because the warehouse is archived, and its archive context is not rewritten.
 - Two administrators archive the same available door at nearly the same time: exactly one archival is
   recorded, the other attempt is refused as already archived, and no archive context is overwritten.
   The same holds when one of them is archiving it as part of a larger selection.
 - An administrator archives a door while another administrator archives its containing warehouse:
   the door ends up archived exactly once, with one archive context, and neither submission leaves it
-  half-archived or archived twice with conflicting provenance.
+  half-archived or archived twice with conflicting contexts.
 - An archive comment containing only whitespace is treated as no comment rather than stored as a
   blank comment.
 - An archive comment longer than the permitted maximum length is refused with a specific validation
   reason, and every door in the submission stays unchanged.
-- A door archived with a comment is later consulted: the original comment, time, actor, and
-  provenance remain readable and are not altered by any later consultation.
+- A door archived with a comment is later consulted: the original comment, time, and actor remain
+  readable and are not altered by any later consultation.
 - An archived door retains any previous reactivation context; archival does not erase earlier
   lifecycle history.
 - Archiving a door does not release its name within its warehouse, and does not affect the
@@ -296,9 +304,9 @@ and reported with its own specific reason, and that the blocked ones can be retr
   access-handling behavior.
 - **FR-003**: The system MUST refuse archival of a door that does not exist or belongs to another
   operating site, without modifying any door and without disclosing information about other doors.
-- **FR-004**: The system MUST refuse archival of a door that is already archived — whether it was
-  archived on its own or through its warehouse — and MUST leave its existing archive time, actor,
-  comment, and archival provenance unchanged.
+- **FR-004**: The system MUST refuse archival of a door that is already archived and MUST leave its
+  existing archive time, actor, and comment unchanged. *(Amended by #216: the provenance clause is
+  dropped with the column.)*
 - **FR-005**: The system MUST refuse archival of a door whose containing warehouse is archived,
   leaving the door and the warehouse unchanged.
 - **FR-006**: The system MUST refuse archival of an available door that is currently in use, and MUST
@@ -315,9 +323,11 @@ and reported with its own specific reason, and that the blocked ones can be retr
 - **FR-010**: A successful archival MUST change the door's lifecycle status from available to
   archived and MUST record the archive time, the responsible administrator, and the supplied archive
   comment.
-- **FR-011**: A successful archival MUST record that the door was archived on its own rather than
+- **FR-011**: ~~A successful archival MUST record that the door was archived on its own rather than
   through its warehouse, so that a later warehouse archival leaves it untouched and a later warehouse
-  reactivation does not restore it.
+  reactivation does not restore it.~~ **Superseded by #216**: the containing warehouse's own status
+  states the provenance — an archival on its own is only possible while that warehouse is available —
+  and a later warehouse archival takes this door over rather than leaving it untouched.
 - **FR-012**: The system MUST accept an optional archive comment, MUST trim surrounding whitespace
   from it, and MUST record no comment when the supplied value is absent, empty, or whitespace-only.
 - **FR-013**: The system MUST reject an archive comment that exceeds the maximum lifecycle comment
@@ -383,7 +393,8 @@ and reported with its own specific reason, and that the blocked ones can be retr
 - **FR-033**: A multiple archival MUST report, for each door it left unchanged, an identifying label
   and exactly one specific reason distinguishing not found, already archived, and in use.
 - **FR-034**: Every door archived within one multiple archival MUST record the same archive time, the
-  same responsible administrator, and the same comment, and MUST be recorded as archived on its own.
+  same responsible administrator, and the same comment. *(Amended by #216: the "recorded as archived
+  on its own" clause is dropped with the column.)*
 - **FR-035**: A multiple archival MUST record either all of its eligible archivals or none of them,
   so a failure part-way through never leaves some doors archived and others silently skipped.
 - **FR-036**: A multiple archival MUST NOT partially archive an individual door: each one is either
@@ -465,7 +476,7 @@ and reported with its own specific reason, and that the blocked ones can be retr
   assignments, or shift membership without a current assignment are archived successfully.
 - **SC-004**: In acceptance testing, 100% of archival attempts on an already archived door, on a door
   of an archived warehouse, and on an identifier resolving to no door are refused with the
-  corresponding reason and leave stored data unchanged, including the archival provenance of doors
+  corresponding reason and leave stored data unchanged, including the archive context of doors
   archived with their warehouse.
 - **SC-005**: In acceptance testing, 100% of archived doors retain their identity, name, GPS
   location, containing warehouse, creation time, and prior reactivation context; 100% of their
@@ -478,9 +489,9 @@ and reported with its own specific reason, and that the blocked ones can be retr
 - **SC-007**: In all acceptance datasets, repeated and near-simultaneous archival attempts on the
   same door — including one submitted on its own and one through its warehouse's archival — produce
   exactly one recorded archival with zero archive contexts overwritten.
-- **SC-008**: In 100% of acceptance datasets, every door archived on its own is recorded as such, and
-  a subsequent warehouse archival and reactivation leaves 100% of those doors archived while
-  restoring 100% of the doors that were archived through the warehouse.
+- **SC-008**: In 100% of acceptance datasets, a door archived on its own is presented as such while
+  its warehouse is available, and a subsequent warehouse archival and reactivation takes it over and
+  brings it back with 100% of the warehouse's other doors (amended by #216).
 - **SC-009**: Every tested refusal condition — authorization, not found, already archived, archived
   containing warehouse, in use, over-long comment, empty selection, duplicated selection, malformed
   identifier, and transient failure — produces distinct and accurate feedback, and every transient
@@ -519,10 +530,10 @@ and reported with its own specific reason, and that the blocked ones can be retr
 - Nothing requires a warehouse to keep at least one available door, so archiving the last available
   door of a warehouse is allowed and leaves the warehouse available with an empty available door
   view. A warehouse without an available door simply cannot receive new door assignments.
-- Archiving a door on its own is recorded distinctly from being archived through the warehouse
-  cascade, reusing the provenance that warehouse archival (#210 FR-013) already records. This is what
-  lets Reactivate a Warehouse (#211) restore exactly the doors it archived, and what makes a door
-  retired on its own stay archived across a later warehouse archival and reactivation.
+- Archiving a door on its own is distinguishable from being archived through the warehouse cascade
+  by the containing warehouse's own status, and only by that (amended by #216): a door is archived on
+  its own exactly while its warehouse is available. A later archival of that warehouse takes the door
+  over, and the warehouse's reactivation brings it back with every other.
 - The archive comment is optional free text with a maximum length of 1,000 characters, the shared
   site-reference lifecycle comment limit already applied to customer, transport-company, truck, dock,
   weighing-area, and warehouse archival. One comment applies to the whole submission, whether it

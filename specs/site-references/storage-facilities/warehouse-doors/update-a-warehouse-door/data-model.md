@@ -18,7 +18,7 @@ one `warehouse_doors` row created by #212/#213, and reads one `warehouses` row w
 | `warehouse_id` | **No** | Containment is permanent (`CONTEXT.md`); the payload has no member that names a warehouse (FR-003, FR-027) |
 | `status` | **No** | Lifecycle belongs to #215/#216 (FR-003) |
 | `created_at` | **No** | Preserved across the update (FR-014) |
-| `archived_at`, `archived_by_user_id`, `archive_comment`, `archived_with_warehouse`, `reactivated_at`, `reactivated_by_user_id`, `reactivation_comment` | **No** | The lifecycle context is never modified by an update (FR-014) |
+| `archived_at`, `archived_by_user_id`, `archive_comment`, `reactivated_at`, `reactivated_by_user_id`, `reactivation_comment` *(`archived_with_warehouse` too, until #216 dropped it)* | **No** | The lifecycle context is never modified by an update (FR-014) |
 
 The row is reached through a **guarded update** — `WHERE id = ? AND status = 'AVAILABLE'` — so an
 archived door is refused by the write itself rather than by a read that a concurrent archival could

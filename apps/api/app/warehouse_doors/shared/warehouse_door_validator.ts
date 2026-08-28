@@ -63,3 +63,13 @@ export const archiveWarehouseDoorsValidator = vine.create({
   ids: lifecycleIds(),
   comment: lifecycleComment(),
 })
+
+/**
+ * The comment is the whole body, and it is optional: a reactivation carries no other input. The
+ * trimming, the 1,000-character ceiling, and the "absent, empty, and whitespace-only are all no
+ * comment" rule all come from `lifecycleComment()`, the single home every site reference shares —
+ * a door-specific comment rule would be a second answer to a question already settled.
+ */
+export const reactivateWarehouseDoorValidator = vine.create({
+  comment: lifecycleComment(),
+})

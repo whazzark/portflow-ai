@@ -34,9 +34,6 @@ export default class WarehouseTransformer extends BaseTransformer<Warehouse> {
         archivedAt: door.archivedAt,
         archivedByUserId: door.archivedByUserId,
         archiveComment: door.archiveComment,
-        // Distinguishes a door archived by its warehouse's archival from one archived on its own,
-        // so warehouse reactivation (#211) restores exactly the cascaded set.
-        archivedWithWarehouse: door.archivedWithWarehouse,
         reactivatedAt: door.reactivatedAt,
         reactivatedByUserId: door.reactivatedByUserId,
         reactivationComment: door.reactivationComment,

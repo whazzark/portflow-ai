@@ -33,7 +33,23 @@ test.group('Warehouse door creation policy', () => {
     }
   })
 
-  test('governs archival with exactly the right that governs creation and update', async ({
+  test('allows only organization and operations administrators to reactivate', async ({
+    assert,
+  }) => {
+    const policy = new WarehouseDoorPolicy()
+
+    for (const role of ['ORGANIZATION_ADMIN', 'OPERATIONS_ADMIN'] as const) {
+      const admin = await UserFactory.apply('active').merge({ role }).make()
+      assert.isTrue(policy.reactivate(admin))
+    }
+
+    for (const role of ['OPERATIONS_LEAD', 'OBSERVER'] as const) {
+      const user = await UserFactory.apply('active').merge({ role }).make()
+      assert.isFalse(policy.reactivate(user))
+    }
+  })
+
+  test('governs archival and reactivation with exactly the right that governs creation and update', async ({
     assert,
   }) => {
     const policy = new WarehouseDoorPolicy()
@@ -42,11 +58,12 @@ test.group('Warehouse door creation policy', () => {
       const user = await UserFactory.apply('active').merge({ role }).make()
 
       // One administration right for the whole resource: an administrator who may create and
-      // correct a door may retire it, and nobody else may do any of the three. Access status is not
-      // this policy's to decide — the auth middleware refuses a non-active session upstream, which
-      // is why every ability here reads the role alone.
+      // correct a door may retire it and bring it back, and nobody else may do any of the four.
+      // Access status is not this policy's to decide — the auth middleware refuses a non-active
+      // session upstream, which is why every ability here reads the role alone.
       assert.equal(policy.archive(user), policy.create(user))
       assert.equal(policy.archive(user), policy.update(user))
+      assert.equal(policy.reactivate(user), policy.create(user))
     }
   })
 

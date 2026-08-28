@@ -29,17 +29,21 @@ test('offers Edit then Archive on an available door of an available warehouse', 
 
   const items = await screen.findAllByRole('menuitem')
   expect(items.map((item) => item.textContent)).toEqual(['Edit', 'Archive'])
-  // Reactivation belongs to #216; this slice fills the container with one entry only.
+  // An available door is already in service: reactivating it is not an action it can offer.
   expect(screen.queryByRole('menuitem', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 
-test('renders no menu at all on an archived door row', async () => {
+test('offers Reactivate alone, and no Archive, on an archived door row', async () => {
+  const user = userEvent.setup()
   renderWarehouses(`/warehouses?status=all&warehouseId=${AVAILABLE.id}&doorStatus=archived`)
 
-  expect(await screen.findByText(ARCHIVED_DOOR_ROW.name)).toBeInTheDocument()
-  expect(
-    screen.queryByRole('button', { name: `Actions for ${ARCHIVED_DOOR_ROW.name}` }),
-  ).not.toBeInTheDocument()
+  await user.click(
+    await screen.findByRole('button', { name: `Actions for ${ARCHIVED_DOOR_ROW.name}` }),
+  )
+
+  // No Edit either: an archived door is read-only until it is back in service (#216).
+  const items = await screen.findAllByRole('menuitem')
+  expect(items.map((item) => item.textContent)).toEqual(['Reactivate'])
 })
 
 test('renders no menu on any door of an archived warehouse', async () => {

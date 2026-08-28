@@ -149,7 +149,7 @@ The restoration of an archived site reference for use in new operations, while p
 _Avoid_: resource recreation, unarchive
 
 **Warehouse**:
-A storage destination on the site where bulk material is deposited after being transported from a vessel, with quantities derived from validated rotations. A warehouse may serve several active discharges through distinct doors. Archiving a warehouse archives its available doors with it, in the same action and with the same archive time, actor, and comment; doors already archived keep their own context, and each cascaded door records that it was archived through its warehouse. Reactivating a warehouse restores exactly those doors, in the same action and with the same reactivation time, actor, and comment, and clears that record; a door archived on its own stays archived, and reactivation is never blocked by usage. A warehouse cannot be archived while any of its doors is currently in use by a planned or active discharge. This differs from a Transport Company, which cannot be archived while it still provides available trucks: a truck can move to another company, whereas a door belongs permanently to one warehouse and has no meaning without it.
+A storage destination on the site where bulk material is deposited after being transported from a vessel, with quantities derived from validated rotations. A warehouse may serve several active discharges through distinct doors. Archiving a warehouse archives every one of its doors with it, without exception, in the same action and with the same archive time, actor, and comment; a door already archived on its own has that context replaced by the warehouse's. Reactivating a warehouse is the exact mirror: it returns every one of its doors to service, in the same action and with the same reactivation time, actor, and comment, and is never blocked by usage. A warehouse cannot be archived while any of its doors is currently in use by a planned or active discharge. This differs from a Transport Company, which cannot be archived while it still provides available trucks: a truck can move to another company, whereas a door belongs permanently to one warehouse and has no meaning without it.
 _Avoid_: store, shop, magasin
 
 **Warehouse Footprint**:
@@ -157,7 +157,7 @@ The required geographic polygon outlining the operational footprint of a warehou
 _Avoid_: warehouse GPS location, warehouse center, address
 
 **Warehouse Door**:
-A designated unloading door permanently belonging to one warehouse where a truck deposits bulk material.
+A designated unloading door permanently belonging to one warehouse where a truck deposits bulk material. It may be archived and returned to service on its own only while its warehouse is available; under an archived warehouse it was archived with the building and comes back with it, in the building's own reactivation. Reactivating a door on its own records its own time, actor, and comment, preserves the archive context, and changes nothing else about the door or its warehouse.
 _Avoid_: warehouse gate, unloading point
 
 **Warehouse Door Assignment**:

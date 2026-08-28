@@ -1,10 +1,15 @@
 # Phase 1 Data Model: Archive a Warehouse Door
 
+> **Amended by [#216](../reactivate-a-warehouse-door/data-model.md).**
+> `warehouse_doors.archived_with_warehouse` is dropped: the cascade takes every door of the
+> warehouse and its reactivation gives every one of them back, so the containing warehouse's status
+> *is* the provenance. Rows below that write or read the column no longer apply; the rest stands.
+
 **Feature**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md) |
 **Contracts**: [API](./contracts/warehouse-doors-archive.openapi.yaml) · [UI state](./contracts/warehouse-door-archive-ui-state.md)
 
 **No migration.** `warehouse_doors` was created by #212 and already carries every column this slice
-writes, including `archived_with_warehouse`, which #210 added for the cascade. This slice is the
+writes — `archived_with_warehouse` included at the time, though #216 has since dropped it. This slice is the
 first writer of that column with the value `false` from a user action.
 
 ---
@@ -23,7 +28,7 @@ The unloading door being retired. One row of `warehouse_doors`.
 | `archived_at` | timestamp, null | **Yes** — submission time | Shared by every door in one submission (FR-034) |
 | `archived_by_user_id` | uuid, null, FK → `users.id` | **Yes** — the authenticated administrator | |
 | `archive_comment` | text, null | **Yes** — trimmed, or `null` (FR-012) | Max 1,000 characters (FR-013) |
-| `archived_with_warehouse` | boolean | **Yes** — always `false` (research R4) | What tells #211 not to restore this door |
+| ~~`archived_with_warehouse`~~ | ~~boolean~~ | ~~Yes — always `false` (research R4)~~ | **Dropped by #216** |
 | `reactivated_at` / `reactivated_by_user_id` / `reactivation_comment` | null-able | No | Prior reactivation context is preserved, never cleared (FR-014) |
 | `created_at` | timestamp | No | Preserved (FR-014) |
 | `updated_at` | timestamp | **Yes** — set to `archived_at` | A query-builder update bypasses Lucid's timestamp hooks, so it is written explicitly, as every sibling lifecycle write does |
@@ -32,19 +37,21 @@ The unloading door being retired. One row of `warehouse_doors`.
 
 | From | Event | To | Recorded |
 |---|---|---|---|
-| `AVAILABLE`, warehouse `AVAILABLE`, not in use | Archive (this slice) | `ARCHIVED` | time, actor, comment, `archived_with_warehouse = false` |
-| `AVAILABLE` | Its warehouse is archived (#210) | `ARCHIVED` | time, actor, comment, `archived_with_warehouse = true` |
+| `AVAILABLE`, warehouse `AVAILABLE`, not in use | Archive (this slice) | `ARCHIVED` | time, actor, comment |
+| **any status** | Its warehouse is archived (#210, amended by #216) | `ARCHIVED` | the warehouse's time, actor, comment — replacing any already recorded |
 | `ARCHIVED` | Archive attempted again | *(refused)* | nothing — existing context untouched (FR-004) |
-| `ARCHIVED`, `archived_with_warehouse = true` | Its warehouse is reactivated (#211) | `AVAILABLE` | reactivation context; flag cleared |
-| `ARCHIVED`, `archived_with_warehouse = false` | Its warehouse is reactivated (#211) | *(unchanged)* | nothing — stays archived (SC-008) |
-| `ARCHIVED` | Reactivate the door on its own | `AVAILABLE` | **#216 — out of scope here** |
+| `ARCHIVED`, warehouse archived | Its warehouse is reactivated (#211, amended by #216) | `AVAILABLE` | the warehouse's reactivation context |
+| `ARCHIVED`, warehouse available | Reactivated on its own (#216) | `AVAILABLE` | its own reactivation context |
 
 `AVAILABLE` and `ARCHIVED` remain the only door states.
 
 ### Invariants this slice must preserve
 
-- **I1** — A door archived on its own is never restored by a warehouse reactivation. Enforced by
-  `archived_with_warehouse = false` (research R4), read by #211's `applyReactivation` predicate.
+- ~~**I1** — A door archived on its own is never restored by a warehouse reactivation. Enforced by
+  `archived_with_warehouse = false` (research R4), read by #211's `applyReactivation` predicate.~~
+  **Superseded by #216**: a door archived on its own sits under an available warehouse, which has no
+  reactivation to be restored by; once its warehouse is archived it comes back with it like any
+  other.
 - **I2** — A door is archived **exactly once**: the guarded `WHERE status = 'AVAILABLE'` update
   combined with the warehouse-then-door lock order makes a concurrent cascade and a direct archival
   serialize, with the loser reporting `ALREADY_ARCHIVED` and overwriting nothing (FR-024, SC-007).
@@ -166,7 +173,7 @@ reuses the helper instead of writing a second one — the reason the two deliver
 
 | Type | Source |
 |---|---|
-| `WarehouseDoorDto` | Already the door embedded in `warehouses.index` — it exposes `archivedAt`, `archiveComment`, `archivedWithWarehouse`, so the Doors panel already renders the archive context (#210) |
+| `WarehouseDoorDto` | Already the door embedded in `warehouses.index` — it exposes `archivedAt` and `archiveComment`, so the Doors panel already renders the archive context (#210). Since #216 it carries no provenance member; the panel reads that off the warehouse's status |
 | `BulkWarehouseDoorLifecycleResult` | `Route.Response<'warehouse_doors.archive_many'>['data']`, mirroring `BulkWarehouseLifecycleResult` |
 | `WarehouseDoorSelection` | Page state: `Set<string>` of checked door ids, scoped to the selected warehouse's available doors (contract [UI state](./contracts/warehouse-door-archive-ui-state.md)) |
 

@@ -15,6 +15,12 @@ import { Exception } from '@adonisjs/core/exceptions'
  * door is a different fact: the administrator asked for the state the door is already in, so it
  * answers with `WarehouseDoorAlreadyArchivedException` instead, exactly as every sibling site
  * reference does.
+ *
+ * `WarehouseDoorArchivedWithWarehouseException` is the one refusal that names a warehouse fact from
+ * here, and the reason is that the remedy is the door's, not the warehouse's. An archived warehouse
+ * holds no door but those archived with it (#210 takes every one), so reactivating the building
+ * brings this door back in the same action — there is no second step to resubmit, which is exactly
+ * what `ArchivedWarehouseReadOnlyException` would tell the administrator to do.
  */
 export class WarehouseDoorNotFoundException extends Exception {
   static status = 404
@@ -62,4 +68,17 @@ export class WarehouseDoorInUseException extends Exception {
   static status = 409
   static code = 'E_WAREHOUSE_DOOR_IN_USE'
   static message = 'Warehouse door is used by a planned or active discharge'
+}
+
+export class WarehouseDoorAlreadyAvailableException extends Exception {
+  static status = 409
+  static code = 'E_WAREHOUSE_DOOR_ALREADY_AVAILABLE'
+  static message = 'Warehouse door is already available'
+}
+
+export class WarehouseDoorArchivedWithWarehouseException extends Exception {
+  static status = 409
+  static code = 'E_WAREHOUSE_DOOR_ARCHIVED_WITH_WAREHOUSE'
+  static message =
+    'This warehouse door was archived with its warehouse. Reactivate the warehouse and the door returns with it.'
 }

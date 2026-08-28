@@ -22,7 +22,7 @@ async function openArchiveDialog(user: ReturnType<typeof userEvent.setup>) {
   return screen.findByRole('alertdialog')
 }
 
-test('states how many available doors are archived with the warehouse', async () => {
+test('states how many doors are archived with the warehouse', async () => {
   mockWarehouses()
   const user = userEvent.setup()
   renderWarehouses()
@@ -30,8 +30,9 @@ test('states how many available doors are archived with the warehouse', async ()
   const dialog = await openArchiveDialog(user)
 
   expect(within(dialog).getByRole('heading', { name: 'Archive warehouse?' })).toBeInTheDocument()
-  // North Shed holds one available door and one already archived door.
-  expect(dialog).toHaveTextContent('1 available door')
+  // North Shed holds one available door and one already archived door: the archival takes both,
+  // the second for a second time.
+  expect(dialog).toHaveTextContent('Its 2 doors are archived with it')
   expect(dialog).toHaveTextContent('no longer available for new operations')
 })
 
@@ -46,13 +47,10 @@ test('archives the warehouse and reports the cascade', async () => {
           warehouse: {
             ...NORTH_SHED,
             status: 'ARCHIVED',
-            doors: NORTH_SHED.doors?.map((door) =>
-              door.status === 'AVAILABLE'
-                ? { ...door, status: 'ARCHIVED', archivedWithWarehouse: true }
-                : door,
-            ),
+            // The cascade takes every door, whatever its own status was.
+            doors: NORTH_SHED.doors?.map((door) => ({ ...door, status: 'ARCHIVED' })),
           },
-          archivedDoorCount: 1,
+          archivedDoorCount: 2,
         },
       })
     }),
@@ -65,7 +63,7 @@ test('archives the warehouse and reports the cascade', async () => {
   await user.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
   expect(
-    await screen.findByText(`Warehouse “${NORTH_SHED.name}” archived with 1 door`),
+    await screen.findByText(`Warehouse “${NORTH_SHED.name}” archived with 2 doors`),
   ).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Building repurposed' })
 })

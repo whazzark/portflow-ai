@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
 import { server } from '@/test/msw/server'
-import { API_BASE_URL, MIXED_ARCHIVED_WAREHOUSE, WAREHOUSES } from './support/fixtures'
+import { API_BASE_URL, TWO_DOOR_ARCHIVED_WAREHOUSE, WAREHOUSES } from './support/fixtures'
 import { mockWarehouses, renderWarehouses } from './support/test-helpers'
 
 vi.mock(
@@ -11,15 +11,15 @@ vi.mock(
   async () => import('./support/mock-warehouse-map'),
 )
 
-const MIXED = MIXED_ARCHIVED_WAREHOUSE
+const RIVERSIDE = TWO_DOOR_ARCHIVED_WAREHOUSE
 const AVAILABLE = WAREHOUSES[0]
-const CATALOGUE = [AVAILABLE, MIXED]
+const CATALOGUE = [AVAILABLE, RIVERSIDE]
 
 const reactivateUrl = (id: string) => `${API_BASE_URL}/api/v1/warehouses/${id}/reactivate`
 
 async function openReactivateDialog(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
-    await screen.findByRole('button', { name: `View warehouse ${MIXED.name} (Archived)` }),
+    await screen.findByRole('button', { name: `View warehouse ${RIVERSIDE.name} (Archived)` }),
   )
   await user.click(await screen.findByRole('button', { name: 'Reactivate' }))
 
@@ -32,14 +32,10 @@ function reactivatedResponse(reactivatedDoorCount: number) {
   return {
     data: {
       warehouse: {
-        ...MIXED,
+        ...RIVERSIDE,
         status: 'AVAILABLE',
         reactivatedAt: '2026-08-25T10:00:00.000Z',
-        doors: MIXED.doors?.map((door) =>
-          door.archivedWithWarehouse
-            ? { ...door, status: 'AVAILABLE', archivedWithWarehouse: false }
-            : door,
-        ),
+        doors: RIVERSIDE.doors?.map((door) => ({ ...door, status: 'AVAILABLE' })),
       },
       reactivatedDoorCount,
     },
@@ -58,7 +54,7 @@ test('offers reactivation for an archived warehouse and archival for an availabl
   expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
 
   await user.click(
-    await screen.findByRole('button', { name: `View warehouse ${MIXED.name} (Archived)` }),
+    await screen.findByRole('button', { name: `View warehouse ${RIVERSIDE.name} (Archived)` }),
   )
   expect(await screen.findByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
@@ -72,8 +68,8 @@ test('states how many doors return to service with the warehouse', async () => {
   const dialog = await openReactivateDialog(user)
 
   expect(within(dialog).getByRole('heading', { name: 'Reactivate warehouse?' })).toBeInTheDocument()
-  // Mixed Shed holds one door archived with it and one archived on its own.
-  expect(dialog).toHaveTextContent('Its 1 door archived with it returns to service')
+  // Riverside Shed holds two archived doors, and both come back with it.
+  expect(dialog).toHaveTextContent('Its 2 doors return to service')
   expect(dialog).toHaveTextContent('becomes available again for new operations')
 })
 
@@ -81,7 +77,7 @@ test('reactivates the warehouse and reports the restored doors', async () => {
   let capturedBody: unknown
   mockWarehouses(undefined, CATALOGUE)
   server.use(
-    http.post(reactivateUrl(MIXED.id), async ({ request }) => {
+    http.post(reactivateUrl(RIVERSIDE.id), async ({ request }) => {
       capturedBody = await request.json()
       return HttpResponse.json(reactivatedResponse(1))
     }),
@@ -94,7 +90,7 @@ test('reactivates the warehouse and reports the restored doors', async () => {
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
   expect(
-    await screen.findByText(`Warehouse “${MIXED.name}” reactivated with 1 door`),
+    await screen.findByText(`Warehouse “${RIVERSIDE.name}” reactivated with 1 door`),
   ).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Zone reopened' })
 })
@@ -103,21 +99,23 @@ test('reactivates the warehouse and reports the restored doors', async () => {
 // that turned out to touch nothing must not claim a door came back.
 test('reports a reactivation that restored no door without naming a count', async () => {
   mockWarehouses(undefined, CATALOGUE)
-  server.use(http.post(reactivateUrl(MIXED.id), () => HttpResponse.json(reactivatedResponse(0))))
+  server.use(
+    http.post(reactivateUrl(RIVERSIDE.id), () => HttpResponse.json(reactivatedResponse(0))),
+  )
   const user = userEvent.setup()
   renderWarehouses()
 
   const dialog = await openReactivateDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
-  expect(await screen.findByText(`Warehouse “${MIXED.name}” reactivated`)).toBeInTheDocument()
+  expect(await screen.findByText(`Warehouse “${RIVERSIDE.name}” reactivated`)).toBeInTheDocument()
 })
 
 test('sends no comment when the field is left empty', async () => {
   let capturedBody: unknown
   mockWarehouses(undefined, CATALOGUE)
   server.use(
-    http.post(reactivateUrl(MIXED.id), async ({ request }) => {
+    http.post(reactivateUrl(RIVERSIDE.id), async ({ request }) => {
       capturedBody = await request.json()
       return HttpResponse.json(reactivatedResponse(1))
     }),
@@ -128,7 +126,7 @@ test('sends no comment when the field is left empty', async () => {
   const dialog = await openReactivateDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
-  await screen.findByText(`Warehouse “${MIXED.name}” reactivated with 1 door`)
+  await screen.findByText(`Warehouse “${RIVERSIDE.name}” reactivated with 1 door`)
   expect(capturedBody).toMatchObject({ comment: null })
 })
 
@@ -136,7 +134,7 @@ test('leaves the warehouse untouched when the confirmation is abandoned', async 
   let requested = false
   mockWarehouses(undefined, CATALOGUE)
   server.use(
-    http.post(reactivateUrl(MIXED.id), () => {
+    http.post(reactivateUrl(RIVERSIDE.id), () => {
       requested = true
       return HttpResponse.json(reactivatedResponse(1))
     }),
@@ -149,7 +147,7 @@ test('leaves the warehouse untouched when the confirmation is abandoned', async 
 
   expect(requested).toBe(false)
   expect(
-    await screen.findByRole('button', { name: `View warehouse ${MIXED.name} (Archived)` }),
+    await screen.findByRole('button', { name: `View warehouse ${RIVERSIDE.name} (Archived)` }),
   ).toBeInTheDocument()
 })
 
@@ -159,7 +157,7 @@ test('shows the archive context beside the reactivation context', async () => {
   renderWarehouses()
 
   await user.click(
-    await screen.findByRole('button', { name: `View warehouse ${MIXED.name} (Archived)` }),
+    await screen.findByRole('button', { name: `View warehouse ${RIVERSIDE.name} (Archived)` }),
   )
 
   // Scoped to the warehouse's own Archive context: since #215 a door row prints its archive
