@@ -443,7 +443,12 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
 
     const reactivatedAt = command.reactivatedAt.toSQL({ includeOffset: false })
 
-    const reactivated = await WarehouseDoor.transaction(async (trx) => {
+    // The transaction reports *which guard* refused rather than what to answer. The two fail for
+    // unrelated reasons — the warehouse is not available, or the door is not archived — and only
+    // the stage that refused knows which row a second read should be about.
+    const outcome = await WarehouseDoor.transaction<
+      'REACTIVATED' | 'WAREHOUSE_REFUSED' | 'DOOR_REFUSED'
+    >(async (trx) => {
       const warehouse = await Warehouse.query({ client: trx })
         .where('id', door.warehouseId)
         .where('status', 'AVAILABLE')
@@ -451,7 +456,7 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
         .first()
 
       if (!warehouse) {
-        return false
+        return 'WAREHOUSE_REFUSED'
       }
 
       const [affectedRows] = await WarehouseDoor.query({ client: trx })
@@ -469,10 +474,10 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
           updatedAt: reactivatedAt,
         })
 
-      return affectedRows > 0
+      return affectedRows > 0 ? 'REACTIVATED' : 'DOOR_REFUSED'
     })
 
-    if (reactivated) {
+    if (outcome === 'REACTIVATED') {
       // Re-read rather than returning the pre-read instance: the caller serializes the stored row,
       // including the status and `updatedAt` this write just advanced.
       const current = await WarehouseDoor.find(command.id)
@@ -480,19 +485,31 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
       return current ? { kind: 'REACTIVATED', door: current } : { kind: 'DOOR_NOT_FOUND' }
     }
 
-    return this.explainRefusal(command.id, door.warehouseId)
+    if (outcome === 'DOOR_REFUSED') {
+      // The refusal is the door's alone, so the warehouse is never consulted: it was read
+      // `AVAILABLE` under `FOR UPDATE` a moment earlier. Asking again would let a door re-archived
+      // in this window fall through to the warehouse branch below and answer "warehouse not found"
+      // for a warehouse that plainly exists and is available. Same reasoning as `archiveAvailable`
+      // one level down: the guarded write matched nothing because the door was not archived when
+      // it ran, or has since been deleted.
+      const current = await WarehouseDoor.find(command.id)
+
+      return current ? { kind: 'ALREADY_AVAILABLE' } : { kind: 'DOOR_NOT_FOUND' }
+    }
+
+    return this.explainWarehouseRefusal(command.id, door.warehouseId)
   }
 
   /**
-   * Names which of the three blockers stopped a reactivation, once the guarded lock or the guarded
-   * write has matched nothing. Both rows are re-read because either may have moved since: the point
-   * is to answer with the state as it actually is, not as the failed guard assumed.
+   * Names which blocker stopped a reactivation whose guarded warehouse lock matched nothing. Both
+   * rows are re-read because either may have moved since: the point is to answer with the state as
+   * it actually is, not as the failed guard assumed.
    *
    * The door is consulted before the warehouse so that a warehouse reactivation committing in this
    * window — which restores the cascaded doors with it — is reported as `ALREADY_AVAILABLE` rather
    * than as a warehouse problem the administrator no longer has.
    */
-  private async explainRefusal(
+  private async explainWarehouseRefusal(
     doorId: string,
     warehouseId: string,
   ): Promise<ReactivateWarehouseDoorResult> {

@@ -195,7 +195,7 @@ export default class LucidWarehouseRepository extends WarehouseRepository {
   }
 
   /**
-   * Archives a warehouse and cascades onto its available doors in one transaction.
+   * Archives a warehouse and cascades onto every one of its doors in one transaction.
    *
    * Unlike the delivered single-archive paths for the other site references, the in-use check runs
    * here rather than in the use case. Those references do not cascade, so a lost race only fails to
