@@ -18,7 +18,7 @@ const COMPANY_NAME = 'Atlantic Transport'
 const SUSPENDED_TRUCK = SUSPEND_TRUCKS[1]
 
 function details() {
-  return screen.getByRole('region', { hidden: true, name: 'Truck details' })
+  return screen.getByRole('dialog', { hidden: true })
 }
 
 async function openTruck(user: ReturnType<typeof userEvent.setup>, target: TruckDto, tab?: RegExp) {
@@ -237,7 +237,7 @@ test('withholds the responsible administrator from a non-administrator', async (
     }),
   )
 
-  const panel = await screen.findByRole('region', { hidden: true, name: 'Truck details' })
+  const panel = await screen.findByRole('dialog', { hidden: true })
   // The date and the comment explain why the truck is no longer offered; who suspended it is
   // administration context (FR-015).
   expect(within(panel).getByText(SUSPENDED_TRUCK.suspensionComment as string)).toBeInTheDocument()
