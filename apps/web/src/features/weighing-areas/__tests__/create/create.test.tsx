@@ -80,7 +80,7 @@ test('places, names, and creates a weighing area, then shows it as the selected 
   expect(await screen.findByText(`Weighing area “${created.name}” created`)).toBeInTheDocument()
   expect(await screen.findByRole('heading', { name: created.name })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({
-    checkpoint: `weighing-area:${created.id}`,
+    checkpointId: `weighing-area:${created.id}`,
   })
   expect((router.state.location.search as { create?: string }).create).toBeUndefined()
 
@@ -131,7 +131,7 @@ test('reveals the new weighing area even when the active filters would hide it',
 
   expect(await screen.findByRole('heading', { name: created.name })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({
-    checkpoint: `weighing-area:${created.id}`,
+    checkpointId: `weighing-area:${created.id}`,
     status: 'available',
   })
   expect((router.state.location.search as { kinds?: string }).kinds).toBeUndefined()
