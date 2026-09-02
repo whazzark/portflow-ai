@@ -11,13 +11,13 @@ import {
   ACTION_BY_BULK_INTENT,
   type BulkLifecycleIntent,
 } from '@/components/lifecycle/lifecycle-copy'
-import type { LatLng } from '@/components/resource-map/resource-map-placement'
-import { countResources } from '@/components/resource-map/resource-map-search'
-import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
 import {
   useClearSelectionShortcut,
   useSelectAllShortcut,
-} from '@/components/resource-map/use-bulk-selection-shortcuts'
+} from '@/components/lifecycle/use-bulk-selection-shortcuts'
+import type { LatLng } from '@/components/resource-map/resource-map-placement'
+import { countResources } from '@/components/resource-map/resource-map-search'
+import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
@@ -314,11 +314,29 @@ export function WarehousesPage() {
     },
     [bulkIntent, checkableIds, navigate, visible],
   )
-  // The keyboard shortcuts stay the warehouse map's, untouched: `Ctrl+A` selects the warehouses on
-  // screen and `Escape` clears that selection. Doors get no binding of their own — two meanings for
-  // one keystroke on one page is worse than none, and the panel's "Select all" checkbox is the
-  // door equivalent, exactly as it is in the trucks and customers directories.
-  useSelectAllShortcut({ enabled: canManageWarehouses, onSelectAll: selectAllVisible })
+  // One keystroke, one meaning at a time. The two collections of this page are never both in
+  // reach: while a warehouse's sheet is open with doors to select, the map behind it is covered,
+  // so `Ctrl+A` there can only mean the doors. #214's note said doors got no binding because the
+  // trucks and customers directories had none either — they have one now, and the map yielding
+  // while the sheet is open is what keeps the keystroke unambiguous.
+  useSelectAllShortcut({
+    enabled: canManageWarehouses && !canSelectDoors,
+    onSelectAll: selectAllVisible,
+  })
+  const selectAllDoors = useCallback(
+    (event: KeyboardEvent) => {
+      if (!selected || checkableDoorIds.size === 0) {
+        return
+      }
+      event.preventDefault()
+      setDoorSelection({ warehouseId: selected.id, ids: new Set(checkableDoorIds) })
+    },
+    [checkableDoorIds, selected],
+  )
+  useSelectAllShortcut({ enabled: canSelectDoors, onSelectAll: selectAllDoors })
+  // Doors get no `Escape` binding, unlike the map's selection. Inside a sheet that key already
+  // means "close this", which is a stronger convention than any shortcut we would add, and the
+  // panel's own "Clear selection" button is right beside the count anyway.
 
   const clearChecked = useCallback(() => setCheckedIds(new Set()), [])
   // Opened from the Doors panel rather than from a floating bar: the selection lives in that list,

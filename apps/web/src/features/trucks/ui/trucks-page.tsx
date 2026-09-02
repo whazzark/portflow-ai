@@ -1,9 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
+import { useBulkSelection } from '@/components/lifecycle/use-bulk-selection'
+import {
+  useClearSelectionShortcut,
+  useSelectAllShortcut,
+} from '@/components/lifecycle/use-bulk-selection-shortcuts'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { InputSearch } from '@/components/ui/input-search'
@@ -12,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
+import { truckMatchesSearch } from '@/features/trucks/helpers/truck-search'
 import { useTruckMutations } from '@/features/trucks/mutations/use-truck-mutations'
 import { truckQueries } from '@/features/trucks/queries/truck-queries'
 import {
@@ -109,7 +115,9 @@ export function TrucksPage() {
     editSession.id === truckId &&
     editSession.editable
 
-  const [selectedTruckIds, setSelectedTruckIds] = useState<Set<string>>(new Set())
+  const directoryRef = useRef<HTMLDivElement>(null)
+  const selection = useBulkSelection()
+  const { selectedIds: selectedTruckIds, clear: clearTruckSelection } = selection
   const activeLifecycleStatus =
     truckStatus === 'archived'
       ? 'ARCHIVED'
@@ -134,6 +142,45 @@ export function TrucksPage() {
     () => [...visibleSelectedTruckIds],
     [visibleSelectedTruckIds],
   )
+
+  // What the active tab currently lists, once the transport-company scope and the search have
+  // narrowed it — the same set the section renders, and so the same set Ctrl/Cmd+A acts on. The
+  // suspended tab carries no bulk action, so it offers nothing to select.
+  const shortcutSelectableTruckIds = useMemo(() => {
+    if (truckStatus === 'suspended') {
+      return []
+    }
+
+    return scopedTrucks
+      .filter((truck) => truck.status === activeLifecycleStatus)
+      .filter((truck) =>
+        truckMatchesSearch(
+          truck,
+          companies.find((company) => company.id === truck.transportCompanyId),
+          truckSearch,
+        ),
+      )
+      .map((truck) => truck.id)
+  }, [activeLifecycleStatus, companies, scopedTrucks, truckSearch, truckStatus])
+
+  const selectAllVisibleTrucks = useCallback(
+    (event: KeyboardEvent) => {
+      event.preventDefault()
+      selection.toggleMany(shortcutSelectableTruckIds, true)
+    },
+    [selection, shortcutSelectableTruckIds],
+  )
+  // Scoped to this directory: the transport companies beside it are selectable too, so only the
+  // one holding focus can be what the administrator meant.
+  useSelectAllShortcut({
+    enabled: administrator,
+    onSelectAll: selectAllVisibleTrucks,
+    scopeRef: directoryRef,
+  })
+  useClearSelectionShortcut({
+    enabled: administrator && selectedTruckIds.size > 0,
+    onClear: clearTruckSelection,
+  })
 
   useEffect(() => {
     if (!administrator && truckStatus === 'archived') {
@@ -221,6 +268,7 @@ export function TrucksPage() {
     <Card
       aria-label="Truck directory"
       className="h-[min(42rem,70svh)] min-h-[28rem] gap-0 py-0 lg:h-auto lg:min-h-0"
+      ref={directoryRef}
     >
       <CardContent className="flex min-h-0 flex-1 flex-col px-0">
         <div className="flex items-center gap-2 border-b p-3">
@@ -283,21 +331,10 @@ export function TrucksPage() {
               <TruckSection
                 canAdminister={administrator}
                 lifecycle="available"
+                onCreate={startCreatingTruck}
                 onEdit={editTruck}
                 onSelect={toggleTruck}
-                onSelectionChange={(checked, ids) => {
-                  setSelectedTruckIds((previous) => {
-                    const next = new Set(previous)
-                    for (const id of ids) {
-                      if (checked) {
-                        next.add(id)
-                      } else {
-                        next.delete(id)
-                      }
-                    }
-                    return next
-                  })
-                }}
+                onSelectionChange={(checked, ids) => selection.toggleMany(ids, checked)}
                 onView={selectTruck}
                 search={truckSearch}
                 selectable={administrator}
@@ -332,19 +369,7 @@ export function TrucksPage() {
                   lifecycle="archived"
                   onEdit={editTruck}
                   onSelect={toggleTruck}
-                  onSelectionChange={(checked, ids) => {
-                    setSelectedTruckIds((previous) => {
-                      const next = new Set(previous)
-                      for (const id of ids) {
-                        if (checked) {
-                          next.add(id)
-                        } else {
-                          next.delete(id)
-                        }
-                      }
-                      return next
-                    })
-                  }}
+                  onSelectionChange={(checked, ids) => selection.toggleMany(ids, checked)}
                   onView={selectTruck}
                   search={truckSearch}
                   selectable={administrator}
@@ -443,12 +468,10 @@ export function TrucksPage() {
       action={truckStatus === 'archived' ? 'reactivate' : 'archive'}
       blockerReasonLabels={TRUCK_BLOCKER_REASON_LABELS}
       idPrefix="truck"
-      onClear={() => setSelectedTruckIds(new Set())}
+      onClear={clearTruckSelection}
       // Narrowed to the blocked ids rather than cleared, so the administrator can resolve the
       // blocker and retry exactly those without reselecting them.
-      onSuccess={(outcome) =>
-        setSelectedTruckIds(new Set(outcome.blocked.map((blocked) => blocked.id)))
-      }
+      onSuccess={(outcome) => selection.retainOnly(outcome.blocked.map((blocked) => blocked.id))}
       plural={TRUCK_PLURAL}
       refresh={truckMutations.refreshTrucks}
       selectedIds={visibleSelectedTruckIdList}

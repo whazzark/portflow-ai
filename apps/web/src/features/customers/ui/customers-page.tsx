@@ -1,8 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { OnChangeFn, SortingState } from '@tanstack/react-table'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
+import { useBulkSelection } from '@/components/lifecycle/use-bulk-selection'
+import {
+  useClearSelectionShortcut,
+  useSelectAllShortcut,
+} from '@/components/lifecycle/use-bulk-selection-shortcuts'
 import { Button } from '@/components/ui/button'
 import { InputSearch } from '@/components/ui/input-search'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -13,6 +18,7 @@ import {
   CUSTOMER_SINGULAR,
   toBulkCustomerLifecycleOutcome,
 } from '@/features/customers/customer-lifecycle'
+import { customerMatchesSearch } from '@/features/customers/helpers/customer-search'
 import { useCustomerMutations } from '@/features/customers/mutations/use-customer-mutations'
 import { customerQueries } from '@/features/customers/queries/customer-queries'
 import { CustomerSection } from '@/features/customers/ui/customer-section'
@@ -37,27 +43,53 @@ export function CustomersPage() {
   const customersQuery = useQuery(customerQueries.list())
   const mutations = useCustomerMutations()
 
-  const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set())
+  const selection = useBulkSelection()
+  const { selectedIds: selectedCustomerIds, clear: clearSelection } = selection
   const lifecycleActionIds = useMemo(() => [...selectedCustomerIds], [selectedCustomerIds])
+  const canAdminister = isAdministrator(user)
+  const customers = customersQuery.data?.data ?? []
+  const availableCustomers = customers.filter((customer) => customer.status === 'AVAILABLE')
+  const archivedCustomers = customers.filter((customer) => customer.status === 'ARCHIVED')
+
+  // What the active tab currently lists, once the search has narrowed it — the same set the table
+  // renders, and so the same set `Select all` and Ctrl/Cmd+A act on.
+  const visibleCustomers = useMemo(
+    () =>
+      customers
+        .filter(
+          (customer) => customer.status === (status === 'available' ? 'AVAILABLE' : 'ARCHIVED'),
+        )
+        .filter((customer) => customerMatchesSearch(customer, search)),
+    [customers, search, status],
+  )
   const visibleSelectedCustomerIds = useMemo(() => {
     const selectedStatus = status === 'available' ? 'AVAILABLE' : 'ARCHIVED'
     const visibleIds = new Set(
-      (customersQuery.data?.data ?? [])
-        .filter((customer) => customer.status === selectedStatus)
-        .map((customer) => customer.id),
+      customers.filter((customer) => customer.status === selectedStatus).map((c) => c.id),
     )
 
     return new Set([...selectedCustomerIds].filter((id) => visibleIds.has(id)))
-  }, [customersQuery.data, selectedCustomerIds, status])
+  }, [customers, selectedCustomerIds, status])
+
+  const selectAllVisible = useCallback(
+    (event: KeyboardEvent) => {
+      event.preventDefault()
+      selection.toggleMany(
+        visibleCustomers.map((customer) => customer.id),
+        true,
+      )
+    },
+    [selection, visibleCustomers],
+  )
+  useSelectAllShortcut({ enabled: canAdminister, onSelectAll: selectAllVisible })
+  useClearSelectionShortcut({
+    enabled: canAdminister && selectedCustomerIds.size > 0,
+    onClear: clearSelection,
+  })
 
   if (!customersQuery.data) {
     return null
   }
-
-  const customers = customersQuery.data.data
-  const availableCustomers = customers.filter((customer) => customer.status === 'AVAILABLE')
-  const archivedCustomers = customers.filter((customer) => customer.status === 'ARCHIVED')
-  const canAdminister = isAdministrator(user)
   const sheetMode =
     mode === 'create' && !canAdminister
       ? undefined
@@ -67,7 +99,7 @@ export function CustomersPage() {
   const sheetCustomerId = sheetMode === 'create' ? undefined : customerId
 
   const updateSearch = (value: string) => {
-    setSelectedCustomerIds(new Set())
+    clearSelection()
     void navigate({ search: (previous) => ({ ...previous, search: value }) })
   }
 
@@ -76,7 +108,7 @@ export function CustomersPage() {
       return
     }
 
-    setSelectedCustomerIds(new Set())
+    clearSelection()
     void navigate({ search: (previous) => ({ ...previous, status: nextStatus }) })
   }
 
@@ -161,7 +193,7 @@ export function CustomersPage() {
               onSortingChange={updateSorting(status)}
               canAdminister={canAdminister}
               selectedIds={visibleSelectedCustomerIds}
-              onSelectionChange={(customerIds) => setSelectedCustomerIds(new Set(customerIds))}
+              onSelectionChange={(customerIds) => selection.retainOnly(customerIds)}
             />
           )}
         </TabsContent>
@@ -181,7 +213,7 @@ export function CustomersPage() {
               onSortingChange={updateSorting(status)}
               canAdminister={canAdminister}
               selectedIds={visibleSelectedCustomerIds}
-              onSelectionChange={(customerIds) => setSelectedCustomerIds(new Set(customerIds))}
+              onSelectionChange={(customerIds) => selection.retainOnly(customerIds)}
             />
           )}
         </TabsContent>
@@ -190,11 +222,11 @@ export function CustomersPage() {
         <BulkResourceLifecycleActions
           action={isArchived ? 'reactivate' : 'archive'}
           idPrefix="customer"
-          onClear={() => setSelectedCustomerIds(new Set())}
+          onClear={clearSelection}
           // Narrowed to the blocked ids rather than cleared, so the administrator can resolve the
           // blocker and retry exactly those without reselecting them.
           onSuccess={(outcome) =>
-            setSelectedCustomerIds(new Set(outcome.blocked.map((blocked) => blocked.id)))
+            selection.retainOnly(outcome.blocked.map((blocked) => blocked.id))
           }
           plural={CUSTOMER_PLURAL}
           refresh={mutations.refreshCustomers}

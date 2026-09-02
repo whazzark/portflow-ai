@@ -48,7 +48,7 @@ declare module '@tanstack/react-table' {
   interface TableMeta<TData extends import('@tanstack/react-table').RowData> {
     onSelect?: (customerId: string) => void
     onEdit?: (customerId: string) => void
-    selectedIds?: Set<string>
+    selectedIds?: ReadonlySet<string>
     onSelectVisible?: (checked: boolean, customerIds: string[]) => void
   }
 }
@@ -64,7 +64,7 @@ type CustomerTableProps = {
   emptyDescription: string
   isArchived: boolean
   canAdminister: boolean
-  selectedIds: Set<string>
+  selectedIds: ReadonlySet<string>
   onSelectionChange: (customerIds: string[]) => void
 }
 

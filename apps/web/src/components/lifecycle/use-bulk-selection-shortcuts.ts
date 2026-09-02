@@ -1,3 +1,4 @@
+import type { RefObject } from 'react'
 import { useEffect } from 'react'
 
 function isEditableTarget(target: EventTarget | null) {
@@ -19,9 +20,20 @@ function isEditableTarget(target: EventTarget | null) {
 export function useSelectAllShortcut({
   enabled,
   onSelectAll,
+  scopeRef,
 }: {
   enabled: boolean
   onSelectAll: (event: KeyboardEvent) => void
+  /**
+   * Limits the shortcut to presses made while focus is inside this element.
+   *
+   * Passed only where a single screen offers two selectable collections at once — the transport
+   * companies and the trucks of `/transport-resources` — because there "everything the
+   * administrator is looking at" has two answers and only the focused one can be meant. A screen
+   * with one collection passes nothing and keeps the shortcut available from anywhere, which is
+   * what makes it discoverable in the first place.
+   */
+  scopeRef?: RefObject<HTMLElement | null>
 }) {
   useEffect(() => {
     if (!enabled) {
@@ -35,6 +47,11 @@ export function useSelectAllShortcut({
       if (isEditableTarget(event.target)) {
         return
       }
+      // `activeElement` rather than the event target: a press made with nothing focused targets
+      // `body`, which no scope contains, and would otherwise fire every scoped listener at once.
+      if (scopeRef && !scopeRef.current?.contains(document.activeElement)) {
+        return
+      }
 
       onSelectAll(event)
     }
@@ -42,7 +59,7 @@ export function useSelectAllShortcut({
     window.addEventListener('keydown', handleKeyDown)
 
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [enabled, onSelectAll])
+  }, [enabled, onSelectAll, scopeRef])
 }
 
 /**

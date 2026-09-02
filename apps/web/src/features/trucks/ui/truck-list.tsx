@@ -1,7 +1,14 @@
 import { HighlightedText } from '@/components/highlighted-text'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
 import type { TruckDto, TruckLifecycle } from '@/features/trucks/types'
 import { TruckRowActions } from '@/features/trucks/ui/truck-row-actions'
@@ -17,11 +24,12 @@ type TruckListProps = {
   onSelect: (id: string) => void
   companies: TransportCompanyDto[]
   selectable?: boolean
-  selectedIds?: Set<string>
+  selectedIds?: ReadonlySet<string>
   onSelectionChange?: (checked: boolean, ids: string[]) => void
   canAdminister?: boolean
   onEdit?: (id: string) => void
   onView?: (id: string) => void
+  onCreate?: () => void
 }
 
 export function TruckList({
@@ -39,6 +47,7 @@ export function TruckList({
   canAdminister = false,
   onEdit,
   onView,
+  onCreate,
 }: TruckListProps) {
   const lifecycleLabel =
     lifecycle === 'archived' ? 'Archived' : lifecycle === 'suspended' ? 'Suspended' : 'Available'
@@ -130,6 +139,16 @@ export function TruckList({
             <EmptyTitle>{emptyTitle}</EmptyTitle>
             <EmptyDescription>{emptyDescription}</EmptyDescription>
           </EmptyHeader>
+          {canAdminister && onCreate && (
+            <EmptyContent>
+              {/* Worded apart from the directory header's own "Create truck", as the transport
+                  company list already does: both are on screen at once, and two buttons sharing
+                  an accessible name is worse than the small wording difference. */}
+              <Button onClick={onCreate} size="sm">
+                Create a truck
+              </Button>
+            </EmptyContent>
+          )}
         </Empty>
       )}
     </div>
