@@ -51,7 +51,7 @@ test('keeps checkpoint selection while entering edit mode', async () => {
   await openEditWeighingArea(user)
 
   expect(router.state.location.search).toMatchObject({
-    checkpoint: `weighing-area:${ALPHA_SCALE.id}`,
+    checkpointId: `weighing-area:${ALPHA_SCALE.id}`,
     edit: 'weighing-area',
   })
 })
