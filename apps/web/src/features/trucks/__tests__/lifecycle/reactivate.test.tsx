@@ -14,7 +14,7 @@ import {
 import { mockTrucks, renderTrucks, truckTab } from '../support/test-helpers'
 
 function details() {
-  return screen.getByRole('region', { hidden: true, name: 'Truck details' })
+  return screen.getByRole('dialog', { hidden: true })
 }
 
 async function openArchivedTruck(

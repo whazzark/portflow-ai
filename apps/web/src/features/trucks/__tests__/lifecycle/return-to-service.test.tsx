@@ -18,7 +18,7 @@ const COMPANY_NAME = 'Atlantic Transport'
 const SUSPENDED_TRUCK = SUSPEND_TRUCKS[1]
 
 function details() {
-  return screen.getByRole('region', { hidden: true, name: 'Truck details' })
+  return screen.getByRole('dialog', { hidden: true })
 }
 
 async function openSuspendedTruck(user: ReturnType<typeof userEvent.setup>) {

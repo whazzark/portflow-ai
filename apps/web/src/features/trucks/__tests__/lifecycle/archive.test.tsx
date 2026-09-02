@@ -8,7 +8,7 @@ import { ACTIVE_OPERATIONS_ADMIN, API_BASE_URL, TRUCKS } from '../support/fixtur
 import { mockTrucks, renderTrucks } from '../support/test-helpers'
 
 function details() {
-  return screen.getByRole('region', { hidden: true, name: 'Truck details' })
+  return screen.getByRole('dialog', { hidden: true })
 }
 
 test('archives a truck with a comment and moves it to the archived tab without a manual refresh', async () => {

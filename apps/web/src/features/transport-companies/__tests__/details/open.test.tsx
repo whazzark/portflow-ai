@@ -15,7 +15,7 @@ test('opens lifecycle details and clears the selection when closed', async () =>
   await user.click(within(companies).getByRole('button', { name: 'Actions for Bêta Logistique' }))
   await user.click(await screen.findByRole('menuitem', { name: 'View' }))
 
-  const details = await screen.findByRole('region', { name: 'Transport company details' })
+  const details = await screen.findByRole('dialog')
   expect(within(details).getByText('Reactivation context')).toBeInTheDocument()
   expect(within(details).getByText('Contract renewed')).toBeInTheDocument()
   expect(within(details).getByText('Claire Martin')).toBeInTheDocument()
@@ -24,9 +24,7 @@ test('opens lifecycle details and clears the selection when closed', async () =>
   await user.click(screen.getByRole('button', { name: 'Close' }))
   // biome-ignore lint/security/noSecrets: URL state property name, not a secret
   await expect.poll(() => router.state.location.search).not.toHaveProperty('companyDetailsId')
-  expect(
-    screen.queryByRole('region', { name: 'Transport company details' }),
-  ).not.toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 test('restores archived details from the URL and clears a stale identity', async () => {
@@ -37,7 +35,7 @@ test('restores archived details from the URL and clears a stale identity', async
     // biome-ignore lint/security/noSecrets: URL state fixture, not a secret
     '/transport-resources?companyStatus=archived&companyDetailsId=00000000-0000-4000-8000-000000000003',
   )
-  const details = await screen.findByRole('region', { name: 'Transport company details' })
+  const details = await screen.findByRole('dialog')
   expect(within(details).getByText('Archive context')).toBeInTheDocument()
   expect(within(details).getByText('Provider no longer serves the site')).toBeInTheDocument()
 

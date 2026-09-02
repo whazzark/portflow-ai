@@ -452,7 +452,7 @@ export function TrucksPage() {
         }}
         open={Boolean(selected)}
       >
-        <SheetContent aria-label="Truck details" className="overflow-y-auto sm:max-w-lg">
+        <SheetContent className="overflow-y-auto sm:max-w-lg">
           {isEditingTruck ? editTruckPanel : truckDetails}
         </SheetContent>
       </Sheet>
