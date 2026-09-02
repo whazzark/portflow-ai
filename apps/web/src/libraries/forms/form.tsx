@@ -41,10 +41,17 @@ function FormError({ className }: { className?: string }) {
 
 function SubmitButton({
   children,
+  disabled = false,
   pendingLabel,
   ...props
-}: Omit<React.ComponentProps<typeof Button>, 'children' | 'disabled' | 'type'> & {
+}: Omit<React.ComponentProps<typeof Button>, 'children' | 'type'> & {
   children: React.ReactNode
+  /**
+   * A reason of the form's own to refuse submission, beyond a submission already in flight — a
+   * warehouse footprint that is not closed yet, a checkpoint with no point placed. It is combined
+   * with `isSubmitting` rather than replacing it, so a form that has both never has to choose.
+   */
+  disabled?: boolean
   pendingLabel: React.ReactNode
 }) {
   const form = useFormContext()
@@ -52,7 +59,7 @@ function SubmitButton({
   return (
     <form.Subscribe selector={(state) => state.isSubmitting}>
       {(isSubmitting) => (
-        <Button {...props} type="submit" disabled={isSubmitting}>
+        <Button {...props} type="submit" disabled={isSubmitting || disabled}>
           {isSubmitting ? pendingLabel : children}
         </Button>
       )}

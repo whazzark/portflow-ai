@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { ResourceCollectionError } from '@/components/resource-map/resource-map-feedback'
+import { ResourceCollectionError } from '@/components/resource/resource-feedback'
 import { userQueries } from '@/features/users/queries/user-queries'
 
 export function UsersError() {
