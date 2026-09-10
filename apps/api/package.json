@@ -22,6 +22,7 @@
     "#auth/*": "./app/auth/*.js",
     "#abilities/*": "./app/abilities/*.js",
     "#customers/*": "./app/customers/*.js",
+    "#discharges/*": "./app/discharges/*.js",
     "#docks/*": "./app/docks/*.js",
     "#controllers/*": "./app/controllers/*.js",
     "#config/*": "./config/*.js",

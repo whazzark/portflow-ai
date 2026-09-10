@@ -1,0 +1,137 @@
+openapi: 3.1.0
+info:
+  title: Portflow Browse Discharges Contract
+  version: 1.0.0
+  description: >-
+    Sole discharge read contract introduced by issue 61. One unfiltered collection serves the
+    Planned, Active, and Closed tabs and their counts; see research.md Decision 1.
+paths:
+  /api/v1/discharges:
+    get:
+      operationId: discharges.index
+      summary: List every discharge for consultation
+      description: >-
+        Requires an authenticated user whose access status is ACTIVE. Every role reads the same
+        payload, so there is no role-conditional field and no second collection. Returns every
+        Planned, Active, and Closed discharge, unpaginated and unfiltered, ordered by
+        expectedStartAt ascending with id ascending as the tie-breaker.
+      responses:
+        "200":
+          description: >-
+            Complete discharge collection across all three statuses. An empty data array is a
+            success, not an error: it means the site has no discharge at all.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DischargeListItem"
+        "401":
+          description: >-
+            No authenticated session, or a session whose user is not ACTIVE. The auth middleware
+            refuses both before any policy runs, so a non-active user never reaches authorization
+            and never receives a 403. No discharge, vessel, dock, customer, or product data is
+            disclosed either way.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+components:
+  schemas:
+    DischargeListItem:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - status
+        - vesselName
+        - vesselImo
+        - expectedStartAt
+        - dock
+        - productLots
+        - shiftCount
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Stable identity; also the deterministic order tie-breaker.
+        status:
+          type: string
+          enum: [PLANNED, ACTIVE, CLOSED]
+          description: Determines which tab lists the discharge. Exactly one per discharge.
+        vesselName:
+          type: string
+          minLength: 1
+          description: Never empty; the table enforces a non-blank check.
+        vesselImo:
+          type: [string, "null"]
+          description: The only nullable displayed field; the browser renders null as "Not specified".
+        expectedStartAt:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            Ordering key and displayed start. The column is NOT NULL, so a value is always present
+            in practice, but the generated transport type admits null and consumers must coerce
+            rather than assert.
+        dock:
+          $ref: "#/components/schemas/DischargeDock"
+        productLots:
+          type: array
+          description: >-
+            May be empty for a freshly planned discharge. Carries the customer and product names
+            the row displays and the search matches; the row's lot count is this array's length.
+          items:
+            $ref: "#/components/schemas/DischargeProductLot"
+        shiftCount:
+          type: integer
+          minimum: 0
+          description: >-
+            Number of shifts belonging to the discharge, whatever their status. See research.md
+            Decision 3 for the FR-006 wording question this reading escalates.
+    DischargeDock:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      description: The discharge's current dock, shown as-is even when archived.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    DischargeProductLot:
+      type: object
+      additionalProperties: false
+      required: [id, customerId, customerName, productName]
+      description: >-
+        Expected quantity and description are deliberately absent; tonnage and lot detail belong to
+        GH-58 and the reporting slices.
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        customerName:
+          type: string
+          description: >-
+            The customer's companyName, projected under a name that reads naturally on a discharge
+            row. Present even when the customer is archived.
+        productName:
+          type: string
+    ApiErrorEnvelope:
+      type: object
+      description: The repository's existing error envelope; unchanged by this slice.
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
