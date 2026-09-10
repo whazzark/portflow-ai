@@ -36,7 +36,7 @@ export function DischargeList({ discharges, isNoMatch, status }: DischargeListPr
   return (
     <div className="overflow-hidden rounded-lg border md:flex md:max-h-full md:min-h-0 md:flex-col md:[&_[data-slot=table-container]]:min-h-0 md:[&_[data-slot=table-container]]:overflow-auto">
       <Table aria-label="Discharges">
-        <TableHeader>
+        <TableHeader className="md:sticky md:top-0 md:z-10 md:bg-background">
           <TableRow>
             <TableHead>Vessel</TableHead>
             <TableHead>IMO</TableHead>
