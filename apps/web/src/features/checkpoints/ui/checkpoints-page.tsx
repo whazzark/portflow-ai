@@ -2,13 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import type { LatLng } from '@/components/resource-map/resource-map-placement'
-import { countResources } from '@/components/resource-map/resource-map-search'
-import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
 import {
   useClearSelectionShortcut,
   useSelectAllShortcut,
-} from '@/components/resource-map/use-bulk-selection-shortcuts'
+} from '@/components/lifecycle/use-bulk-selection-shortcuts'
+import type { LatLng } from '@/components/resource-map/resource-map-placement'
+import { countResources } from '@/components/resource-map/resource-map-search'
+import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
 import { Button } from '@/components/ui/button'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'

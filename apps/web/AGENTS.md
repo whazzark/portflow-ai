@@ -28,7 +28,7 @@
 - Use `useAppForm`, registered field components, `applyApiError`, `FormError`, and `SubmitButton`. `SubmitButton` takes a `disabled` for a refusal of the form's own; never reimplement it with `form.Subscribe`.
 - Write toasts and pending labels from `helpers/resource-copy` and `components/lifecycle/lifecycle-copy`. A feature brings its noun, never its own phrasing.
 - Search a collection with `InputSearch`, never a hand-rolled `Input` plus a search icon.
-- A detail panel is a `Sheet` at `sm:max-w-lg`, built from `ResourceDetailHeader` / `ResourceDetailBody` / `SheetFooter`. `SheetTitle` names the dialog, so scope it in tests with `getByRole('dialog')` rather than a labelled region.
+- A detail panel is a `Sheet` at `size="lg"` — the width is a `SheetContent` prop, never a `className`, because the default is a `data-[side=…]` variant a plain `sm:max-w-lg` loses to on specificity — built from `ResourceDetailHeader` / `ResourceDetailBody` / `SheetFooter`. `SheetTitle` names the dialog, so scope it in tests with `getByRole('dialog')` rather than a labelled region.
 - An edit panel is left through its header's "Back to details". A creation panel adds an explicit `Cancel` only where its sheet is unmodal over a map, since a click outside dismisses nothing there.
 - An empty collection renders `Empty`, and offers its create action to an administrator when no search is narrowing it.
 - Status filters: tabs for a directory, the filter dropdown for a map, a `Select` for a secondary facet such as a role. Status vocabularies are the domain's and are not harmonised across resources.

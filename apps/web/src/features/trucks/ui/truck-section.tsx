@@ -11,11 +11,12 @@ type TruckSectionProps = {
   onSelect: (id: string) => void
   companies: TransportCompanyDto[]
   selectable?: boolean
-  selectedIds?: Set<string>
+  selectedIds?: ReadonlySet<string>
   onSelectionChange?: (checked: boolean, ids: string[]) => void
   canAdminister?: boolean
   onEdit?: (id: string) => void
   onView?: (id: string) => void
+  onCreate?: () => void
 }
 
 export function TruckSection({
@@ -31,6 +32,7 @@ export function TruckSection({
   canAdminister,
   onEdit,
   onView,
+  onCreate,
 }: TruckSectionProps) {
   const lifecycleLabel =
     lifecycle === 'archived' ? 'Archived' : lifecycle === 'suspended' ? 'Suspended' : 'Available'
@@ -56,6 +58,7 @@ export function TruckSection({
         }
         emptyTitle={hasSearch ? 'No matching trucks' : `No ${lifecycle} trucks`}
         lifecycle={lifecycle}
+        onCreate={hasSearch ? undefined : onCreate}
         onEdit={onEdit}
         onSelect={onSelect}
         onSelectionChange={onSelectionChange}

@@ -1,9 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
+import { useBulkSelection } from '@/components/lifecycle/use-bulk-selection'
+import {
+  useClearSelectionShortcut,
+  useSelectAllShortcut,
+} from '@/components/lifecycle/use-bulk-selection-shortcuts'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { InputSearch } from '@/components/ui/input-search'
@@ -12,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
+import { transportCompanyMatchesSearch } from '@/features/transport-companies/helpers/transport-company-search'
 import { useTransportCompanyMutations } from '@/features/transport-companies/mutations/use-transport-company-mutations'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
 import {
@@ -50,7 +56,63 @@ export function TransportResourcesWorkspace() {
   // Multi-selection is a distinct concept from `transportCompanyId`, which scopes the embedded
   // trucks panel: a row's checkbox joins this selection, a row's body still scopes the trucks
   // panel, and neither clears the other.
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(new Set())
+  const selection = useBulkSelection()
+  const { selectedIds: selectedCompanyIds, clear: clearCompanySelection } = selection
+  const directoryRef = useRef<HTMLDivElement>(null)
+
+  const activeCompanyStatus = companyStatus === 'available' ? 'AVAILABLE' : 'ARCHIVED'
+
+  // The part of the selection the active tab actually lists, as the trucks panel beside it also
+  // keeps: a company's own status decides which single tab shows it, so pruning by the visible tab
+  // is what keeps a selection made under one status from being counted as hidden by the search, or
+  // offered to the other direction's action, once something flips the tab under it — archiving from
+  // the details panel does exactly that, and no tab click is involved to clear the selection.
+  const visibleSelectedCompanyIds = useMemo(() => {
+    const visibleIds = new Set(
+      companies
+        .filter((company) => company.status === activeCompanyStatus)
+        .map((company) => company.id),
+    )
+
+    return new Set([...selectedCompanyIds].filter((id) => visibleIds.has(id)))
+  }, [activeCompanyStatus, companies, selectedCompanyIds])
+  const visibleSelectedCompanyIdList = useMemo(
+    () => [...visibleSelectedCompanyIds],
+    [visibleSelectedCompanyIds],
+  )
+
+  // What the active tab currently lists, once the search has narrowed it — the same set the
+  // section renders, and so the same set Ctrl/Cmd+A acts on.
+  const shortcutSelectableCompanyIds = useMemo(
+    () =>
+      companies
+        .filter((company) => company.status === activeCompanyStatus)
+        .filter((company) => transportCompanyMatchesSearch(company, companySearch))
+        .map((company) => company.id),
+    [activeCompanyStatus, companies, companySearch],
+  )
+
+  const selectAllVisibleCompanies = useCallback(
+    (event: KeyboardEvent) => {
+      event.preventDefault()
+      selection.toggleMany(shortcutSelectableCompanyIds, true)
+    },
+    [selection, shortcutSelectableCompanyIds],
+  )
+  // Scoped to this directory: the trucks beside it are selectable too, so only the one holding
+  // focus can be what the administrator meant — for clearing a selection exactly as for building
+  // one, or a single Escape would empty both collections at once. The floating toolbar this
+  // directory owns sits inside the same Card, so the scope already covers it.
+  useSelectAllShortcut({
+    enabled: canAdminister,
+    onSelectAll: selectAllVisibleCompanies,
+    scopeRef: directoryRef,
+  })
+  useClearSelectionShortcut({
+    enabled: canAdminister && selectedCompanyIds.size > 0,
+    onClear: clearCompanySelection,
+    scopeRef: directoryRef,
+  })
 
   useEffect(() => {
     if (companyDetailsMode !== 'edit' || !companyDetails) {
@@ -118,35 +180,8 @@ export function TransportResourcesWorkspace() {
   const archived = companies.filter((company) => company.status === 'ARCHIVED')
   const selectedCompanies = companyStatus === 'available' ? available : archived
 
-  const toggleCompanySelection = (id: string) => {
-    setSelectedCompanyIds((previous) => {
-      const next = new Set(previous)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-      return next
-    })
-  }
-
-  const toggleVisibleCompanySelection = (ids: string[], select: boolean) => {
-    setSelectedCompanyIds((previous) => {
-      const next = new Set(previous)
-      for (const id of ids) {
-        if (select) {
-          next.add(id)
-        } else {
-          next.delete(id)
-        }
-      }
-      return next
-    })
-  }
-
-  const clearCompanySelection = () => {
-    setSelectedCompanyIds(new Set())
-  }
+  const toggleCompanySelection = selection.toggle
+  const toggleVisibleCompanySelection = selection.toggleMany
 
   const toggleCompany = (id: string) => {
     void navigate({
@@ -195,6 +230,7 @@ export function TransportResourcesWorkspace() {
       <Card
         aria-label="Transport company directory"
         className="relative min-h-[28rem] gap-0 py-0 lg:min-h-0"
+        ref={directoryRef}
       >
         <CardContent className="flex min-h-0 flex-1 flex-col px-0">
           <div className="border-b p-3">
@@ -258,7 +294,7 @@ export function TransportResourcesWorkspace() {
                   onView={viewCompanyDetails}
                   search={companySearch}
                   selectedId={transportCompanyId}
-                  selectedIds={canAdminister ? selectedCompanyIds : undefined}
+                  selectedIds={canAdminister ? visibleSelectedCompanyIds : undefined}
                 />
               )}
             </TabsContent>
@@ -275,7 +311,7 @@ export function TransportResourcesWorkspace() {
                   onView={viewCompanyDetails}
                   search={companySearch}
                   selectedId={transportCompanyId}
-                  selectedIds={canAdminister ? selectedCompanyIds : undefined}
+                  selectedIds={canAdminister ? visibleSelectedCompanyIds : undefined}
                 />
               )}
             </TabsContent>
@@ -286,15 +322,18 @@ export function TransportResourcesWorkspace() {
             action={companyStatus === 'available' ? 'archive' : 'reactivate'}
             blockerReasonLabels={TRANSPORT_COMPANY_BLOCKER_REASON_LABELS}
             idPrefix="transport-company"
+            // The same set the section renders, so the toolbar can say how much of the selection
+            // the current search has taken off screen — as the truck directory beside it does.
+            listedIds={shortcutSelectableCompanyIds}
             onClear={clearCompanySelection}
             // Narrowed to the blocked ids rather than cleared, so the administrator can resolve
             // the blocker and retry exactly those without reselecting them.
             onSuccess={(outcome) =>
-              setSelectedCompanyIds(new Set(outcome.blocked.map((blocked) => blocked.id)))
+              selection.retainOnly(outcome.blocked.map((blocked) => blocked.id))
             }
             plural={TRANSPORT_COMPANY_PLURAL}
             refresh={mutations.refreshTransportCompanies}
-            selectedIds={[...selectedCompanyIds]}
+            selectedIds={visibleSelectedCompanyIdList}
             singular={TRANSPORT_COMPANY_SINGULAR}
             submit={async ({ ids, comment }) =>
               toBulkTransportCompanyLifecycleOutcome(
