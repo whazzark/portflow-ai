@@ -51,7 +51,7 @@ test('distinguishes route loading from an empty collection', async () => {
 
   renderCheckpoints()
   expect(
-    await screen.findByRole('main', { name: 'Loading checkpoints' }, { timeout: 6000 }),
+    await screen.findByRole('status', { name: 'Loading checkpoints' }, { timeout: 6000 }),
   ).toBeInTheDocument()
   expect(await screen.findByText('No checkpoints have been configured.')).toBeInTheDocument()
 })
