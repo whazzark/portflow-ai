@@ -2,7 +2,13 @@ import { HttpResponse, http } from 'msw'
 import type { UserDto } from '@/features/users/types'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
-import { API_BASE_URL, DEACTIVATED_AT, ORGANIZATION_ADMIN, USERS } from './fixtures'
+import {
+  API_BASE_URL,
+  DEACTIVATED_AT,
+  ORGANIZATION_ADMIN,
+  RESPONSIBLE_ADMIN,
+  USERS,
+} from './fixtures'
 
 export function mockUsers(viewer: unknown = ORGANIZATION_ADMIN, users: unknown[] = USERS) {
   server.use(
@@ -65,6 +71,49 @@ export function mockUsersWithDeactivation(
       collection = collection.map((user) => (user.id === deactivated.id ? deactivated : user))
 
       return HttpResponse.json({ data: deactivated })
+    }),
+  )
+}
+
+/**
+ * The race another administrator won: the write refuses because the user is already deactivated,
+ * and the read that follows it says the same thing — they are gone from the active users. Stands on
+ * its own, collection included, because the point is precisely that the two agree.
+ */
+export function mockDeactivationLostRace(
+  targetId: string,
+  viewer: { id: string; firstName: string; lastName: string } = ORGANIZATION_ADMIN,
+  users: UserDto[] = USERS,
+) {
+  const movedOn: UserDto[] = users.map((user) =>
+    user.id === targetId
+      ? {
+          ...user,
+          accessStatus: 'DEACTIVATED',
+          deactivatedAt: DEACTIVATED_AT,
+          deactivatedBy: RESPONSIBLE_ADMIN,
+        }
+      : user,
+  )
+  let refused = false
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: viewer })),
+    http.get(`${API_BASE_URL}/api/v1/users`, () =>
+      HttpResponse.json({ data: refused ? movedOn : users }),
+    ),
+    http.post(`${API_BASE_URL}/api/v1/users/:id/deactivate`, () => {
+      refused = true
+
+      return HttpResponse.json(
+        {
+          error: {
+            code: 'E_USER_ALREADY_DEACTIVATED',
+            message: 'This user has already been deactivated',
+          },
+        },
+        { status: 409 },
+      )
     }),
   )
 }

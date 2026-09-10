@@ -5,6 +5,7 @@ import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
 import { API_BASE_URL, USERS } from '../support/fixtures'
 import {
+  mockDeactivationLostRace,
   mockDeactivationRefused,
   mockUsersWithDeactivation,
   renderUsers,
@@ -36,7 +37,7 @@ test.each([
   expect(await screen.findByText(sentence)).toBeInTheDocument()
 })
 
-test('keeps the confirmation open on a refusal', async () => {
+test('keeps the confirmation open on a refusal the collection still contradicts', async () => {
   const user = userEvent.setup()
   mockUsersWithDeactivation()
   mockDeactivationRefused('E_USER_ALREADY_DEACTIVATED', 'Refused by the API')
@@ -46,6 +47,22 @@ test('keeps the confirmation open on a refusal', async () => {
 
   await screen.findByText('Unable to deactivate user “Amélie Bernard”')
   expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+})
+
+// The same refusal, with the collection agreeing this time: Amélie leaves the active users, so the
+// record closes and the confirmation goes with it. What must survive is the reason.
+test('closes the record on a refusal whose collection has moved on', async () => {
+  const user = userEvent.setup()
+  mockDeactivationLostRace('active-1')
+
+  renderUsers()
+  await confirmDeactivation(user)
+
+  expect(await screen.findByText(/already been deactivated/i)).toBeInTheDocument()
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  const table = await screen.findByRole('table', { name: 'Active users' })
+  expect(within(table).queryByText('Amélie Bernard')).not.toBeInTheDocument()
 })
 
 test('refreshes the collection on a refusal, not only on a success', async () => {

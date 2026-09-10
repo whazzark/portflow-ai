@@ -37,6 +37,13 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
  *
  * A refusal keeps the dialog open so the administrator reads the reason in place;
  * `event.preventDefault()` on the confirm action is what stops the dialog primitive from closing.
+ *
+ * With one exception, and it is the commonest refusal: when the reason is that this record moved on
+ * — someone else deactivated this user first — the refreshed collection no longer lists them among
+ * the active users, `UsersPage` closes the record it can no longer find, and this component
+ * unmounts with its dialog before the refusal is even caught. Nothing is lost by that: the reason
+ * arrives as a toast, which outlives both, and holding a confirmation open over a record the
+ * workbench has just retired would say the opposite of what happened.
  */
 export function UserAccessActions({ user }: { user: UserDto }) {
   const [confirming, setConfirming] = useState(false)
