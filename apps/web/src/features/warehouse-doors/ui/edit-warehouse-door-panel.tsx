@@ -128,7 +128,10 @@ export function EditWarehouseDoorPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <SheetHeader>
+      {/* Sticky because "Back to details" is the only way out of an edit panel, and the header
+          scrolls with the form: on a short viewport it would otherwise scroll away and leave the
+          user at "Save changes" with no visible way to abandon. */}
+      <SheetHeader className="sticky top-0 z-10 bg-background">
         <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
           <ArrowLeftIcon aria-hidden="true" />
           Back to details
