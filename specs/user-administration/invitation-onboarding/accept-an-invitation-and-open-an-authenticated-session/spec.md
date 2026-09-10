@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-7: accepting an invitation requires a pending user and the confidential
+  activation link that slice issues.
+- Deliverable in parallel with GH-9: neither blocks the other.
 
 ## Out of Scope
 
@@ -51,10 +53,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the acceptance command in `apps/api` and the activation screen in `apps/web`. It absorbs the acceptance half of the former frontend-only slice "Invite and Accept an Invitation Through the Frontend"; its invitation half belongs to GH-7.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/8
 - Parent roadmap: specs/user-administration/invitation-onboarding/roadmap.md
+- Absorbed scope: the acceptance half of "Invite and Accept an Invitation Through the Frontend", a frontend-only slice split between GH-7 and GH-8 on 2026-09-10 and closed on GitHub.
 - Related domain: user-administration

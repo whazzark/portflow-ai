@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-7: renewing an activation link requires a pending user already holding one.
+- Deliverable in parallel with GH-8: neither blocks the other.
 
 ## Out of Scope
 
@@ -55,6 +56,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/9
 - Parent roadmap: specs/user-administration/invitation-onboarding/roadmap.md
 - Related domain: user-administration
