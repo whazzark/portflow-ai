@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P1
-**Milestone**: 4. Finaliser l'exécution et livrer les rapports immuables
+**Milestone**: 6. Finaliser l'exécution et livrer les rapports immuables
 **Domain**: reporting-and-audit
 
 ## User Scenarios & Testing
@@ -39,7 +39,10 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-68: readiness requires every shift of the discharge to be completed, and that
+  slice is what completes one.
+- Blocked by GH-84: readiness also requires no rotation to remain in progress, which only the
+  empty return confirmation of that slice can settle.
 
 ## Out of Scope
 
@@ -51,10 +54,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the readiness query in `apps/api` and its review in the discharge detail workbench of `apps/web`. It absorbs the former frontend-only slice "Review Discharge Closure Readiness From the Frontend", which described the same outcome from the web side alone.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/97
 - Parent roadmap: specs/reporting-and-audit/discharge-closure/roadmap.md
+- Absorbed scope: "Review Discharge Closure Readiness From the Frontend", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
 - Related domain: reporting-and-audit
