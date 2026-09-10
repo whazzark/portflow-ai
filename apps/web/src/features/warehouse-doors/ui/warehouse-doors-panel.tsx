@@ -2,7 +2,7 @@ import { MapPinIcon, XIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import { Empty, EmptyDescription, EmptyHeader } from '@/components/ui/empty'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { WarehouseDoorStatusFilter } from '@/features/warehouse-doors/types'
 import { WarehouseDoorRowActions } from '@/features/warehouse-doors/ui/warehouse-door-row-actions'
@@ -147,10 +147,10 @@ export function WarehouseDoorsPanel({
             {doors.length === 0 ? (
               // The shared empty state every other directory uses. The sentence is kept in one
               // text node, exactly as it read before, so it stays the panel's single answer to
-              // "why is this list blank".
+              // "why is this list blank" — which is also why no title sits above it: a heading
+              // here could only say the same thing a second time.
               <Empty className="min-h-32 border-0 p-0">
                 <EmptyHeader>
-                  <EmptyTitle>No {labels[key].toLowerCase()} doors</EmptyTitle>
                   <EmptyDescription>
                     {`No ${labels[key].toLowerCase()} warehouse doors in this warehouse.`}
                   </EmptyDescription>
