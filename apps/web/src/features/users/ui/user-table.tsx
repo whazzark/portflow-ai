@@ -28,6 +28,7 @@ import {
 import { compareUsers } from '@/features/users/helpers/user-search'
 import type { UserDto } from '@/features/users/types'
 import { UserAvatar } from '@/features/users/ui/user-avatar'
+import { UserRowActions } from '@/features/users/ui/user-row-actions'
 
 declare module '@tanstack/react-table' {
   interface TableMeta<TData extends import('@tanstack/react-table').RowData> {
@@ -91,6 +92,18 @@ const columns: ColumnDef<UserDto>[] = [
     accessorFn: (user) => USER_ROLE_LABELS[user.role],
     sortingFn: (left, right) => compareUsers(left.original, right.original, 'role'),
     cell: ({ row }) => USER_ROLE_LABELS[row.original.role],
+  },
+  // Last column, as in the customer, truck, and transport-company directories: the row's own
+  // administration menu, so an access change never requires opening the record first.
+  {
+    id: 'actions',
+    header: () => <span className="sr-only">Actions</span>,
+    enableSorting: false,
+    cell: ({ row, table }) => (
+      <div className="flex justify-end">
+        <UserRowActions onView={table.options.meta?.onSelect} user={row.original} />
+      </div>
+    ),
   },
 ]
 
@@ -174,7 +187,16 @@ export function UserTable({
                 onClick={() => onSelect(row.original.id)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell
+                    className={cell.column.id === 'actions' ? 'w-10 min-w-10 max-w-10' : undefined}
+                    key={cell.id}
+                    // The row itself opens the record; the actions menu is its own affordance and
+                    // must not trigger it too — opening the record underneath would tear the menu
+                    // down as it renders.
+                    onClick={
+                      cell.column.id === 'actions' ? (event) => event.stopPropagation() : undefined
+                    }
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
