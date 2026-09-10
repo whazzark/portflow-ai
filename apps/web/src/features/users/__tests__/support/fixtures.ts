@@ -34,6 +34,9 @@ export const OBSERVER = {
 
 const RESPONSIBLE_ADMIN = { id: 'admin-1', firstName: 'Yann', lastName: 'Le Goff' }
 
+/** The instant a deactivation staged by the test helpers records. */
+export const DEACTIVATED_AT = '2026-09-10T09:04:22.000Z'
+
 const NO_LIFECYCLE = {
   invitedAt: null,
   invitedBy: null,

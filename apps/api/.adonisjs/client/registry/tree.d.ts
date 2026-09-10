@@ -46,6 +46,7 @@ export interface ApiDefinition {
   }
   users: {
     index: typeof routes['users.index']
+    deactivate: typeof routes['users.deactivate']
   }
   docks: {
     index: typeof routes['docks.index']

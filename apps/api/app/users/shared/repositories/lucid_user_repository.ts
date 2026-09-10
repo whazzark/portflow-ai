@@ -5,6 +5,8 @@ import User from '#models/user'
 
 import UserRepository, {
   type CreateUserCommand,
+  type DeactivateUserCommand,
+  type DeactivateUserResult,
   type RenewPasswordCommand,
   type RenewPasswordResult,
 } from './user_repository.ts'
@@ -77,6 +79,53 @@ export default class LucidUserRepository extends UserRepository {
       await this.revokeOtherRememberedConnections(trx, command)
 
       return 'RENEWED'
+    })
+  }
+
+  /**
+   * The guard is the concurrency control, exactly as in `renewPassword` above: `WHERE access_status
+   * = 'ACTIVE'` is what makes two racing deactivations record one deactivation, because the loser
+   * matches zero rows. The re-read that follows a zero-row update is only there to name the reason;
+   * it never decides the outcome, so there is no check-then-act window to lose.
+   *
+   * The transaction is not there for the guard. It is there because recording the deactivation and
+   * revoking the user's remembered connections are two statements that must not be separable: a
+   * revocation that failed after the `UPDATE` had committed would leave a credential restoring
+   * access for its full 30 days to someone who has just been told they have none.
+   */
+  deactivateActive(command: DeactivateUserCommand): Promise<DeactivateUserResult> {
+    return User.transaction(async (trx) => {
+      const changedAt = command.deactivatedAt.toSQL({ includeOffset: false })
+      const [affectedRows] = await User.query({ client: trx })
+        .where('id', command.id)
+        .where('accessStatus', 'ACTIVE')
+        .update({
+          accessStatus: 'DEACTIVATED',
+          deactivatedAt: changedAt,
+          deactivatedByUserId: command.deactivatedByUserId,
+          // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+          // bookkeeping timestamp is written by hand — as every other guarded write here does.
+          updatedAt: changedAt,
+        })
+
+      if (Number(affectedRows) !== 1) {
+        const user = await User.query({ client: trx }).where('id', command.id).first()
+
+        return user
+          ? { kind: 'NOT_ACTIVE', accessStatus: user.accessStatus }
+          : { kind: 'NOT_FOUND' }
+      }
+
+      await trx.from('remember_me_tokens').where('tokenable_id', command.id).delete()
+
+      // Reloaded with the responsible administrator resolved, because the response projects the
+      // access history and `deactivatedBy` is the field this very write produced.
+      const user = await User.query({ client: trx })
+        .where('id', command.id)
+        .preload('deactivatedBy')
+        .firstOrFail()
+
+      return { kind: 'DEACTIVATED', user }
     })
   }
 

@@ -5,6 +5,7 @@ import { StatusIndicator } from '@/components/ui/status-indicator'
 import { formatFullName } from '@/features/users/helpers/name'
 import { USER_ACCESS_STATUS_LABELS, USER_ROLE_LABELS } from '@/features/users/helpers/user-labels'
 import type { UserAccessStatus, UserDto } from '@/features/users/types'
+import { UserAccessActions } from '@/features/users/ui/user-access-actions'
 import { UserAccessHistory } from '@/features/users/ui/user-access-history'
 import { UserAvatar } from '@/features/users/ui/user-avatar'
 
@@ -19,8 +20,9 @@ const ACCESS_STATUS_TONE: Record<
 }
 
 /**
- * Read-only by design: this feature offers no invitation, cancellation, deactivation, reactivation,
- * role change, or identity update (FR-016).
+ * Identity, role, access status, and the recorded access history, with the access actions the
+ * viewer may take on this user in the footer. Invitation, cancellation, reactivation, role change,
+ * and identity update are still owned by their own slices and are not offered here.
  */
 export function UserAccessRecord({ user }: { user: UserDto }) {
   return (
@@ -48,6 +50,7 @@ export function UserAccessRecord({ user }: { user: UserDto }) {
         <Separator className="my-6" />
         <UserAccessHistory user={user} />
       </div>
+      <UserAccessActions user={user} />
     </div>
   )
 }

@@ -79,6 +79,7 @@ router
         router
           .group(() => {
             router.get('/', [controllers.Users, 'index']).as('index')
+            router.post('/:id/deactivate', [controllers.Users, 'deactivate']).as('deactivate')
           })
           .prefix('/users')
           .as('users')
