@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P1
-**Milestone**: 3. Livrer l'exécution opérationnelle nominale
+**Milestone**: 5. Livrer l'exécution opérationnelle interactive
 **Domain**: discharge-execution
 
 ## User Scenarios & Testing
@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-65: a shift adjustment acts on an active shift, and that slice is what starts one.
+- Deliverable in parallel with GH-75, GH-76 and GH-77.
 
 ## Out of Scope
 
@@ -51,10 +52,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the adjustment commands in `apps/api` and their forms in the shift workspace of `apps/web`. It absorbs the former frontend-only slice "Shift Resource Adjustments in the Shift Workspace", which described the same outcome from the web side alone.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/78
 - Parent roadmap: specs/discharge-execution/runtime-discharge-resource-changes/roadmap.md
+- Absorbed scope: "Shift Resource Adjustments in the Shift Workspace", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
 - Related domain: discharge-execution
