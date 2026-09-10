@@ -1,4 +1,5 @@
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
+import type { ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import { DateTime } from 'luxon'
 
 import User from '#models/user'
@@ -11,6 +12,24 @@ import UserRepository, {
   type RenewPasswordResult,
 } from './user_repository.ts'
 
+/**
+ * Every user read that serializes the access history needs all five actor relations, and a missed
+ * one is invisible in types: Lucid resolves an unpreloaded relation to `undefined` and the
+ * transformer turns that into `null`, so the actor reads as "nobody did this" on one endpoint and
+ * is named on every other. Gathered here, in the shape `lucid_truck_repository.ts` already uses,
+ * so a sixth lifecycle event is a one-line change.
+ */
+function preloadAccessHistory(
+  query: ModelQueryBuilderContract<typeof User, User>,
+): ModelQueryBuilderContract<typeof User, User> {
+  return query
+    .preload('invitedBy')
+    .preload('activatedBy')
+    .preload('cancelledBy')
+    .preload('deactivatedBy')
+    .preload('reactivatedBy')
+}
+
 export default class LucidUserRepository extends UserRepository {
   create(command: CreateUserCommand): Promise<User> {
     return User.create(command)
@@ -21,12 +40,7 @@ export default class LucidUserRepository extends UserRepository {
   }
 
   list(): Promise<User[]> {
-    return User.query()
-      .preload('invitedBy')
-      .preload('activatedBy')
-      .preload('cancelledBy')
-      .preload('deactivatedBy')
-      .preload('reactivatedBy')
+    return preloadAccessHistory(User.query())
       .orderBy('lastName', 'asc')
       .orderBy('firstName', 'asc')
       .orderBy('id', 'asc')
@@ -118,12 +132,13 @@ export default class LucidUserRepository extends UserRepository {
 
       await trx.from('remember_me_tokens').where('tokenable_id', command.id).delete()
 
-      // Reloaded with the responsible administrator resolved, because the response projects the
-      // access history and `deactivatedBy` is the field this very write produced.
-      const user = await User.query({ client: trx })
-        .where('id', command.id)
-        .preload('deactivatedBy')
-        .firstOrFail()
+      // Reloaded with every lifecycle actor resolved, not just the `deactivatedBy` this write
+      // produced: the response projects the whole access history, and a relation left unpreloaded
+      // would serialize as `null` — telling the workbench nobody ever invited or activated this
+      // user, and contradicting the collection it caches alongside.
+      const user = await preloadAccessHistory(
+        User.query({ client: trx }).where('id', command.id),
+      ).firstOrFail()
 
       return { kind: 'DEACTIVATED', user }
     })

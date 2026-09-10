@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
 
 import { USER_FACTORY_PASSWORD, UserFactory } from '#database/factories/user_factory'
 import User from '#models/user'
@@ -35,6 +36,33 @@ test.group('POST /api/v1/users/:id/deactivate', () => {
     assert.isUndefined(body.password)
     assert.isUndefined(body.passwordRenewalRequiredAt)
     assert.notInclude(JSON.stringify(response.body()), 'remember')
+  })
+
+  // The response is what the workbench caches for this record, so it has to agree with the
+  // collection: an actor the deactivation reply left out would blank a lifecycle event that
+  // GET /api/v1/users names.
+  test('returns the whole access history, not only the event it just recorded', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await organizationAdmin()
+    const inviter = await organizationAdmin()
+    const target = await UserFactory.apply('active').create()
+    // Written after creation rather than merged in: the `active` state runs after the merged
+    // attributes and would put `activatedByUserId` back to null.
+    target.invitedAt = DateTime.now()
+    target.invitedByUserId = inviter.id
+    target.activatedByUserId = inviter.id
+    await target.save()
+
+    const response = await client.post(deactivatePath(target.id)).loginAs(admin)
+
+    response.assertStatus(200)
+    const body = response.body().data
+    const summary = { id: inviter.id, firstName: inviter.firstName, lastName: inviter.lastName }
+    assert.deepEqual(body.invitedBy, summary)
+    assert.deepEqual(body.activatedBy, summary)
+    assert.isNotNull(body.invitedAt)
   })
 
   test('refuses a login by a user who has just been deactivated', async ({ assert, client }) => {
