@@ -20,7 +20,7 @@ import {
 } from '@/features/warehouses/geometry/footprint-validation'
 import type { WarehouseDto } from '@/features/warehouses/types'
 import { WAREHOUSE_SINGULAR } from '@/features/warehouses/warehouse-lifecycle'
-import { resourceFailureTitle } from '@/helpers/resource-copy'
+import { resourceFailureTitle, WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
@@ -206,7 +206,10 @@ export function EditWarehousePanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <SheetHeader>
+      {/* Sticky because "Back to details" is the only way out of an edit panel, and the header
+          scrolls with the form: a long footprint would otherwise leave the user at "Save changes"
+          with no visible way to abandon. */}
+      <SheetHeader className="sticky top-0 z-10 bg-background">
         <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
           <ArrowLeftIcon aria-hidden="true" />
           Back to details
@@ -312,18 +315,9 @@ export function EditWarehousePanel({
               )}
             </FieldGroup>
             <form.FormError />
-            <div className="flex gap-2">
-              <form.Subscribe selector={(state) => state.isSubmitting}>
-                {(isSubmitting) => (
-                  <Button disabled={isSubmitting || !canSubmit} type="submit">
-                    {isSubmitting ? 'Saving…' : 'Save changes'}
-                  </Button>
-                )}
-              </form.Subscribe>
-              <Button onClick={onCancel} type="button" variant="outline">
-                Cancel
-              </Button>
-            </div>
+            <form.SubmitButton disabled={!canSubmit} pendingLabel={WRITE_PENDING_LABELS.update}>
+              Save changes
+            </form.SubmitButton>
           </form.Form>
         </form.AppForm>
       </div>

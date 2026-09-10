@@ -82,7 +82,7 @@ test('restores the stored outline and keeps the warehouse selected when cancelle
     `${NORTH_SHED.footprint.points[0].latitude}, ${NORTH_SHED.footprint.points[0].longitude}`,
   )
 
-  await user.click(screen.getByRole('button', { name: 'Cancel' }))
+  await user.click(screen.getByRole('button', { name: 'Back to details' }))
 
   await waitFor(() => expect(router.state.location.search).not.toHaveProperty('edit'))
   expect(router.state.location.search).toMatchObject({ warehouseId: NORTH_SHED.id })

@@ -11,7 +11,7 @@ import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet
 import { DOOR_SINGULAR } from '@/features/warehouse-doors/warehouse-door-presentation'
 import { isInsideFootprint } from '@/features/warehouses/geometry/footprint-validation'
 import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
-import { resourceFailureTitle } from '@/helpers/resource-copy'
+import { resourceFailureTitle, WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
@@ -154,13 +154,9 @@ export function CreateWarehouseDoorPanel({
             </FieldGroup>
             <form.FormError />
             <div className="flex gap-2">
-              <form.Subscribe selector={(state) => state.isSubmitting}>
-                {(isSubmitting) => (
-                  <Button disabled={isSubmitting || !canSubmit} type="submit">
-                    {isSubmitting ? 'Creating…' : 'Create door'}
-                  </Button>
-                )}
-              </form.Subscribe>
+              <form.SubmitButton disabled={!canSubmit} pendingLabel={WRITE_PENDING_LABELS.create}>
+                Create door
+              </form.SubmitButton>
               <Button onClick={onCancel} type="button" variant="outline">
                 Cancel
               </Button>

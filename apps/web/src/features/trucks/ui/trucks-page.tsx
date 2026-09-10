@@ -1,14 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { SearchIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+import { InputSearch } from '@/components/ui/input-search'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
@@ -214,29 +212,19 @@ export function TrucksPage() {
     >
       <CardContent className="flex min-h-0 flex-1 flex-col px-0">
         <div className="flex items-center gap-2 border-b p-3">
-          <Field className="flex-1">
-            <FieldLabel className="sr-only" htmlFor="truck-search">
-              Search trucks
-            </FieldLabel>
-            <div className="relative">
-              <SearchIcon
-                aria-hidden
-                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                className="pl-9"
-                id="truck-search"
-                onChange={(event) =>
-                  navigate({
-                    replace: true,
-                    search: (previous) => ({ ...previous, truckSearch: event.target.value }),
-                  })
-                }
-                placeholder="Search by registration or company"
-                value={truckSearch}
-              />
-            </div>
-          </Field>
+          <InputSearch
+            fieldClassName="flex-1"
+            id="truck-search"
+            label="Search trucks"
+            onValueChange={(value) =>
+              navigate({
+                replace: true,
+                search: (previous) => ({ ...previous, truckSearch: value }),
+              })
+            }
+            placeholder="Search by registration or company"
+            value={truckSearch}
+          />
           {administrator && (
             <Button onClick={() => setIsCreateOpen(true)} type="button">
               Create truck
@@ -464,7 +452,7 @@ export function TrucksPage() {
         }}
         open={Boolean(selected)}
       >
-        <SheetContent aria-label="Truck details" className="overflow-y-auto">
+        <SheetContent aria-label="Truck details" className="overflow-y-auto sm:max-w-lg">
           {isEditingTruck ? editTruckPanel : truckDetails}
         </SheetContent>
       </Sheet>

@@ -36,14 +36,15 @@ const rotations = [
 
 export function OperationsOverview({ section, onSectionChange }: OperationsOverviewProps) {
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6 lg:p-10">
+    <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+      {/* Sr-only, as on every other page: the header's breadcrumb already names the page, so a
+          second visible title would say it twice. */}
+      <h1 className="sr-only">Operations overview</h1>
+
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3">
-          <h1 className="font-heading font-semibold text-3xl tracking-tight">
-            Operations overview
-          </h1>
-          <Badge variant="secondary">Demo data</Badge>
-        </div>
+        <Badge className="self-start" variant="secondary">
+          Demo data
+        </Badge>
         <p className="max-w-2xl text-muted-foreground">
           A representative shell preview. Operational data will arrive with its dedicated
           workbenches.
@@ -140,6 +141,6 @@ export function OperationsOverview({ section, onSectionChange }: OperationsOverv
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </main>
   )
 }

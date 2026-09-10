@@ -1,4 +1,4 @@
-import { ResourceDetailField } from '@/components/resource-map/resource-details'
+import { ResourceDetailField } from '@/components/resource/resource-details'
 import { Separator } from '@/components/ui/separator'
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { StatusIndicator } from '@/components/ui/status-indicator'

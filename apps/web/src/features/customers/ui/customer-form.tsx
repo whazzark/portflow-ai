@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { FieldGroup } from '@/components/ui/field'
 import { CUSTOMER_SINGULAR } from '@/features/customers/customer-lifecycle'
 import type { CustomerDto } from '@/features/customers/types'
-import { resourceFailureTitle } from '@/helpers/resource-copy'
+import { resourceFailureTitle, WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
@@ -76,7 +76,7 @@ export function CustomerForm({ customer, onCreate, onUpdate, onSuccess }: Custom
           </form.AppField>
         </FieldGroup>
         <form.FormError />
-        <form.SubmitButton pendingLabel="Saving…">
+        <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS[customer ? 'update' : 'create']}>
           {customer ? 'Save changes' : 'Create customer'}
         </form.SubmitButton>
       </form.Form>

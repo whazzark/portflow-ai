@@ -51,6 +51,17 @@ const WRITE_PAST_PARTICIPLES: Record<ResourceWriteAction, string> = {
 }
 
 /**
+ * What a submit button says while the write is in flight. It names the action rather than a
+ * generic "Saving…", so the button keeps meaning the same thing pressed as it did unpressed —
+ * a creation stays a creation. The counterpart of `LIFECYCLE_PENDING_LABELS`, which does the
+ * same for the lifecycle transitions.
+ */
+export const WRITE_PENDING_LABELS: Record<ResourceWriteAction, string> = {
+  create: 'Creating…',
+  update: 'Saving…',
+}
+
+/**
  * `Customer “Acme Logistics” created`.
  *
  * A success quotes the name the record now carries, which for an update is the corrected one —

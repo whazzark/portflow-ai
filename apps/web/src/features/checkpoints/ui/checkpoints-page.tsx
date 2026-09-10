@@ -628,6 +628,7 @@ export function CheckpointsPage() {
     creationKind === 'DOCK' ? (
       <CreateCheckpointPanel
         kind="DOCK"
+        onCancel={cancelCreating}
         onCreate={createDock}
         onPendingChange={setPendingPlacement}
         onSuccess={handleDockCreated}
@@ -636,6 +637,7 @@ export function CheckpointsPage() {
     ) : creationKind === 'WEIGHING_AREA' ? (
       <CreateCheckpointPanel
         kind="WEIGHING_AREA"
+        onCancel={cancelCreating}
         onCreate={createWeighingArea}
         onPendingChange={setPendingPlacement}
         onSuccess={handleWeighingAreaCreated}

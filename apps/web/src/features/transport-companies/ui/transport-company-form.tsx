@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { FieldGroup } from '@/components/ui/field'
 import { TRANSPORT_COMPANY_SINGULAR } from '@/features/transport-companies/transport-company-lifecycle'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
-import { resourceFailureTitle } from '@/helpers/resource-copy'
+import { resourceFailureTitle, WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
@@ -108,7 +108,7 @@ export function TransportCompanyForm({
           </form.AppField>
         </FieldGroup>
         <form.FormError />
-        <form.SubmitButton pendingLabel="Saving…">
+        <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS[company ? 'update' : 'create']}>
           {company ? 'Save changes' : 'Create transport company'}
         </form.SubmitButton>
       </form.Form>

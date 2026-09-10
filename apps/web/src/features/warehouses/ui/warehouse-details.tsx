@@ -1,5 +1,5 @@
 import { ResourceLifecycleSummary } from '@/components/lifecycle/resource-lifecycle-summary'
-import { ResourceDetailHeader } from '@/components/resource-map/resource-details'
+import { ResourceDetailHeader } from '@/components/resource/resource-details'
 import { Separator } from '@/components/ui/separator'
 import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
 import { warehouseLifecycleBlocks } from '@/features/warehouses/warehouse-lifecycle'

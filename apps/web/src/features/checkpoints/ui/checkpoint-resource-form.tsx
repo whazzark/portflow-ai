@@ -12,6 +12,7 @@ import {
   CHECKPOINT_PARAM_BY_KIND,
   type CheckpointKind,
 } from '@/features/checkpoints/types'
+import { WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
@@ -40,7 +41,7 @@ export function CheckpointResourceForm<TResource>({
   onSuccess,
   onNotFound,
   submitLabel,
-  pendingLabel,
+  onCancel,
   failureTitle,
 }: {
   kind: CheckpointKind
@@ -52,7 +53,9 @@ export function CheckpointResourceForm<TResource>({
   /** Update-only: called when the server reports the resource no longer exists. */
   onNotFound?: () => void
   submitLabel: string
-  pendingLabel: string
+  /** Creation only: the sheet sits unmodal over the map, so leaving needs its own affordance.
+   * An update is left through the panel's own "Back to details". */
+  onCancel?: () => void
   /** Built from the submitted name, because a creation has no stored one to quote. An update
    * ignores it and names the checkpoint as it stands. */
   failureTitle: (submittedName: string) => string
@@ -157,13 +160,19 @@ export function CheckpointResourceForm<TResource>({
           )}
         </FieldGroup>
         <form.FormError />
-        <form.Subscribe selector={(state) => state.isSubmitting}>
-          {(isSubmitting) => (
-            <Button disabled={isSubmitting || !canSubmit} type="submit">
-              {isSubmitting ? pendingLabel : submitLabel}
+        <div className="flex gap-2">
+          <form.SubmitButton
+            disabled={!canSubmit}
+            pendingLabel={WRITE_PENDING_LABELS[isEditing ? 'update' : 'create']}
+          >
+            {submitLabel}
+          </form.SubmitButton>
+          {onCancel && (
+            <Button onClick={onCancel} type="button" variant="outline">
+              Cancel
             </Button>
           )}
-        </form.Subscribe>
+        </div>
       </form.Form>
     </form.AppForm>
   )
