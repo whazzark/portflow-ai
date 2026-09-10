@@ -127,7 +127,7 @@ export function UserTable({
   const isNoMatch = rows.length === 0 && totalInView > 0
 
   return (
-    <div className="overflow-hidden rounded-lg border md:flex md:h-full md:min-h-0 md:flex-col md:[&_[data-slot=table-container]]:min-h-0 md:[&_[data-slot=table-container]]:flex-1 md:[&_[data-slot=table-container]]:overflow-auto">
+    <div className="overflow-hidden rounded-lg border md:flex md:max-h-full md:min-h-0 md:flex-col md:[&_[data-slot=table-container]]:min-h-0 md:[&_[data-slot=table-container]]:flex-1 md:[&_[data-slot=table-container]]:overflow-auto">
       <Table aria-label={statusViewTableLabel(view)}>
         <TableHeader className="md:sticky md:top-0 md:z-10 md:bg-background">
           {table.getHeaderGroups().map((headerGroup) => (
