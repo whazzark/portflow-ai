@@ -13,7 +13,7 @@ describe('warehouse door feedback', () => {
         onDoorSelect={vi.fn()}
       />,
     )
-    expect(screen.getByText('No available warehouse doors in this warehouse.')).toBeInTheDocument()
+    expect(screen.getByText('No available doors')).toBeInTheDocument()
   })
 
   test('does not present a failed snapshot as a successful empty collection', () => {

@@ -1,8 +1,13 @@
 import { ResourceLifecycleSummary } from '@/components/lifecycle/resource-lifecycle-summary'
-import { ResourceDetailField } from '@/components/resource/resource-details'
-import { Badge } from '@/components/ui/badge'
+import {
+  RESOURCE_STATUS_LABELS,
+  ResourceDetailBody,
+  ResourceDetailField,
+  ResourceDetailHeader,
+} from '@/components/resource/resource-details'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { SheetFooter } from '@/components/ui/sheet'
 import {
   TransportCompanyLifecycleActions,
   transportCompanyLifecycleBlocks,
@@ -27,19 +32,16 @@ export function TransportCompanyDetails({
   const lifecycleBlocks = transportCompanyLifecycleBlocks(company)
 
   return (
-    <section aria-label="Transport company details" className="flex min-h-0 flex-1 flex-col">
-      <header className="shrink-0 border-b px-5 py-4 md:px-6">
-        <h2 className="font-heading font-semibold text-xl">{company.name}</h2>
-        <div className="mt-2 flex items-center gap-2">
-          <Badge variant={isArchived ? 'outline' : 'secondary'}>
-            {isArchived ? 'Archived' : 'Available'}
-          </Badge>
-        </div>
-      </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 md:px-6">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <ResourceDetailHeader
+        archivedMessage="Archived transport companies cannot receive new operations."
+        name={company.name}
+        status={company.status}
+      />
+      <ResourceDetailBody>
         <dl className="grid gap-5 text-sm sm:grid-cols-2">
           <ResourceDetailField label="Current company name" value={company.name} />
-          <ResourceDetailField label="Status" value={isArchived ? 'Archived' : 'Available'} />
+          <ResourceDetailField label="Status" value={RESOURCE_STATUS_LABELS[company.status]} />
           <ResourceDetailField label="Created" value={formatDateTime(company.createdAt)} />
           <ResourceDetailField label="Last updated" value={formatDateTime(company.updatedAt)} />
         </dl>
@@ -62,13 +64,17 @@ export function TransportCompanyDetails({
         </section>
         {lifecycleBlocks.some((block) => block.at) && <Separator className="my-6" />}
         <ResourceLifecycleSummary blocks={lifecycleBlocks} />
-      </div>
+      </ResourceDetailBody>
       {canAdminister && (
-        <footer className="flex shrink-0 gap-2 border-t bg-popover px-5 py-4 md:px-6">
+        <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
           {!isArchived && <Button onClick={onEdit}>Edit</Button>}
-          <TransportCompanyLifecycleActions company={company} onSuccess={onLifecycleSuccess} />
-        </footer>
+          <TransportCompanyLifecycleActions
+            className="sm:ml-auto"
+            company={company}
+            onSuccess={onLifecycleSuccess}
+          />
+        </SheetFooter>
       )}
-    </section>
+    </div>
   )
 }

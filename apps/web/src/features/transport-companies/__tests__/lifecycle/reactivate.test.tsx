@@ -106,8 +106,7 @@ test('reactivating moves the company to the Available tab with its lifecycle con
     within(tabs).getByRole('tab', { name: /Archived \(0\)/, hidden: true }),
   ).toBeInTheDocument()
 
-  const details = await screen.findByRole('heading', { name: 'Coastal Haulage' })
-  const panel = details.closest('section') as HTMLElement
+  const panel = await screen.findByRole('dialog', { hidden: true, name: 'Coastal Haulage' })
   // A reactivated company reports both transitions, newest first: the reactivation, and the
   // archival it reversed — which stays readable as history.
   const reactivation = within(panel).getByRole('region', { name: 'Reactivation context' })

@@ -351,7 +351,7 @@ export function TrucksPage() {
 
   const createSheet = (
     <Sheet onOpenChange={setIsCreateOpen} open={isCreateOpen}>
-      <SheetContent className="overflow-hidden sm:max-w-lg">
+      <SheetContent className="overflow-hidden" size="lg">
         <CreateTruckPanel
           companies={creatableCompanies}
           companiesError={availableCompaniesQuery.isError}
@@ -452,7 +452,7 @@ export function TrucksPage() {
         }}
         open={Boolean(selected)}
       >
-        <SheetContent aria-label="Truck details" className="overflow-y-auto sm:max-w-lg">
+        <SheetContent className="overflow-y-auto" size="lg">
           {isEditingTruck ? editTruckPanel : truckDetails}
         </SheetContent>
       </Sheet>
