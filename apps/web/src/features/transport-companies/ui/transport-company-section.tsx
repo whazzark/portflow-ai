@@ -13,7 +13,7 @@ type TransportCompanySectionProps = {
   onCreate?: () => void
   canAdminister?: boolean
   showStatus?: boolean
-  selectedIds?: Set<string>
+  selectedIds?: ReadonlySet<string>
   onToggleSelection?: (id: string) => void
   onToggleVisible?: (ids: string[], select: boolean) => void
 }

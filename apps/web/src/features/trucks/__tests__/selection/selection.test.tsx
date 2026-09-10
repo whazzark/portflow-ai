@@ -128,3 +128,46 @@ test('keeps a selected truck selected while a search term hides it', async () =>
   ).not.toBeInTheDocument()
   expect(screen.getByText('1 selected')).toBeInTheDocument()
 })
+
+test('says how much of the selection the search has taken off screen', async () => {
+  const user = userEvent.setup()
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_ADMIN,
+    complete: BULK_TRUCKS,
+    available: BULK_AVAILABLE_TRUCKS,
+  })
+
+  renderTrucks()
+  const list = await screen.findByRole('list', { name: 'Available trucks' })
+  fireEvent.click(within(list).getByRole('checkbox', { name: 'Select truck GG-701-PF' }))
+  fireEvent.click(within(list).getByRole('checkbox', { name: 'Select truck HH-802-PF' }))
+
+  await user.type(screen.getByRole('textbox', { name: 'Search trucks' }), 'GG-701-PF')
+
+  // `Archive selected` acts on the whole selection, so a toolbar reading only "2 selected" over a
+  // single listed row would archive a truck the administrator can no longer see.
+  expect(screen.getByText('2 selected')).toBeInTheDocument()
+  expect(screen.getByText(/1 hidden by the search/)).toBeInTheDocument()
+})
+
+test('names nothing hidden once the search lists the whole selection again', async () => {
+  const user = userEvent.setup()
+  mockTrucks({
+    user: ACTIVE_OPERATIONS_ADMIN,
+    complete: BULK_TRUCKS,
+    available: BULK_AVAILABLE_TRUCKS,
+  })
+
+  renderTrucks()
+  const list = await screen.findByRole('list', { name: 'Available trucks' })
+  fireEvent.click(within(list).getByRole('checkbox', { name: 'Select truck GG-701-PF' }))
+
+  const field = screen.getByRole('textbox', { name: 'Search trucks' })
+  await user.type(field, 'HH-802-PF')
+  expect(screen.getByText(/1 hidden by the search/)).toBeInTheDocument()
+
+  await user.clear(field)
+
+  expect(screen.getByText('1 selected')).toBeInTheDocument()
+  expect(screen.queryByText(/hidden by the search/)).not.toBeInTheDocument()
+})

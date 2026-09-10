@@ -11,7 +11,7 @@ type CustomerSectionProps = {
   sorting: SortingState
   onSortingChange: OnChangeFn<SortingState>
   canAdminister: boolean
-  selectedIds: Set<string>
+  selectedIds: ReadonlySet<string>
   onSelectionChange: (customerIds: string[]) => void
 }
 

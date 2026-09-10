@@ -25,7 +25,7 @@ type TransportCompanyListProps = {
   onCreate?: () => void
   canAdminister?: boolean
   showStatus?: boolean
-  selectedIds?: Set<string>
+  selectedIds?: ReadonlySet<string>
   onToggleSelection?: (id: string) => void
   onToggleVisible?: (ids: string[], select: boolean) => void
 }
@@ -101,9 +101,13 @@ export function TransportCompanyList({
                       onCheckedChange={() => onToggleSelection(company.id)}
                     />
                   )}
+                  {/* `aria-pressed` rather than `aria-current`: the row's body toggles a filter
+                      that is on or off, it does not mark the page the reader is on. The id stays
+                      in the accessible name — two companies may share a name, and it is the only
+                      thing telling their rows apart. */}
                   <button
                     aria-label={`${company.name}, ${company.id}`}
-                    aria-current={selected ? 'true' : undefined}
+                    aria-pressed={selected}
                     className="min-w-0 flex-1 cursor-pointer px-3 py-2 text-left focus-visible:outline-none"
                     onClick={() => onSelect(company.id)}
                     type="button"
