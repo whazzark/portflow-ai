@@ -6,8 +6,8 @@
 **Roadmap Entry**: `GH-67`
 **Created**: 2026-07-09
 **Status**: Needs Clarification
-**Priority**: priority:P0
-**Milestone**: 3. Livrer l'exécution opérationnelle nominale
+**Priority**: priority:P1
+**Milestone**: 5. Livrer l'exécution opérationnelle interactive
 **Domain**: discharge-execution
 
 ## User Scenarios & Testing
@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-65: a downtime is a timed event inside an active shift's actual period, and that
+  slice is what makes a shift active.
 
 ## Out of Scope
 
@@ -51,10 +52,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the downtime lifecycle in `apps/api` and its recording in the shift workspace of `apps/web`. It absorbs the recording part of the former frontend-only slice "Downtime Recording and Shift/Downtime Corrections"; its correction parts belong to GH-70 and GH-71.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/67
 - Parent roadmap: specs/discharge-execution/shift-execution-and-downtimes/roadmap.md
+- Absorbed scope: the downtime recording part of "Downtime Recording and Shift/Downtime Corrections", a frontend-only slice split between GH-67, GH-70 and GH-71 on 2026-09-10 and deleted from GitHub.
 - Related domain: discharge-execution

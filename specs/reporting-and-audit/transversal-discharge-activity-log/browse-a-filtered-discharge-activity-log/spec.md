@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P2
-**Milestone**: 4. Finaliser l'exécution et livrer les rapports immuables
+**Milestone**: 6. Finaliser l'exécution et livrer les rapports immuables
 **Domain**: reporting-and-audit
 
 ## User Scenarios & Testing
@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-102: there is nothing to browse before entries are appended, and the categories
+  the filter offers are the ones that contract types.
 
 ## Out of Scope
 
@@ -51,10 +52,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the filtered query in `apps/api` and the activity log tab of the discharge detail workbench in `apps/web`. It absorbs the former frontend-only slice "Consult the Activity Log Tab in Discharge Detail", which described the same outcome from the web side alone.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/103
 - Parent roadmap: specs/reporting-and-audit/transversal-discharge-activity-log/roadmap.md
+- Absorbed scope: "Consult the Activity Log Tab in Discharge Detail", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: reporting-and-audit

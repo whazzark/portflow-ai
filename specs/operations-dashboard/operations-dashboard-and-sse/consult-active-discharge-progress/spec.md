@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P2
-**Milestone**: 5. Finaliser le dashboard et l'observabilité opérationnelle
+**Milestone**: 7. Finaliser la synchronisation et l'observabilité opérationnelle
 **Domain**: operations-dashboard
 
 ## User Scenarios & Testing
@@ -39,7 +39,12 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-65: the dashboard shows active discharges with their active shift, and that slice
+  is what activates both.
+- Blocked by GH-84: realized tonnage and validation progress are computed from completed
+  rotations, which that slice is what completes.
+- The blockers it carried on GH-237 and GH-238 are void: both were closed as not planned, and the
+  persistence they promised moved into the execution slices above.
 
 ## Out of Scope
 
@@ -55,6 +60,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/111
 - Parent roadmap: specs/operations-dashboard/operations-dashboard-and-sse/roadmap.md
 - Related domain: operations-dashboard

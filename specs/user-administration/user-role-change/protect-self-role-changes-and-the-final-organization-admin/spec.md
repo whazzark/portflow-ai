@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-28: both guards refuse the role change command that slice delivers, and surface
+  in the same workbench action.
 
 ## Out of Scope
 
@@ -55,6 +56,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/29
 - Parent roadmap: specs/user-administration/user-role-change/roadmap.md
 - Related domain: user-administration

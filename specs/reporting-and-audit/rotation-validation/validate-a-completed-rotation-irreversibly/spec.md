@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P1
-**Milestone**: 4. Finaliser l'exécution et livrer les rapports immuables
+**Milestone**: 6. Finaliser l'exécution et livrer les rapports immuables
 **Domain**: reporting-and-audit
 
 ## User Scenarios & Testing
@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-84: only a completed rotation can be validated, and that slice is what completes
+  one.
+- It is the entry point of this roadmap's execution order: GH-90 depends on it.
 
 ## Out of Scope
 
@@ -51,10 +53,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the irreversible validation command in `apps/api` and its action in `apps/web`. It absorbs the validation action of the former frontend-only slice "Build the Rotation Validation Queue Screen"; the queue screen itself belongs to GH-90.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/89
 - Parent roadmap: specs/reporting-and-audit/rotation-validation/roadmap.md
+- Absorbed scope: the validation action of "Build the Rotation Validation Queue Screen", a frontend-only slice split between GH-89 and GH-90 on 2026-09-10 and deleted from GitHub.
 - Related domain: reporting-and-audit

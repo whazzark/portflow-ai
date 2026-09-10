@@ -6,8 +6,8 @@
 **Roadmap Entry**: `GH-82`
 **Created**: 2026-07-09
 **Status**: Needs Clarification
-**Priority**: priority:P0
-**Milestone**: 3. Livrer l'exécution opérationnelle nominale
+**Priority**: priority:P1
+**Milestone**: 5. Livrer l'exécution opérationnelle interactive
 **Domain**: discharge-execution
 
 ## User Scenarios & Testing
@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-65: a rotation is started from an active shift by a rotation-eligible truck, and
+  that slice is what makes a shift active.
+- It is the entry point of this roadmap's execution order: GH-83 depends on it.
 
 ## Out of Scope
 
@@ -51,10 +53,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the rotation start with its empty weighing in `apps/api` and its entry in the shift workspace of `apps/web`. It absorbs the former frontend-only slice "Start a Rotation and Record the Empty Weighing in the Shift Workspace", which described the same outcome from the web side alone.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/82
 - Parent roadmap: specs/discharge-execution/rotation-execution-and-weighings/roadmap.md
+- Absorbed scope: "Start a Rotation and Record the Empty Weighing in the Shift Workspace", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: discharge-execution

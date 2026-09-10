@@ -1,4 +1,4 @@
-# Feature Specification: Plan Warehouse Door and Checkpoint Assignments
+# Feature Specification: Plan warehouse door and checkpoint assignments
 
 **Feature ID**: `GH-54`
 **GitHub Issue**: [#54](https://github.com/whazzark/portflow-ai/issues/54)
@@ -6,21 +6,21 @@
 **Roadmap Entry**: `GH-54`
 **Created**: 2026-07-09
 **Status**: Needs Clarification
-**Priority**: priority:P0
-**Milestone**: 2. Livrer la préparation d'une Discharge
+**Priority**: priority:P1
+**Milestone**: 4. Livrer la préparation interactive d'une Discharge
 **Domain**: discharge-preparation
 
 ## User Scenarios & Testing
 
-### User Story 1 - Plan Warehouse Door and Checkpoint Assignments (Priority: P1)
+### User Story 1 - Plan warehouse door and checkpoint assignments (Priority: P1)
 
-[NEEDS CLARIFICATION: Define the actor, intended behavior, and user value for "Plan Warehouse Door and Checkpoint Assignments" before planning.]
+[NEEDS CLARIFICATION: Define the actor, intended behavior, and user value for "Plan warehouse door and checkpoint assignments" before planning.]
 
 **Independent Test**: Verify the acceptance criteria through the appropriate observable API, feature, or browser seam.
 
 **Acceptance Scenarios**:
 
-1. **Given** the feature's applicable state, **When** the actor performs the described action, **Then** Before planning, this spec defines the actor, scope, outcomes, and observable acceptance criteria for "Plan Warehouse Door and Checkpoint Assignments".
+1. **Given** the feature's applicable state, **When** the actor performs the described action, **Then** Before planning, this spec defines the actor, scope, outcomes, and observable acceptance criteria for "Plan warehouse door and checkpoint assignments".
 
 ## Edge Cases
 
@@ -30,7 +30,7 @@
 
 ### Functional Requirements
 
-- **FR-001**: The feature MUST NOT proceed to planning until the behavioral contract for "Plan Warehouse Door and Checkpoint Assignments" is explicit and reviewable.
+- **FR-001**: The feature MUST NOT proceed to planning until the behavioral contract for "Plan warehouse door and checkpoint assignments" is explicit and reviewable.
 
 ## Success Criteria
 
@@ -39,7 +39,10 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-53: a warehouse door assignment is held per product lot, so the product lots
+  created by GH-53 must exist before this slice has anything to assign.
+- Deliverable in parallel with GH-55: neither blocks the other, but both add a panel to the same
+  discharge detail workbench.
 
 ## Out of Scope
 
@@ -47,14 +50,17 @@
 
 ## Assumptions and Clarifications
 
-- [NEEDS CLARIFICATION: Define the actor, scope, intended behavior, and observable acceptance criteria for "Plan Warehouse Door and Checkpoint Assignments" before plan approval.]
+- [NEEDS CLARIFICATION: Define the actor, scope, intended behavior, and observable acceptance criteria for "Plan warehouse door and checkpoint assignments" before plan approval.]
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the assignment commands in `apps/api` and their planning screen in `apps/web`. It absorbs the warehouse door and checkpoint half of the former frontend-only slice "Update Discharge Resource Planning From the Frontend"; its truck pool half belongs to GH-55.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/54
 - Parent roadmap: specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/roadmap.md
+- Absorbed scope: the warehouse door and checkpoint half of "Update Discharge Resource Planning From the Frontend", a frontend-only slice split between GH-54 and GH-55 on 2026-09-10 and deleted from GitHub.
 - Related domain: discharge-preparation

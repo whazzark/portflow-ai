@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- None. No open issue blocks this slice: the identifying information it changes and the user
+  workbench that displays it are already delivered.
+- It is the entry point of the roadmap's execution order: GH-25 depends on it.
 
 ## Out of Scope
 
@@ -51,10 +53,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the administrator command in `apps/api` and its screen in the user workbench of `apps/web`. It absorbs the administrator half of the former frontend-only slice "Update User Identity From the Web Workbench"; its self-service half belongs to GH-25.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/24
 - Parent roadmap: specs/user-administration/user-identity-update/roadmap.md
+- Absorbed scope: the administrator half of "Update User Identity From the Web Workbench", a frontend-only slice split between GH-24 and GH-25 on 2026-09-10 and deleted from GitHub.
 - Related domain: user-administration
