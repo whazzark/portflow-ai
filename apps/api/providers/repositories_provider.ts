@@ -2,6 +2,10 @@ import type { ApplicationService } from '@adonisjs/core/types'
 
 import CustomerRepository from '#customers/shared/repositories/customer_repository'
 import LucidCustomerRepository from '#customers/shared/repositories/lucid_customer_repository'
+import DischargeRepository from '#discharges/shared/repositories/discharge_repository'
+import DischargeUsageRepository from '#discharges/shared/repositories/discharge_usage_repository'
+import LucidDischargeRepository from '#discharges/shared/repositories/lucid_discharge_repository'
+import LucidDischargeUsageRepository from '#discharges/shared/repositories/lucid_discharge_usage_repository'
 import DockRepository from '#docks/shared/repositories/dock_repository'
 import LucidDockRepository from '#docks/shared/repositories/lucid_dock_repository'
 import PersistedSiteReferenceUsageChecker from '#site_references/shared/persisted_site_reference_usage_checker'
@@ -18,8 +22,6 @@ import LucidWarehouseRepository from '#warehouses/shared/repositories/lucid_ware
 import WarehouseRepository from '#warehouses/shared/repositories/warehouse_repository'
 import LucidWeighingAreaRepository from '#weighing_areas/shared/repositories/lucid_weighing_area_repository'
 import WeighingAreaRepository from '#weighing_areas/shared/repositories/weighing_area_repository'
-import DischargeUsageRepository from '../app/discharges/shared/repositories/discharge_usage_repository.js'
-import LucidDischargeUsageRepository from '../app/discharges/shared/repositories/lucid_discharge_usage_repository.js'
 
 export default class RepositoriesProvider {
   constructor(protected app: ApplicationService) {}
@@ -39,6 +41,10 @@ export default class RepositoriesProvider {
 
     this.app.container.bind(TruckRepository, () => {
       return this.app.container.make(LucidTruckRepository)
+    })
+
+    this.app.container.bind(DischargeRepository, () => {
+      return this.app.container.make(LucidDischargeRepository)
     })
 
     this.app.container.bind(DockRepository, () => {

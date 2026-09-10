@@ -31,7 +31,7 @@ const NAVIGATION_GROUPS: NavigationGroupType[] = [
   {
     label: 'Operations',
     items: [
-      { label: 'Discharges', icon: ShipIcon },
+      { label: 'Discharges', icon: ShipIcon, href: '/discharges' },
       { label: 'Rotation validation', icon: ListChecksIcon },
     ],
   },

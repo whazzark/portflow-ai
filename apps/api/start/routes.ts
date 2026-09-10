@@ -78,6 +78,13 @@ router
 
         router
           .group(() => {
+            router.get('/', [controllers.Discharges, 'index']).as('index')
+          })
+          .prefix('/discharges')
+          .as('discharges')
+
+        router
+          .group(() => {
             router.get('/', [controllers.Users, 'index']).as('index')
           })
           .prefix('/users')

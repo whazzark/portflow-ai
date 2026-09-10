@@ -38,7 +38,10 @@ test('renders the protected frame with navigation for an authenticated user', as
   expect(within(nav).getByText('Site references')).toBeInTheDocument()
   expect(within(nav).getByText('Administration')).toBeInTheDocument()
   expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/')
-  expect(within(nav).getByRole('button', { name: /Discharges/ })).toBeDisabled()
+  expect(within(nav).getByRole('link', { name: /Discharges/ })).toHaveAttribute(
+    'href',
+    '/discharges',
+  )
   expect(within(nav).getByRole('button', { name: /Rotation validation/ })).toBeDisabled()
   expect(within(nav).getByRole('link', { name: /Customers/ })).toHaveAttribute('href', '/customers')
   expect(within(nav).getByRole('link', { name: /Transport resources/ })).toHaveAttribute(
@@ -54,7 +57,8 @@ test('renders the protected frame with navigation for an authenticated user', as
     '/warehouses',
   )
   expect(within(nav).getByRole('link', { name: /Users/ })).toHaveAttribute('href', '/users')
-  expect(within(nav).getAllByText('Coming soon')).toHaveLength(2)
+  // Only Rotation validation remains unbuilt: Discharges gained its workbench in GH-61.
+  expect(within(nav).getAllByText('Coming soon')).toHaveLength(1)
   const themeToggle = screen.getByRole('switch', { name: 'Switch to light theme' })
   const profileTrigger = screen.getByRole('button', {
     name: 'Open user menu for Claire Martin',
@@ -80,7 +84,7 @@ test('renders the protected frame with navigation for an authenticated user', as
   )
   expect(within(header).getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument()
 
-  const comingSoonItem = within(nav).getByRole('button', { name: /Discharges/ })
+  const comingSoonItem = within(nav).getByRole('button', { name: /Rotation validation/ })
   fireEvent.pointerEnter(comingSoonItem.parentElement as HTMLElement)
   expect(comingSoonItem.parentElement).toHaveAttribute('data-base-ui-tooltip-trigger', '')
 
