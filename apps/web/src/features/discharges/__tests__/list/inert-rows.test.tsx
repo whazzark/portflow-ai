@@ -34,4 +34,6 @@ test('exposes no per-row control that suggests a discharge can be opened or chan
   expect(within(row).queryByRole('link')).not.toBeInTheDocument()
   expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument()
   expect(row).not.toHaveClass('cursor-pointer')
+  // The shared `TableRow` highlights on hover by default, which reads as clickable.
+  expect(row.className).not.toMatch(/hover:bg-muted/)
 })

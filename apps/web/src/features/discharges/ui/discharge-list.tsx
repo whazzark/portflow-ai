@@ -52,9 +52,11 @@ export function DischargeList({ discharges, isNoMatch, status }: DischargeListPr
             discharges.map((discharge) => {
               const customers = customerNames(discharge)
 
-              // No handler, no cursor, no row action: opening one discharge is GH-58.
+              // No handler, no cursor, no row action, and no hover highlight either: opening one
+              // discharge is GH-58, and a row that lights up under the cursor promises a click
+              // that leads nowhere.
               return (
-                <TableRow key={discharge.id}>
+                <TableRow className="hover:bg-transparent" key={discharge.id}>
                   <TableCell className="font-medium">{discharge.vesselName}</TableCell>
                   <TableCell>
                     {discharge.vesselImo ?? (
