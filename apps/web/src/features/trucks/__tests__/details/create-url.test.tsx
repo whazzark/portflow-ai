@@ -78,3 +78,22 @@ test('does not open the create panel for a non-administrator requesting truckMod
   expect(screen.queryByRole('heading', { name: 'Create truck' })).not.toBeInTheDocument()
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
+
+test('clears a create mode it refuses, so the directory below stays usable', async () => {
+  const user = userEvent.setup()
+  mockTrucks({ user: ACTIVE_OBSERVER })
+
+  const { router } = renderTrucks('/transport-resources?truckMode=create')
+
+  await screen.findByRole('list', { name: 'Available trucks' })
+  // Left standing, the refused mode would keep the route's transform clearing `truckId` beneath
+  // it, and every selection below would open nothing — with no affordance to clear it.
+  await expect.poll(() => router.state.location.search).toMatchObject({ truckMode: 'view' })
+
+  await user.click(await screen.findByRole('button', { name: /AA-101-PF, Atlantic Transport/ }))
+
+  expect(await screen.findByRole('dialog')).toBeInTheDocument()
+  expect(router.state.location.search).toMatchObject({
+    truckId: '00000000-0000-4000-8000-000000000101',
+  })
+})

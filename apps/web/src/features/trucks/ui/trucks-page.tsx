@@ -144,6 +144,18 @@ export function TrucksPage() {
     }
   }, [administrator, navigate, truckStatus])
 
+  // A mode a non-administrator cannot hold is cleared rather than left standing. `create` is the
+  // one that matters: the route's transform drops `truckId` under it, so a mode left armed would
+  // swallow every later selection and strand the directory with no way back to a detail sheet.
+  useEffect(() => {
+    if (!administrator && truckMode === 'create') {
+      void navigate({
+        replace: true,
+        search: (previous) => ({ ...previous, truckMode: 'view' }),
+      })
+    }
+  }, [administrator, navigate, truckMode])
+
   useEffect(() => {
     if (truckId && trucksQuery.data && !selected) {
       void navigate({
