@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-20: reactivating a user requires a deactivated one, which the deactivation
+  command that slice delivers is what produces.
+- It is the roadmap's only slice.
 
 ## Out of Scope
 
@@ -51,10 +53,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the reactivation command in `apps/api` and its action in the user workbench of `apps/web`. It absorbs the former frontend-only slice "Reactivate a User From the Web Workbench", which described the same outcome from the web side alone.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/32
 - Parent roadmap: specs/user-administration/user-reactivation/roadmap.md
+- Absorbed scope: "Reactivate a User From the Web Workbench", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
 - Related domain: user-administration
