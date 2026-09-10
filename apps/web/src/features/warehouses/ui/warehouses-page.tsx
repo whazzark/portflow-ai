@@ -963,9 +963,10 @@ export function WarehousesPage() {
         disablePointerDismissal
       >
         <SheetContent
-          className="gap-0 overflow-y-auto data-[side=bottom]:h-[min(75dvh,38rem)] data-[side=right]:sm:max-w-lg"
+          className="gap-0 overflow-y-auto data-[side=bottom]:h-[min(75dvh,38rem)]"
           showOverlay={false}
           side={isMobile ? 'bottom' : 'right'}
+          size="lg"
         >
           {isCreating ? (
             <CreateWarehousePanel

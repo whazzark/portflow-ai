@@ -36,7 +36,7 @@ export function CustomerSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
-      <SheetContent className="overflow-hidden sm:max-w-lg">
+      <SheetContent className="overflow-hidden" size="lg">
         {mode === 'create' ? (
           <CreateCustomerPanel
             onCreate={async (value) => {
