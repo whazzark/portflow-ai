@@ -13,8 +13,10 @@ import {
 } from '../support/fixtures'
 import { mockTrucks, renderTrucks, truckTab } from '../support/test-helpers'
 
-function details() {
-  return screen.getByRole('dialog', { hidden: true })
+// Named, not just `role: 'dialog'`: the assertion has to prove *which* truck's panel is on
+// screen, and the panel takes its accessible name from the registration in its `SheetTitle`.
+function details(registration: string) {
+  return screen.getByRole('dialog', { hidden: true, name: registration })
 }
 
 async function openArchivedTruck(
@@ -76,8 +78,12 @@ test('reactivates a truck with a comment and moves it to the available tab witho
   fireEvent.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
-  expect((await within(details()).findAllByText('Available')).length).toBeGreaterThan(0)
-  expect(within(details()).getByText('Back from the gearbox overhaul')).toBeInTheDocument()
+  expect(
+    (await within(details(target.registration)).findAllByText('Available')).length,
+  ).toBeGreaterThan(0)
+  expect(
+    within(details(target.registration)).getByText('Back from the gearbox overhaul'),
+  ).toBeInTheDocument()
 })
 
 test('reactivates a truck without a comment', async () => {
@@ -118,7 +124,9 @@ test('reactivates a truck without a comment', async () => {
   fireEvent.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
-  expect((await within(details()).findAllByText('Available')).length).toBeGreaterThan(0)
+  expect(
+    (await within(details(target.registration)).findAllByText('Available')).length,
+  ).toBeGreaterThan(0)
 })
 
 test('shows a distinct archived-transport-company error naming the remedy and keeps the truck archived', async () => {
@@ -147,6 +155,9 @@ test('shows a distinct archived-transport-company error naming the remedy and ke
 
   renderTrucks()
   await openArchivedTruck(user, target, 'Coastal Haulage')
+  // Captured before the confirmation opens: an open alert marks the sheet `aria-hidden`, which
+  // erases its accessible name, so the panel can only be identified by name up to this point.
+  const panel = details(target.registration)
   fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
@@ -157,7 +168,7 @@ test('shows a distinct archived-transport-company error naming the remedy and ke
     ),
   ).toBeInTheDocument()
   expect(screen.getByRole('alertdialog')).toBeInTheDocument()
-  expect(within(details()).getAllByText('Archived').length).toBeGreaterThan(0)
+  expect(within(panel).getAllByText('Archived').length).toBeGreaterThan(0)
 })
 
 test('shows a distinct already-available error and refreshes to the authoritative available state', async () => {
@@ -203,12 +214,15 @@ test('shows a distinct already-available error and refreshes to the authoritativ
 
   renderTrucks()
   await openArchivedTruck(user, target)
+  // Captured before the confirmation opens: an open alert marks the sheet `aria-hidden`, which
+  // erases its accessible name, so the panel can only be identified by name up to this point.
+  const panel = details(target.registration)
   fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
   expect(await screen.findByText('Truck is already available')).toBeInTheDocument()
-  expect(await within(details()).findByText('Reactivated by another admin')).toBeInTheDocument()
+  expect(await within(panel).findByText('Reactivated by another admin')).toBeInTheDocument()
 })
 
 test('rejects an overlong comment before submitting', async () => {
@@ -300,7 +314,9 @@ test('retrying after a transient failure reactivates the truck exactly once', as
   fireEvent.click(within(dialog).getByRole('button', { name: 'Reactivate' }))
 
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
-  expect((await within(details()).findAllByText('Available')).length).toBeGreaterThan(0)
+  expect(
+    (await within(details(target.registration)).findAllByText('Available')).length,
+  ).toBeGreaterThan(0)
   expect(attempts).toBe(2)
 })
 
@@ -329,5 +345,5 @@ test('cancelling the confirmation dialog performs no mutation and leaves the tru
 
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   expect(reactivateCalls).toBe(0)
-  expect(within(details()).getAllByText('Archived').length).toBeGreaterThan(0)
+  expect(within(details(target.registration)).getAllByText('Archived').length).toBeGreaterThan(0)
 })

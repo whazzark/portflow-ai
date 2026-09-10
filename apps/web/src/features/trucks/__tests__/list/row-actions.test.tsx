@@ -154,7 +154,10 @@ test('opens the detail pane from the row menu', async () => {
   await openRowMenu(user, AVAILABLE.registration)
   await user.click(await screen.findByRole('menuitem', { name: 'View' }))
 
-  const panel = await screen.findByRole('dialog', { hidden: true })
+  const panel = await screen.findByRole('dialog', {
+    hidden: true,
+    name: AVAILABLE.registration,
+  })
   expect(
     within(panel).getByRole('heading', { hidden: true, name: AVAILABLE.registration }),
   ).toBeInTheDocument()

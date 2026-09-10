@@ -102,8 +102,7 @@ test('archiving moves the company to the Archived tab with its lifecycle context
     within(tabs).getByRole('tab', { name: /Available \(2\)/, hidden: true }),
   ).toBeInTheDocument()
 
-  await screen.findByRole('heading', { name: 'Atlantic Transport' })
-  const panel = screen.getByRole('dialog', { hidden: true })
+  const panel = await screen.findByRole('dialog', { hidden: true, name: 'Atlantic Transport' })
   expect(within(panel).getByText('Archive context')).toBeInTheDocument()
   expect(within(panel).getByText('Claire Martin')).toBeInTheDocument()
   expect(within(panel).getByText('Provider no longer serves the site')).toBeInTheDocument()
