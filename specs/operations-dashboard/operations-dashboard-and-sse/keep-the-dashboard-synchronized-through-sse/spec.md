@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P2
-**Milestone**: 5. Finaliser le dashboard et l'observabilité opérationnelle
+**Milestone**: 7. Finaliser la synchronisation et l'observabilité opérationnelle
 **Domain**: operations-dashboard
 
 ## User Scenarios & Testing
@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-112: the stream keeps synchronized what GH-111 and GH-112 display, so it comes
+  once the dashboard is complete.
 
 ## Out of Scope
 
@@ -55,6 +56,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/113
 - Parent roadmap: specs/operations-dashboard/operations-dashboard-and-sse/roadmap.md
 - Related domain: operations-dashboard

@@ -1,4 +1,4 @@
-# Requirements Checklist: Plan Warehouse Door and Checkpoint Assignments
+# Requirements Checklist: Plan warehouse door and checkpoint assignments
 
 **Feature ID**: `GH-54`
 **Spec**: `../spec.md`
@@ -6,7 +6,7 @@
 ## Source acceptance criteria
 
 - [ ] Resolve all `[NEEDS CLARIFICATION]` markers before plan approval.
-- [ ] Define the actor, scope, intended behavior, and observable acceptance criteria for "Plan Warehouse Door and Checkpoint Assignments" before planning.
+- [ ] Define the actor, scope, intended behavior, and observable acceptance criteria for "Plan warehouse door and checkpoint assignments" before planning.
 
 ## Verification
 

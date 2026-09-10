@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P2
-**Milestone**: 4. Finaliser l'exécution et livrer les rapports immuables
+**Milestone**: 6. Finaliser l'exécution et livrer les rapports immuables
 **Domain**: reporting-and-audit
 
 ## User Scenarios & Testing
@@ -39,7 +39,7 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-106: the generation stores the deterministic payload that slice builds.
 
 ## Out of Scope
 
@@ -55,6 +55,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/107
 - Parent roadmap: specs/reporting-and-audit/historical-reference-capture-in-report-snapshots/roadmap.md
 - Related domain: reporting-and-audit

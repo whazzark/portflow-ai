@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-25: confirming an email change presupposes the self-service identity update that
+  slice delivers.
 
 ## Out of Scope
 
@@ -55,6 +56,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/118
 - Parent roadmap: N/A
 - Related domain: standalone

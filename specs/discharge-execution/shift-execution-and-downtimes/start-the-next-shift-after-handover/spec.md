@@ -6,8 +6,8 @@
 **Roadmap Entry**: `GH-69`
 **Created**: 2026-07-09
 **Status**: Needs Clarification
-**Priority**: priority:P0
-**Milestone**: 3. Livrer l'exécution opérationnelle nominale
+**Priority**: priority:P1
+**Milestone**: 5. Livrer l'exécution opérationnelle interactive
 **Domain**: discharge-execution
 
 ## User Scenarios & Testing
@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-68: the next shift may start only once the previous one is completed.
+- Deliverable in parallel with GH-70.
 
 ## Out of Scope
 
@@ -55,6 +56,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/69
 - Parent roadmap: specs/discharge-execution/shift-execution-and-downtimes/roadmap.md
 - Related domain: discharge-execution

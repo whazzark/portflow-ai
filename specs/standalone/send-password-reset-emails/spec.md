@@ -39,7 +39,7 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-17: a password reset email announces the renewal requirement that slice records.
 
 ## Out of Scope
 
@@ -55,6 +55,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/123
 - Parent roadmap: N/A
 - Related domain: standalone

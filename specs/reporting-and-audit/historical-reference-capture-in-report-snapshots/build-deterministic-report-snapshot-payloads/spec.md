@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P2
-**Milestone**: 4. Finaliser l'exécution et livrer les rapports immuables
+**Milestone**: 6. Finaliser l'exécution et livrer les rapports immuables
 **Domain**: reporting-and-audit
 
 ## User Scenarios & Testing
@@ -39,7 +39,11 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-68: a shift report section summarizes a started shift with its rotations,
+  tonnage, downtimes and mobilized resources, which that slice is what closes.
+- Blocked by GH-94: the payload exposes effective weighings, adjusted values and capacity
+  breaches, which are the projections that slice delivers.
+- It is the entry point of this roadmap's execution order: GH-107 depends on it.
 
 ## Out of Scope
 
@@ -55,6 +59,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/106
 - Parent roadmap: specs/reporting-and-audit/historical-reference-capture-in-report-snapshots/roadmap.md
 - Related domain: reporting-and-audit

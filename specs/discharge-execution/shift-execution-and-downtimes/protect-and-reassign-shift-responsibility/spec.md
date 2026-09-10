@@ -6,8 +6,8 @@
 **Roadmap Entry**: `GH-66`
 **Created**: 2026-07-09
 **Status**: Needs Clarification
-**Priority**: priority:P0
-**Milestone**: 3. Livrer l'exécution opérationnelle nominale
+**Priority**: priority:P1
+**Milestone**: 5. Livrer l'exécution opérationnelle interactive
 **Domain**: discharge-execution
 
 ## User Scenarios & Testing
@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-63: responsibility is carried by the shifts that slice creates, and every
+  non-completed shift must be reassigned before its responsible loses eligibility.
+- Deliverable in parallel with GH-64 and GH-65.
 
 ## Out of Scope
 
@@ -55,6 +57,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/66
 - Parent roadmap: specs/discharge-execution/shift-execution-and-downtimes/roadmap.md
 - Related domain: discharge-execution

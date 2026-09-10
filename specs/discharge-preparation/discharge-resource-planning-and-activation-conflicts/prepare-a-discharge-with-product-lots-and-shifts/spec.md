@@ -1,4 +1,4 @@
-# Feature Specification: Prepare a Discharge with Product Lots and Shifts
+# Feature Specification: Prepare a planned discharge with its product lots and shifts
 
 **Feature ID**: `GH-53`
 **GitHub Issue**: [#53](https://github.com/whazzark/portflow-ai/issues/53)
@@ -6,21 +6,21 @@
 **Roadmap Entry**: `GH-53`
 **Created**: 2026-07-09
 **Status**: Needs Clarification
-**Priority**: priority:P0
-**Milestone**: 2. Livrer la préparation d'une Discharge
+**Priority**: priority:P1
+**Milestone**: 4. Livrer la préparation interactive d'une Discharge
 **Domain**: discharge-preparation
 
 ## User Scenarios & Testing
 
-### User Story 1 - Prepare a Discharge with Product Lots and Shifts (Priority: P1)
+### User Story 1 - Prepare a planned discharge with its product lots and shifts (Priority: P1)
 
-[NEEDS CLARIFICATION: Define the actor, intended behavior, and user value for "Prepare a Discharge with Product Lots and Shifts" before planning.]
+[NEEDS CLARIFICATION: Define the actor, intended behavior, and user value for "Prepare a planned discharge with its product lots and shifts" before planning.]
 
 **Independent Test**: Verify the acceptance criteria through the appropriate observable API, feature, or browser seam.
 
 **Acceptance Scenarios**:
 
-1. **Given** the feature's applicable state, **When** the actor performs the described action, **Then** Before planning, this spec defines the actor, scope, outcomes, and observable acceptance criteria for "Prepare a Discharge with Product Lots and Shifts".
+1. **Given** the feature's applicable state, **When** the actor performs the described action, **Then** Before planning, this spec defines the actor, scope, outcomes, and observable acceptance criteria for "Prepare a planned discharge with its product lots and shifts".
 
 ## Edge Cases
 
@@ -30,7 +30,7 @@
 
 ### Functional Requirements
 
-- **FR-001**: The feature MUST NOT proceed to planning until the behavioral contract for "Prepare a Discharge with Product Lots and Shifts" is explicit and reviewable.
+- **FR-001**: The feature MUST NOT proceed to planning until the behavioral contract for "Prepare a planned discharge with its product lots and shifts" is explicit and reviewable.
 
 ## Success Criteria
 
@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-58: the creation is launched from the discharges workbench and lands on the detail
+  screen that slice delivers, which is also where the product lots and the planned shifts owned by
+  this slice are inspected and corrected.
 
 ## Out of Scope
 
@@ -47,14 +49,17 @@
 
 ## Assumptions and Clarifications
 
-- [NEEDS CLARIFICATION: Define the actor, scope, intended behavior, and observable acceptance criteria for "Prepare a Discharge with Product Lots and Shifts" before plan approval.]
+- [NEEDS CLARIFICATION: Define the actor, scope, intended behavior, and observable acceptance criteria for "Prepare a planned discharge with its product lots and shifts" before plan approval.]
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the preparation command in `apps/api` and the creation screen in `apps/web`. It absorbs the former frontend-only slice "Create a Planned Discharge From the Frontend", which described the same outcome from the web side alone.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/53
 - Parent roadmap: specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/roadmap.md
+- Absorbed scope: "Create a Planned Discharge From the Frontend", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: discharge-preparation

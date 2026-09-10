@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-8: preserving or replacing the current session is a decision taken while an
+  invitation is accepted, which is the outcome that slice delivers.
 
 ## Out of Scope
 
@@ -55,6 +56,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/121
 - Parent roadmap: N/A
 - Related domain: standalone

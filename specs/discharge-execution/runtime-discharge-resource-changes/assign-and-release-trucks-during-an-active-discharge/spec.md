@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P1
-**Milestone**: 3. Livrer l'exécution opérationnelle nominale
+**Milestone**: 5. Livrer l'exécution opérationnelle interactive
 **Domain**: discharge-execution
 
 ## User Scenarios & Testing
@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-65: assigning and releasing trucks at runtime presupposes an active discharge;
+  the pool it draws from is the one GH-55 plans.
+- Deliverable in parallel with GH-75, GH-77 and GH-78.
 
 ## Out of Scope
 
@@ -51,10 +53,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the assignment and release commands in `apps/api` and their panel in the discharge detail workbench of `apps/web`. It absorbs the truck pool part of the former frontend-only slice "Discharge Detail: Dock Reassignment, Truck Pool, and Door Assignment Changes".
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/76
 - Parent roadmap: specs/discharge-execution/runtime-discharge-resource-changes/roadmap.md
+- Absorbed scope: the truck pool part of "Discharge Detail: Dock Reassignment, Truck Pool, and Door Assignment Changes", a frontend-only slice split between GH-75, GH-76 and GH-77 on 2026-09-10 and deleted from GitHub.
 - Related domain: discharge-execution

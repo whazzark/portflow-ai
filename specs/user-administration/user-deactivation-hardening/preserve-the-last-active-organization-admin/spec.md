@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-20: the last-admin guard extends the deactivation command and the refusal path
+  that slice delivers, and surfaces in the same workbench action.
 
 ## Out of Scope
 
@@ -55,6 +56,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/21
 - Parent roadmap: specs/user-administration/user-deactivation-hardening/roadmap.md
 - Related domain: user-administration

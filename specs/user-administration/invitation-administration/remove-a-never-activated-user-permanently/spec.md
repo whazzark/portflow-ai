@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-7: removing a never-activated user requires a pending user to remove.
+- Deliverable in parallel with GH-12: neither blocks the other.
 
 ## Out of Scope
 
@@ -51,10 +52,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the removal command in `apps/api` and its action in the user workbench of `apps/web`. It absorbs the removal part of the former frontend-only slice "Manage Invitation Lifecycle From the Web Workbench".
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/14
 - Parent roadmap: specs/user-administration/invitation-administration/roadmap.md
+- Absorbed scope: the removal part of "Manage Invitation Lifecycle From the Web Workbench", a frontend-only slice split between GH-9, GH-12, GH-13 and GH-14 on 2026-09-10 and deleted from GitHub.
 - Related domain: user-administration

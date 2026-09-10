@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P2
-**Milestone**: 4. Finaliser l'exécution et livrer les rapports immuables
+**Milestone**: 6. Finaliser l'exécution et livrer les rapports immuables
 **Domain**: reporting-and-audit
 
 ## User Scenarios & Testing
@@ -39,7 +39,11 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-53: the first business actions to journal are the preparation commands that slice
+  delivers.
+- It is the entry point of this roadmap's execution order: GH-103 depends on it. Every later
+  command appends through this contract, so delivering it early avoids retrofitting the ones
+  written meanwhile.
 
 ## Out of Scope
 
@@ -55,6 +59,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/102
 - Parent roadmap: specs/reporting-and-audit/transversal-discharge-activity-log/roadmap.md
 - Related domain: reporting-and-audit

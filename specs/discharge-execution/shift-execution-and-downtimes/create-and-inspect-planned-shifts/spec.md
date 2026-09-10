@@ -6,8 +6,8 @@
 **Roadmap Entry**: `GH-63`
 **Created**: 2026-07-09
 **Status**: Needs Clarification
-**Priority**: priority:P0
-**Milestone**: 3. Livrer l'exécution opérationnelle nominale
+**Priority**: priority:P1
+**Milestone**: 5. Livrer l'exécution opérationnelle interactive
 **Domain**: discharge-execution
 
 ## User Scenarios & Testing
@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-53: a planned shift belongs to a discharge, and the preparation that creates a
+  discharge with its product lots and its first shifts is that slice.
+- It is the entry point of this roadmap's execution order: GH-64, GH-65 and GH-66 depend on it.
 
 ## Out of Scope
 
@@ -55,6 +57,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/63
 - Parent roadmap: specs/discharge-execution/shift-execution-and-downtimes/roadmap.md
 - Related domain: discharge-execution

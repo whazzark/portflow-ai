@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P1
-**Milestone**: 4. Finaliser l'exécution et livrer les rapports immuables
+**Milestone**: 6. Finaliser l'exécution et livrer les rapports immuables
 **Domain**: reporting-and-audit
 
 ## User Scenarios & Testing
@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-89: an adjustment is a post-validation correction, so it presupposes a validated
+  rotation.
+- It is the entry point of this roadmap's execution order: GH-94 depends on it.
 
 ## Out of Scope
 
@@ -51,10 +53,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the adjustment command and its inspection in `apps/api` and the creation form in `apps/web`. It absorbs the former frontend-only slice "Build the Rotation Adjustment Creation UI", which described the same outcome from the web side alone.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/93
 - Parent roadmap: specs/reporting-and-audit/rotation-adjustments/roadmap.md
+- Absorbed scope: "Build the Rotation Adjustment Creation UI", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: reporting-and-audit
