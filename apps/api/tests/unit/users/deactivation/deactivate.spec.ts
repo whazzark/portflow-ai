@@ -95,6 +95,19 @@ test.group('Deactivate user use case', (group) => {
     assert.isNull(unchanged.deactivatedByUserId)
   })
 
+  // PostgreSQL matches an upper-cased identifier against the canonical lower-case `uuid` it stores,
+  // so a case-sensitive guard would refuse nothing and the administrator would retire their own
+  // access. SQLite compares the same identifier as text and finds no row, which is why this asserts
+  // the exception rather than the surviving row: both dialects agree only on the refusal.
+  test('refuses a self-deactivation spelled with an upper-case identifier', async ({ assert }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+
+    await assert.rejects(
+      () => deactivate(admin.id.toUpperCase(), admin.id),
+      SelfDeactivationException.message,
+    )
+  })
+
   test('names the reason a target that is not active cannot be deactivated', async ({ assert }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
 

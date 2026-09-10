@@ -133,6 +133,22 @@ test.group('POST /api/v1/users/:id/deactivate', () => {
     assert.equal((await User.findOrFail(admin.id)).accessStatus, 'ACTIVE')
   })
 
+  // `vine.string().uuid()` accepts an upper-cased identifier and hands it through unchanged, and
+  // PostgreSQL resolves it to the same row as its canonical lower-case spelling. The refusal must
+  // therefore survive the spelling, not the comparison that happens to match.
+  test('refuses a self-deactivation spelled with an upper-case identifier', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await organizationAdmin()
+
+    const response = await client.post(deactivatePath(admin.id.toUpperCase())).loginAs(admin)
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_USER_SELF_DEACTIVATION')
+    assert.equal((await User.findOrFail(admin.id)).accessStatus, 'ACTIVE')
+  })
+
   test('refuses a target that is not active, naming which reason applied', async ({
     assert,
     client,

@@ -27,7 +27,13 @@ export default class DeactivateUserUseCase {
   async handle(input: DeactivateUserInput) {
     // Refused before the repository is reached: retiring an organization admin's own access
     // requires another organization admin, and no read of the target settles that.
-    if (input.id === input.deactivatedByUserId) {
+    //
+    // Compared case-insensitively, because the identifier and the row it names do not have to agree
+    // on case: `users.id` is a real `uuid` column, so PostgreSQL matches an upper-cased identifier
+    // against the canonical lower-case row it stores, and the validator accepts both spellings. A
+    // case-sensitive `===` would let `0193A2B4-…` walk past this guard and deactivate the very
+    // administrator issuing the command.
+    if (input.id.toLowerCase() === input.deactivatedByUserId.toLowerCase()) {
       throw new SelfDeactivationException()
     }
 
