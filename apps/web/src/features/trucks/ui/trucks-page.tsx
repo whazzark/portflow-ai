@@ -115,7 +115,9 @@ export function TrucksPage() {
     editSession.id === truckId &&
     editSession.editable
 
-  const directoryRef = useRef<HTMLDivElement>(null)
+  // Holds the directory *and* the floating toolbar that acts on it, because both are places the
+  // administrator's focus legitimately sits while the selection is theirs to command.
+  const truckPanelRef = useRef<HTMLDivElement>(null)
   const selection = useBulkSelection()
   const { selectedIds: selectedTruckIds, clear: clearTruckSelection } = selection
   const activeLifecycleStatus =
@@ -170,16 +172,18 @@ export function TrucksPage() {
     },
     [selection, shortcutSelectableTruckIds],
   )
-  // Scoped to this directory: the transport companies beside it are selectable too, so only the
-  // one holding focus can be what the administrator meant.
+  // Scoped to this panel: the transport companies beside it are selectable too, so only the one
+  // holding focus can be what the administrator meant — for clearing a selection exactly as for
+  // building one, or a single Escape would empty both collections at once.
   useSelectAllShortcut({
     enabled: administrator,
     onSelectAll: selectAllVisibleTrucks,
-    scopeRef: directoryRef,
+    scopeRef: truckPanelRef,
   })
   useClearSelectionShortcut({
     enabled: administrator && selectedTruckIds.size > 0,
     onClear: clearTruckSelection,
+    scopeRef: truckPanelRef,
   })
 
   useEffect(() => {
@@ -268,7 +272,6 @@ export function TrucksPage() {
     <Card
       aria-label="Truck directory"
       className="h-[min(42rem,70svh)] min-h-[28rem] gap-0 py-0 lg:h-auto lg:min-h-0"
-      ref={directoryRef}
     >
       <CardContent className="flex min-h-0 flex-1 flex-col px-0">
         <div className="flex items-center gap-2 border-b p-3">
@@ -488,7 +491,9 @@ export function TrucksPage() {
   )
 
   return (
-    <div className="relative">
+    // The keyboard scope, rather than the directory alone: the floating toolbar below is a sibling
+    // of the list it acts on, and both sheets are portaled out of here entirely.
+    <div className="relative" ref={truckPanelRef}>
       {directory}
       {createSheet}
       <Sheet

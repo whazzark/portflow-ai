@@ -117,3 +117,42 @@ test('offers no shortcut to an active non-administrator', async () => {
 
   expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
 })
+
+test('still checks the trucks when focus is on their own bulk toolbar', async () => {
+  const user = userEvent.setup()
+  mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
+
+  renderTrucks()
+  const list = await screen.findByRole('list', { name: 'Available trucks' })
+  await user.click(within(list).getAllByRole('checkbox')[0])
+
+  // Where focus sits after a bulk outcome: the toolbar is a sibling of the list it acts on, not a
+  // child of it, so a scope stopping at the directory would make the keystroke go dead exactly
+  // where the administrator has just been working.
+  await user.click(screen.getByRole('button', { name: 'Clear selection' }))
+  await user.keyboard('{Control>}a{/Control}')
+
+  expect(checkedIn(truckDirectory()).length).toBeGreaterThan(0)
+  expect(checkedIn(companyDirectory())).toHaveLength(0)
+})
+
+test('Escape clears only the collection holding focus', async () => {
+  const user = userEvent.setup()
+  mockTrucks({ user: ACTIVE_OPERATIONS_ADMIN })
+
+  renderTrucks()
+  await screen.findByRole('list', { name: 'Available trucks' })
+  await focusCompanyDirectory(user)
+  await user.keyboard('{Control>}a{/Control}')
+  await focusTruckDirectory(user)
+  await user.keyboard('{Control>}a{/Control}')
+  expect(checkedIn(companyDirectory()).length).toBeGreaterThan(0)
+  expect(checkedIn(truckDirectory()).length).toBeGreaterThan(0)
+
+  await user.keyboard('{Escape}')
+
+  // Two collections, one keystroke: clearing is scoped by exactly the rule that builds it, or the
+  // companies would be emptied by a press meant for the trucks.
+  expect(checkedIn(truckDirectory())).toHaveLength(0)
+  expect(checkedIn(companyDirectory()).length).toBeGreaterThan(0)
+})

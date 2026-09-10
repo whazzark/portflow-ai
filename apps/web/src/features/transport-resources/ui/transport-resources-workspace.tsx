@@ -82,7 +82,9 @@ export function TransportResourcesWorkspace() {
     [selection, shortcutSelectableCompanyIds],
   )
   // Scoped to this directory: the trucks beside it are selectable too, so only the one holding
-  // focus can be what the administrator meant.
+  // focus can be what the administrator meant — for clearing a selection exactly as for building
+  // one, or a single Escape would empty both collections at once. The floating toolbar this
+  // directory owns sits inside the same Card, so the scope already covers it.
   useSelectAllShortcut({
     enabled: canAdminister,
     onSelectAll: selectAllVisibleCompanies,
@@ -91,6 +93,7 @@ export function TransportResourcesWorkspace() {
   useClearSelectionShortcut({
     enabled: canAdminister && selectedCompanyIds.size > 0,
     onClear: clearCompanySelection,
+    scopeRef: directoryRef,
   })
 
   useEffect(() => {
