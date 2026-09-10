@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P2
-**Milestone**: 4. Finaliser l'exécution et livrer les rapports immuables
+**Milestone**: 6. Finaliser l'exécution et livrer les rapports immuables
 **Domain**: reporting-and-audit
 
 ## User Scenarios & Testing
@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-107: there is nothing to list or download before snapshots are generated, and the
+  outdated marker it displays is set by a later adjustment on those same snapshots.
 
 ## Out of Scope
 
@@ -51,10 +52,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the listing and download queries in `apps/api` and the report snapshots screen in `apps/web`. It absorbs the former frontend-only slice "Build the Report Snapshots Screen", which described the same outcome from the web side alone.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/108
 - Parent roadmap: specs/reporting-and-audit/historical-reference-capture-in-report-snapshots/roadmap.md
+- Absorbed scope: "Build the Report Snapshots Screen", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
 - Related domain: reporting-and-audit
