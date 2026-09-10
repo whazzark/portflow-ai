@@ -29,6 +29,17 @@ export function groupByStatus(discharges: DischargeDto[]): DischargeCollections 
 }
 
 /**
+ * The instant a discharge is expected to start, as a number. The column is NOT NULL, but the
+ * generated transport type still admits null, so an unreadable value coerces to the earliest
+ * possible instant rather than asserting an invariant the type does not carry.
+ */
+function expectedStartInstant(discharge: DischargeDto): number {
+  const instant = discharge.expectedStartAt ? Date.parse(discharge.expectedStartAt) : Number.NaN
+
+  return Number.isNaN(instant) ? Number.NEGATIVE_INFINITY : instant
+}
+
+/**
  * The direction each tab reads: planned and active look forward to the next start, closed looks
  * back at the most recent one. The identity tie-break stays ascending in both directions, so two
  * discharges expected at the same minute never swap places when the direction flips.
@@ -40,9 +51,12 @@ export function orderForStatus(
   const descending = status === 'closed'
 
   return [...discharges].sort((left, right) => {
-    // The column is NOT NULL, but the generated transport type still admits null, so the
-    // comparison coerces rather than asserting an invariant the type does not carry.
-    const byExpectedStart = (left.expectedStartAt ?? '').localeCompare(right.expectedStartAt ?? '')
+    // Compared as instants, not as text: the API serializes the timestamp with its own UTC offset,
+    // and over a DST fall-back two discharges an hour apart carry the same wall clock with two
+    // different offsets — which a string comparison would order backwards, against the SQL.
+    const leftStart = expectedStartInstant(left)
+    const rightStart = expectedStartInstant(right)
+    const byExpectedStart = leftStart === rightStart ? 0 : leftStart < rightStart ? -1 : 1
 
     if (byExpectedStart !== 0) {
       return descending ? -byExpectedStart : byExpectedStart

@@ -50,6 +50,24 @@ describe('orderForStatus', () => {
     ])
   })
 
+  test('orders by the instant, not the wall clock, across a daylight-saving change', () => {
+    // The hour French clocks repeat: 02:30+02:00 is 00:30 UTC, half an hour BEFORE 02:00+01:00,
+    // which is 01:00 UTC. Compared as text, the two read in the opposite order.
+    const overFallBack: DischargeDto[] = [
+      { ...DISCHARGES[0], id: 'later', expectedStartAt: '2026-10-25T02:00:00.000+01:00' },
+      { ...DISCHARGES[0], id: 'earlier', expectedStartAt: '2026-10-25T02:30:00.000+02:00' },
+    ]
+
+    expect(orderForStatus(overFallBack, 'planned').map((discharge) => discharge.id)).toEqual([
+      'earlier',
+      'later',
+    ])
+    expect(orderForStatus(overFallBack, 'closed').map((discharge) => discharge.id)).toEqual([
+      'later',
+      'earlier',
+    ])
+  })
+
   test('breaks a tie on identity so the order is stable in both directions', () => {
     const tied: DischargeDto[] = [
       { ...DISCHARGES[0], id: 'bbbb', expectedStartAt: '2026-06-01T00:00:00.000Z' },
