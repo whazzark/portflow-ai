@@ -28,6 +28,14 @@ records are administrator-only. Discharges have no such split — every active r
 status — so reproducing the two-endpoint shape here would add a contract with no authorization
 difference to enforce.
 
+**What this decision costs, and when to revisit it**: the read is unbounded and the web refetches it
+on every mount, so each visit carries every discharge the site has ever run, with every product lot
+and customer. Planned and active are self-limiting — a site works on a handful at a time — but closed
+is append-only operational history and grows for as long as the site operates. Nothing has to change
+while a season fits in one read; the trigger to revisit is the closed collection reaching a size a
+user would not scroll anyway, and the shape it would take is a bound on closed alone (a window, or a
+lazily fetched archive), leaving the single unfiltered read that serves the three counts intact.
+
 ## Decision 2 — Payload carries product lots, not pre-computed customer or search fields
 
 **Decision**: Each discharge carries `productLots: Array<{ id, customerId, customerName, productName }>`
