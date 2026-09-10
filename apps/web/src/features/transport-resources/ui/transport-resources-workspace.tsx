@@ -60,18 +60,36 @@ export function TransportResourcesWorkspace() {
   const { selectedIds: selectedCompanyIds, clear: clearCompanySelection } = selection
   const directoryRef = useRef<HTMLDivElement>(null)
 
+  const activeCompanyStatus = companyStatus === 'available' ? 'AVAILABLE' : 'ARCHIVED'
+
+  // The part of the selection the active tab actually lists, as the trucks panel beside it also
+  // keeps: a company's own status decides which single tab shows it, so pruning by the visible tab
+  // is what keeps a selection made under one status from being counted as hidden by the search, or
+  // offered to the other direction's action, once something flips the tab under it — archiving from
+  // the details panel does exactly that, and no tab click is involved to clear the selection.
+  const visibleSelectedCompanyIds = useMemo(() => {
+    const visibleIds = new Set(
+      companies
+        .filter((company) => company.status === activeCompanyStatus)
+        .map((company) => company.id),
+    )
+
+    return new Set([...selectedCompanyIds].filter((id) => visibleIds.has(id)))
+  }, [activeCompanyStatus, companies, selectedCompanyIds])
+  const visibleSelectedCompanyIdList = useMemo(
+    () => [...visibleSelectedCompanyIds],
+    [visibleSelectedCompanyIds],
+  )
+
   // What the active tab currently lists, once the search has narrowed it — the same set the
   // section renders, and so the same set Ctrl/Cmd+A acts on.
   const shortcutSelectableCompanyIds = useMemo(
     () =>
       companies
-        .filter(
-          (company) =>
-            company.status === (companyStatus === 'available' ? 'AVAILABLE' : 'ARCHIVED'),
-        )
+        .filter((company) => company.status === activeCompanyStatus)
         .filter((company) => transportCompanyMatchesSearch(company, companySearch))
         .map((company) => company.id),
-    [companies, companySearch, companyStatus],
+    [activeCompanyStatus, companies, companySearch],
   )
 
   const selectAllVisibleCompanies = useCallback(
@@ -272,7 +290,7 @@ export function TransportResourcesWorkspace() {
                   onView={viewCompanyDetails}
                   search={companySearch}
                   selectedId={transportCompanyId}
-                  selectedIds={canAdminister ? selectedCompanyIds : undefined}
+                  selectedIds={canAdminister ? visibleSelectedCompanyIds : undefined}
                 />
               )}
             </TabsContent>
@@ -289,7 +307,7 @@ export function TransportResourcesWorkspace() {
                   onView={viewCompanyDetails}
                   search={companySearch}
                   selectedId={transportCompanyId}
-                  selectedIds={canAdminister ? selectedCompanyIds : undefined}
+                  selectedIds={canAdminister ? visibleSelectedCompanyIds : undefined}
                 />
               )}
             </TabsContent>
@@ -311,7 +329,7 @@ export function TransportResourcesWorkspace() {
             }
             plural={TRANSPORT_COMPANY_PLURAL}
             refresh={mutations.refreshTransportCompanies}
-            selectedIds={[...selectedCompanyIds]}
+            selectedIds={visibleSelectedCompanyIdList}
             singular={TRANSPORT_COMPANY_SINGULAR}
             submit={async ({ ids, comment }) =>
               toBulkTransportCompanyLifecycleOutcome(

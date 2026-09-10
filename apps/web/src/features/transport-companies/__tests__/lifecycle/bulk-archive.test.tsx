@@ -4,6 +4,7 @@ import { mockTrucks } from '@/features/trucks/__tests__/support/test-helpers'
 import { ACTIVE_USER, ADMIN_USER, TRANSPORT_COMPANIES } from '../support/fixtures'
 import {
   mockTransportCompanies,
+  mockTransportCompanyArchival,
   mockTransportCompanyBulkArchival,
   mockTransportCompanyBulkArchivalFailure,
   renderTransportCompanies,
@@ -288,4 +289,40 @@ test('says how much of the selection the search has taken off screen', async () 
   // whole selection — so the toolbar names the part that is no longer on screen.
   await waitFor(() => expect(screen.getByText(/1 hidden by the search/)).toBeInTheDocument())
   expect(screen.getByText('2 selected')).toBeInTheDocument()
+})
+
+test('drops a still-available selection when a panel archival flips the tab under it', async () => {
+  mockTrucks()
+  mockTransportCompanies(TRANSPORT_COMPANIES, ADMIN_USER)
+  mockTransportCompanyArchival(TRANSPORT_COMPANIES)
+
+  renderTransportCompanies()
+  await screen.findByRole('list', { name: 'Available transport companies' })
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Select Nordic Haulers' }))
+  expect(screen.getByText('1 selected')).toBeInTheDocument()
+
+  // Archiving from the details panel moves the directory to the Archived tab without the tab click
+  // that would otherwise clear the selection. Nordic Haulers is still available, so the tab now on
+  // screen lists nothing the selection holds — and the toolbar must not blame the search for that,
+  // nor offer to reactivate a company that was never archived.
+  fireEvent.click(screen.getByRole('button', { name: 'Actions for Atlantic Transport' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'View' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
+  await screen.findByRole('alertdialog')
+  fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
+  expect(
+    await screen.findByText('Transport company “Atlantic Transport” archived'),
+  ).toBeInTheDocument()
+
+  // The details panel stays open over the directory by design, and marks it inert while it does —
+  // so close it before reading the toolbar it was covering.
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+  await screen.findByRole('list', { name: 'Archived transport companies' })
+
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('toolbar', { name: 'Bulk transport company actions' }),
+    ).not.toBeInTheDocument(),
+  )
+  expect(screen.queryByText(/hidden by the search/)).not.toBeInTheDocument()
 })
