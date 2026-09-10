@@ -6,8 +6,8 @@
 **Roadmap Entry**: `GH-65`
 **Created**: 2026-07-09
 **Status**: Needs Clarification
-**Priority**: priority:P0
-**Milestone**: 3. Livrer l'exécution opérationnelle nominale
+**Priority**: priority:P1
+**Milestone**: 5. Livrer l'exécution opérationnelle interactive
 **Domain**: discharge-execution
 
 ## User Scenarios & Testing
@@ -39,7 +39,11 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-63: starting the first shift requires a planned shift with its responsible and
+  its resources.
+- Blocked by GH-56: the discharge start confirmation is the same atomic activation seen from the
+  preparation side, and its conflict taxonomy governs what may refuse this start.
+- Deliverable in parallel with GH-64 and GH-66.
 
 ## Out of Scope
 
@@ -51,10 +55,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the activation command in `apps/api` and the shift workspace in `apps/web`, which is born with the first started shift. It absorbs the workspace and its start action from the former frontend-only slice "Shift Workspace: Start, Live View, and Completion"; the completion action belongs to GH-68.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/65
 - Parent roadmap: specs/discharge-execution/shift-execution-and-downtimes/roadmap.md
+- Absorbed scope: the workspace and its start action from "Shift Workspace: Start, Live View, and Completion", a frontend-only slice split between GH-65 and GH-68 on 2026-09-10 and closed on GitHub.
 - Related domain: discharge-execution
