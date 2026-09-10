@@ -2,7 +2,7 @@
 
 Portflow AI est un monorepo dédié à la gestion opérationnelle des déchargements de vrac sur site portuaire. Le produit aide une organisation à préparer une décharge, exécuter les shifts, suivre les rotations camions, valider les données terrain et produire des rapports immuables.
 
-Le dépôt contient aujourd'hui principalement le backend API du produit. Le frontend fait partie de l'architecture cible du MVP, mais n'est pas encore présent dans ce workspace.
+Le dépôt contient les deux applications du produit : l'API AdonisJS et le poste de travail web TanStack Start.
 
 ## Vue d'ensemble
 
@@ -21,11 +21,12 @@ Le produit cible un seul opérateur sur un seul site. Il n'y a pas d'isolation m
 
 ## État actuel du dépôt
 
-Le dépôt est un monorepo PNPM avec une application active :
+Le dépôt est un monorepo PNPM et Turbo avec deux applications actives :
 
-- `apps/api` : API AdonisJS 7 en TypeScript.
+- `apps/api` : API AdonisJS 7 en TypeScript ;
+- `apps/web` : poste de travail web TanStack Start en React 19 et TypeScript.
 
-L'architecture cible documentée dans le MVP mentionne aussi une future application web `apps/web`, mais elle n'est pas encore présente dans ce dépôt.
+Les deux applications partagent le contrat API via Tuyau : `apps/web` dépend de `apps/api` en `workspace:*` pour typer ses appels de bout en bout.
 
 ## Fonctionnalités métier déjà cadrées
 
@@ -37,51 +38,67 @@ Le domaine et le périmètre du MVP sont décrits dans :
 - le [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) pour le Kanban continu, l'ordre de livraison et la maturité Spec Kit ;
 - [docs/adr](./docs/adr) et [apps/api/docs/adr](./apps/api/docs/adr) pour les décisions d'architecture.
 
-À ce stade, l'API couvre déjà des briques importantes :
+À ce stade, les briques suivantes sont couvertes de l'API jusqu'à l'écran :
 
-- authentification et utilisateur courant ;
+- authentification, session, renouvellement de mot de passe et utilisateur courant ;
 - invitation, activation, réactivation et gestion d'utilisateurs ;
 - gestion des Customers ;
 - gestion des Transport Companies ;
 - gestion des Trucks ;
 - gestion des Docks ;
 - gestion des Weighing Areas ;
-- gestion des Warehouses ;
-- gestion des Warehouse Doors ;
-- création et consultation initiale des Discharges ;
-- planification initiale des ressources de déchargement.
+- gestion des Warehouses et de leurs emprises ;
+- gestion des Warehouse Doors.
+
+Le modèle de données des `Discharge`, `Shift`, `ProductLot` et de leurs affectations est déjà présent en migrations et en modèles Lucid, mais n'expose encore ni endpoint HTTP ni écran.
 
 Le détail exact du statut de livraison est piloté par le [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) avec les colonnes `Backlog`, `Ready`, `In Progress`, `Review`, `Blocked` et `Done`. Les specs canoniques restent versionnées sous [`specs/`](./specs).
 
 ## Stack technique
 
+Socle commun :
+
 - Node.js
-- PNPM workspaces
+- PNPM workspaces et Turbo
 - TypeScript
+- Biome pour le format et le lint
+- Tuyau pour le contrat API typé entre `apps/api` et `apps/web`
+
+`apps/api` :
+
 - AdonisJS 7
 - PostgreSQL
 - Japa pour les tests
-- Tuyau pour le contrat API côté architecture cible
+
+`apps/web` :
+
+- TanStack Start, Router, Query, Form et Table
+- React 19
+- Tailwind CSS 4 et primitives shadcn
+- MapLibre GL pour les cartes de ressources
+- Vitest, Testing Library et MSW pour les tests
 
 L'architecture MVP prévoit aussi, à terme :
 
-- un frontend TanStack Start ;
 - Redis pour les traitements asynchrones ;
 - un stockage S3-compatible pour les PDF ;
 - du Server-Sent Events pour le dashboard temps réel.
 
-Ces éléments sont documentés, mais pas tous implémentés dans ce dépôt aujourd'hui.
+Ces éléments sont documentés, mais pas encore implémentés dans ce dépôt.
 
 ## Structure du dépôt
 
 ```text
 .
 ├── apps/
-│   └── api/                # API AdonisJS
+│   ├── api/                # API AdonisJS
+│   └── web/                # Poste de travail web TanStack Start
 ├── docker/
 │   └── docker-compose.yml  # PostgreSQL local + profile `prod` (images api/web)
 ├── docs/
-│   └── adr/                # ADRs racine
+│   ├── adr/                # ADRs racine
+│   ├── agents/             # Conventions de delivery et guides opératoires
+│   └── architecture/       # Documentation d'architecture transverse
 ├── specs/                  # Roadmaps et spécifications Spec Kit canoniques
 ├── .specify/               # Constitution, templates et workflows Spec Kit
 ├── CONTEXT.md              # Glossaire métier
@@ -92,7 +109,7 @@ Ces éléments sont documentés, mais pas tous implémentés dans ce dépôt auj
 
 ## Prérequis
 
-- Node.js 22 recommandé
+- Node.js 25, version utilisée par la CI
 - PNPM 10
 - Docker et Docker Compose pour lancer PostgreSQL localement
 
@@ -106,16 +123,16 @@ pnpm install
 
 ## Configuration de l'environnement
 
-L'application API utilise un fichier d'environnement local dans `apps/api`.
+Chaque application utilise son propre fichier d'environnement local.
 
-Créer le fichier :
+Créer les fichiers :
 
 ```bash
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 ```
 
-Variables principales :
+Variables principales de `apps/api` :
 
 - `PORT` : port HTTP de l'API ;
 - `HOST` : interface d'écoute ;
@@ -124,9 +141,13 @@ Variables principales :
 - `SESSION_DRIVER` : driver de session ;
 - `WEB_ORIGIN` : origine du frontend autorisée.
 
+Variables principales de `apps/web` :
+
+- `VITE_API_BASE_URL` : base de l'API appelée par le frontend ;
+- `VITE_MAP_STYLE_LIGHT_URL` et `VITE_MAP_STYLE_DARK_URL` : styles de fond de carte MapLibre.
+
 Le frontend utilise `http://localhost:3333` comme API locale par défaut et écoute sur
-`http://localhost:3000`. Ces valeurs peuvent être surchargées dans `apps/web/.env` avec
-`VITE_API_BASE_URL` et dans `apps/api/.env` avec `WEB_ORIGIN`.
+`http://localhost:3000`.
 
 Exemple de configuration locale :
 
@@ -165,7 +186,16 @@ L'API lancée sur l'hôte doit utiliser `DB_PORT=5433`. Si l'API est lancée dan
 
 ## Lancer la stack avec les images de production
 
-Le même `docker-compose.yml` expose un profile `prod` qui construit et lance `apps/api` et `apps/web` à partir de leurs `Dockerfile` de production (celles utilisées par la CI), pour vérifier localement que les images se comportent comme en prod :
+Le même `docker-compose.yml` expose un profile `prod` qui construit et lance `apps/api` et `apps/web` à partir de leurs `Dockerfile` de production (celles utilisées par la CI), pour vérifier localement que les images se comportent comme en prod.
+
+Ce profile lit un fichier d'environnement dédié par application. Les créer avant le premier lancement :
+
+```bash
+cp apps/api/.env.docker.example apps/api/.env.docker
+cp apps/web/.env.docker.example apps/web/.env.docker
+```
+
+Renseigner `APP_KEY` dans `apps/api/.env.docker`, puis lancer la stack :
 
 ```bash
 docker compose -f docker/docker-compose.yml --profile prod up --build
@@ -173,7 +203,8 @@ docker compose -f docker/docker-compose.yml --profile prod up --build
 
 - API accessible sur `http://localhost:3333` (santé : `/health`) ;
 - Web accessible sur `http://localhost:8081` ;
-- `APP_KEY`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE`, `WEB_ORIGIN` et `VITE_API_BASE_URL` peuvent être surchargés via l'environnement ou un fichier `docker/.env`.
+- `APP_KEY`, `WEB_ORIGIN` et la connexion PostgreSQL vue par l'API se configurent dans `apps/api/.env.docker` ;
+- `DB_PORT`, `WEB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE`, `VITE_API_BASE_URL` et les URLs de style de carte peuvent être surchargés via l'environnement ou un fichier `docker/.env`.
 
 Ce profile ne lance pas les migrations automatiquement. Une fois les conteneurs démarrés, les exécuter avec :
 
@@ -186,7 +217,7 @@ docker compose -f docker/docker-compose.yml --profile prod exec api node ace.js 
 Une fois PostgreSQL lancé, exécuter les migrations :
 
 ```bash
-pnpm --dir apps/api migrate
+pnpm --dir apps/api db:migrate
 ```
 
 ## Lancer l'application
@@ -194,22 +225,35 @@ pnpm --dir apps/api migrate
 Depuis la racine du monorepo :
 
 ```bash
-pnpm api:dev
+pnpm dev
 ```
 
-Cela démarre l'API AdonisJS en mode watch.
+Turbo démarre les deux applications en mode watch :
 
-L'API écoute ensuite sur le port configuré, par défaut `3333`.
+- l'API AdonisJS sur le port configuré, par défaut `3333` ;
+- le poste de travail web sur `http://localhost:3000`.
+
+Pour ne lancer qu'une application :
+
+```bash
+pnpm --dir apps/api dev
+pnpm --dir apps/web dev
+```
 
 ## Commandes utiles
 
-Depuis la racine :
+Depuis la racine, Turbo propage la commande aux deux applications :
 
 ```bash
-pnpm api:dev
-pnpm api:test
-pnpm api:typecheck
+pnpm dev
+pnpm build
+pnpm test
+pnpm typecheck
+pnpm check
+pnpm check:fix
 ```
+
+`pnpm check`, `pnpm typecheck` et `pnpm test` sont les trois commandes exécutées par la CI.
 
 Depuis `apps/api` :
 
@@ -217,32 +261,60 @@ Depuis `apps/api` :
 pnpm dev
 pnpm test
 pnpm typecheck
-pnpm migrate
-pnpm rollback
 pnpm build
 pnpm start
+pnpm db:migrate
+pnpm db:rollback
+pnpm db:seed
+pnpm db:fresh
+```
+
+Depuis `apps/web` :
+
+```bash
+pnpm dev
+pnpm test
+pnpm typecheck
+pnpm build
+pnpm start
+pnpm generate
 ```
 
 ## Tests
 
-Les tests sont organisés principalement en deux niveaux :
+Côté API, les tests Japa sont organisés en deux niveaux :
 
 - `apps/api/tests/unit` pour les use cases et règles métier ;
 - `apps/api/tests/integration` pour les endpoints et flux applicatifs.
 
-Lancer toute la suite API :
+Côté web, les tests Vitest suivent la stratégie décrite dans
+[apps/web/docs/adr/0001-frontend-testing-strategy.md](./apps/web/docs/adr/0001-frontend-testing-strategy.md) :
+
+- des tests unitaires pour les adaptateurs, mappers et règles pures, sans rendu React ;
+- des tests de feature qui rendent l'écran à travers le vrai routeur et les vrais providers, avec MSW pour simuler le réseau.
+
+Lancer toute la suite du monorepo :
 
 ```bash
-pnpm api:test
+pnpm test
+```
+
+Cibler une application :
+
+```bash
+pnpm --dir apps/api test
+pnpm --dir apps/web test
 ```
 
 Vérifier le typage :
 
 ```bash
-pnpm api:typecheck
+pnpm typecheck
 ```
 
 ## Architecture applicative
+
+### apps/api
 
 L'API suit une structure par domaines métier et cas d'usage. On retrouve notamment :
 
@@ -253,6 +325,19 @@ L'API suit une structure par domaines métier et cas d'usage. On retrouve notamm
 - des `policies` pour l'autorisation ;
 - des `transformers` pour les réponses ;
 - des `exceptions` métier explicites.
+
+### apps/web
+
+Le poste de travail web suit la même logique de vertical slices, sous `src/features/<feature>/`, avec des fichiers de route volontairement minces :
+
+- `ui/` pour les écrans et composants de la feature ;
+- `queries/` et `mutations/` pour l'accès aux données via Tuyau et TanStack Query ;
+- `context/` pour l'état d'écran partagé ;
+- `__tests__/` pour les tests de la feature.
+
+Le code partagé reste technique : `src/components/ui` pour les primitives shadcn, `src/libraries` pour les intégrations d'outils et `src/helpers` pour les utilitaires non métier. `features/auth` est l'exception explicite dont les autres features peuvent dépendre pour la session et l'UI sensible aux autorisations. Des helpers de policy peuvent piloter la visibilité côté écran, mais l'API reste autoritaire sur l'autorisation.
+
+### Conventions transverses
 
 Le dépôt applique aussi plusieurs conventions importantes :
 
@@ -267,6 +352,8 @@ Pour le détail, voir :
 - [docs/agents/domain.md](./docs/agents/domain.md)
 - [apps/api/docs/adr/0007-vertical-slice-api-architecture.md](./apps/api/docs/adr/0007-vertical-slice-api-architecture.md)
 - [apps/api/docs/adr/0013-use-case-and-repository-boundaries.md](./apps/api/docs/adr/0013-use-case-and-repository-boundaries.md)
+- [docs/adr/0005-tuyau-api-web-contract.md](./docs/adr/0005-tuyau-api-web-contract.md)
+- [docs/adr/0008-vertical-slice-web-frontend-with-explicit-ui-adapters.md](./docs/adr/0008-vertical-slice-web-frontend-with-explicit-ui-adapters.md)
 
 ## Authentification et rôles
 
@@ -291,6 +378,7 @@ Pour naviguer dans le projet :
 - [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) : plan de livraison ;
 - [docs/adr](./docs/adr) : ADRs racine ;
 - [apps/api/docs/adr](./apps/api/docs/adr) : ADRs spécifiques à l'API ;
+- [apps/web/docs/adr](./apps/web/docs/adr) : ADRs spécifiques au frontend ;
 - [docs/agents/issue-tracker.md](./docs/agents/issue-tracker.md) : fonctionnement du tracker (GitHub Issues) ;
 - [docs/agents/spec-kit.md](./docs/agents/spec-kit.md) : guide opératoire Codex + Spec Kit.
 
@@ -311,8 +399,9 @@ Les conventions de contribution et de delivery agentique sont décrites dans :
 
 ## Limitations connues de l'état actuel
 
-- le README documente une architecture cible plus large que le code actuellement présent ;
-- `apps/web` n'est pas encore dans le dépôt ;
+- le périmètre livré couvre l'authentification, l'administration des utilisateurs et les référentiels du site ; l'exécution opérationnelle, la validation et les rapports restent à livrer ;
+- les tables et modèles `Discharge` et `Shift` existent, mais sans endpoint ni écran associé ;
+- les tests E2E décrits dans la stratégie de test frontend ne sont pas encore présents dans le dépôt ;
 - Redis, SSE et le stockage S3-compatible sont cadrés au niveau produit, mais pas visibles comme applications livrées ici ;
 - l'envoi réel d'emails est explicitement hors du livrable utilisateur déjà mentionné dans la roadmap.
 
