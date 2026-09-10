@@ -156,6 +156,32 @@ test.group('Discharge consultation HTTP contract', (group) => {
     assert.deepEqual(response.body(), { data: [] })
   })
 
+  test("orders a discharge's product lots identically between two reads", async ({
+    assert,
+    client,
+  }) => {
+    const dock = await DockFactory.create()
+    const user = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const discharge = await DischargeFactory.merge({ dockId: dock.id }).create()
+    for (const companyName of ['Lot Order Alpha', 'Lot Order Bravo', 'Lot Order Charlie']) {
+      const customer = await CustomerFactory.merge({ companyName }).create()
+      await ProductLotFactory.merge({ customerId: customer.id, dischargeId: discharge.id }).create()
+    }
+
+    const first = await client.get('/api/v1/discharges').loginAs(user)
+    const second = await client.get('/api/v1/discharges').loginAs(user)
+    const ids = first.body().data[0].productLots.map((productLot: { id: string }) => productLot.id)
+
+    // The browsing row reads its customers off this order, so an unordered preload would let the
+    // same discharge list them one way and then the other.
+    assert.lengthOf(ids, 3)
+    assert.deepEqual(ids, [...ids].sort())
+    assert.deepEqual(
+      second.body().data[0].productLots.map((productLot: { id: string }) => productLot.id),
+      ids,
+    )
+  })
+
   test('serves a null vessel IMO as null rather than omitting it', async ({ assert, client }) => {
     const dock = await DockFactory.create()
     const user = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
