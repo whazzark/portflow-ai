@@ -1,7 +1,7 @@
 import type { DateTime } from 'luxon'
 
 import type User from '#models/user'
-import type { UserRole } from '#models/user'
+import type { UserAccessStatus, UserRole } from '#models/user'
 
 export type CreateUserCommand = {
   firstName: string
@@ -34,6 +34,24 @@ export type RenewPasswordCommand = {
 
 export type RenewPasswordResult = 'RENEWED' | 'NOT_REQUIRED'
 
+export type DeactivateUserCommand = {
+  id: string
+  deactivatedByUserId: string
+  deactivatedAt: DateTime
+}
+
+/**
+ * What the guarded write observed, never what the caller should be told: selecting the business
+ * exception is the use case's job.
+ *
+ * `NOT_ACTIVE` carries the status the row actually had, which is the only thing that distinguishes
+ * a pending invitation from a cancelled one from a user someone else deactivated first.
+ */
+export type DeactivateUserResult =
+  | { kind: 'DEACTIVATED'; user: User }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'NOT_ACTIVE'; accessStatus: UserAccessStatus }
+
 export default abstract class UserRepository {
   abstract create(command: CreateUserCommand): Promise<User>
   abstract findByEmail(email: string): Promise<User | null>
@@ -51,4 +69,11 @@ export default abstract class UserRepository {
   abstract listActive(): Promise<User[]>
 
   abstract renewPassword(command: RenewPasswordCommand): Promise<RenewPasswordResult>
+
+  /**
+   * Moves one user from active to deactivated and revokes every remembered connection they hold.
+   * The transition is guarded on the row still being active, so concurrent attempts resolve to
+   * exactly one deactivation.
+   */
+  abstract deactivateActive(command: DeactivateUserCommand): Promise<DeactivateUserResult>
 }

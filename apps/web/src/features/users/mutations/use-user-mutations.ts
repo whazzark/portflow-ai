@@ -1,0 +1,28 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { userQueries } from '@/features/users/queries/user-queries'
+import { tuyauQuery } from '@/libraries/tuyau/client'
+
+export function useUserMutations() {
+  const queryClient = useQueryClient()
+
+  const refreshUsers = async () => {
+    await queryClient.invalidateQueries({
+      exact: true,
+      queryKey: userQueries.list().queryKey,
+    })
+  }
+
+  /**
+   * Refreshed on the failure path too, not only on success: a refusal usually means the record's
+   * authoritative state moved on since this view loaded, and the administrator should read the
+   * reason against a workbench that already agrees with the server.
+   */
+  const deactivate = useMutation(
+    tuyauQuery.users.deactivate.mutationOptions({
+      onSuccess: () => refreshUsers(),
+      onError: () => refreshUsers(),
+    }),
+  )
+
+  return { deactivate, refreshUsers }
+}
