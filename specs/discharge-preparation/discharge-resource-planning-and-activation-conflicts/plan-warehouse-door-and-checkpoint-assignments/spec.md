@@ -39,7 +39,10 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-53: a warehouse door assignment is held per product lot, so the product lots
+  created by GH-53 must exist before this slice has anything to assign.
+- Deliverable in parallel with GH-55: neither blocks the other, but both add a panel to the same
+  discharge detail workbench.
 
 ## Out of Scope
 
@@ -56,6 +59,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/54
 - Parent roadmap: specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/roadmap.md
 - Absorbed scope: the warehouse door and checkpoint half of "Update Discharge Resource Planning From the Frontend", a frontend-only slice split between GH-54 and GH-55 on 2026-09-10 and deleted from GitHub.

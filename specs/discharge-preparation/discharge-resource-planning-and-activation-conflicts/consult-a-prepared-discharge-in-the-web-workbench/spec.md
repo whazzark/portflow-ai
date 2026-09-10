@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-61: the detail screen is reached from the discharges list and reuses the route tree
+  and navigation entry that slice creates. The two queries are independent in `apps/api`; the
+  dependency is on the web navigation seam.
 
 ## Out of Scope
 
@@ -55,6 +57,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/58
 - Parent roadmap: specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/roadmap.md
 - Related domain: discharge-preparation

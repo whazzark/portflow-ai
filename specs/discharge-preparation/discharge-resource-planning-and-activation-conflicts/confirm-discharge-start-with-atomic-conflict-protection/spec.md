@@ -39,7 +39,10 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-54 and GH-55: the confirmation checks that the required warehouse door assignments
+  match the discharge, and activating the first shift requires it to hold at least one assigned
+  truck, warehouse door, and weighing area. GH-53 blocks this slice transitively through both.
+- Last slice of the roadmap's execution order.
 
 ## Out of Scope
 
@@ -56,6 +59,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/56
 - Parent roadmap: specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/roadmap.md
 - Absorbed scope: "Confirm Discharge Start With Visible Conflict Handling", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.

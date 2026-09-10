@@ -39,7 +39,10 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- None. No open issue blocks this slice: the operational read model it queries was delivered by
+  GH-236, and neither `apps/api` nor `apps/web` carries a discharge query or route yet, so this
+  slice creates them.
+- It is the entry point of the roadmap's execution order: GH-58 depends on it.
 
 ## Out of Scope
 
@@ -55,6 +58,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/61
 - Parent roadmap: specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/roadmap.md
 - Related domain: discharge-preparation

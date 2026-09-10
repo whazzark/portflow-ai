@@ -8,14 +8,21 @@ The roadmap groups independently deliverable slices from the source issue.
 
 ## Delivery slices
 
-| ID | Sub-feature | Status | Artifact |
-|---|---|---|---|
-| GH-53 | Prepare a planned discharge with its product lots and shifts | planned | ./prepare-a-discharge-with-product-lots-and-shifts/ |
-| GH-54 | Plan warehouse door and checkpoint assignments | planned | ./plan-warehouse-door-and-checkpoint-assignments/ |
-| GH-55 | Plan the discharge truck pool and shift subsets | planned | ./plan-the-discharge-truck-pool-and-shift-subsets/ |
-| GH-56 | Confirm discharge start with conflict protection and handling | planned | ./confirm-discharge-start-with-atomic-conflict-protection/ |
-| GH-58 | Consult a Prepared Discharge in the Web Workbench | planned | ./consult-a-prepared-discharge-in-the-web-workbench/ |
-| GH-61 | Browse the Discharges List in the Web Workbench | planned | ./browse-the-discharges-list-in-the-web-workbench/ |
+The rows are ordered by execution order. Blockers are recorded as GitHub issue dependencies; the
+`Blocked by` column repeats only the direct ones, since GitHub resolves the transitive ones.
+
+| ID | Sub-feature | Blocked by | Status | Artifact |
+|---|---|---|---|---|
+| GH-61 | Browse the Discharges List in the Web Workbench | — | planned | ./browse-the-discharges-list-in-the-web-workbench/ |
+| GH-58 | Consult a Prepared Discharge in the Web Workbench | GH-61 | planned | ./consult-a-prepared-discharge-in-the-web-workbench/ |
+| GH-53 | Prepare a planned discharge with its product lots and shifts | GH-58 | planned | ./prepare-a-discharge-with-product-lots-and-shifts/ |
+| GH-54 | Plan warehouse door and checkpoint assignments | GH-53 | planned | ./plan-warehouse-door-and-checkpoint-assignments/ |
+| GH-55 | Plan the discharge truck pool and shift subsets | GH-53 | planned | ./plan-the-discharge-truck-pool-and-shift-subsets/ |
+| GH-56 | Confirm discharge start with conflict protection and handling | GH-54, GH-55 | planned | ./confirm-discharge-start-with-atomic-conflict-protection/ |
+
+GH-54 and GH-55 are the only pair that can be delivered in parallel. They both add a panel to the
+discharge detail workbench, so expect them to touch neighbouring files even though neither blocks
+the other.
 
 ## Cross-cutting context
 
@@ -39,6 +46,7 @@ untouched.
 ## Traceability
 
 - Canonical issue: https://github.com/whazzark/portflow-ai/issues/52
-- Child issue relationships are read from GitHub sub-issues. The three absorbed frontend issues
+- Child issue relationships are read from GitHub sub-issues, and the blockers above from the
+  GitHub issue dependencies of the same children. The three absorbed frontend issues
   listed above no longer exist on GitHub; their scope is recorded in the absorbing spec.
 - Each child owns an independently reviewable roadmap or feature spec.

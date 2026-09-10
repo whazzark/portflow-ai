@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-58: the creation is launched from the discharges workbench and lands on the detail
+  screen that slice delivers, which is also where the product lots and the planned shifts owned by
+  this slice are inspected and corrected.
 
 ## Out of Scope
 
@@ -56,6 +58,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/53
 - Parent roadmap: specs/discharge-preparation/discharge-resource-planning-and-activation-conflicts/roadmap.md
 - Absorbed scope: "Create a Planned Discharge From the Frontend", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
