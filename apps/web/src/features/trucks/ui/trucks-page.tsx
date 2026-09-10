@@ -242,16 +242,22 @@ export function TrucksPage() {
       : administrator && truckStatus === 'archived'
         ? archived
         : available
+  // Both of these carry `truckMode: 'view'` alongside the id, exactly as the transport-company
+  // panel's `viewCompanyDetails` does. Without it the two states can contradict each other in one
+  // direction only: the route clears `truckId` under a `truckMode=create`, so an id navigated
+  // without a mode is stripped straight back out — and a `create` this page refuses (a shared URL
+  // opened by a non-administrator) is never cleared by anything, leaving no truck openable at all.
   const toggleTruck = (id: string) => {
     void navigate({
       search: (previous) => ({
         ...previous,
         truckId: previous.truckId === id ? undefined : id,
+        truckMode: 'view',
       }),
     })
   }
   const selectTruck = (id: string) => {
-    void navigate({ search: (previous) => ({ ...previous, truckId: id }) })
+    void navigate({ search: (previous) => ({ ...previous, truckId: id, truckMode: 'view' }) })
   }
   // The row menu edits a truck that is not necessarily the selected one, so it carries the
   // selection and the mode in a single navigation.
