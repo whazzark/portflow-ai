@@ -10,7 +10,10 @@ test('opens exact available details and toggles the selection closed', async () 
   mockTrucks()
   const { router } = renderTrucks()
 
-  await user.click(await screen.findByRole('button', { name: /AA-101-PF, Atlantic Transport/ }))
+  const row = await screen.findByRole('button', { name: /AA-101-PF, Atlantic Transport/ })
+  expect(row).toHaveAttribute('aria-pressed', 'false')
+
+  await user.click(row)
   const details = await screen.findByRole('dialog')
 
   expect(within(details).getByText('Volvo FMX')).toBeInTheDocument()
@@ -21,9 +24,14 @@ test('opens exact available details and toggles the selection closed', async () 
   })
 
   // The open details sheet marks the directory behind it aria-hidden.
-  await user.click(
-    screen.getByRole('button', { name: /AA-101-PF, Atlantic Transport/, hidden: true }),
-  )
+  const openedRow = screen.getByRole('button', {
+    name: /AA-101-PF, Atlantic Transport/,
+    hidden: true,
+  })
+  // A toggle, as the transport-company rows beside it are: pressed while its truck is the one open.
+  expect(openedRow).toHaveAttribute('aria-pressed', 'true')
+
+  await user.click(openedRow)
   await expect.poll(() => router.state.location.search).not.toHaveProperty('truckId')
   await waitFor(() => {
     expect(screen.queryByRole('dialog', { hidden: true })).not.toBeInTheDocument()

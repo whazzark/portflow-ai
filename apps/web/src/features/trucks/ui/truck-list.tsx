@@ -102,9 +102,12 @@ export function TruckList({
                       }
                     />
                   )}
+                  {/* `aria-pressed` rather than `aria-current`, as on the transport-company rows
+                      beside these: the row's body toggles a truck open and closed again, it does
+                      not mark the page the reader is on. */}
                   <button
                     aria-label={`${truck.registration}, ${companyName}`}
-                    aria-current={selected ? 'true' : undefined}
+                    aria-pressed={selected}
                     className={classnames(
                       'min-w-0 flex-1 cursor-pointer rounded-lg border border-transparent px-3 py-2.5 text-left transition-colors hover:bg-muted focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
                       selected && 'border-border bg-muted',
