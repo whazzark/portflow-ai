@@ -76,7 +76,10 @@ test('omits an unrecorded lifecycle event rather than showing it blank', async (
   expect(within(history).queryByText('Not specified')).not.toBeInTheDocument()
 })
 
-test('offers no access action anywhere on the record', async () => {
+// Deactivation was added to this record by GH-20 and is covered by `../deactivate/`. Every other
+// access action still belongs to a slice that has not shipped, and the record must not grow one by
+// accident.
+test('offers no access action but the deactivation', async () => {
   const user = userEvent.setup()
   mockUsers()
 
@@ -86,7 +89,6 @@ test('offers no access action anywhere on the record', async () => {
   for (const action of [
     /invite/i,
     /cancel/i,
-    /deactivate/i,
     /reactivate/i,
     /change role/i,
     /edit/i,
