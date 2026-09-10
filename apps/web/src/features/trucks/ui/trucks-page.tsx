@@ -1,9 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
+import { useBulkSelection } from '@/components/lifecycle/use-bulk-selection'
+import {
+  useClearSelectionShortcut,
+  useSelectAllShortcut,
+} from '@/components/lifecycle/use-bulk-selection-shortcuts'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { InputSearch } from '@/components/ui/input-search'
@@ -12,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { transportCompanyQueries } from '@/features/transport-companies/queries/transport-company-queries'
+import { truckMatchesSearch } from '@/features/trucks/helpers/truck-search'
 import { useTruckMutations } from '@/features/trucks/mutations/use-truck-mutations'
 import { truckQueries } from '@/features/trucks/queries/truck-queries'
 import {
@@ -109,7 +115,11 @@ export function TrucksPage() {
     editSession.id === truckId &&
     editSession.editable
 
-  const [selectedTruckIds, setSelectedTruckIds] = useState<Set<string>>(new Set())
+  // Holds the directory *and* the floating toolbar that acts on it, because both are places the
+  // administrator's focus legitimately sits while the selection is theirs to command.
+  const truckPanelRef = useRef<HTMLDivElement>(null)
+  const selection = useBulkSelection()
+  const { selectedIds: selectedTruckIds, clear: clearTruckSelection } = selection
   const activeLifecycleStatus =
     truckStatus === 'archived'
       ? 'ARCHIVED'
@@ -134,6 +144,47 @@ export function TrucksPage() {
     () => [...visibleSelectedTruckIds],
     [visibleSelectedTruckIds],
   )
+
+  // What the active tab currently lists, once the transport-company scope and the search have
+  // narrowed it — the same set the section renders, and so the same set Ctrl/Cmd+A acts on. The
+  // suspended tab carries no bulk action, so it offers nothing to select.
+  const shortcutSelectableTruckIds = useMemo(() => {
+    if (truckStatus === 'suspended') {
+      return []
+    }
+
+    return scopedTrucks
+      .filter((truck) => truck.status === activeLifecycleStatus)
+      .filter((truck) =>
+        truckMatchesSearch(
+          truck,
+          companies.find((company) => company.id === truck.transportCompanyId),
+          truckSearch,
+        ),
+      )
+      .map((truck) => truck.id)
+  }, [activeLifecycleStatus, companies, scopedTrucks, truckSearch, truckStatus])
+
+  const selectAllVisibleTrucks = useCallback(
+    (event: KeyboardEvent) => {
+      event.preventDefault()
+      selection.toggleMany(shortcutSelectableTruckIds, true)
+    },
+    [selection, shortcutSelectableTruckIds],
+  )
+  // Scoped to this panel: the transport companies beside it are selectable too, so only the one
+  // holding focus can be what the administrator meant — for clearing a selection exactly as for
+  // building one, or a single Escape would empty both collections at once.
+  useSelectAllShortcut({
+    enabled: administrator,
+    onSelectAll: selectAllVisibleTrucks,
+    scopeRef: truckPanelRef,
+  })
+  useClearSelectionShortcut({
+    enabled: administrator && selectedTruckIds.size > 0,
+    onClear: clearTruckSelection,
+    scopeRef: truckPanelRef,
+  })
 
   useEffect(() => {
     if (!administrator && truckStatus === 'archived') {
@@ -203,16 +254,22 @@ export function TrucksPage() {
       : administrator && truckStatus === 'archived'
         ? archived
         : available
+  // Both of these carry `truckMode: 'view'` alongside the id, exactly as the transport-company
+  // panel's `viewCompanyDetails` does. Without it the two states can contradict each other in one
+  // direction only: the route clears `truckId` under a `truckMode=create`, so an id navigated
+  // without a mode is stripped straight back out — and a `create` this page refuses (a shared URL
+  // opened by a non-administrator) is never cleared by anything, leaving no truck openable at all.
   const toggleTruck = (id: string) => {
     void navigate({
       search: (previous) => ({
         ...previous,
         truckId: previous.truckId === id ? undefined : id,
+        truckMode: 'view',
       }),
     })
   }
   const selectTruck = (id: string) => {
-    void navigate({ search: (previous) => ({ ...previous, truckId: id }) })
+    void navigate({ search: (previous) => ({ ...previous, truckId: id, truckMode: 'view' }) })
   }
   // The row menu edits a truck that is not necessarily the selected one, so it carries the
   // selection and the mode in a single navigation.
@@ -295,21 +352,10 @@ export function TrucksPage() {
               <TruckSection
                 canAdminister={administrator}
                 lifecycle="available"
+                onCreate={startCreatingTruck}
                 onEdit={editTruck}
                 onSelect={toggleTruck}
-                onSelectionChange={(checked, ids) => {
-                  setSelectedTruckIds((previous) => {
-                    const next = new Set(previous)
-                    for (const id of ids) {
-                      if (checked) {
-                        next.add(id)
-                      } else {
-                        next.delete(id)
-                      }
-                    }
-                    return next
-                  })
-                }}
+                onSelectionChange={(checked, ids) => selection.toggleMany(ids, checked)}
                 onView={selectTruck}
                 search={truckSearch}
                 selectable={administrator}
@@ -344,19 +390,7 @@ export function TrucksPage() {
                   lifecycle="archived"
                   onEdit={editTruck}
                   onSelect={toggleTruck}
-                  onSelectionChange={(checked, ids) => {
-                    setSelectedTruckIds((previous) => {
-                      const next = new Set(previous)
-                      for (const id of ids) {
-                        if (checked) {
-                          next.add(id)
-                        } else {
-                          next.delete(id)
-                        }
-                      }
-                      return next
-                    })
-                  }}
+                  onSelectionChange={(checked, ids) => selection.toggleMany(ids, checked)}
                   onView={selectTruck}
                   search={truckSearch}
                   selectable={administrator}
@@ -455,12 +489,14 @@ export function TrucksPage() {
       action={truckStatus === 'archived' ? 'reactivate' : 'archive'}
       blockerReasonLabels={TRUCK_BLOCKER_REASON_LABELS}
       idPrefix="truck"
-      onClear={() => setSelectedTruckIds(new Set())}
+      // The same set the section renders, so the toolbar can say how much of the selection the
+      // current search has taken off screen. A search narrows what is listed, never what was
+      // chosen, and archiving acts on the whole selection either way.
+      listedIds={shortcutSelectableTruckIds}
+      onClear={clearTruckSelection}
       // Narrowed to the blocked ids rather than cleared, so the administrator can resolve the
       // blocker and retry exactly those without reselecting them.
-      onSuccess={(outcome) =>
-        setSelectedTruckIds(new Set(outcome.blocked.map((blocked) => blocked.id)))
-      }
+      onSuccess={(outcome) => selection.retainOnly(outcome.blocked.map((blocked) => blocked.id))}
       plural={TRUCK_PLURAL}
       refresh={truckMutations.refreshTrucks}
       selectedIds={visibleSelectedTruckIdList}
@@ -477,7 +513,9 @@ export function TrucksPage() {
   )
 
   return (
-    <div className="relative">
+    // The keyboard scope, rather than the directory alone: the floating toolbar below is a sibling
+    // of the list it acts on, and both sheets are portaled out of here entirely.
+    <div className="relative" ref={truckPanelRef}>
       {directory}
       {createSheet}
       <Sheet
