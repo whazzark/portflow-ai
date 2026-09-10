@@ -130,6 +130,9 @@ export function WarehousesPage() {
   const doorMutations = useWarehouseDoorMutations()
   // The lifecycle view placement was entered from, kept so cancelling can restore it.
   const doorStatusBeforeCreating = useRef<WarehouseDoorStatusFilter | undefined>(undefined)
+  // Which of this page's two collections a Ctrl/Cmd+A means is decided by whether focus is inside
+  // the panel — see `selectAllInFocus` below.
+  const panelRef = useRef<HTMLDivElement>(null)
 
   // Leaving the mode — cancelling, navigating away, or landing on the route without the param —
   // discards every pending boundary point rather than carrying it into a later session.
@@ -314,15 +317,6 @@ export function WarehousesPage() {
     },
     [bulkIntent, checkableIds, navigate, visible],
   )
-  // One keystroke, one meaning at a time. The two collections of this page are never both in
-  // reach: while a warehouse's sheet is open with doors to select, the map behind it is covered,
-  // so `Ctrl+A` there can only mean the doors. #214's note said doors got no binding because the
-  // trucks and customers directories had none either — they have one now, and the map yielding
-  // while the sheet is open is what keeps the keystroke unambiguous.
-  useSelectAllShortcut({
-    enabled: canManageWarehouses && !canSelectDoors,
-    onSelectAll: selectAllVisible,
-  })
   const selectAllDoors = useCallback(
     (event: KeyboardEvent) => {
       if (!selected || checkableDoorIds.size === 0) {
@@ -333,7 +327,31 @@ export function WarehousesPage() {
     },
     [checkableDoorIds, selected],
   )
-  useSelectAllShortcut({ enabled: canSelectDoors, onSelectAll: selectAllDoors })
+  // One keystroke, one meaning at a time — settled by where focus is, not by which collection
+  // happens to be selectable. This page's panel is deliberately unmodal (`modal={false}`, no
+  // overlay), so an open warehouse leaves the map behind it fully workable: pannable, filterable,
+  // clickable. A press made out there is therefore still about the map, even with a doors list on
+  // screen. #214's note said doors got no binding because the trucks and customers directories
+  // had none either — they have one now, and focus is what keeps the keystroke unambiguous.
+  const selectAllInFocus = useCallback(
+    (event: KeyboardEvent) => {
+      if (panelRef.current?.contains(document.activeElement)) {
+        // Inside the panel the press can only mean the list it shows: its available doors, or
+        // nothing at all where the open warehouse or view offers no selection — an archived
+        // warehouse, the Archived doors, a creation or update session. Never the map behind, whose
+        // select-all clears `warehouseId` and would tear down the panel being read, taking an
+        // in-progress footprint edit and its draft points with it.
+        if (canSelectDoors) {
+          selectAllDoors(event)
+        }
+        return
+      }
+
+      selectAllVisible(event)
+    },
+    [canSelectDoors, selectAllDoors, selectAllVisible],
+  )
+  useSelectAllShortcut({ enabled: canManageWarehouses, onSelectAll: selectAllInFocus })
   // Doors get no `Escape` binding, unlike the map's selection. Inside a sheet that key already
   // means "close this", which is a stronger convention than any shortcut we would add, and the
   // panel's own "Clear selection" button is right beside the count anyway.
@@ -982,6 +1000,7 @@ export function WarehousesPage() {
       >
         <SheetContent
           className="gap-0 overflow-y-auto data-[side=bottom]:h-[min(75dvh,38rem)] data-[side=right]:sm:max-w-lg"
+          ref={panelRef}
           showOverlay={false}
           side={isMobile ? 'bottom' : 'right'}
         >
