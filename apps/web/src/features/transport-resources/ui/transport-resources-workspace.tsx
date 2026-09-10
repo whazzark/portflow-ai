@@ -355,7 +355,7 @@ export function TransportResourcesWorkspace() {
       >
         {/* No `aria-label`: each panel below renders its own `SheetTitle`, which names the
             dialog through `aria-labelledby` and would silently override one set here. */}
-        <SheetContent className="overflow-y-auto sm:max-w-lg">
+        <SheetContent className="overflow-y-auto data-[side=right]:sm:max-w-lg">
           {isCreatingCompany ? (
             <CreateTransportCompanyPanel
               onCreate={async (value) => {

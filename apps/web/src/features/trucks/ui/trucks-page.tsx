@@ -404,7 +404,7 @@ export function TrucksPage() {
       }}
       open={isCreatingTruck}
     >
-      <SheetContent className="overflow-hidden sm:max-w-lg">
+      <SheetContent className="overflow-hidden data-[side=right]:sm:max-w-lg">
         <CreateTruckPanel
           companies={creatableCompanies}
           companiesError={availableCompaniesQuery.isError}
@@ -516,7 +516,7 @@ export function TrucksPage() {
         }}
         open={Boolean(selected)}
       >
-        <SheetContent className="overflow-y-auto sm:max-w-lg">
+        <SheetContent className="overflow-y-auto data-[side=right]:sm:max-w-lg">
           {isEditingTruck ? editTruckPanel : truckDetails}
         </SheetContent>
       </Sheet>
