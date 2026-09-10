@@ -17,6 +17,21 @@ test('opens on the active discharges and shows every status count at once', asyn
   expect(within(table).queryByText('MV Atlantic Dawn')).not.toBeInTheDocument()
 })
 
+// The tabs read in the order the site's work moves through, which is not the order the screen
+// opens on: a consultation starts on what is happening now, one tab in.
+test('reads the tabs planned before active before closed', async () => {
+  mockDischarges()
+
+  renderDischarges()
+  await screen.findByRole('table', { name: 'Discharges' })
+
+  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+    'Planned (2)',
+    'Active (1)',
+    'Closed (2)',
+  ])
+})
+
 test('lists only the selected status when the user switches tab', async () => {
   const user = userEvent.setup()
   mockDischarges()

@@ -20,7 +20,7 @@ const TAB_LABELS = {
 
 // Planned before active before closed: the order the site's work moves through, not the order the
 // tabs were built in.
-const TAB_ORDER: DischargeStatusFilter[] = ['active', 'planned', 'closed']
+const TAB_ORDER: DischargeStatusFilter[] = ['planned', 'active', 'closed']
 
 function isDischargeStatusFilter(value: string): value is DischargeStatusFilter {
   return DISCHARGE_STATUS_FILTERS.includes(value as DischargeStatusFilter)
