@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-12: restoring an invitation requires a cancelled one to make pending again.
+- Blocked by GH-9: the restoration hands out a new activation link, which is the renewal
+  outcome that slice owns.
 
 ## Out of Scope
 
@@ -51,10 +53,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the restoration command in `apps/api` and its action in the user workbench of `apps/web`. It absorbs the restoration part of the former frontend-only slice "Manage Invitation Lifecycle From the Web Workbench".
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/13
 - Parent roadmap: specs/user-administration/invitation-administration/roadmap.md
+- Absorbed scope: the restoration part of "Manage Invitation Lifecycle From the Web Workbench", a frontend-only slice split between GH-9, GH-12, GH-13 and GH-14 on 2026-09-10 and closed on GitHub.
 - Related domain: user-administration

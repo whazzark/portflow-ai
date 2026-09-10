@@ -52,6 +52,9 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the link renewal command in `apps/api` and its action in
+  the user workbench of `apps/web`. It absorbs the renewal part of the former frontend-only slice
+  "Manage Invitation Lifecycle From the Web Workbench", which belonged to the GH-11 roadmap.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
@@ -59,4 +62,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/9
 - Parent roadmap: specs/user-administration/invitation-onboarding/roadmap.md
+- Absorbed scope: the renewal part of "Manage Invitation Lifecycle From the Web Workbench", a frontend-only slice of the GH-11 roadmap split between GH-9, GH-12, GH-13 and GH-14 on 2026-09-10 and closed on GitHub.
 - Related domain: user-administration
