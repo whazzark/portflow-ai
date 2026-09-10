@@ -18,13 +18,16 @@ const transportResourcesSearchSchema = z
     truckStatus: z.enum(['available', 'suspended', 'archived']).catch('available'),
     truckSearch: z.string().catch(''),
     truckId: z.string().optional().catch(undefined),
-    truckMode: z.enum(['view', 'edit']).catch('view'),
+    truckMode: z.enum(['view', 'edit', 'create']).catch('view'),
   })
-  // Creating a company and detailing one are mutually exclusive states. Clearing the id here means
-  // the two can never contradict each other, so no consumer has to decide which one wins.
-  .transform((search) =>
-    search.companyDetailsMode === 'create' ? { ...search, companyDetailsId: undefined } : search,
-  )
+  // Creating a resource and detailing one are mutually exclusive states, for a truck exactly as
+  // for a company. Clearing the id here means the two can never contradict each other, so no
+  // consumer has to decide which one wins.
+  .transform((search) => ({
+    ...search,
+    companyDetailsId: search.companyDetailsMode === 'create' ? undefined : search.companyDetailsId,
+    truckId: search.truckMode === 'create' ? undefined : search.truckId,
+  }))
 
 export const Route = createFileRoute('/_authenticated/transport-resources')({
   staticData: { breadcrumb: 'Transport resources' },

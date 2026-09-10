@@ -55,7 +55,7 @@ test('places, names, and creates a dock, then shows it as the selected read-only
   expect(await screen.findByText(`Dock “${created.name}” created`)).toBeInTheDocument()
   expect(await screen.findByRole('heading', { name: created.name })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({
-    checkpoint: `dock:${created.id}`,
+    checkpointId: `dock:${created.id}`,
   })
   expect((router.state.location.search as { create?: string }).create).toBeUndefined()
 
@@ -104,7 +104,7 @@ test('reveals the new dock even when the active filters would hide it', async ()
 
   expect(await screen.findByRole('heading', { name: created.name })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({
-    checkpoint: `dock:${created.id}`,
+    checkpointId: `dock:${created.id}`,
     status: 'available',
   })
   expect((router.state.location.search as { kinds?: string }).kinds).toBeUndefined()
