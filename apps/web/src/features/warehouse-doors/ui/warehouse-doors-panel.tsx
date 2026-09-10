@@ -2,7 +2,7 @@ import { MapPinIcon, XIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Empty, EmptyDescription, EmptyHeader } from '@/components/ui/empty'
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { WarehouseDoorStatusFilter } from '@/features/warehouse-doors/types'
 import { WarehouseDoorRowActions } from '@/features/warehouse-doors/ui/warehouse-door-row-actions'
@@ -18,6 +18,13 @@ import { classnames } from '@/libraries/shadcn/helpers'
 const labels: Record<WarehouseDoorStatusFilter, string> = {
   available: 'Available',
   archived: 'Archived',
+}
+
+// The description says what would put a door in this list, rather than restating the title —
+// the same split every other directory's empty state makes.
+const emptyDescriptions: Record<WarehouseDoorStatusFilter, string> = {
+  available: 'Doors in service at this warehouse appear here.',
+  archived: 'Doors archived from this warehouse appear here.',
 }
 
 export function WarehouseDoorsPanel({
@@ -145,15 +152,11 @@ export function WarehouseDoorsPanel({
               </div>
             )}
             {doors.length === 0 ? (
-              // The shared empty state every other directory uses. The sentence is kept in one
-              // text node, exactly as it read before, so it stays the panel's single answer to
-              // "why is this list blank" — which is also why no title sits above it: a heading
-              // here could only say the same thing a second time.
+              // The shared empty state every other directory uses.
               <Empty className="min-h-32 border-0 p-0">
                 <EmptyHeader>
-                  <EmptyDescription>
-                    {`No ${labels[key].toLowerCase()} warehouse doors in this warehouse.`}
-                  </EmptyDescription>
+                  <EmptyTitle>No {labels[key].toLowerCase()} doors</EmptyTitle>
+                  <EmptyDescription>{emptyDescriptions[key]}</EmptyDescription>
                 </EmptyHeader>
               </Empty>
             ) : (
