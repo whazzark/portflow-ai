@@ -6,11 +6,34 @@ on:
   pull_request:
   workflow_call:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TZ: UTC
+
 jobs:
-  checks:
+  lint:
+    name: Format & lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: pnpm check
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: pnpm typecheck
+
+  test-api:
+    name: Test api
     runs-on: ubuntu-latest
     env:
-      TZ: UTC
       PORT: 3333
       HOST: 0.0.0.0
       LOG_LEVEL: info
@@ -23,22 +46,30 @@ jobs:
       DB_DATABASE: portflow
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: pnpm exec turbo run test --filter=@portflow/api
 
-      - uses: pnpm/action-setup@v6
+  test-web:
+    name: Test web ${{ matrix.shard }}/4
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: pnpm exec turbo run test --filter=@portflow/web -- --shard=${{ matrix.shard }}/4
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 25
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Format & lint
-        run: pnpm check
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
+  # Aggregates every job above under the single name branch protection requires. Without it, a
+  # renamed or resharded job silently removes the context `master` waits for, and pull requests
+  # stay blocked behind a check that will never report.
+  checks:
+    name: checks
+    if: always()
+    needs: [lint, typecheck, test-api, test-web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when any check did not succeed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
