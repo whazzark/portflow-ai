@@ -6,8 +6,8 @@
 **Roadmap Entry**: `GH-85`
 **Created**: 2026-07-09
 **Status**: Needs Clarification
-**Priority**: priority:P0
-**Milestone**: 3. Livrer l'exécution opérationnelle nominale
+**Priority**: priority:P1
+**Milestone**: 5. Livrer l'exécution opérationnelle interactive
 **Domain**: discharge-execution
 
 ## User Scenarios & Testing
@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-84: corrections cover the weighings, the weighing area and the target door of a
+  rotation up to its completion, which that slice is what completes.
 
 ## Out of Scope
 
@@ -55,6 +56,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/85
 - Parent roadmap: specs/discharge-execution/rotation-execution-and-weighings/roadmap.md
 - Related domain: discharge-execution

@@ -6,8 +6,8 @@
 **Roadmap Entry**: `GH-83`
 **Created**: 2026-07-09
 **Status**: Needs Clarification
-**Priority**: priority:P0
-**Milestone**: 3. Livrer l'exécution opérationnelle nominale
+**Priority**: priority:P1
+**Milestone**: 5. Livrer l'exécution opérationnelle interactive
 **Domain**: discharge-execution
 
 ## User Scenarios & Testing
@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-82: a loaded weighing is recorded against the rotation that slice opens, and its
+  capacity check compares the result with the truck captured there.
 
 ## Out of Scope
 
@@ -51,10 +52,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the loaded weighing and reweighing commands in `apps/api` and their entry in the shift workspace of `apps/web`. It absorbs the loaded weighing part of the former frontend-only slice "Record Loaded Weighing and Confirm Empty Return in the Shift Workspace"; its empty return part belongs to GH-84.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/83
 - Parent roadmap: specs/discharge-execution/rotation-execution-and-weighings/roadmap.md
+- Absorbed scope: the loaded weighing part of "Record Loaded Weighing and Confirm Empty Return in the Shift Workspace", a frontend-only slice split between GH-83 and GH-84 on 2026-09-10 and closed on GitHub.
 - Related domain: discharge-execution
