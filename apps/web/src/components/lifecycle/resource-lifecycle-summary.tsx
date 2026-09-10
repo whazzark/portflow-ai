@@ -1,5 +1,5 @@
 import { Fragment, useId } from 'react'
-import { ResourceDetailField } from '@/components/resource-map/resource-details'
+import { ResourceDetailField } from '@/components/resource/resource-details'
 import { Separator } from '@/components/ui/separator'
 import { formatFullName } from '@/features/users/helpers/name'
 import { formatDateTime } from '@/helpers/dates'

@@ -1,14 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { PlusIcon, SearchIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+import { InputSearch } from '@/components/ui/input-search'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -196,32 +194,20 @@ export function TransportResourcesWorkspace() {
       >
         <CardContent className="flex min-h-0 flex-1 flex-col px-0">
           <div className="border-b p-3">
-            <Field>
-              <FieldLabel className="sr-only" htmlFor="transport-company-search">
-                Search transport companies
-              </FieldLabel>
-              <div className="relative">
-                <SearchIcon
-                  aria-hidden
-                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  className="pl-9"
-                  id="transport-company-search"
-                  onChange={(event) =>
-                    navigate({
-                      replace: true,
-                      search: (previous) => ({ ...previous, companySearch: event.target.value }),
-                    })
-                  }
-                  placeholder="Search transport companies"
-                  value={companySearch}
-                />
-              </div>
-            </Field>
+            <InputSearch
+              id="transport-company-search"
+              label="Search transport companies"
+              onValueChange={(value) =>
+                navigate({
+                  replace: true,
+                  search: (previous) => ({ ...previous, companySearch: value }),
+                })
+              }
+              placeholder="Search transport companies"
+              value={companySearch}
+            />
             {canAdminister && (
               <Button className="mt-3 w-full" onClick={startCompanyCreation}>
-                <PlusIcon aria-hidden="true" />
                 Create transport company
               </Button>
             )}
@@ -330,7 +316,7 @@ export function TransportResourcesWorkspace() {
       >
         <SheetContent
           aria-label={isCreatingCompany ? 'Create transport company' : 'Transport company details'}
-          className="overflow-y-auto"
+          className="overflow-y-auto sm:max-w-lg"
         >
           {isCreatingCompany ? (
             <CreateTransportCompanyPanel

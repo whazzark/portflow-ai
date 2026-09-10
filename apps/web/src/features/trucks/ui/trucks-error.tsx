@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 
-import { ResourceCollectionError } from '@/components/resource-map/resource-map-feedback'
+import { ResourceCollectionError } from '@/components/resource/resource-feedback'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { truckQueries } from '@/features/trucks/queries/truck-queries'

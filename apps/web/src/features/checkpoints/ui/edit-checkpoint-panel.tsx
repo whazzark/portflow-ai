@@ -69,7 +69,6 @@ export function EditCheckpointPanel<
           onSubmit={onUpdate}
           onSuccess={onSuccess}
           pending={draft}
-          pendingLabel="Saving…"
           submitLabel="Save changes"
         />
       </div>

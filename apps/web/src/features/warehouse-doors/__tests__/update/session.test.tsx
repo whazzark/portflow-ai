@@ -51,7 +51,7 @@ test('cancelling leaves the stored door untouched and returns to the details', a
   await user.type(screen.getByRole('textbox', { name: 'Door name' }), 'Abandoned')
   await dragDraft(user)
 
-  await user.click(screen.getByRole('button', { name: 'Cancel' }))
+  await user.click(screen.getByRole('button', { name: 'Back to details' }))
 
   await waitFor(() => expect(router.state.location.search).not.toHaveProperty('edit'))
   expect(await screen.findByRole('heading', { name: 'Doors' })).toBeInTheDocument()

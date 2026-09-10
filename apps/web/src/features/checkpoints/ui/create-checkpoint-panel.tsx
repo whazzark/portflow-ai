@@ -10,12 +10,16 @@ export function CreateCheckpointPanel<TResource>({
   kind,
   pending,
   onPendingChange,
+  onCancel,
   onCreate,
   onSuccess,
 }: {
   kind: CheckpointKind
   pending: PendingCheckpointPlacement | null
   onPendingChange: (point: PendingCheckpointPlacement) => void
+  /** The sheet is unmodal over the map, so a click outside dismisses nothing and the placement
+   * draft has to be abandoned deliberately — as warehouse and door creation already do. */
+  onCancel: () => void
   onCreate: (value: { name: string; latitude: number; longitude: number }) => Promise<TResource>
   onSuccess: (resource: TResource) => void
 }) {
@@ -33,11 +37,11 @@ export function CreateCheckpointPanel<TResource>({
         <CheckpointResourceForm
           failureTitle={(name) => resourceFailureTitle('create', resourceNoun, name)}
           kind={kind}
+          onCancel={onCancel}
           onPendingChange={onPendingChange}
           onSubmit={onCreate}
           onSuccess={onSuccess}
           pending={pending}
-          pendingLabel="Creating…"
           submitLabel={`Create ${resourceNoun}`}
         />
       </div>

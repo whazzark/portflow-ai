@@ -1,5 +1,5 @@
 import { ResourceLifecycleSummary } from '@/components/lifecycle/resource-lifecycle-summary'
-import { ResourceDetailField } from '@/components/resource-map/resource-details'
+import { ResourceDetailField } from '@/components/resource/resource-details'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'

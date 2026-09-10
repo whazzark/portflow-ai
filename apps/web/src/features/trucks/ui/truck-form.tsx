@@ -5,7 +5,7 @@ import { FieldGroup } from '@/components/ui/field'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
 import { TRUCK_SINGULAR } from '@/features/trucks/truck-lifecycle'
 import type { TruckDto } from '@/features/trucks/types'
-import { resourceFailureTitle } from '@/helpers/resource-copy'
+import { resourceFailureTitle, WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
@@ -137,7 +137,7 @@ export function TruckForm({ truck, companies, onCreate, onUpdate, onSuccess }: T
           </form.AppField>
         </FieldGroup>
         <form.FormError />
-        <form.SubmitButton pendingLabel="Saving…">
+        <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS[truck ? 'update' : 'create']}>
           {truck ? 'Save changes' : 'Create truck'}
         </form.SubmitButton>
       </form.Form>

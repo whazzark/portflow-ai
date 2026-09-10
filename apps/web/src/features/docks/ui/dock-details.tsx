@@ -3,7 +3,7 @@ import {
   ResourceDetailBody,
   ResourceDetailField,
   ResourceDetailHeader,
-} from '@/components/resource-map/resource-details'
+} from '@/components/resource/resource-details'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SheetFooter } from '@/components/ui/sheet'

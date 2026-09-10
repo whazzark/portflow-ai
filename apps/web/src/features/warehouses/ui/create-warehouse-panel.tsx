@@ -17,7 +17,7 @@ import {
 } from '@/features/warehouses/geometry/footprint-validation'
 import type { WarehouseDto } from '@/features/warehouses/types'
 import { WAREHOUSE_SINGULAR } from '@/features/warehouses/warehouse-lifecycle'
-import { resourceFailureTitle } from '@/helpers/resource-copy'
+import { resourceFailureTitle, WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
@@ -304,13 +304,9 @@ export function CreateWarehousePanel({
             </FieldGroup>
             <form.FormError />
             <div className="flex gap-2">
-              <form.Subscribe selector={(state) => state.isSubmitting}>
-                {(isSubmitting) => (
-                  <Button disabled={isSubmitting || !canSubmit} type="submit">
-                    {isSubmitting ? 'Creating…' : 'Create warehouse'}
-                  </Button>
-                )}
-              </form.Subscribe>
+              <form.SubmitButton disabled={!canSubmit} pendingLabel={WRITE_PENDING_LABELS.create}>
+                Create warehouse
+              </form.SubmitButton>
               <Button onClick={onCancel} type="button" variant="outline">
                 Cancel
               </Button>
