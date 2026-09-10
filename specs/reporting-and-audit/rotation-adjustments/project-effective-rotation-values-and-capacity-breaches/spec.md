@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P1
-**Milestone**: 4. Finaliser l'exécution et livrer les rapports immuables
+**Milestone**: 6. Finaliser l'exécution et livrer les rapports immuables
 **Domain**: reporting-and-audit
 
 ## User Scenarios & Testing
@@ -39,7 +39,8 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- Blocked by GH-93: effective values are projected from the adjustments that slice records, and a
+  capacity breach can only be revealed by one.
 
 ## Out of Scope
 
@@ -55,6 +56,7 @@
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/94
 - Parent roadmap: specs/reporting-and-audit/rotation-adjustments/roadmap.md
 - Related domain: reporting-and-audit
