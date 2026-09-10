@@ -28,8 +28,10 @@ export function CustomerSection({
   onSelectionChange,
 }: CustomerSectionProps) {
   return (
+    // Full height rather than a capped one: the table below caps itself at `md:max-h-full`, and a
+    // percentage max-height only resolves against a parent whose own height is definite.
     <section
-      className="md:max-h-full md:min-h-0"
+      className="md:h-full md:min-h-0"
       aria-label={isArchived ? 'Archived customers' : 'Available customers'}
     >
       <CustomerTable
