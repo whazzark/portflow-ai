@@ -25,7 +25,7 @@ Each slice is a vertical one: it owns its command or projection in `apps/api` an
 screen in `apps/web`, so that it stays independently deliverable as one issue, one feature
 directory, one branch, and one PR. The roadmap previously split the adjustment outcome into a
 backend slice and a frontend slice, GH-95. They were merged on 2026-09-10 and the absorbed issue
-was closed on GitHub, so the table below is the only remaining record of that split:
+was deleted from GitHub, so the table below is the only remaining record of that split:
 
 | Merged into | Absorbed frontend slice | Outcome |
 |---|---|---|

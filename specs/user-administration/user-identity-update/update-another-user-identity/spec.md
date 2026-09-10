@@ -61,5 +61,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/24
 - Parent roadmap: specs/user-administration/user-identity-update/roadmap.md
-- Absorbed scope: the administrator half of "Update User Identity From the Web Workbench", a frontend-only slice split between GH-24 and GH-25 on 2026-09-10 and closed on GitHub.
+- Absorbed scope: the administrator half of "Update User Identity From the Web Workbench", a frontend-only slice split between GH-24 and GH-25 on 2026-09-10 and deleted from GitHub.
 - Related domain: user-administration

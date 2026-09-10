@@ -62,5 +62,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/97
 - Parent roadmap: specs/reporting-and-audit/discharge-closure/roadmap.md
-- Absorbed scope: "Review Discharge Closure Readiness From the Frontend", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
+- Absorbed scope: "Review Discharge Closure Readiness From the Frontend", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: reporting-and-audit

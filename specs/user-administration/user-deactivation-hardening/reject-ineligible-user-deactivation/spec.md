@@ -61,5 +61,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/20
 - Parent roadmap: specs/user-administration/user-deactivation-hardening/roadmap.md
-- Absorbed scope: "Deactivate a User From the Web Workbench", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
+- Absorbed scope: "Deactivate a User From the Web Workbench", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: user-administration

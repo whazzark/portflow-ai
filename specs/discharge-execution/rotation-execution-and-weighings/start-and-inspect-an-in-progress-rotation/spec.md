@@ -61,5 +61,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/82
 - Parent roadmap: specs/discharge-execution/rotation-execution-and-weighings/roadmap.md
-- Absorbed scope: "Start a Rotation and Record the Empty Weighing in the Shift Workspace", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
+- Absorbed scope: "Start a Rotation and Record the Empty Weighing in the Shift Workspace", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: discharge-execution

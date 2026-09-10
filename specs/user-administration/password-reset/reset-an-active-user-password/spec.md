@@ -62,5 +62,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/17
 - Parent roadmap: specs/user-administration/password-reset/roadmap.md
-- Absorbed scope: "Initiate and Complete a Password Reset Through the Frontend", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
+- Absorbed scope: "Initiate and Complete a Password Reset Through the Frontend", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: user-administration

@@ -60,5 +60,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/90
 - Parent roadmap: specs/reporting-and-audit/rotation-validation/roadmap.md
-- Absorbed scope: the queue screen of "Build the Rotation Validation Queue Screen", a frontend-only slice split between GH-89 and GH-90 on 2026-09-10 and closed on GitHub.
+- Absorbed scope: the queue screen of "Build the Rotation Validation Queue Screen", a frontend-only slice split between GH-89 and GH-90 on 2026-09-10 and deleted from GitHub.
 - Related domain: reporting-and-audit

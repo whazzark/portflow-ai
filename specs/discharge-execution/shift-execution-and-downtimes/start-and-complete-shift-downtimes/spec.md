@@ -60,5 +60,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/67
 - Parent roadmap: specs/discharge-execution/shift-execution-and-downtimes/roadmap.md
-- Absorbed scope: the downtime recording part of "Downtime Recording and Shift/Downtime Corrections", a frontend-only slice split between GH-67, GH-70 and GH-71 on 2026-09-10 and closed on GitHub.
+- Absorbed scope: the downtime recording part of "Downtime Recording and Shift/Downtime Corrections", a frontend-only slice split between GH-67, GH-70 and GH-71 on 2026-09-10 and deleted from GitHub.
 - Related domain: discharge-execution

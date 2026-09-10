@@ -25,7 +25,7 @@ Each slice is a vertical one: it owns its command or query in `apps/api` and the
 action in the discharge detail workbench of `apps/web`, so that it stays independently deliverable
 as one issue, one feature directory, one branch, and one PR. The roadmap previously split those two
 outcomes into a backend slice and a frontend slice each. They were merged on 2026-09-10 and the
-absorbed issues were closed on GitHub, so the table below is the only remaining record of that
+absorbed issues were deleted from GitHub, so the table below is the only remaining record of that
 split:
 
 | Merged into | Absorbed frontend slice | Outcome |

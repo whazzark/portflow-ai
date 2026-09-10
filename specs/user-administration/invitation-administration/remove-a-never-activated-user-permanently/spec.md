@@ -60,5 +60,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/14
 - Parent roadmap: specs/user-administration/invitation-administration/roadmap.md
-- Absorbed scope: the removal part of "Manage Invitation Lifecycle From the Web Workbench", a frontend-only slice split between GH-9, GH-12, GH-13 and GH-14 on 2026-09-10 and closed on GitHub.
+- Absorbed scope: the removal part of "Manage Invitation Lifecycle From the Web Workbench", a frontend-only slice split between GH-9, GH-12, GH-13 and GH-14 on 2026-09-10 and deleted from GitHub.
 - Related domain: user-administration

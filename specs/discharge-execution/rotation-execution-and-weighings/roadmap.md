@@ -26,7 +26,7 @@ roadmap is a chain with nothing to run in parallel.
 Each slice is a vertical one: it owns its command in `apps/api` and the matching entry in the shift
 workspace of `apps/web`, so that it stays independently deliverable as one issue, one feature
 directory, one branch, and one PR. The roadmap previously carried two frontend-only slices, GH-86
-and GH-87. They were merged on 2026-09-10 and closed on GitHub, so the table below is the only
+and GH-87. They were merged on 2026-09-10 and deleted from GitHub, so the table below is the only
 remaining record of that split:
 
 | Merged into | Absorbed frontend slice | Outcome |

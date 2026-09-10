@@ -61,5 +61,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/77
 - Parent roadmap: specs/discharge-execution/runtime-discharge-resource-changes/roadmap.md
-- Absorbed scope: the warehouse door assignment part of "Discharge Detail: Dock Reassignment, Truck Pool, and Door Assignment Changes", a frontend-only slice split between GH-75, GH-76 and GH-77 on 2026-09-10 and closed on GitHub.
+- Absorbed scope: the warehouse door assignment part of "Discharge Detail: Dock Reassignment, Truck Pool, and Door Assignment Changes", a frontend-only slice split between GH-75, GH-76 and GH-77 on 2026-09-10 and deleted from GitHub.
 - Related domain: discharge-execution

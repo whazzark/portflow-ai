@@ -60,5 +60,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/78
 - Parent roadmap: specs/discharge-execution/runtime-discharge-resource-changes/roadmap.md
-- Absorbed scope: "Shift Resource Adjustments in the Shift Workspace", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
+- Absorbed scope: "Shift Resource Adjustments in the Shift Workspace", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: discharge-execution

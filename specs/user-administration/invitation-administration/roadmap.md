@@ -25,8 +25,8 @@ GH-7 creates, in the same workbench, but neither blocks the other.
 Each slice is a vertical one: it owns its command in `apps/api` and the matching action in the user
 workbench of `apps/web`, so that it stays independently deliverable as one issue, one feature
 directory, one branch, and one PR. The roadmap previously carried a frontend-only slice, GH-15,
-covering the whole invitation lifecycle at once. It was merged on 2026-09-10 and closed on GitHub,
-so the table below is the only remaining record of that split:
+covering the whole invitation lifecycle at once. It was merged on 2026-09-10 and deleted from
+GitHub, so the table below is the only remaining record of that split:
 
 | Merged into | Absorbed frontend slice | Outcome |
 |---|---|---|

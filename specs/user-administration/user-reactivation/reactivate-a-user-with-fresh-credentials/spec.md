@@ -61,5 +61,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/32
 - Parent roadmap: specs/user-administration/user-reactivation/roadmap.md
-- Absorbed scope: "Reactivate a User From the Web Workbench", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
+- Absorbed scope: "Reactivate a User From the Web Workbench", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: user-administration

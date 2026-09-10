@@ -60,5 +60,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/103
 - Parent roadmap: specs/reporting-and-audit/transversal-discharge-activity-log/roadmap.md
-- Absorbed scope: "Consult the Activity Log Tab in Discharge Detail", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
+- Absorbed scope: "Consult the Activity Log Tab in Discharge Detail", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: reporting-and-audit

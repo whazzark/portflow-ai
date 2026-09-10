@@ -24,8 +24,8 @@ rotation validatable, so nothing here can be run in parallel.
 Each slice is a vertical one: it owns its command or query in `apps/api` and the matching screen or
 action in `apps/web`, so that it stays independently deliverable as one issue, one feature
 directory, one branch, and one PR. The roadmap previously carried a frontend-only slice, GH-91,
-covering both outcomes at once. It was merged on 2026-09-10 and closed on GitHub, so the table below
-is the only remaining record of that split:
+covering both outcomes at once. It was merged on 2026-09-10 and deleted from GitHub, so the table
+below is the only remaining record of that split:
 
 | Merged into | Absorbed frontend slice | Outcome |
 |---|---|---|

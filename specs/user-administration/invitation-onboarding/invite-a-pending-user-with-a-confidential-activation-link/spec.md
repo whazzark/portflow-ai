@@ -61,5 +61,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/7
 - Parent roadmap: specs/user-administration/invitation-onboarding/roadmap.md
-- Absorbed scope: the invitation half of "Invite and Accept an Invitation Through the Frontend", a frontend-only slice split between GH-7 and GH-8 on 2026-09-10 and closed on GitHub.
+- Absorbed scope: the invitation half of "Invite and Accept an Invitation Through the Frontend", a frontend-only slice split between GH-7 and GH-8 on 2026-09-10 and deleted from GitHub.
 - Related domain: user-administration

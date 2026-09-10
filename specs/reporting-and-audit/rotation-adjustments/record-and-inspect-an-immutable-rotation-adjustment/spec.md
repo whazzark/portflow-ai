@@ -61,5 +61,5 @@
 - Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/93
 - Parent roadmap: specs/reporting-and-audit/rotation-adjustments/roadmap.md
-- Absorbed scope: "Build the Rotation Adjustment Creation UI", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
+- Absorbed scope: "Build the Rotation Adjustment Creation UI", a frontend-only slice merged here on 2026-09-10 and deleted from GitHub.
 - Related domain: reporting-and-audit
