@@ -14,7 +14,7 @@ test('opens exact available details and toggles the selection closed', async () 
   expect(row).toHaveAttribute('aria-pressed', 'false')
 
   await user.click(row)
-  const details = await screen.findByRole('dialog')
+  const details = await screen.findByRole('dialog', { name: 'AA-101-PF' })
 
   expect(within(details).getByText('Volvo FMX')).toBeInTheDocument()
   expect(within(details).getByText('32.5 t')).toBeInTheDocument()
@@ -46,7 +46,7 @@ test('restores and aligns archived details with independent company status and c
     '/transport-resources?truckStatus=available&truckId=00000000-0000-4000-8000-000000000103',
   )
 
-  const details = await screen.findByRole('dialog')
+  const details = await screen.findByRole('dialog', { name: 'CC-303-PF' })
   expect(within(details).getByRole('heading', { name: 'CC-303-PF' })).toBeInTheDocument()
   expect(within(details).getByText('Scania XT')).toBeInTheDocument()
   expect(within(details).getAllByText('Archived company')).toHaveLength(2)
@@ -60,7 +60,7 @@ test('shows optional values accurately and clears a stale identity with explicit
   renderTrucks()
   await user.click(await screen.findByRole('button', { name: /BB-202-PF, Bêta Logistique/ }))
 
-  const details = await screen.findByRole('dialog')
+  const details = await screen.findByRole('dialog', { name: 'BB-202-PF' })
   expect(within(details).getAllByText('Not specified').length).toBeGreaterThan(0)
   expect(within(details).getByText('Reactivation context')).toBeInTheDocument()
   expect(within(details).getByText('Vehicle returned to service')).toBeInTheDocument()

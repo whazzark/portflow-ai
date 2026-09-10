@@ -36,7 +36,7 @@ const rotations = [
 
 export function OperationsOverview({ section, onSectionChange }: OperationsOverviewProps) {
   return (
-    <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
       {/* Sr-only, as on every other page: the header's breadcrumb already names the page, so a
           second visible title would say it twice. */}
       <h1 className="sr-only">Operations overview</h1>
@@ -141,6 +141,6 @@ export function OperationsOverview({ section, onSectionChange }: OperationsOverv
           </Card>
         </TabsContent>
       </Tabs>
-    </main>
+    </div>
   )
 }

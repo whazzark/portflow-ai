@@ -17,8 +17,10 @@ import { mockTrucks, renderTrucks, truckTab } from '../support/test-helpers'
 const COMPANY_NAME = 'Atlantic Transport'
 const SUSPENDED_TRUCK = SUSPEND_TRUCKS[1]
 
+// Named, not just `role: 'dialog'`: the assertion has to prove *which* truck's panel is on
+// screen, and the panel takes its accessible name from the registration in its `SheetTitle`.
 function details() {
-  return screen.getByRole('dialog', { hidden: true })
+  return screen.getByRole('dialog', { hidden: true, name: SUSPENDED_TRUCK.registration })
 }
 
 async function openSuspendedTruck(user: ReturnType<typeof userEvent.setup>) {

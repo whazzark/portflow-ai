@@ -20,6 +20,13 @@ const labels: Record<WarehouseDoorStatusFilter, string> = {
   archived: 'Archived',
 }
 
+// The description says what would put a door in this list, rather than restating the title —
+// the same split every other directory's empty state makes.
+const emptyDescriptions: Record<WarehouseDoorStatusFilter, string> = {
+  available: 'Doors in service at this warehouse appear here.',
+  archived: 'Doors archived from this warehouse appear here.',
+}
+
 export function WarehouseDoorsPanel({
   warehouse,
   status,
@@ -145,15 +152,11 @@ export function WarehouseDoorsPanel({
               </div>
             )}
             {doors.length === 0 ? (
-              // The shared empty state every other directory uses. The sentence is kept in one
-              // text node, exactly as it read before, so it stays the panel's single answer to
-              // "why is this list blank".
+              // The shared empty state every other directory uses.
               <Empty className="min-h-32 border-0 p-0">
                 <EmptyHeader>
                   <EmptyTitle>No {labels[key].toLowerCase()} doors</EmptyTitle>
-                  <EmptyDescription>
-                    {`No ${labels[key].toLowerCase()} warehouse doors in this warehouse.`}
-                  </EmptyDescription>
+                  <EmptyDescription>{emptyDescriptions[key]}</EmptyDescription>
                 </EmptyHeader>
               </Empty>
             ) : (

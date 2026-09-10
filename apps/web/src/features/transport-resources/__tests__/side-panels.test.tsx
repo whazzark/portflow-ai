@@ -16,7 +16,7 @@ test('opens company details without changing the truck filter', async () => {
   await user.click(within(companies).getByRole('button', { name: 'Actions for Bêta Logistique' }))
   await user.click(await screen.findByRole('menuitem', { name: 'View' }))
 
-  const details = await screen.findByRole('dialog')
+  const details = await screen.findByRole('dialog', { name: 'Bêta Logistique' })
   expect(within(details).getByText('Reactivation context')).toBeInTheDocument()
   expect(screen.getByText('AA-101-PF')).toBeInTheDocument()
 })
@@ -36,7 +36,7 @@ test('opens and closes truck details while preserving the selected company', asy
   const trucks = await screen.findByRole('list', { name: 'Available trucks' })
   await user.click(within(trucks).getByRole('button', { name: /BB-202-PF/ }))
 
-  expect(await screen.findByRole('dialog')).toBeInTheDocument()
+  expect(await screen.findByRole('dialog', { name: 'BB-202-PF' })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({
     transportCompanyId: '00000000-0000-4000-8000-000000000002',
     truckId: '00000000-0000-4000-8000-000000000102',

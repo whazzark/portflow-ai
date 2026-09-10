@@ -195,6 +195,18 @@ export function TrucksPage() {
     }
   }, [administrator, navigate, truckStatus])
 
+  // A mode a non-administrator cannot hold is cleared rather than left standing. `create` is the
+  // one that matters: the route's transform drops `truckId` under it, so a mode left armed would
+  // swallow every later selection and strand the directory with no way back to a detail sheet.
+  useEffect(() => {
+    if (!administrator && truckMode === 'create') {
+      void navigate({
+        replace: true,
+        search: (previous) => ({ ...previous, truckMode: 'view' }),
+      })
+    }
+  }, [administrator, navigate, truckMode])
+
   useEffect(() => {
     if (truckId && trucksQuery.data && !selected) {
       void navigate({
@@ -404,7 +416,7 @@ export function TrucksPage() {
       }}
       open={isCreatingTruck}
     >
-      <SheetContent className="overflow-hidden data-[side=right]:sm:max-w-lg">
+      <SheetContent className="overflow-hidden" size="lg">
         <CreateTruckPanel
           companies={creatableCompanies}
           companiesError={availableCompaniesQuery.isError}
@@ -516,7 +528,7 @@ export function TrucksPage() {
         }}
         open={Boolean(selected)}
       >
-        <SheetContent className="overflow-y-auto data-[side=right]:sm:max-w-lg">
+        <SheetContent className="overflow-y-auto" size="lg">
           {isEditingTruck ? editTruckPanel : truckDetails}
         </SheetContent>
       </Sheet>

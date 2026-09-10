@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 
@@ -79,19 +79,21 @@ test('does not open the create panel for a non-administrator requesting truckMod
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
-test('opens a truck from the directory under a create mode this page refuses', async () => {
+test('clears a create mode it refuses, so the directory below stays usable', async () => {
   const user = userEvent.setup()
   mockTrucks({ user: ACTIVE_OBSERVER })
 
-  // The route clears `truckId` under a `truckMode=create` so the two states can never contradict
-  // each other. Nothing clears a `create` the page itself refuses, though — a shared or bookmarked
-  // URL opened by a non-administrator — so the selection has to say which state it means, or every
-  // truck stays unopenable until the address bar is edited by hand.
   const { router } = renderTrucks('/transport-resources?truckMode=create')
-  const list = await screen.findByRole('list', { name: 'Available trucks' })
 
-  await user.click(within(list).getByRole('button', { name: /AA-101-PF/ }))
+  await screen.findByRole('list', { name: 'Available trucks' })
+  // Left standing, the refused mode would keep the route's transform clearing `truckId` beneath
+  // it, and every selection below would open nothing — with no affordance to clear it.
+  await expect.poll(() => router.state.location.search).toMatchObject({ truckMode: 'view' })
 
-  await waitFor(() => expect(router.state.location.search).toMatchObject({ truckMode: 'view' }))
-  expect(await screen.findByRole('heading', { name: 'AA-101-PF' })).toBeInTheDocument()
+  await user.click(await screen.findByRole('button', { name: /AA-101-PF, Atlantic Transport/ }))
+
+  expect(await screen.findByRole('dialog')).toBeInTheDocument()
+  expect(router.state.location.search).toMatchObject({
+    truckId: '00000000-0000-4000-8000-000000000101',
+  })
 })
