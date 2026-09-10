@@ -17,8 +17,10 @@ import { mockTrucks, queryTruckTab, renderTrucks, truckTab } from '../support/te
 const COMPANY_NAME = 'Atlantic Transport'
 const SUSPENDED_TRUCK = SUSPEND_TRUCKS[1]
 
-function details() {
-  return screen.getByRole('region', { hidden: true, name: 'Truck details' })
+// Named, not just `role: 'dialog'`: the assertion has to prove *which* truck's panel is on
+// screen, and the panel takes its accessible name from the registration in its `SheetTitle`.
+function details(registration: string) {
+  return screen.getByRole('dialog', { hidden: true, name: registration })
 }
 
 async function openTruck(user: ReturnType<typeof userEvent.setup>, target: TruckDto, tab?: RegExp) {
@@ -71,7 +73,7 @@ test('suspends a truck with a comment and moves it to the suspended tab without 
   renderTrucks()
   await openTruck(user, target)
 
-  await user.click(within(details()).getByRole('button', { name: 'Suspend' }))
+  await user.click(within(details(target.registration)).getByRole('button', { name: 'Suspend' }))
   await user.type(
     await screen.findByLabelText('Comment (optional)'),
     'Gearbox failure, in the workshop',
@@ -102,7 +104,7 @@ test('shows the suspension context and offers only the return to service for a s
   renderTrucks()
   await openTruck(user, target, /Suspended/)
 
-  const panel = details()
+  const panel = details(target.registration)
   // The badge and the "Truck status" field both read "Suspended".
   expect(within(panel).getAllByText('Suspended').length).toBeGreaterThan(0)
   expect(within(panel).getByText('Suspension context')).toBeInTheDocument()
@@ -187,7 +189,7 @@ test('refreshes to the authoritative state when suspension is refused', async ()
   await openTruck(user, target)
   const requestsBefore = completeRequests
 
-  await user.click(within(details()).getByRole('button', { name: 'Suspend' }))
+  await user.click(within(details(target.registration)).getByRole('button', { name: 'Suspend' }))
   await user.click(
     within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Suspend' }),
   )
@@ -237,7 +239,10 @@ test('withholds the responsible administrator from a non-administrator', async (
     }),
   )
 
-  const panel = await screen.findByRole('region', { hidden: true, name: 'Truck details' })
+  const panel = await screen.findByRole('dialog', {
+    hidden: true,
+    name: SUSPENDED_TRUCK.registration,
+  })
   // The date and the comment explain why the truck is no longer offered; who suspended it is
   // administration context (FR-015).
   expect(within(panel).getByText(SUSPENDED_TRUCK.suspensionComment as string)).toBeInTheDocument()

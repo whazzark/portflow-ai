@@ -143,7 +143,7 @@ export function UsersPage() {
   )
 
   return (
-    <main className="relative flex flex-col gap-6 p-4 md:h-[calc(100svh-3.5rem)] md:min-h-0 md:overflow-hidden md:p-6">
+    <div className="relative flex flex-col gap-6 p-4 md:h-[calc(100svh-3.5rem)] md:min-h-0 md:overflow-hidden md:p-6">
       <h1 className="sr-only">Users</h1>
 
       <div className="flex flex-col gap-4 md:flex-row md:items-end">
@@ -205,6 +205,6 @@ export function UsersPage() {
       )}
 
       <UserSheet onClose={closeRecord} user={openUser} />
-    </main>
+    </div>
   )
 }

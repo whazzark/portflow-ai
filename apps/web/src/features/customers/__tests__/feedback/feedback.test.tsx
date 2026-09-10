@@ -17,7 +17,7 @@ test('shows the TanStack Start pending page while the customer list loads', asyn
   renderCustomers()
 
   expect(
-    await screen.findByRole('main', { name: 'Loading customers' }, { timeout: 3000 }),
+    await screen.findByRole('status', { name: 'Loading customers' }, { timeout: 3000 }),
   ).toBeInTheDocument()
   expect(await screen.findByRole('table', { name: 'Available customers' })).toBeInTheDocument()
 })

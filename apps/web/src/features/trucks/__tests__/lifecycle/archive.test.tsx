@@ -7,8 +7,10 @@ import { server } from '@/test/msw/server'
 import { ACTIVE_OPERATIONS_ADMIN, API_BASE_URL, TRUCKS } from '../support/fixtures'
 import { mockTrucks, renderTrucks } from '../support/test-helpers'
 
-function details() {
-  return screen.getByRole('region', { hidden: true, name: 'Truck details' })
+// Named, not just `role: 'dialog'`: the assertion has to prove *which* truck's panel is on
+// screen, and the panel takes its accessible name from the registration in its `SheetTitle`.
+function details(registration: string) {
+  return screen.getByRole('dialog', { hidden: true, name: registration })
 }
 
 test('archives a truck with a comment and moves it to the archived tab without a manual refresh', async () => {
@@ -51,8 +53,12 @@ test('archives a truck with a comment and moves it to the archived tab without a
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
-  expect((await within(details()).findAllByText('Archived')).length).toBeGreaterThan(0)
-  expect(within(details()).getByText('Returned to the leasing company')).toBeInTheDocument()
+  expect(
+    (await within(details(target.registration)).findAllByText('Archived')).length,
+  ).toBeGreaterThan(0)
+  expect(
+    within(details(target.registration)).getByText('Returned to the leasing company'),
+  ).toBeInTheDocument()
 })
 
 test('archives a truck without a comment', async () => {
@@ -88,7 +94,9 @@ test('archives a truck without a comment', async () => {
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
-  expect((await within(details()).findAllByText('Archived')).length).toBeGreaterThan(0)
+  expect(
+    (await within(details(target.registration)).findAllByText('Archived')).length,
+  ).toBeGreaterThan(0)
 })
 
 test('cancelling the confirmation dialog performs no mutation and leaves the truck available', async () => {
@@ -112,7 +120,7 @@ test('cancelling the confirmation dialog performs no mutation and leaves the tru
 
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   expect(archiveCalls).toBe(0)
-  expect(within(details()).getAllByText('Available').length).toBeGreaterThan(0)
+  expect(within(details(target.registration)).getAllByText('Available').length).toBeGreaterThan(0)
 })
 
 test('shows a distinct in-use error and keeps the truck available', async () => {
@@ -136,6 +144,12 @@ test('shows a distinct in-use error and keeps the truck available', async () => 
   fireEvent.click(
     await screen.findByRole('button', { name: `${target.registration}, Atlantic Transport` }),
   )
+  // Captured before the confirmation opens: an open alert marks the sheet `aria-hidden`, which
+  // erases its accessible name, so the panel can only be identified by name up to this point.
+  const panel = await screen.findByRole('dialog', {
+    hidden: true,
+    name: target.registration,
+  })
   fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
@@ -144,7 +158,7 @@ test('shows a distinct in-use error and keeps the truck available', async () => 
     await screen.findByText('Truck is used by a planned or active discharge'),
   ).toBeInTheDocument()
   expect(screen.getByRole('alertdialog')).toBeInTheDocument()
-  expect(within(details()).getAllByText('Available').length).toBeGreaterThan(0)
+  expect(within(panel).getAllByText('Available').length).toBeGreaterThan(0)
 })
 
 test('shows a distinct already-archived error and refreshes to the authoritative archived state', async () => {
@@ -183,12 +197,18 @@ test('shows a distinct already-archived error and refreshes to the authoritative
   fireEvent.click(
     await screen.findByRole('button', { name: `${target.registration}, Atlantic Transport` }),
   )
+  // Captured before the confirmation opens: an open alert marks the sheet `aria-hidden`, which
+  // erases its accessible name, so the panel can only be identified by name up to this point.
+  const panel = await screen.findByRole('dialog', {
+    hidden: true,
+    name: target.registration,
+  })
   fireEvent.click(await screen.findByRole('button', { name: 'Archive' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
   expect(await screen.findByText('Truck is already archived')).toBeInTheDocument()
-  expect(await within(details()).findByText('Archived by another admin')).toBeInTheDocument()
+  expect(await within(panel).findByText('Archived by another admin')).toBeInTheDocument()
 })
 
 test('retrying after a transient failure archives the truck exactly once', async () => {
@@ -234,6 +254,8 @@ test('retrying after a transient failure archives the truck exactly once', async
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
 
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
-  expect((await within(details()).findAllByText('Archived')).length).toBeGreaterThan(0)
+  expect(
+    (await within(details(target.registration)).findAllByText('Archived')).length,
+  ).toBeGreaterThan(0)
   expect(attempts).toBe(2)
 })

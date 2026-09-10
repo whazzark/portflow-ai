@@ -103,10 +103,14 @@ export function TransportResourcesWorkspace() {
 
   if (!companiesQuery.data) {
     return (
-      <main aria-label="Loading transport companies" className="flex min-h-0 flex-1 flex-col gap-4">
+      <div
+        aria-label="Loading transport companies"
+        className="flex min-h-0 flex-1 flex-col gap-4"
+        role="status"
+      >
         <Skeleton className="h-8 w-56" />
         <Skeleton className="min-h-56 w-full flex-1" />
-      </main>
+      </div>
     )
   }
 
@@ -314,10 +318,9 @@ export function TransportResourcesWorkspace() {
         }}
         open={Boolean(companyDetails) || isCreatingCompany}
       >
-        <SheetContent
-          aria-label={isCreatingCompany ? 'Create transport company' : 'Transport company details'}
-          className="overflow-y-auto sm:max-w-lg"
-        >
+        {/* No `aria-label`: each panel below renders its own `SheetTitle`, which names the
+            dialog through `aria-labelledby` and would silently override one set here. */}
+        <SheetContent className="overflow-y-auto" size="lg">
           {isCreatingCompany ? (
             <CreateTransportCompanyPanel
               onCreate={async (value) => {

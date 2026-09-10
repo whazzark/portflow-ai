@@ -78,9 +78,7 @@ test('refetches the warehouse collection so the door changes lifecycle view', as
   await user.click(screen.getByRole('button', { name: 'Reactivate' }))
 
   // The archived view no longer lists it — it was the only archived door, so the view is empty…
-  expect(
-    await screen.findByText('No archived warehouse doors in this warehouse.'),
-  ).toBeInTheDocument()
+  expect(await screen.findByText('No archived doors')).toBeInTheDocument()
 
   // …and the tab counts have moved with it.
   expect(await screen.findByRole('tab', { name: 'Available (2)' })).toBeInTheDocument()

@@ -24,7 +24,7 @@ test('distinguishes loading, lifecycle-empty, and search-no-match feedback', asy
 
   renderTransportCompanies()
   expect(
-    await screen.findByRole('main', { name: 'Loading transport companies' }, { timeout: 5000 }),
+    await screen.findByRole('status', { name: 'Loading transport companies' }, { timeout: 5000 }),
   ).toBeInTheDocument()
   releaseCompanies()
   expect(

@@ -89,7 +89,7 @@ test('retry replaces a failed stale snapshot and reconciles its selected identit
 
   const { router } = renderTrucks()
   await user.click(await screen.findByRole('button', { name: /AA-101-PF, Atlantic Transport/ }))
-  expect(await screen.findByRole('region', { name: 'Truck details' })).toBeInTheDocument()
+  expect(await screen.findByRole('dialog', { name: 'AA-101-PF' })).toBeInTheDocument()
 
   response = 'failure'
   await act(() =>

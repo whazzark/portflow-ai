@@ -44,7 +44,7 @@ export function CheckpointSheet({
       onOpenChange={(open) => !open && onClose()}
       open={isCreating || isEditing || Boolean(checkpoint)}
     >
-      <SheetContent className="overflow-hidden sm:max-w-lg" showOverlay={!isCreating && !isEditing}>
+      <SheetContent className="overflow-hidden" showOverlay={!isCreating && !isEditing} size="lg">
         {isCreating ? (
           createPanel
         ) : isEditing ? (

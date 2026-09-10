@@ -31,7 +31,7 @@ async function openRowMenu(user: ReturnType<typeof userEvent.setup>, registratio
 }
 
 function detailsPanel() {
-  return screen.queryByRole('region', { hidden: true, name: 'Truck details' })
+  return screen.queryByRole('dialog', { hidden: true })
 }
 
 test('suspends a truck from its row without opening the detail pane', async () => {
@@ -154,7 +154,10 @@ test('opens the detail pane from the row menu', async () => {
   await openRowMenu(user, AVAILABLE.registration)
   await user.click(await screen.findByRole('menuitem', { name: 'View' }))
 
-  const panel = await screen.findByRole('region', { hidden: true, name: 'Truck details' })
+  const panel = await screen.findByRole('dialog', {
+    hidden: true,
+    name: AVAILABLE.registration,
+  })
   expect(
     within(panel).getByRole('heading', { hidden: true, name: AVAILABLE.registration }),
   ).toBeInTheDocument()

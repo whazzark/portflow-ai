@@ -12,7 +12,7 @@ async function openDetailsFor(companyName: string) {
   await user.click(within(companies).getByRole('button', { name: `Actions for ${companyName}` }))
   await user.click(await screen.findByRole('menuitem', { name: 'View' }))
 
-  return screen.findByRole('region', { name: 'Transport company details' })
+  return screen.findByRole('dialog', { name: companyName })
 }
 
 test('shows a migrated company recorded phone number and email address', async () => {
@@ -51,7 +51,7 @@ test('keeps an archived company recorded contact details visible and read-only',
   )
   await user.click(await screen.findByRole('menuitem', { name: 'View' }))
 
-  const details = await screen.findByRole('region', { name: 'Transport company details' })
+  const details = await screen.findByRole('dialog', { name: 'Coastal Haulage' })
   expect(within(details).getByText('+44 20 7946 0958')).toBeInTheDocument()
   expect(within(details).getByText('ops@coastal-haulage.test')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()

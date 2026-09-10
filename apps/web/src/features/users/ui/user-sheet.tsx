@@ -16,7 +16,7 @@ type UserSheetProps = {
 export function UserSheet({ user, onClose }: UserSheetProps) {
   return (
     <Sheet open={Boolean(user)} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="overflow-hidden sm:max-w-lg">
+      <SheetContent className="overflow-hidden" size="lg">
         {user && <UserAccessRecord user={user} />}
       </SheetContent>
     </Sheet>

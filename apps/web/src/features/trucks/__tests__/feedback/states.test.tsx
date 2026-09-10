@@ -26,7 +26,7 @@ test('distinguishes loading, lifecycle-empty, and search-no-match feedback', asy
   )
 
   renderTrucks()
-  expect(await screen.findByRole('main', { name: 'Loading trucks' })).toBeInTheDocument()
+  expect(await screen.findByRole('status', { name: 'Loading trucks' })).toBeInTheDocument()
   releaseTrucks()
   expect(await screen.findByRole('list', { name: 'Available trucks' })).toBeInTheDocument()
 

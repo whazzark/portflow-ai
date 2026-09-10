@@ -2,9 +2,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export function UsersPending() {
   return (
-    <main
+    <div
       className="flex flex-col gap-6 p-4 md:h-[calc(100svh-3.5rem)] md:min-h-0 md:overflow-hidden md:p-6"
       aria-label="Loading users"
+      role="status"
     >
       <div className="flex items-end justify-between gap-4">
         <Skeleton className="h-10 w-full max-w-xl" />
@@ -13,6 +14,6 @@ export function UsersPending() {
         <Skeleton className="h-8 w-72" />
         <Skeleton className="min-h-56 w-full flex-1" />
       </div>
-    </main>
+    </div>
   )
 }
