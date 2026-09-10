@@ -29,7 +29,7 @@ export function CustomerSection({
 }: CustomerSectionProps) {
   return (
     <section
-      className="md:h-full md:min-h-0"
+      className="md:max-h-full md:min-h-0"
       aria-label={isArchived ? 'Archived customers' : 'Available customers'}
     >
       <CustomerTable

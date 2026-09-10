@@ -36,6 +36,7 @@ export type ScannedRoutes = {
     'trucks.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'trucks.suspend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'trucks.return_to_service': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'discharges.index': { paramsTuple?: []; params?: {} }
     'users.index': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.store': { paramsTuple?: []; params?: {} }
@@ -77,6 +78,7 @@ export type ScannedRoutes = {
     'trucks.index': { paramsTuple?: []; params?: {} }
     'trucks.available': { paramsTuple?: []; params?: {} }
     'trucks.suspended': { paramsTuple?: []; params?: {} }
+    'discharges.index': { paramsTuple?: []; params?: {} }
     'users.index': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
@@ -95,6 +97,7 @@ export type ScannedRoutes = {
     'trucks.index': { paramsTuple?: []; params?: {} }
     'trucks.available': { paramsTuple?: []; params?: {} }
     'trucks.suspended': { paramsTuple?: []; params?: {} }
+    'discharges.index': { paramsTuple?: []; params?: {} }
     'users.index': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
