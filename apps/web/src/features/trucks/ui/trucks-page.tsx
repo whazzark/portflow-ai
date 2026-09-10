@@ -477,6 +477,10 @@ export function TrucksPage() {
       action={truckStatus === 'archived' ? 'reactivate' : 'archive'}
       blockerReasonLabels={TRUCK_BLOCKER_REASON_LABELS}
       idPrefix="truck"
+      // The same set the section renders, so the toolbar can say how much of the selection the
+      // current search has taken off screen. A search narrows what is listed, never what was
+      // chosen, and archiving acts on the whole selection either way.
+      listedIds={shortcutSelectableTruckIds}
       onClear={clearTruckSelection}
       // Narrowed to the blocked ids rather than cleared, so the administrator can resolve the
       // blocker and retry exactly those without reselecting them.

@@ -194,16 +194,31 @@ export function BulkResourceLifecycleDialog({
  * the trigger for the dialog above, not a second implementation of it.
  */
 export function BulkResourceLifecycleActions({
+  listedIds,
   onClear,
   ...submission
 }: BulkResourceLifecycleSubmissionProps & {
   /** Empties the selection without acting on it. The toolbar's own affordance: a panel-hosted
    * trigger unchecks a row where the row is. */
   onClear: () => void
+  /**
+   * The ids the directory behind this toolbar is currently listing.
+   *
+   * Passed by the list-based directories, where a search term removes rows outright while leaving
+   * the selection alone: what was chosen stays chosen, so the count can legitimately exceed the
+   * rows on screen and the action would otherwise act on records the administrator can no longer
+   * see. Naming that part is the whole purpose of this prop.
+   *
+   * The map-based selections pass nothing: their search annotates markers rather than removing
+   * them, so nothing a selection holds is ever out of sight.
+   */
+  listedIds?: readonly string[]
 }) {
   const [open, setOpen] = useState(false)
   const { action, selectedIds, singular } = submission
   const visible = selectedIds.length > 0
+  const listed = listedIds && new Set(listedIds)
+  const hiddenCount = listed ? selectedIds.filter((id) => !listed.has(id)).length : 0
 
   return (
     <>
@@ -218,8 +233,11 @@ export function BulkResourceLifecycleActions({
         role="toolbar"
       >
         <div className="pointer-events-auto flex max-w-full items-center gap-2 rounded-xl bg-popover px-2 py-2 text-popover-foreground shadow-lg ring-1 ring-foreground/10">
-          <span className="whitespace-nowrap px-2 font-medium text-sm tabular-nums">
-            {selectedIds.length} selected
+          <span className="flex items-baseline gap-1.5 whitespace-nowrap px-2 text-sm tabular-nums">
+            <span className="font-medium">{selectedIds.length} selected</span>
+            {hiddenCount > 0 && (
+              <span className="text-muted-foreground">· {hiddenCount} hidden by the search</span>
+            )}
           </span>
           <Button
             onClick={() => setOpen(true)}

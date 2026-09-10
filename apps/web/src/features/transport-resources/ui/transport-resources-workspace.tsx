@@ -300,6 +300,9 @@ export function TransportResourcesWorkspace() {
             action={companyStatus === 'available' ? 'archive' : 'reactivate'}
             blockerReasonLabels={TRANSPORT_COMPANY_BLOCKER_REASON_LABELS}
             idPrefix="transport-company"
+            // The same set the section renders, so the toolbar can say how much of the selection
+            // the current search has taken off screen — as the truck directory beside it does.
+            listedIds={shortcutSelectableCompanyIds}
             onClear={clearCompanySelection}
             // Narrowed to the blocked ids rather than cleared, so the administrator can resolve
             // the blocker and retry exactly those without reselecting them.

@@ -270,3 +270,22 @@ test('surfaces a save failure as a toast, not inside the selection frame, and ke
   fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
   await waitFor(() => expect(state.attempts).toBe(2))
 })
+
+test('says how much of the selection the search has taken off screen', async () => {
+  mockTrucks()
+  mockTransportCompanies(TRANSPORT_COMPANIES, ADMIN_USER)
+
+  renderTransportCompanies()
+  await screen.findByRole('list', { name: 'Available transport companies' })
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Select Atlantic Transport' }))
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Select Nordic Haulers' }))
+
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search transport companies' }), {
+    target: { value: 'Nordic' },
+  })
+
+  // A search narrows what is listed, never what was chosen, and `Archive selected` acts on the
+  // whole selection — so the toolbar names the part that is no longer on screen.
+  await waitFor(() => expect(screen.getByText(/1 hidden by the search/)).toBeInTheDocument())
+  expect(screen.getByText('2 selected')).toBeInTheDocument()
+})
