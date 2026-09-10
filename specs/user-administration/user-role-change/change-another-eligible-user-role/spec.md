@@ -39,7 +39,9 @@
 
 ## Dependencies
 
-- No explicit dependency was recorded in the source issue.
+- None. No open issue blocks this slice: the roles it changes and the user workbench that
+  displays them are already delivered.
+- It is the entry point of the roadmap's execution order: GH-29 depends on it.
 
 ## Out of Scope
 
@@ -51,10 +53,13 @@
 
 ## Source-derived decisions
 
+- This slice is end-to-end: it owns both the role change command in `apps/api` and its action in the user workbench of `apps/web`. It absorbs the former frontend-only slice "Change a User's Role From the Web Workbench", which described the same outcome from the web side alone.
 - No separate implementation or testing decisions were recorded in the source issue.
 
 ## Traceability
 
+- Blockers: recorded as GitHub issue dependencies on the source issue.
 - Source issue: https://github.com/whazzark/portflow-ai/issues/28
 - Parent roadmap: specs/user-administration/user-role-change/roadmap.md
+- Absorbed scope: "Change a User's Role From the Web Workbench", a frontend-only slice merged here on 2026-09-10 and closed on GitHub.
 - Related domain: user-administration
