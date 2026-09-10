@@ -50,7 +50,11 @@ test('creates a truck and shows it in the workspace without a manual refresh', a
   fireEvent.click(await screen.findByRole('option', { name: 'Atlantic Transport' }))
   fireEvent.click(screen.getByRole('button', { name: 'Create truck' }))
 
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  // Creation hands over to the new truck's details sheet in one navigation, so what closes is the
+  // create panel, not every panel.
+  await waitFor(() =>
+    expect(screen.queryByRole('heading', { name: 'Create truck' })).not.toBeInTheDocument(),
+  )
   expect(await screen.findByRole('heading', { name: created.registration })).toBeInTheDocument()
   // The new truck's details sheet opens on success, marking the directory behind it aria-hidden.
   expect(
@@ -283,9 +287,10 @@ test('creates the truck once a duplicate-conflict registration is corrected and 
   fireEvent.change(registration, { target: { value: created.registration } })
   fireEvent.click(submitButton)
 
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), {
-    timeout: 10000,
-  })
+  await waitFor(
+    () => expect(screen.queryByRole('heading', { name: 'Create truck' })).not.toBeInTheDocument(),
+    { timeout: 10000 },
+  )
   expect(
     await screen.findByRole('heading', { name: created.registration }, { timeout: 10000 }),
   ).toBeInTheDocument()
@@ -335,9 +340,10 @@ test('retries after a transient failure and creates exactly one truck', async ()
 
   fireEvent.click(submitButton)
 
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), {
-    timeout: 10000,
-  })
+  await waitFor(
+    () => expect(screen.queryByRole('heading', { name: 'Create truck' })).not.toBeInTheDocument(),
+    { timeout: 10000 },
+  )
   expect(
     await screen.findByRole('heading', { name: created.registration }, { timeout: 10000 }),
   ).toBeInTheDocument()

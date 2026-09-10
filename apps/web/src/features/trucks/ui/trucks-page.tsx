@@ -56,7 +56,10 @@ export function TrucksPage() {
     ...((trucksQuery.data?.data ?? []) as unknown as TruckDto[]),
     ...((suspendedTrucksQuery.data?.data ?? []) as unknown as TruckDto[]),
   ]
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  // Creation is authoritative on the API side; gating here only keeps the interface honest, so a
+  // hand-typed `truckMode=create` opens nothing for a non-administrator. Mirrors how the
+  // transport-company panel next to it reads `companyDetailsMode`.
+  const isCreatingTruck = truckMode === 'create' && administrator
   const truckMutations = useTruckMutations()
   const scopedTrucks = transportCompanyId
     ? trucks.filter((truck) => truck.transportCompanyId === transportCompanyId)
@@ -141,6 +144,18 @@ export function TrucksPage() {
     }
   }, [administrator, navigate, truckStatus])
 
+  // A mode a non-administrator cannot hold is cleared rather than left standing. `create` is the
+  // one that matters: the route's transform drops `truckId` under it, so a mode left armed would
+  // swallow every later selection and strand the directory with no way back to a detail sheet.
+  useEffect(() => {
+    if (!administrator && truckMode === 'create') {
+      void navigate({
+        replace: true,
+        search: (previous) => ({ ...previous, truckMode: 'view' }),
+      })
+    }
+  }, [administrator, navigate, truckMode])
+
   useEffect(() => {
     if (truckId && trucksQuery.data && !selected) {
       void navigate({
@@ -205,6 +220,15 @@ export function TrucksPage() {
     void navigate({ search: (previous) => ({ ...previous, truckId: id, truckMode: 'edit' }) })
   }
 
+  const startCreatingTruck = () => {
+    void navigate({
+      search: (previous) => ({ ...previous, truckId: undefined, truckMode: 'create' }),
+    })
+  }
+  const stopCreatingTruck = () => {
+    void navigate({ search: (previous) => ({ ...previous, truckMode: 'view' }) })
+  }
+
   const directory = (
     <Card
       aria-label="Truck directory"
@@ -226,7 +250,7 @@ export function TrucksPage() {
             value={truckSearch}
           />
           {administrator && (
-            <Button onClick={() => setIsCreateOpen(true)} type="button">
+            <Button onClick={startCreatingTruck} type="button">
               Create truck
             </Button>
           )}
@@ -350,7 +374,14 @@ export function TrucksPage() {
   )
 
   const createSheet = (
-    <Sheet onOpenChange={setIsCreateOpen} open={isCreateOpen}>
+    <Sheet
+      onOpenChange={(open) => {
+        if (!open) {
+          stopCreatingTruck()
+        }
+      }}
+      open={isCreatingTruck}
+    >
       <SheetContent className="overflow-hidden" size="lg">
         <CreateTruckPanel
           companies={creatableCompanies}
@@ -363,8 +394,15 @@ export function TrucksPage() {
           }}
           onSuccess={(created) => {
             toast.success(resourceSuccessMessage('create', TRUCK_SINGULAR, created.registration))
-            setIsCreateOpen(false)
-            selectTruck(created.id)
+            // One navigation, not two: leaving create mode and selecting the new truck in
+            // separate calls would briefly put the URL in a state that opens neither panel.
+            void navigate({
+              search: (previous) => ({
+                ...previous,
+                truckId: created.id,
+                truckMode: 'view',
+              }),
+            })
           }}
         />
       </SheetContent>

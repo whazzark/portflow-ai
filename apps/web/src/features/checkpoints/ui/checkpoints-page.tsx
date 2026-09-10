@@ -94,7 +94,7 @@ const checkpointsRoute = getRouteApi('/_authenticated/checkpoints')
 
 export function CheckpointsPage() {
   const {
-    checkpoint: checkpointParam,
+    checkpointId: checkpointParam,
     create,
     edit,
     kinds,
@@ -306,7 +306,7 @@ export function CheckpointsPage() {
       void navigate({
         search: (previous) => ({
           ...previous,
-          checkpoint: undefined,
+          checkpointId: undefined,
           create: undefined,
           edit: undefined,
           selecting: SELECTING_PARAM_BY_KIND[targetKind],
@@ -339,7 +339,7 @@ export function CheckpointsPage() {
       // behind would arm edit mode for whichever checkpoint is selected next.
       void navigate({
         replace: true,
-        search: (previous) => ({ ...previous, checkpoint: undefined, edit: undefined }),
+        search: (previous) => ({ ...previous, checkpointId: undefined, edit: undefined }),
       })
     }
   }, [
@@ -381,7 +381,7 @@ export function CheckpointsPage() {
     void navigate({
       search: (previous) => ({
         ...previous,
-        checkpoint: keepsSelection ? previous.checkpoint : undefined,
+        checkpointId: keepsSelection ? previous.checkpointId : undefined,
         edit: keepsSelection ? previous.edit : undefined,
         status: nextStatus,
       }),
@@ -392,7 +392,7 @@ export function CheckpointsPage() {
     void navigate({
       search: (previous) => ({
         ...previous,
-        checkpoint: previous.checkpoint,
+        checkpointId: previous.checkpointId,
         kinds: checkpointKindFilterFromVisibility(nextVisibility),
       }),
     })
@@ -401,7 +401,7 @@ export function CheckpointsPage() {
     void navigate({
       search: (previous) => ({
         ...previous,
-        checkpoint: serializeCheckpointSelection(checkpoint),
+        checkpointId: serializeCheckpointSelection(checkpoint),
       }),
     })
   }
@@ -448,7 +448,7 @@ export function CheckpointsPage() {
       replace: true,
       search: (previous) => ({
         ...previous,
-        checkpoint: serializeCheckpointSelection({ kind, id }),
+        checkpointId: serializeCheckpointSelection({ kind, id }),
         create: undefined,
         kinds: previous.kinds === OPPOSITE_KIND_FILTER[kind] ? undefined : previous.kinds,
         status: previous.status === 'archived' ? 'available' : previous.status,
@@ -481,7 +481,7 @@ export function CheckpointsPage() {
     void navigate({
       search: (previous) => ({
         ...previous,
-        checkpoint: undefined,
+        checkpointId: undefined,
         create: undefined,
         edit: undefined,
         selecting: SELECTING_PARAM_BY_KIND[kind],
@@ -567,7 +567,7 @@ export function CheckpointsPage() {
     clearEditSession()
     void navigate({
       replace: true,
-      search: (previous) => ({ ...previous, checkpoint: undefined, edit: undefined }),
+      search: (previous) => ({ ...previous, checkpointId: undefined, edit: undefined }),
     })
   }
   // Falls back to ARCHIVE while nothing is checked, and is clamped to what the selecting kind
@@ -834,7 +834,7 @@ export function CheckpointsPage() {
           }
           void navigate({
             replace: true,
-            search: (previous) => ({ ...previous, checkpoint: undefined, edit: undefined }),
+            search: (previous) => ({ ...previous, checkpointId: undefined, edit: undefined }),
           })
         }}
         onEditCheckpoint={startEditing}

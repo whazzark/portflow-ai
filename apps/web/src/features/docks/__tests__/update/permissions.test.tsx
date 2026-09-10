@@ -107,6 +107,6 @@ test('exits edit mode and clears the selection when the dock is no longer found'
   await waitFor(() =>
     expect(screen.queryByRole('heading', { name: 'Edit dock' })).not.toBeInTheDocument(),
   )
-  expect((router.state.location.search as { checkpoint?: string }).checkpoint).toBeUndefined()
+  expect((router.state.location.search as { checkpointId?: string }).checkpointId).toBeUndefined()
   expect((router.state.location.search as { edit?: string }).edit).toBeUndefined()
 })

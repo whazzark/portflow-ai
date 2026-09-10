@@ -46,7 +46,7 @@ test('keeps checkpoint selection while entering edit mode', async () => {
   await openEditDock(user)
 
   expect(router.state.location.search).toMatchObject({
-    checkpoint: `dock:${NORTH_DOCK.id}`,
+    checkpointId: `dock:${NORTH_DOCK.id}`,
     edit: 'dock',
   })
 })
