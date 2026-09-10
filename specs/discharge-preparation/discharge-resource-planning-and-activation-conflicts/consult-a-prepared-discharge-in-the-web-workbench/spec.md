@@ -7,7 +7,7 @@
 **Created**: 2026-07-09
 **Status**: Needs Clarification
 **Priority**: priority:P0
-**Milestone**: 2. Livrer la préparation d'une Discharge
+**Milestone**: 3. Exploiter le modèle en lecture
 **Domain**: discharge-preparation
 
 ## User Scenarios & Testing

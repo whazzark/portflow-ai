@@ -1,4 +1,4 @@
-# Requirements Checklist: Confirm Discharge Start with Atomic Conflict Protection
+# Requirements Checklist: Confirm discharge start with conflict protection and handling
 
 **Feature ID**: `GH-56`
 **Spec**: `../spec.md`
@@ -6,7 +6,7 @@
 ## Source acceptance criteria
 
 - [ ] Resolve all `[NEEDS CLARIFICATION]` markers before plan approval.
-- [ ] Define the actor, scope, intended behavior, and observable acceptance criteria for "Confirm Discharge Start with Atomic Conflict Protection" before planning.
+- [ ] Define the actor, scope, intended behavior, and observable acceptance criteria for "Confirm discharge start with conflict protection and handling" before planning.
 
 ## Verification
 
