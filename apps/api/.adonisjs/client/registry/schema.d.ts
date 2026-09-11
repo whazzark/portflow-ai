@@ -455,12 +455,12 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/api/v1/users/:id/password-reset'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#users/password_reset/reset_user_password_validator').resetUserPasswordValidator)>>
       paramsTuple: [ParamValue]
       params: { id: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#users/password_reset/reset_user_password_validator').resetUserPasswordValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/users_controller').default['resetPassword']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['resetPassword']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['resetPassword']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'docks.index': {

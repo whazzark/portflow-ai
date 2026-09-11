@@ -186,6 +186,16 @@ test.group('POST /api/v1/users/:id/password-reset', (group) => {
     assert.equal(response.body().error.code, 'E_USER_NOT_FOUND')
   })
 
+  test('rejects a malformed identifier before any user is read', async ({ assert, client }) => {
+    const administrator = await organizationAdmin()
+
+    const response = await client.post(resetPathFor('not-a-uuid')).loginAs(administrator)
+
+    response.assertStatus(422)
+    assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+    assert.isArray(response.body().error.details)
+  })
+
   test('refuses an administrator resetting their own password', async ({ assert, client }) => {
     const administrator = await organizationAdmin()
 

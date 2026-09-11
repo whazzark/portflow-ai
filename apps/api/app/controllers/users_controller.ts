@@ -9,6 +9,7 @@ import InviteUserUseCase from '#users/invite/invite_user_use_case'
 import { inviteUserValidator } from '#users/invite/invite_user_validator'
 import ListUsersUseCase from '#users/list/list_users_use_case'
 import ResetUserPasswordUseCase from '#users/password_reset/reset_user_password_use_case'
+import { resetUserPasswordValidator } from '#users/password_reset/reset_user_password_validator'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 import UserPolicy from '#users/shared/user_policy'
 import { updateUserIdentityValidator } from '#users/shared/user_validator'
@@ -108,20 +109,20 @@ export default class UsersController {
   }
 
   /**
-   * No validator: the request carries no body. Every VineJS validator here exists to shape a
-   * payload, and there is nothing to shape — the target comes from the path and the actor from the
-   * session.
+   * Authorization first, for the reason `deactivate` records. The request carries no body: the
+   * validator checks the target identifier in the path, and the actor comes from the session.
    *
    * `includeAccessHistory` is unconditionally true because the policy above admits organization
    * admins only, which is exactly the audience allowed to consult it.
    */
-  async resetPassword({ auth, bouncer, params, serialize }: HttpContext) {
+  async resetPassword({ auth, bouncer, params, request, serialize }: HttpContext) {
     await bouncer.with(UserPolicy).authorize('resetPassword')
 
     const administrator = auth.use('web').getUserOrFail()
+    const payload = await request.validateUsing(resetUserPasswordValidator, { data: { params } })
 
     const target = await this.resetUserPasswordUseCase.handle({
-      targetUserId: params.id,
+      targetUserId: payload.params.id,
       actorUserId: administrator.id,
       resetAt: DateTime.now(),
     })
