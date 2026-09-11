@@ -44,7 +44,11 @@ test('resets a password from its row without opening the record', async () => {
   fireEvent.click(within(confirmation).getByRole('button', { name: 'Reset password' }))
 
   await waitFor(() => expect(calls).toEqual([RESETTABLE_USER.id]))
-  expect(await screen.findByText(/must choose a new password/i)).toBeInTheDocument()
+  expect(
+    await screen.findByText(
+      'Inès Joly will have to choose a new password before using the application again.',
+    ),
+  ).toBeInTheDocument()
   // The record sheet was never opened: the row menu is enough on its own.
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })

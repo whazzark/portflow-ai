@@ -113,6 +113,10 @@ test('reports the reset once it succeeds', async () => {
   const confirmation = screen.getByRole('alertdialog')
   await user.click(within(confirmation).getByRole('button', { name: 'Reset password' }))
 
-  expect(await screen.findByText(/must choose a new password/i)).toBeInTheDocument()
+  expect(
+    await screen.findByText(
+      'Inès Joly will have to choose a new password before using the application again.',
+    ),
+  ).toBeInTheDocument()
   expect(RESET_USER.passwordRenewalRequired).toBe(true)
 })

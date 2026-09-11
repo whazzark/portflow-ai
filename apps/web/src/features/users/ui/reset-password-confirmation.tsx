@@ -55,7 +55,9 @@ export function ResetPasswordDialog({ user, onClose }: { user: UserDto; onClose:
       await resetPassword.mutateAsync({ params: { id: user.id } })
 
       onClose()
-      toast.success(`${formatFullName(user)} must choose a new password before signing in again.`)
+      toast.success(
+        `${formatFullName(user)} will have to choose a new password before using the application again.`,
+      )
     } catch (cause) {
       // A refusal may mean the collection this view was built from has moved on, so it is refreshed
       // on the failure path too, not only on the success path.
