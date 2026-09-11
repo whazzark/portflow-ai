@@ -1,3 +1,5 @@
+import { Link, useNavigate } from '@tanstack/react-router'
+
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import {
   Table,
@@ -33,6 +35,17 @@ type DischargeListProps = {
 }
 
 export function DischargeList({ discharges, isNoMatch, status }: DischargeListProps) {
+  const navigate = useNavigate({ from: '/discharges' })
+
+  // The list's status and search travel with the detail, so its way back restores them.
+  const openDischarge = (dischargeId: string) => {
+    void navigate({
+      params: { dischargeId },
+      search: (previous) => previous,
+      to: '/discharges/$dischargeId',
+    })
+  }
+
   return (
     <div className="overflow-hidden rounded-lg border md:flex md:max-h-full md:min-h-0 md:flex-col md:[&_[data-slot=table-container]]:min-h-0 md:[&_[data-slot=table-container]]:overflow-auto">
       <Table aria-label="Discharges">
@@ -52,12 +65,34 @@ export function DischargeList({ discharges, isNoMatch, status }: DischargeListPr
             discharges.map((discharge) => {
               const customers = customerNames(discharge)
 
-              // No handler, no cursor, no row action, and no hover highlight either: opening one
-              // discharge is GH-58, and a row that lights up under the cursor promises a click
-              // that leads nowhere.
+              // The vessel link is what a keyboard, a middle click, or "open in new tab" uses; the
+              // row click is only a pointer convenience on top of it, as in the customer table.
               return (
-                <TableRow className="hover:bg-transparent" key={discharge.id}>
-                  <TableCell className="font-medium">{discharge.vesselName}</TableCell>
+                <TableRow
+                  className="cursor-pointer"
+                  key={discharge.id}
+                  onClick={(event) => {
+                    // The link navigates on its own; letting its click reach the row would
+                    // navigate twice.
+                    if ((event.target as HTMLElement).closest('a')) {
+                      return
+                    }
+
+                    openDischarge(discharge.id)
+                  }}
+                >
+                  <TableCell className="font-medium">
+                    <Link
+                      aria-label={`View discharge ${discharge.vesselName}`}
+                      className="hover:underline"
+                      from="/discharges"
+                      params={{ dischargeId: discharge.id }}
+                      search={(previous) => previous}
+                      to="/discharges/$dischargeId"
+                    >
+                      {discharge.vesselName}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     {discharge.vesselImo ?? (
                       <span className="text-muted-foreground italic">Not specified</span>

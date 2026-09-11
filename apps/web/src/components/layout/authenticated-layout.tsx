@@ -6,7 +6,12 @@ import { useSession } from '@/features/auth/context/use-session'
 
 declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
-    breadcrumb?: string
+    /**
+     * A fixed label, or one resolved from the route's loader data for a page that names a record —
+     * one discharge, say. The function receives `undefined` while the loader has produced nothing,
+     * and when it failed or found no record, so it must always have a label to fall back on.
+     */
+    breadcrumb?: string | ((loaderData: unknown) => string)
   }
 }
 

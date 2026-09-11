@@ -79,6 +79,7 @@ router
         router
           .group(() => {
             router.get('/', [controllers.Discharges, 'index']).as('index')
+            router.get('/:id', [controllers.Discharges, 'show']).as('show')
           })
           .prefix('/discharges')
           .as('discharges')

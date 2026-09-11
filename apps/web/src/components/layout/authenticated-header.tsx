@@ -16,11 +16,17 @@ export function AuthenticatedHeader() {
   const { isMobile, state } = useSidebar()
   const matches = useMatches({
     select: (routeMatches) =>
-      routeMatches.flatMap((match) =>
-        match.staticData.breadcrumb
-          ? [{ href: match.pathname, label: match.staticData.breadcrumb }]
-          : [],
-      ),
+      routeMatches.flatMap((match) => {
+        const { breadcrumb } = match.staticData
+
+        if (!breadcrumb) {
+          return []
+        }
+
+        const label = typeof breadcrumb === 'function' ? breadcrumb(match.loaderData) : breadcrumb
+
+        return [{ href: match.pathname, label }]
+      }),
   })
   const toggleLabel = isMobile
     ? 'Open sidebar'
@@ -54,7 +60,10 @@ export function AuthenticatedHeader() {
                       {isCurrentPage ? (
                         <BreadcrumbPage className="truncate">{match.label}</BreadcrumbPage>
                       ) : (
-                        <BreadcrumbLink render={<Link to={match.href} />}>
+                        // Only a nested page has a crumb above its own, and its parent owns
+                        // the state it was opened from — a list's status and search. Keeping
+                        // the search returns the user to that list, not to its defaults.
+                        <BreadcrumbLink render={<Link search={true} to={match.href} />}>
                           {match.label}
                         </BreadcrumbLink>
                       )}
