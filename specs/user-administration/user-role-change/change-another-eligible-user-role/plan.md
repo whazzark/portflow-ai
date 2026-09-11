@@ -5,6 +5,21 @@
 **Input**: Feature specification from
 `specs/user-administration/user-role-change/change-another-eligible-user-role/spec.md`
 
+## Revisions — 2026-09-11
+
+Rebased on GH-24 (#293), which delivered an `Edit` panel on the user record under the same
+`mode=edit` this plan reserved for the role panel:
+
+- **The role is a field of the `Edit` panel**, not a panel of its own. `change-user-role-panel.tsx`
+  is gone; GH-24's panel and form are renamed `EditUserPanel` / `EditUserForm` and carry the role, and
+  `users-page.tsx` sends each change to its own endpoint. The record keeps no `Change role` action.
+  The route adds no `mode` of its own: GH-24's `create | edit | view` is reused as is.
+  [research.md](./research.md) D9 is replaced, and
+  [contracts/role-change-action.md](./contracts/role-change-action.md) describes the delivered
+  panel.
+- **A malformed id is refused with a 422.** `changeUserRoleValidator` checks `params.id` as a UUID,
+  as GH-24's and the deactivation validators do, so PostgreSQL never answers `22P02` with a 500.
+
 ## Summary
 
 Give an organization admin one way to change another user's responsibility level, on both seams. The
@@ -120,15 +135,14 @@ apps/api/
 
 apps/web/
 └── src/
-    ├── routes/_authenticated/users.tsx                   # + mode search param and its transform
+    ├── routes/_authenticated/users.tsx                   # unchanged — GH-24's `mode` is reused
     └── features/users/
-        ├── helpers/user-labels.ts                        # + USER_SINGULAR, role select options
-        ├── mutations/use-user-mutations.ts               # NEW — changeRole + invalidation
-        ├── ui/users-page.tsx                             # + mode wiring and its gating
-        ├── ui/user-sheet.tsx                             # + view/edit switch
-        ├── ui/user-access-record.tsx                     # + Change role entry, ineligibility reason
-        ├── ui/change-user-role-panel.tsx                 # NEW — the form
-        └── __tests__/role-change/                        # NEW — change, permissions, refusals, url-state
+        ├── helpers/user-labels.ts                        # + role select options
+        ├── mutations/use-user-mutations.ts               # + changeRole + invalidation
+        ├── ui/users-page.tsx                             # + saveUser: each change to its own seam
+        ├── ui/edit-user-panel.tsx                        # GH-24's panel, renamed; now carries the role
+        ├── ui/edit-user-form.tsx                         # GH-24's form, renamed; + role, read-only when deactivated
+        └── __tests__/role-change/                        # NEW — change, permissions, refusals, recovery, session
 ```
 
 **Structure Decision**: the existing vertical-slice layout on both sides — an API workflow slice under

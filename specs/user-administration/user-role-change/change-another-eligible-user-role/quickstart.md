@@ -43,15 +43,15 @@ Sign in as the organization admin and open `/users`.
 
 | # | Do this | Expect | Covers |
 |---|---|---|---|
-| 1 | Open an active user, use `Change role`, pick another role, submit | The record shows the new role; the table and the role filter's counts follow without a reload | US1, FR-012, FR-014 |
-| 2 | Re-open the same user and submit the role they now hold | Accepted, nothing changes, no error is shown | FR-006 |
+| 1 | Open an active user, use `Edit`, pick another role, `Save changes` | The record shows the new role; the table and the role filter's counts follow without a reload | US1, FR-012, FR-014 |
+| 2 | Re-open `Edit` on the same user and save without touching the role | Accepted, nothing changes, no error is shown; no role change is sent | FR-006 |
 | 3 | Check the record after any change | Access status, email, and the access history are exactly as before; no "role changed" entry appears anywhere | FR-005, FR-016 |
 | 4 | Switch to the `Pending` view, change a pending user's role | Accepted; the user stays pending | US1, FR-002 |
 | 5 | Switch to the `Cancelled` view, change a cancelled user's role | Accepted; the user stays cancelled | US1, FR-002 |
-| 6 | Open a deactivated user | No `Change role` action; the record says the user must be reactivated first | FR-003, FR-013 |
-| 7 | Hand-type `/users?userId=<a deactivated user>&mode=edit` | The read-only record opens, not the form | FR-008, workbench contract |
+| 6 | Open `Edit` on a deactivated user | No role control; the panel shows the role and says the user must be reactivated first | FR-003, FR-013 |
+| 7 | In one `Edit`, correct the first name and change the role, then save | Both land; the record shows the corrected name and the new role | workbench contract |
 | 8 | Reload the page while the form is open | The form is still open on the same user | URL-state convention |
-| 9 | Sign in as an operations admin and open `/users` | No `Change role` action anywhere; `?mode=edit` opens nothing | US3, FR-008 |
+| 9 | Sign in as an operations admin and open `/users` | No `Edit` action anywhere; `?mode=edit` opens the read-only record | US3, FR-008 |
 
 ## Proving the refusals at the API
 
@@ -64,7 +64,7 @@ curl -i -X PATCH "$API/api/v1/users/$DEACTIVATED_ID/role" \
   -H 'Content-Type: application/json' -b "$COOKIE" -d '{"role":"OBSERVER"}'
 
 # Unknown user → 404 E_USER_NOT_FOUND
-# Invalid role → 422
+# Invalid role, or an id that is not a UUID → 422
 # Same call with an operations lead's cookie → 403, whatever the id names
 ```
 

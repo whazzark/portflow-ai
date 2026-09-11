@@ -46,7 +46,7 @@
 ## Verification
 
 - [X] Each item maps to a test or reviewable behavior.
-- [X] API and web seams are covered where applicable. — 15 Japa tests across `unit/users/role_change` and `integration/users/role_change`; 16 Vitest tests across `features/users/__tests__/role-change`
+- [X] API and web seams are covered where applicable. — 26 Japa tests across `unit/users/role_change` and `integration/users/role_change`; 16 Vitest tests across `features/users/__tests__/role-change`
 - [X] No requirement is implemented outside the approved spec.
 
 ## Notes
@@ -56,6 +56,9 @@
 - Clarifications resolved on 2026-09-10: the role change is untraced (FR-016), and pending and
   cancelled users stay eligible with the activation link reissue deferred to the invitation slice
   that owns links (FR-017).
+- Revised on 2026-09-11: the role change is offered in GH-24's `Edit` panel rather than a panel of
+  its own (spec Clarifications, Session 2026-09-11). The web tests go through `Edit` → `Save
+  changes`, and `role-change/change.test.tsx` also proves each seam receives only what changed.
 - Delivery risk, still open and now carried into the PR: GH-29 must ship before this action is
   exposed to production users, since this slice alone lets an organization admin demote themselves
   or the last remaining organization admin.

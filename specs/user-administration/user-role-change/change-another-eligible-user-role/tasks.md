@@ -20,6 +20,21 @@ adds no end-to-end journey.
 **Organization**: Tasks are grouped by user story so each story can be implemented, tested, and
 demonstrated independently.
 
+## Revisions — 2026-09-11
+
+Rebased on GH-24 (#293), which delivered an `Edit` panel under the same `mode=edit` first. The tasks
+below are kept as they were run, and annotated rather than rewritten, so the history of the branch
+stays readable:
+
+- **The role is a field of GH-24's `Edit` panel**, not a panel of its own (spec Clarifications,
+  Session 2026-09-11; research D9 replaced). T017, T019, T020, T025, T026, T029, and T034 are
+  annotated; the web tests of T012, T023, T028, and T033 now go through `Edit` → `Save changes`.
+- **A malformed id is refused with a 422** before any user is read.
+- The revision work is recorded as Phase 9. Phases 6 and 7 had been delivered without their boxes
+  being ticked; they are ticked now, each against the test that proves it.
+
+A `~~struck~~` task was delivered, then withdrawn by these revisions.
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependency on an incomplete task)
@@ -83,7 +98,7 @@ changes, and the table, record, and role filter all follow.
 
 - [X] T010 [P] [US1] Unit tests in `apps/api/tests/unit/users/role_change/change_role.spec.ts` covering: the role changes for a `PENDING`, an `ACTIVE`, and a `CANCELLED` target (`UserFactory.apply('invited' | 'active' | 'cancelled')`); the access status is unchanged in each case; submitting the role already held succeeds with an unchanged row (FR-006); and a full-row comparison proves only `role` and `updatedAt` moved (FR-005, FR-016 — assert no lifecycle field, no `passwordRenewalRequiredAt`, and no new column records the change)
 - [X] T011 [P] [US1] Integration test in `apps/api/tests/integration/users/role_change/change_role.spec.ts` for the success path: an organization admin `PATCH`es `/api/v1/users/:id/role`, receives `200` with the `toAdministration` projection including the access history, and the persisted row carries the new role (contract: [change-user-role.md](./contracts/change-user-role.md))
-- [X] T012 [P] [US1] Feature test in `apps/web/src/features/users/__tests__/role-change/change.test.tsx`: an organization admin opens a user, uses `Change role`, picks another role, submits, and sees the new role in the record, in the table row, and in the role filter's counts — without a reload (FR-012, FR-014)
+- [X] T012 [P] [US1] Feature test in `apps/web/src/features/users/__tests__/role-change/change.test.tsx` *(revised: through `Edit` → `Save changes`, see T041)*: an organization admin opens a user, uses `Change role`, picks another role, submits, and sees the new role in the record, in the table row, and in the role filter's counts — without a reload (FR-012, FR-014)
 
 ### Implementation for User Story 1
 
@@ -91,10 +106,10 @@ changes, and the table, record, and role filter all follow.
 - [X] T014 [US1] Add `changeRole` to `apps/api/app/controllers/users_controller.ts`: `bouncer.with(UserPolicy).authorize('changeRole')` **before** any target lookup, then `request.validateUsing(changeUserRoleValidator)`, then the use case, then `serialize(UserTransformer.transform(user, { includeAccessHistory: true }).useVariant('toAdministration'))` (D3, D7, depends on T013)
 - [X] T015 [US1] Register `router.patch('/:id/role', [controllers.Users, 'changeRole']).as('change_role')` inside the existing `/users` group in `apps/api/start/routes.ts` (depends on T014)
 - [X] T016 [US1] Regenerate and commit the Tuyau registry so `users.change_role` appears in `apps/api/.adonisjs/client/registry/tree.d.ts`, `schema.d.ts`, and `apps/api/.adonisjs/server/routes.d.ts`; confirm the client tree exposes it as `users.changeRole`, the camel form the web will call (depends on T015)
-- [X] T017 [P] [US1] Add the `mode` search parameter (`'view' | 'edit'`, defaulting to `view`) to the Zod schema in `apps/web/src/routes/_authenticated/users.tsx`, and clear it in the route's `transform` whenever `userId` is absent, so the two can never contradict each other (D9, workbench contract)
+- [X] ~~T017~~ *(withdrawn 2026-09-11: GH-24's `mode` — `create | edit | view` — is reused as is)* [P] [US1] Add the `mode` search parameter (`'view' | 'edit'`, defaulting to `view`) to the Zod schema in `apps/web/src/routes/_authenticated/users.tsx`, and clear it in the route's `transform` whenever `userId` is absent, so the two can never contradict each other (D9, workbench contract)
 - [X] T018 [P] [US1] Create `apps/web/src/features/users/mutations/use-user-mutations.ts` exposing `changeRole` from `tuyauQuery.users.changeRole.mutationOptions`, invalidating `userQueries.list()` on success, in the shape of `apps/web/src/features/trucks/mutations/use-truck-mutations.ts` (the `auth.me` invalidation is US4's T032) (depends on T016)
-- [X] T019 [US1] Create `apps/web/src/features/users/ui/change-user-role-panel.tsx`: `useAppForm` with a `SelectField` over the four roles defaulting to the role the user holds, `form.FormError`, `form.SubmitButton` with `WRITE_PENDING_LABELS.update` and the label `Change role`, and a header "Back to details" as the way out — modelled on `apps/web/src/features/customers/ui/customer-form.tsx` and the detail-panel chrome rules in `apps/web/AGENTS.md` (depends on T009, T018)
-- [X] T020 [US1] Offer the action from `apps/web/src/features/users/ui/user-access-record.tsx` and switch between the record and the panel on `mode` in `apps/web/src/features/users/ui/user-sheet.tsx` and `apps/web/src/features/users/ui/users-page.tsx`; while editing `user-access-record.tsx`, correct its opening comment — "Read-only by design … no role change (FR-016)" cites GH-4's requirement numbering and stops being true here (depends on T017, T019)
+- [X] ~~T019~~ *(withdrawn 2026-09-11: the panel is gone; the role is a field of `EditUserForm`, see T039)* [US1] Create `apps/web/src/features/users/ui/change-user-role-panel.tsx`: `useAppForm` with a `SelectField` over the four roles defaulting to the role the user holds, `form.FormError`, `form.SubmitButton` with `WRITE_PENDING_LABELS.update` and the label `Change role`, and a header "Back to details" as the way out — modelled on `apps/web/src/features/customers/ui/customer-form.tsx` and the detail-panel chrome rules in `apps/web/AGENTS.md` (depends on T009, T018)
+- [X] T020 *(revised 2026-09-11: the entry point is GH-24's `Edit`; the record keeps no `Change role` action, see T039–T040)* [US1] Offer the action from `apps/web/src/features/users/ui/user-access-record.tsx` and switch between the record and the panel on `mode` in `apps/web/src/features/users/ui/user-sheet.tsx` and `apps/web/src/features/users/ui/users-page.tsx`; while editing `user-access-record.tsx`, correct its opening comment — "Read-only by design … no role change (FR-016)" cites GH-4's requirement numbering and stops being true here (depends on T017, T019)
 
 **Checkpoint**: an organization admin can change an eligible user's role end to end. The refusals are
 not yet exhaustive — US2 and US3 close them — so do not expose the route beyond the development
@@ -114,13 +129,13 @@ outside the four, at the API seam; verify each refusal, its reason, and that not
 
 - [X] T021 [P] [US2] Extend `apps/api/tests/unit/users/role_change/change_role.spec.ts` with the refusal branches: a `DEACTIVATED` target raises `UserDeactivatedCannotChangeRoleException`, an unknown id raises `UserNotFoundException`, and a target deactivated after the record was read is still refused — assert the guard is evaluated at execution, not against the state that was displayed (US2 scenario 4, D4)
 - [X] T022 [P] [US2] Extend `apps/api/tests/integration/users/role_change/change_role.spec.ts` with `409` + `E_USER_DEACTIVATED_CANNOT_CHANGE_ROLE` for a deactivated target, `404` + `E_USER_NOT_FOUND` for an unknown id, and `422` for a missing or out-of-range `role`; each case must assert the target row is byte-for-byte unchanged (FR-005, SC-003)
-- [X] T023 [P] [US2] Feature test in `apps/web/src/features/users/__tests__/role-change/refusals.test.tsx`: a deactivated user's record offers no `Change role` and states that the user must be reactivated first; a hand-typed `?mode=edit` on that user opens the read-only record; and an API refusal surfaces its message with the displayed role unchanged (FR-013, FR-015)
+- [X] T023 [P] [US2] Feature test in `apps/web/src/features/users/__tests__/role-change/refusals.test.tsx` *(revised: the deactivated case now opens `Edit` and finds no role control, with the reason, see T041)*: a deactivated user's record offers no `Change role` and states that the user must be reactivated first; a hand-typed `?mode=edit` on that user opens the read-only record; and an API refusal surfaces its message with the displayed role unchanged (FR-013, FR-015)
 
 ### Implementation for User Story 2
 
 - [X] T024 [US2] *(landed with T013 — the result union cannot be narrowed to `CHANGED` without it)* Map the repository's `NOT_FOUND` and `DEACTIVATED` outcomes onto the two named exceptions in `apps/api/app/users/role_change/change_user_role_use_case.ts`, in the shape of `apps/api/app/trucks/suspend/suspend_truck_use_case.ts` — the repository stays free of HTTP-aware exception selection (depends on T013)
-- [X] T025 [US2] Present the ineligibility in `apps/web/src/features/users/ui/user-access-record.tsx`: for a deactivated user, show why the role cannot be changed instead of silently omitting the action (FR-013, depends on T020)
-- [X] T026 [US2] Gate `mode=edit` on the open user's eligibility in `apps/web/src/features/users/ui/users-page.tsx`, falling back to the read-only record — the honest-interface rule from `apps/web/AGENTS.md`, with the API still authoritative (depends on T017, T020)
+- [X] T025 *(revised 2026-09-11: the reason moved into `EditUserForm`, in place of the role control, see T040)* [US2] Present the ineligibility in `apps/web/src/features/users/ui/user-access-record.tsx`: for a deactivated user, show why the role cannot be changed instead of silently omitting the action (FR-013, depends on T020)
+- [X] ~~T026~~ *(withdrawn 2026-09-11: `mode=edit` is gated by GH-24's `mayEditUserIdentity`; a deactivated user's identity stays editable, only the role is frozen)* [US2] Gate `mode=edit` on the open user's eligibility in `apps/web/src/features/users/ui/users-page.tsx`, falling back to the read-only record — the honest-interface rule from `apps/web/AGENTS.md`, with the API still authoritative (depends on T017, T020)
 
 **Checkpoint**: every state-based refusal holds at both seams.
 
@@ -138,11 +153,11 @@ workbench offers them no entry point.
 ### Tests for User Story 3 ⚠️
 
 - [X] T027 [P] [US3] Extend `apps/api/tests/integration/users/role_change/change_role.spec.ts` with the authorization matrix: `401` unauthenticated and for a non-active session, `403` for an operations admin, an operations lead, and an observer — and assert the `403` is identical whether the id names a pending, a cancelled, a deactivated, or a nonexistent user, which is what proves the policy runs before the target is read (FR-007, FR-009, D3)
-- [X] T028 [P] [US3] Feature test in `apps/web/src/features/users/__tests__/role-change/permissions.test.tsx`: an operations admin sees no `Change role` on any record, and a hand-typed `?mode=edit` opens the read-only record (FR-008)
+- [X] T028 [P] [US3] Feature test in `apps/web/src/features/users/__tests__/role-change/permissions.test.tsx` *(revised: also asserts no `Edit`)*: an operations admin sees no `Change role` on any record, and a hand-typed `?mode=edit` opens the read-only record (FR-008)
 
 ### Implementation for User Story 3
 
-- [X] T029 [US3] Gate the entry point and the `edit` mode on `viewer.role === 'ORGANIZATION_ADMIN'` in `apps/web/src/features/users/ui/user-access-record.tsx` and `apps/web/src/features/users/ui/users-page.tsx`, reading the viewer from the existing `useAuthenticatedUser()` as `users-page.tsx` already does for `consultsEveryStatus` (depends on T020, T026)
+- [X] T029 *(revised 2026-09-11: the gate is GH-24's `mayEditUserIdentity`, which also excludes the viewer's own record)* [US3] Gate the entry point and the `edit` mode on `viewer.role === 'ORGANIZATION_ADMIN'` in `apps/web/src/features/users/ui/user-access-record.tsx` and `apps/web/src/features/users/ui/users-page.tsx`, reading the viewer from the existing `useAuthenticatedUser()` as `users-page.tsx` already does for `consultsEveryStatus` (depends on T020, T026)
 
 **Checkpoint**: the authorization boundary is proven at the API and mirrored — never replaced — by
 the interface.
@@ -164,12 +179,12 @@ invalidation mechanism.
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T030 [P] [US4] Integration test in `apps/api/tests/integration/users/role_change/change_role.spec.ts`: after an organization admin demotes a signed-in operations admin to observer, that user's own session is refused an operations admin action, `auth.me` reports the new role, and their session and remembered connections still exist (FR-010, FR-011)
-- [ ] T031 [P] [US4] Feature test in `apps/web/src/features/users/__tests__/role-change/session.test.tsx`: when `auth.me` reports a new role, the navigation and the actions offered follow it without a new sign-in
+- [X] T030 [P] [US4] Integration test in `apps/api/tests/integration/users/role_change/change_role.spec.ts`: after an organization admin demotes a signed-in operations admin to observer, that user's own session is refused an operations admin action, `auth.me` reports the new role, and their session and remembered connections still exist (FR-010, FR-011)
+- [X] T031 [P] [US4] Feature test in `apps/web/src/features/users/__tests__/role-change/session.test.tsx`: when `auth.me` reports a new role, the navigation and the actions offered follow it without a new sign-in
 
 ### Implementation for User Story 4
 
-- [ ] T032 [US4] Also invalidate the `auth.me` query in `apps/web/src/features/users/mutations/use-user-mutations.ts`, so an administrator who changed their own role sees their own navigation follow; note in a comment that GH-29 refuses that case outright and this line becomes belt-and-braces then (D9, depends on T018)
+- [X] T032 [US4] Also invalidate the `auth.me` query in `apps/web/src/features/users/mutations/use-user-mutations.ts`, so an administrator who changed their own role sees their own navigation follow; note in a comment that GH-29 refuses that case outright and this line becomes belt-and-braces then (D9, depends on T018)
 
 **Checkpoint**: the change reaches the person it describes, and the tests say so rather than the
 architecture being taken on trust.
@@ -186,11 +201,11 @@ from a business refusal, restore availability, retry, and confirm the change is 
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T033 [P] [US5] Feature test in `apps/web/src/features/users/__tests__/role-change/recovery.test.tsx`: an unavailable endpoint yields a failure distinct from a refusal, the displayed role is unchanged, the panel stays open, and a retry after recovery applies the change exactly once (FR-015)
+- [X] T033 [P] [US5] Feature test in `apps/web/src/features/users/__tests__/role-change/recovery.test.tsx`: an unavailable endpoint yields a failure distinct from a refusal, the displayed role is unchanged, the panel stays open, and a retry after recovery applies the change exactly once (FR-015)
 
 ### Implementation for User Story 5
 
-- [ ] T034 [US5] Handle the failure path in `apps/web/src/features/users/ui/change-user-role-panel.tsx`: `applyValidationError` first, then `parseApiError` into a `refusalTitle('change the role of', namedRecord(USER_SINGULAR, …))` toast with the API message as its description, keeping the panel open and the selection intact — the same shape as `customer-form.tsx`, with the copy built from `apps/web/src/helpers/resource-copy.ts` (depends on T019)
+- [X] T034 *(revised 2026-09-11: the failure path is `EditUserForm`'s, with the `update` copy)* [US5] Handle the failure path in `apps/web/src/features/users/ui/change-user-role-panel.tsx`: `applyValidationError` first, then `parseApiError` into a `refusalTitle('change the role of', namedRecord(USER_SINGULAR, …))` toast with the API message as its description, keeping the panel open and the selection intact — the same shape as `customer-form.tsx`, with the copy built from `apps/web/src/helpers/resource-copy.ts` (depends on T019)
 
 **Checkpoint**: all five stories are independently demonstrable.
 
@@ -202,6 +217,18 @@ from a business refusal, restore availability, retry, and confirm the change is 
 - [ ] T036 [P] Tick the delivery boxes in [checklists/requirements.md](./checklists/requirements.md) — the "Source acceptance criteria" and "Verification" sections — naming the test that satisfies each
 - [ ] T037 Run the nine-step manual walkthrough and the curl refusal checks in [quickstart.md](./quickstart.md) against a seeded database
 - [ ] T038 Run `pnpm check`, `pnpm typecheck`, and `pnpm test` from the repository root, then obtain a fresh read-only review of the final diff and resolve or explicitly justify every confirmed finding (Constitution VII)
+
+---
+
+## Phase 9: Revisions — 2026-09-11
+
+**Purpose**: Rebase on GH-24 (#293) and fold the role into its `Edit` panel, then close the malformed
+id gap the rebase exposed.
+
+- [X] T039 Add the role to GH-24's form, renamed `apps/web/src/features/users/ui/edit-user-form.tsx` (`EditUserForm`, with `EditUserPanel` in `edit-user-panel.tsx`), and send each change to its own seam from `saveUser` in `apps/web/src/features/users/ui/users-page.tsx` — the identity to `PATCH /users/:id`, the role to `PATCH /users/:id/role`, sequentially; delete `change-user-role-panel.tsx`
+- [X] T040 Remove the `Change role` action and the ineligibility note from `apps/web/src/features/users/ui/user-access-record.tsx`; show a deactivated user's role read-only in `EditUserForm`, with "Reactivate the user first", in place of the control
+- [X] T041 Rewrite `apps/web/src/features/users/__tests__/role-change/` to go through `Edit` → `Save changes`, and add to `change.test.tsx` that each save reaches only the seams whose values changed
+- [X] T042 Check `params.id` as a UUID in `changeUserRoleValidator` (`apps/api/app/users/shared/user_validator.ts`) and read the id from the validated payload in `apps/api/app/controllers/users_controller.ts`; integration test "rejects a malformed identifier before any user is read"
 
 ---
 

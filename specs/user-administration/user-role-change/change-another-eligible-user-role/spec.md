@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-09
 
-**Last Updated**: 2026-09-10
+**Last Updated**: 2026-09-11
 
 **Status**: Draft
 
@@ -27,6 +27,22 @@
 > Merged slice: this specification covers both the API seam and the web seam. It absorbs the former
 > frontend-only slice "Change a User's Role From the Web Workbench", merged on 2026-09-10 and
 > deleted from GitHub.
+
+## Clarifications
+
+### Session 2026-09-11
+
+- Q: GH-24 (#293) now opens an `Edit` panel on the user record, under the same `mode=edit` this
+  slice planned for its own role panel. Where is the role change offered? → A: In that same `Edit`
+  panel. The record gains no `Change role` action of its own: the panel carries the first name, the
+  last name, the email address, and the role, and saving sends each change to its own endpoint.
+  FR-012 and FR-013 are met there — the role the user holds today is the starting value, and on a
+  deactivated user the role is shown read-only with the reason instead of the control.
+- Q: What happens to FR-006 (submitting the role already held) in the workbench? → A: The API keeps
+  accepting it as an unchanged success. The workbench simply sends no role change when the role was
+  left as it is.
+- Q: Can an administrator change their own role from the workbench? → A: No longer reachable: GH-24
+  never offers `Edit` on the viewer's own record. The API still accepts it until GH-29 refuses it.
 
 ## User Scenarios & Testing *(mandatory)*
 

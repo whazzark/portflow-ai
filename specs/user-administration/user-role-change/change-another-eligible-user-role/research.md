@@ -11,6 +11,10 @@ Every decision below was taken against the code as it stands, not against the pr
 `apps/api/app/users/` currently holds a list use case, a policy, a repository pair, and a
 transformer, and nothing that writes a user apart from `renewPassword`.
 
+**Revised 2026-09-11**: GH-24 (#293) landed an `Edit` panel under the same `mode=edit` first, so the
+role joined that panel instead of opening its own. D9 is replaced; its first decision keeps its
+reasoning below.
+
 ---
 
 ## D1 — The command is `PATCH /api/v1/users/:id/role`
@@ -212,7 +216,19 @@ authorization is re-evaluated per request.
 
 ## D9 — The web action is an `edit` mode on the existing `/users` route
 
-**Decision**: the role change is a panel inside the user sheet the workbench already opens, driven by
+> **Replaced 2026-09-11 — folded into GH-24's `Edit` panel.** #293 delivered the identity correction
+> under `mode=edit` before this slice merged, and `apps/web/AGENTS.md` gives the mode `view | edit |
+> create` only, so a second panel would have needed a mode value outside the convention. The role is
+> now a `SelectField` of that panel (`EditUserForm`), and the record keeps no `Change role` action.
+> Saving sends each seam only what changed — the identity to `PATCH /users/:id`, the role to
+> `PATCH /users/:id/role`, sequentially, so a role refused after the identity landed is retried alone.
+> On a deactivated user the role is shown read-only with the reason, inside the panel. The toasts are
+> the panel's `update` ones. The URL-state, gating, and invalidation reasoning below still holds.
+>
+> *Alternatives considered at the revision*: a dedicated mode value (`mode=role`) — rejected by the
+> product owner in favour of a single `Edit` per record, at the cost of up to two requests per save.
+
+**Decision (as first taken)**: the role change is a panel inside the user sheet the workbench already opens, driven by
 a `mode` search parameter alongside the existing `userId`. `mode=edit` opens the form; anything else,
 or an ineligible target, or a viewer who is not an organization admin, opens the read-only record.
 
@@ -251,7 +267,7 @@ a second defect on top of the first, and the invalidation is one line.
 | FR-001, FR-002, FR-003, FR-005, FR-006, FR-016 | `apps/api/tests/unit/users/role_change/change_role.spec.ts` — eligibility per access status, idempotent resubmit, full-row comparison, concurrent changes |
 | FR-004, FR-007, FR-008, FR-009 | `apps/api/tests/integration/users/role_change/change_role.spec.ts` — unauthenticated, each unauthorized role, non-active session, invalid role, unknown id, deactivated target, success payload |
 | FR-010, FR-011 | integration: change a role, then exercise the target's own session and `auth.me` |
-| FR-012, FR-013, FR-014, FR-015 | `apps/web/src/features/users/__tests__/role-change/` — change, permissions, refusals, url-state |
+| FR-012, FR-013, FR-014, FR-015 | `apps/web/src/features/users/__tests__/role-change/` — change (including which seam each save reaches), permissions, refusals, recovery |
 
 No end-to-end journey is added: `apps/web/e2e` does not exist in this repository.
 
