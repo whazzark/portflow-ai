@@ -90,6 +90,9 @@ router
             router.patch('/:id', [controllers.Users, 'update']).as('update')
             router.post('/:id/deactivate', [controllers.Users, 'deactivate']).as('deactivate')
             router.patch('/:id/role', [controllers.Users, 'changeRole']).as('change_role')
+            router
+              .post('/:id/password-reset', [controllers.Users, 'resetPassword'])
+              .as('password_reset')
           })
           .prefix('/users')
           .as('users')

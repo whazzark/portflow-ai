@@ -6,6 +6,7 @@ import { StatusIndicator } from '@/components/ui/status-indicator'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { formatFullName } from '@/features/users/helpers/name'
 import { USER_ACCESS_STATUS_LABELS, USER_ROLE_LABELS } from '@/features/users/helpers/user-labels'
+import { canResetPassword, owesPasswordRenewal } from '@/features/users/helpers/user-permissions'
 import type { UserAccessStatus, UserDto } from '@/features/users/types'
 import { UserAccessActions } from '@/features/users/ui/user-access-actions'
 import { UserAccessHistory } from '@/features/users/ui/user-access-history'
@@ -31,15 +32,17 @@ type UserAccessRecordProps = {
 
 /**
  * Identity, role, access status, and the recorded access history, with the actions the viewer may
- * take on this user in the footer — the edit on the left, the access actions on the right, as in
- * the customer record. The role is changed through that edit, alongside the identity. Invitation,
- * cancellation, and reactivation are still owned by their own slices and are not offered here.
+ * take on this user in the footer — the edit on the left, the access actions and the password reset
+ * (`#17`) on the right, as in the customer record. The role is changed through that edit, alongside
+ * the identity. Invitation, cancellation, and reactivation are still owned by their own slices and
+ * are not offered here.
  *
  * A record with no action available renders no footer at all rather than an empty bordered bar.
  */
 export function UserAccessRecord({ user, canEdit, onEdit }: UserAccessRecordProps) {
   const viewer = useAuthenticatedUser()
   const accessActions = userAccessActions(viewer, user)
+  const mayResetPassword = canResetPassword(viewer, user)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -62,16 +65,29 @@ export function UserAccessRecord({ user, canEdit, onEdit }: UserAccessRecordProp
               />
             </dd>
           </div>
+          {owesPasswordRenewal(user) && (
+            <div className="col-span-2 grid gap-1">
+              <dt className="text-muted-foreground text-sm">Password</dt>
+              <dd>
+                <StatusIndicator label="Renewal required" variant="warning" />
+              </dd>
+            </div>
+          )}
         </dl>
         <Separator className="my-6" />
         <UserAccessHistory user={user} />
       </div>
-      {(canEdit || accessActions.length > 0) && (
+      {(canEdit || accessActions.length > 0 || mayResetPassword) && (
         <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
           {canEdit && <Button onClick={onEdit}>Edit</Button>}
           {/* Pushed right on its own too, so a record offering no correction keeps the access
               actions where they always are. */}
-          <UserAccessActions actions={accessActions} className="sm:ml-auto" user={user} />
+          <UserAccessActions
+            actions={accessActions}
+            className="sm:ml-auto"
+            mayResetPassword={mayResetPassword}
+            user={user}
+          />
         </SheetFooter>
       )}
     </div>

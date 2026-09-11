@@ -8,6 +8,8 @@ import UpdateUserIdentityUseCase from '#users/identity/update_user_identity_use_
 import InviteUserUseCase from '#users/invite/invite_user_use_case'
 import { inviteUserValidator } from '#users/invite/invite_user_validator'
 import ListUsersUseCase from '#users/list/list_users_use_case'
+import ResetUserPasswordUseCase from '#users/password_reset/reset_user_password_use_case'
+import { resetUserPasswordValidator } from '#users/password_reset/reset_user_password_validator'
 import ChangeUserRoleUseCase from '#users/role_change/change_user_role_use_case'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 import UserPolicy from '#users/shared/user_policy'
@@ -21,6 +23,7 @@ export default class UsersController {
     private deactivateUserUseCase: DeactivateUserUseCase,
     private updateUserIdentityUseCase: UpdateUserIdentityUseCase,
     private changeUserRoleUseCase: ChangeUserRoleUseCase,
+    private resetUserPasswordUseCase: ResetUserPasswordUseCase,
   ) {}
 
   /**
@@ -127,6 +130,32 @@ export default class UsersController {
 
     return serialize(
       UserTransformer.transform(user, { includeAccessHistory: true }).useVariant(
+        'toAdministration',
+      ),
+    )
+  }
+
+  /**
+   * Authorization first, for the reason `deactivate` records. The request carries no body: the
+   * validator checks the target identifier in the path, and the actor comes from the session.
+   *
+   * `includeAccessHistory` is unconditionally true because the policy above admits organization
+   * admins only, which is exactly the audience allowed to consult it.
+   */
+  async resetPassword({ auth, bouncer, params, request, serialize }: HttpContext) {
+    await bouncer.with(UserPolicy).authorize('resetPassword')
+
+    const administrator = auth.use('web').getUserOrFail()
+    const payload = await request.validateUsing(resetUserPasswordValidator, { data: { params } })
+
+    const target = await this.resetUserPasswordUseCase.handle({
+      targetUserId: payload.params.id,
+      actorUserId: administrator.id,
+      resetAt: DateTime.now(),
+    })
+
+    return serialize(
+      UserTransformer.transform(target, { includeAccessHistory: true }).useVariant(
         'toAdministration',
       ),
     )

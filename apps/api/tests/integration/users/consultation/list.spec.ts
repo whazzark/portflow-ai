@@ -155,6 +155,13 @@ test.group('GET /api/v1/users', () => {
     assert.isNull(entry?.cancelledBy)
   })
 
+  /**
+   * Asserted on the key set rather than on a `'password'` substring, which `#17` made a false
+   * positive: `passwordResetAt`, `passwordResetBy`, and `passwordRenewalRequired` are named after
+   * `CONTEXT.md`'s `Password Reset` and carry no secret — a date, an administrator's name, and one
+   * boolean. The intent is unchanged and the check is stricter: an exhaustive key set catches a new
+   * leak under *any* name, which the substring never did.
+   */
   test('never exposes credentials or tokens', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
     await UserFactory.apply('active').createMany(2)
@@ -163,9 +170,35 @@ test.group('GET /api/v1/users', () => {
 
     response.assertStatus(200)
 
+    for (const user of response.body().data as Array<Record<string, unknown>>) {
+      assert.deepEqual(Object.keys(user).sort(), [
+        'accessStatus',
+        'activatedAt',
+        'activatedBy',
+        'cancelledAt',
+        'cancelledBy',
+        'deactivatedAt',
+        'deactivatedBy',
+        'email',
+        'firstName',
+        'id',
+        'invitedAt',
+        'invitedBy',
+        'lastName',
+        'passwordRenewalRequired',
+        'passwordResetAt',
+        'passwordResetBy',
+        'reactivatedAt',
+        'reactivatedBy',
+        'role',
+      ])
+    }
+
     const serialized = JSON.stringify(response.body())
 
-    assert.notInclude(serialized, 'password')
+    // The raw requirement timestamp stays unserialized everywhere: it would say *when* an
+    // administrator acted, where the reset event says it correctly attributed.
+    assert.notInclude(serialized, 'passwordRenewalRequiredAt')
     assert.notInclude(serialized, 'token')
   })
 })

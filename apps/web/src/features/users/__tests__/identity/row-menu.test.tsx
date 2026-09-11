@@ -24,7 +24,7 @@ test('offers the correction from the row, between consultation and the access ac
   await openRowMenu('Amélie Bernard')
 
   const items = screen.getAllByRole('menuitem').map((item) => item.textContent)
-  expect(items).toEqual(['View', 'Edit', 'Deactivate'])
+  expect(items).toEqual(['View', 'Edit', 'Reset password', 'Deactivate'])
 })
 
 test('opens the correction straight from the row', async () => {

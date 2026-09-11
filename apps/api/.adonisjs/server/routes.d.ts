@@ -42,6 +42,7 @@ export type ScannedRoutes = {
     'users.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.deactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.change_role': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'users.password_reset': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.store': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
@@ -133,6 +134,7 @@ export type ScannedRoutes = {
     'trucks.return_to_service': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.store': { paramsTuple?: []; params?: {} }
     'users.deactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'users.password_reset': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.store': { paramsTuple?: []; params?: {} }
     'docks.archive_many': { paramsTuple?: []; params?: {} }
     'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

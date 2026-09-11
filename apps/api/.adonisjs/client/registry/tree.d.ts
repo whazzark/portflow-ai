@@ -53,6 +53,7 @@ export interface ApiDefinition {
     update: typeof routes['users.update']
     deactivate: typeof routes['users.deactivate']
     changeRole: typeof routes['users.change_role']
+    passwordReset: typeof routes['users.password_reset']
   }
   docks: {
     index: typeof routes['docks.index']

@@ -17,14 +17,16 @@ import UserRepository, {
   type InviteUserResult,
   type RenewPasswordCommand,
   type RenewPasswordResult,
+  type RequirePasswordRenewalCommand,
+  type RequirePasswordRenewalResult,
 } from './user_repository.ts'
 
 /**
- * Every user read that serializes the access history needs all five actor relations, and a missed
+ * Every user read that serializes the access history needs all six actor relations, and a missed
  * one is invisible in types: Lucid resolves an unpreloaded relation to `undefined` and the
  * transformer turns that into `null`, so the actor reads as "nobody did this" on one endpoint and
  * is named on every other. Gathered here, in the shape `lucid_truck_repository.ts` already uses,
- * so a sixth lifecycle event is a one-line change.
+ * so a seventh lifecycle event is a one-line change.
  */
 function preloadAccessHistory(
   query: ModelQueryBuilderContract<typeof User, User>,
@@ -35,6 +37,7 @@ function preloadAccessHistory(
     .preload('cancelledBy')
     .preload('deactivatedBy')
     .preload('reactivatedBy')
+    .preload('passwordResetBy')
 }
 
 export default class LucidUserRepository extends UserRepository {
@@ -75,6 +78,8 @@ export default class LucidUserRepository extends UserRepository {
             deactivatedByUserId: null,
             reactivatedAt: null,
             reactivatedByUserId: null,
+            passwordResetAt: null,
+            passwordResetByUserId: null,
             passwordRenewalRequiredAt: null,
           },
           { client: trx },
@@ -160,6 +165,98 @@ export default class LucidUserRepository extends UserRepository {
     const changed = await preloadAccessHistory(User.query().where('id', command.userId)).first()
 
     return changed ? { kind: 'CHANGED', user: changed } : { kind: 'NOT_FOUND' }
+  }
+
+  /**
+   * The mirror of `renewPassword` below, and it borrows both of that method's reasons for a
+   * transaction and a guard.
+   *
+   * The guard `WHERE access_status = 'ACTIVE'` is the concurrency control and the eligibility rule
+   * at once: a single-row conditional `UPDATE` is atomic on both dialects, so two administrators
+   * resetting the same user concurrently leave exactly one requirement standing, and a target that
+   * stopped being active between the workbench listing it and this write simply matches zero rows.
+   *
+   * The transaction is what makes the requirement and the revocation inseparable — see
+   * `revokeEveryRememberedConnection`.
+   */
+  requirePasswordRenewal(
+    command: RequirePasswordRenewalCommand,
+  ): Promise<RequirePasswordRenewalResult> {
+    return User.transaction(async (trx) => {
+      const resetAt = command.resetAt.toSQL({ includeOffset: false })
+
+      // Read before the write so a zero-row `UPDATE` can be told apart from an unknown user: FR-006
+      // wants a refusal naming the current access status, and one guarded statement alone cannot
+      // distinguish "no such row" from "the row was not ACTIVE".
+      const target = await User.query({ client: trx })
+        .where('id', command.targetUserId)
+        .forUpdate()
+        .first()
+
+      if (!target) {
+        return { kind: 'NOT_FOUND' }
+      }
+      if (target.accessStatus !== 'ACTIVE') {
+        return { kind: 'NOT_ACTIVE' }
+      }
+
+      const [affectedRows] = await User.query({ client: trx })
+        .where('id', command.targetUserId)
+        .where('accessStatus', 'ACTIVE')
+        .update({
+          passwordRenewalRequiredAt: resetAt,
+          passwordResetAt: resetAt,
+          passwordResetByUserId: command.resetByUserId,
+          // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+          // bookkeeping timestamp is written by hand — the same treatment every other guarded write
+          // in this codebase gives it.
+          updatedAt: resetAt,
+        })
+
+      if (Number(affectedRows) !== 1) {
+        // The row read above was ACTIVE, so a zero-row UPDATE means it moved on in between.
+        // PostgreSQL cannot reach this — the `forUpdate()` above holds the row — but knex emits no
+        // `FOR UPDATE` on SQLite, where a concurrent deactivation would otherwise be reported as a
+        // successful reset of a user who was never required to renew.
+        const current = await User.query({ client: trx }).where('id', command.targetUserId).first()
+
+        return current ? { kind: 'NOT_ACTIVE' } : { kind: 'NOT_FOUND' }
+      }
+
+      await this.revokeEveryRememberedConnection(trx, command.targetUserId)
+
+      const reset = await preloadAccessHistory(
+        User.query({ client: trx }).where('id', command.targetUserId),
+      ).firstOrFail()
+
+      return { kind: 'RESET', user: reset }
+    })
+  }
+
+  /**
+   * Closes the window the reset exists to close. A remembered connection restores access for up to
+   * 30 days without presenting a password, so leaving one standing would keep the credential being
+   * replaced usable for weeks — the very exposure the administrator acted on.
+   *
+   * **Every** connection goes, unlike `revokeOtherRememberedConnections` below, which spares the one
+   * the renewal was performed from. There is nothing to spare here: the actor is the administrator,
+   * not the target, so no connection in this set belongs to the person making the request.
+   *
+   * Live sessions are deliberately left standing — `PasswordRenewalMiddleware` confines them at
+   * their next request, so the target meets the renewal step instead of an unexplained sign-out and
+   * loses no work in progress.
+   *
+   * Reached only on a successful reset, inside the same transaction as the write, so a refused reset
+   * revokes nothing and a failed revocation takes the requirement down with it (FR-013).
+   *
+   * Deleted through the query builder rather than `RememberMeToken`: the guard's token provider
+   * writes these rows itself, in a shape the model's date columns refuse to hydrate.
+   */
+  private async revokeEveryRememberedConnection(
+    trx: TransactionClientContract,
+    targetUserId: string,
+  ) {
+    await trx.from('remember_me_tokens').where('tokenable_id', targetUserId).delete()
   }
 
   /**
