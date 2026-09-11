@@ -11,4 +11,11 @@ export default abstract class DischargeRepository {
    * times for what one read already answers.
    */
   abstract list(): Promise<Discharge[]>
+
+  /**
+   * One discharge with its whole preparation graph, or `null` when no discharge has this
+   * identity. A malformed identity is simply one no discharge has: the caller gets the same
+   * `null`, never a database error.
+   */
+  abstract findDetail(id: string): Promise<Discharge | null>
 }

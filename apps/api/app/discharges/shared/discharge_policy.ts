@@ -12,4 +12,13 @@ export default class DischargePolicy extends BasePolicy {
   list(user: User): AuthorizerResponse {
     return user.accessStatus === 'ACTIVE'
   }
+
+  /**
+   * Every active role may read the detail of every discharge, in every status. The predicate is
+   * the list's, but kept apart so that a later slice can narrow one discharge's detail without
+   * touching who may browse the collection.
+   */
+  view(user: User): AuthorizerResponse {
+    return user.accessStatus === 'ACTIVE'
+  }
 }

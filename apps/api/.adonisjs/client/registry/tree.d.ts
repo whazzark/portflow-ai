@@ -46,6 +46,7 @@ export interface ApiDefinition {
   }
   discharges: {
     index: typeof routes['discharges.index']
+    show: typeof routes['discharges.show']
   }
   users: {
     index: typeof routes['users.index']

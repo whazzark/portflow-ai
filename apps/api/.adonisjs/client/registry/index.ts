@@ -204,6 +204,12 @@ const routes = {
     tokens: [{"old":"/api/v1/discharges","type":0,"val":"api","end":""},{"old":"/api/v1/discharges","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges","type":0,"val":"discharges","end":""}],
     types: placeholder as Registry['discharges.index']['types'],
   },
+  'discharges.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/discharges/:id',
+    tokens: [{"old":"/api/v1/discharges/:id","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:id","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['discharges.show']['types'],
+  },
   'users.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/users',

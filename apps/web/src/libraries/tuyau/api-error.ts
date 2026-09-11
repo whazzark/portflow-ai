@@ -21,6 +21,10 @@ export function isUnauthorizedError(error: unknown): boolean {
   return error instanceof TuyauError && error.status === 401
 }
 
+export function isNotFoundError(error: unknown): boolean {
+  return error instanceof TuyauError && error.status === 404
+}
+
 export function parseApiError(error: unknown): ApiError {
   if (!(error instanceof TuyauError)) {
     return UNKNOWN_ERROR

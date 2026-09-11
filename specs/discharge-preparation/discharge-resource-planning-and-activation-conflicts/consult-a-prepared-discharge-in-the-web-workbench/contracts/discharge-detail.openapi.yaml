@@ -1,0 +1,321 @@
+openapi: 3.1.0
+info:
+  title: Portflow Discharge Detail Contract
+  version: 1.0.0
+  description: >-
+    The single-discharge read contract introduced by issue 58. One response carries the whole
+    preparation graph of one discharge; see research.md Decision 1. The collection contract of
+    issue 61 (discharges.index) is unchanged.
+paths:
+  /api/v1/discharges/{id}:
+    get:
+      operationId: discharges.show
+      summary: Read one discharge with its full preparation graph
+      description: >-
+        Requires an authenticated user whose access status is ACTIVE. Every role reads the same
+        payload. Any status, Planned, Active, or Closed, can be read. Archived site references
+        are returned with their labels and status, never filtered out or substituted.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: >-
+            The discharge identity. A value that is not a UUID gets the same 404 as an unknown
+            UUID; see research.md Decision 7.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The discharge and its preparation graph.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/DischargeDetail"
+        "401":
+          description: >-
+            No authenticated session, or a session whose user is not ACTIVE. The auth middleware
+            refuses both before the policy runs. No discharge or site-reference data is disclosed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "404":
+          description: >-
+            No discharge has this identity, or the identity is malformed. Code
+            E_DISCHARGE_NOT_FOUND. The web shows its not-found state for this, never the retryable
+            failure state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+components:
+  schemas:
+    DischargeDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - status
+        - vesselName
+        - vesselImo
+        - vesselComment
+        - expectedStartAt
+        - expectedTonnage
+        - dock
+        - productLots
+        - truckPool
+        - shifts
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PLANNED, ACTIVE, CLOSED]
+        vesselName:
+          type: string
+          minLength: 1
+        vesselImo:
+          type: [string, "null"]
+        vesselComment:
+          type: [string, "null"]
+        expectedStartAt:
+          type: string
+          format: date-time
+        expectedTonnage:
+          $ref: "#/components/schemas/Tonnes"
+          description: >-
+            Decimal sum of the lots' expectedQuantityTonnes, computed in the API. "0.000" when the
+            discharge has no lot.
+        dock:
+          $ref: "#/components/schemas/ReferenceLabel"
+        productLots:
+          type: array
+          description: Ordered by customer name, product name, then id. Empty for a freshly planned discharge.
+          items:
+            $ref: "#/components/schemas/ProductLotDetail"
+        truckPool:
+          type: array
+          description: >-
+            Every truck ever reserved for the discharge, held or released, ordered by captured
+            registration, then id.
+          items:
+            $ref: "#/components/schemas/TruckPoolEntry"
+        shifts:
+          type: array
+          description: Ordered by plannedStartAt, then id.
+          items:
+            $ref: "#/components/schemas/ShiftDetail"
+    ProductLotDetail:
+      type: object
+      additionalProperties: false
+      required: [id, productName, description, expectedQuantityTonnes, customer, doorAssignments]
+      properties:
+        id:
+          type: string
+          format: uuid
+        productName:
+          type: string
+        description:
+          type: [string, "null"]
+        expectedQuantityTonnes:
+          $ref: "#/components/schemas/Tonnes"
+        customer:
+          $ref: "#/components/schemas/ReferenceLabel"
+        doorAssignments:
+          type: array
+          description: >-
+            Every door assignment this lot has had, in effect or ended, ordered by effectiveFrom,
+            then id. Each effective period is its own entry, never merged.
+          items:
+            $ref: "#/components/schemas/DoorPeriod"
+    DoorPeriod:
+      type: object
+      additionalProperties: false
+      required: [id, effectiveFrom, effectiveTo, warehouseDoor, warehouse]
+      properties:
+        id:
+          type: string
+          format: uuid
+        effectiveFrom:
+          type: string
+          format: date-time
+        effectiveTo:
+          type: [string, "null"]
+          format: date-time
+          description: Null while the assignment or membership is in effect.
+        warehouseDoor:
+          $ref: "#/components/schemas/ReferenceLabel"
+        warehouse:
+          $ref: "#/components/schemas/ReferenceLabel"
+    TruckPoolEntry:
+      type: object
+      additionalProperties: false
+      required: [id, truckId, registration, truckStatus, transportCompany, reservedAt, releasedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        truckId:
+          type: string
+          format: uuid
+        registration:
+          type: string
+          description: The registration captured at reservation, never the truck's current one.
+        truckStatus:
+          $ref: "#/components/schemas/TruckStatus"
+        transportCompany:
+          type: object
+          additionalProperties: false
+          required: [id, name, status]
+          properties:
+            id:
+              type: [string, "null"]
+              format: uuid
+              description: Null when the company link was cleared; the captured name remains.
+            name:
+              type: string
+              description: The transport company name captured at reservation.
+            status:
+              oneOf:
+                - $ref: "#/components/schemas/ReferenceStatus"
+                - type: "null"
+              description: The company's current status, or null when id is null.
+        reservedAt:
+          type: string
+          format: date-time
+        releasedAt:
+          type: [string, "null"]
+          format: date-time
+          description: Null while the discharge still holds the truck.
+    ShiftDetail:
+      type: object
+      additionalProperties: false
+      required:
+        [id, status, plannedStartAt, plannedEndAt, responsible, trucks, warehouseDoors, weighingAreas]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PLANNED, ACTIVE, COMPLETED]
+        plannedStartAt:
+          type: string
+          format: date-time
+        plannedEndAt:
+          type: string
+          format: date-time
+        responsible:
+          type: object
+          additionalProperties: false
+          required: [id, firstName, lastName]
+          description: Name only. Contact details and access status are administration context.
+          properties:
+            id:
+              type: string
+              format: uuid
+            firstName:
+              type: string
+            lastName:
+              type: string
+        trucks:
+          type: array
+          description: Ordered by effectiveFrom, then id.
+          items:
+            $ref: "#/components/schemas/ShiftTruckPeriod"
+        warehouseDoors:
+          type: array
+          description: Ordered by effectiveFrom, then id.
+          items:
+            $ref: "#/components/schemas/DoorPeriod"
+        weighingAreas:
+          type: array
+          description: Ordered by effectiveFrom, then id.
+          items:
+            $ref: "#/components/schemas/WeighingAreaPeriod"
+    ShiftTruckPeriod:
+      type: object
+      additionalProperties: false
+      required: [id, truckId, registration, truckStatus, effectiveFrom, effectiveTo]
+      properties:
+        id:
+          type: string
+          format: uuid
+        truckId:
+          type: string
+          format: uuid
+        registration:
+          type: string
+          description: >-
+            Resolved from this discharge's truck pool entry for the truck. Falls back to the
+            truck's current registration only if the pool has no entry for it (research.md
+            Decision 3).
+        truckStatus:
+          $ref: "#/components/schemas/TruckStatus"
+        effectiveFrom:
+          type: string
+          format: date-time
+        effectiveTo:
+          type: [string, "null"]
+          format: date-time
+    WeighingAreaPeriod:
+      type: object
+      additionalProperties: false
+      required: [id, effectiveFrom, effectiveTo, weighingArea]
+      properties:
+        id:
+          type: string
+          format: uuid
+        effectiveFrom:
+          type: string
+          format: date-time
+        effectiveTo:
+          type: [string, "null"]
+          format: date-time
+        weighingArea:
+          $ref: "#/components/schemas/ReferenceLabel"
+    ReferenceLabel:
+      type: object
+      additionalProperties: false
+      required: [id, name, status]
+      description: >-
+        A site reference as the detail shows it. For a customer, name is its companyName. Status
+        is the reference's current lifecycle status, and drives the archived marker.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/ReferenceStatus"
+    ReferenceStatus:
+      type: string
+      enum: [AVAILABLE, ARCHIVED]
+    TruckStatus:
+      type: string
+      enum: [AVAILABLE, SUSPENDED, ARCHIVED]
+    Tonnes:
+      type: string
+      pattern: '^\d+\.\d{3}$'
+      description: A decimal quantity in tonnes, serialized with exactly three decimals, e.g. "1250.500".
+    ApiErrorEnvelope:
+      type: object
+      description: >-
+        The envelope `app/exceptions/handler.ts` sends for every `Exception`. The issue 61 contract
+        describes it as an `errors` array, which is not what the handler sends.
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string

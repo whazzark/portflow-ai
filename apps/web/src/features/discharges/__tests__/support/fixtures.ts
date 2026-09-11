@@ -1,5 +1,5 @@
 import type { SessionUser } from '@/features/auth/context/session-context'
-import type { DischargeDto } from '@/features/discharges/types'
+import type { DischargeDetailDto, DischargeDto } from '@/features/discharges/types'
 
 export const API_BASE_URL = 'http://localhost:3333'
 
@@ -146,3 +146,101 @@ const UNSORTED_DISCHARGES: DischargeDto[] = [
 export const DISCHARGES: DischargeDto[] = [...UNSORTED_DISCHARGES].sort((left, right) =>
   (left.expectedStartAt ?? '').localeCompare(right.expectedStartAt ?? ''),
 )
+
+/**
+ * A complete detail for one listed discharge, sharing its identity and vessel so a row opens its
+ * own detail. Sections a test does not care about stay at their plain defaults; a test that does
+ * passes them in `overrides`.
+ */
+export function buildDischargeDetail(
+  listed: DischargeDto,
+  overrides: Partial<DischargeDetailDto> = {},
+): DischargeDetailDto {
+  return {
+    id: listed.id,
+    status: listed.status,
+    vesselName: listed.vesselName,
+    vesselImo: listed.vesselImo,
+    vesselComment: null,
+    expectedStartAt: listed.expectedStartAt ?? '2026-10-01T06:00:00.000Z',
+    expectedTonnage: '0.000',
+    dock: { ...listed.dock, status: 'AVAILABLE' },
+    productLots: [],
+    shifts: [],
+    truckPool: [],
+    ...overrides,
+  }
+}
+
+type DetailPoolEntry = DischargeDetailDto['truckPool'][number]
+
+export function buildPoolEntry(overrides: Partial<DetailPoolEntry> = {}): DetailPoolEntry {
+  return {
+    id: 'pool-1',
+    truckId: 'truck-1',
+    registration: 'AB-123-CD',
+    truckStatus: 'AVAILABLE',
+    transportCompany: { id: 'company-1', name: 'Transports du Port', status: 'AVAILABLE' },
+    reservedAt: '2026-09-07T08:00:00.000Z',
+    releasedAt: null,
+    ...overrides,
+  }
+}
+
+type DetailShift = DischargeDetailDto['shifts'][number]
+
+export function buildShift(overrides: Partial<DetailShift> = {}): DetailShift {
+  return {
+    id: 'shift-1',
+    status: 'PLANNED',
+    plannedStartAt: '2026-10-04T06:00:00.000Z',
+    plannedEndAt: '2026-10-04T14:00:00.000Z',
+    responsible: { id: 'lead-1', firstName: 'Léa', lastName: 'Martin' },
+    trucks: [],
+    warehouseDoors: [],
+    weighingAreas: [],
+    ...overrides,
+  }
+}
+
+type DetailLot = DischargeDetailDto['productLots'][number]
+type DetailDoorPeriod = DetailLot['doorAssignments'][number]
+
+export function buildLot(overrides: Partial<DetailLot> = {}): DetailLot {
+  return {
+    id: 'lot-detail-1',
+    productName: 'Blé tendre',
+    description: null,
+    expectedQuantityTonnes: '1000.000',
+    customer: { id: 'customer-cargill', name: 'Cargill France', status: 'AVAILABLE' },
+    doorAssignments: [],
+    ...overrides,
+  }
+}
+
+export function buildDoorPeriod(overrides: Partial<DetailDoorPeriod> = {}): DetailDoorPeriod {
+  return {
+    id: 'door-period-1',
+    effectiveFrom: '2026-09-08T05:00:00.000Z',
+    effectiveTo: null,
+    warehouseDoor: { id: 'door-a1', name: 'Door A1', status: 'AVAILABLE' },
+    warehouse: { id: 'warehouse-a', name: 'Magasin A', status: 'AVAILABLE' },
+    ...overrides,
+  }
+}
+
+export const DISCHARGE_DETAILS: DischargeDetailDto[] = DISCHARGES.map((listed) =>
+  buildDischargeDetail(listed),
+)
+
+export function listedDischarge(vesselName: string, status: DischargeDto['status']) {
+  const found = DISCHARGES.find(
+    (discharge) => discharge.vesselName === vesselName && discharge.status === status,
+  )
+
+  if (!found) {
+    throw new Error(`No ${status} fixture for ${vesselName}`)
+  }
+
+  return found
+}
