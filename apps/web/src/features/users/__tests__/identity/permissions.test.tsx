@@ -49,7 +49,7 @@ test('opens nothing when an administrator hand-types the mode on their own recor
   renderUsers(`/users?userId=${ORGANIZATION_ADMIN.id}&mode=edit`)
 
   const record = await screen.findByRole('dialog')
-  expect(within(record).queryByRole('heading', { name: 'Edit identity' })).not.toBeInTheDocument()
+  expect(within(record).queryByRole('heading', { name: 'Edit user' })).not.toBeInTheDocument()
   expect(within(record).getByRole('heading', { name: /Claire Martin/ })).toBeInTheDocument()
 })
 
@@ -71,5 +71,5 @@ test('opens nothing when an operations admin hand-types the mode', async () => {
   await waitFor(() =>
     expect(within(record).getByRole('heading', { name: /Amélie Bernard/ })).toBeInTheDocument(),
   )
-  expect(within(record).queryByRole('heading', { name: 'Edit identity' })).not.toBeInTheDocument()
+  expect(within(record).queryByRole('heading', { name: 'Edit user' })).not.toBeInTheDocument()
 })

@@ -22,14 +22,14 @@ test('reports a server failure without presenting the correction as applied', as
 
   renderUsers('/users?userId=active-1&mode=edit')
 
-  expect(await screen.findByRole('heading', { name: 'Edit identity' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
   fill('First name', 'Amelie')
   submit()
 
   expect(await screen.findByText('Something went wrong. Please try again.')).toBeInTheDocument()
   // Still in the editor, with what was typed: the correction was not applied, and saying so is the
   // whole point of the state.
-  expect(screen.getByRole('heading', { name: 'Edit identity' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'First name' })).toHaveValue('Amelie')
 })
 
@@ -59,7 +59,7 @@ test('applies the correction on a retry once the failure clears', async () => {
 
   const { router } = renderUsers('/users?userId=active-1&mode=edit')
 
-  expect(await screen.findByRole('heading', { name: 'Edit identity' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
   fill('First name', 'Amelie')
   submit()
   expect(await screen.findByText('Service unavailable')).toBeInTheDocument()
@@ -89,7 +89,7 @@ test('follows the collection when the corrected user leaves the visible view', a
 
   const { router } = renderUsers('/users?userId=active-1&mode=edit')
 
-  expect(await screen.findByRole('heading', { name: 'Edit identity' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
   fill('First name', 'Amelie')
   submit()
 
@@ -113,7 +113,7 @@ test('keeps the previous identity visible in the collection while a correction f
   )
   const record = await screen.findByRole('dialog')
   fireEvent.click(within(record).getByRole('button', { name: 'Edit' }))
-  expect(await screen.findByRole('heading', { name: 'Edit identity' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
   fill('First name', 'Amelie')
   submit()
 

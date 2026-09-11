@@ -92,6 +92,20 @@ export type ApplyUserIdentityResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'EMAIL_TAKEN' }
 
+export type ChangeUserRoleCommand = {
+  userId: string
+  role: UserRole
+}
+
+/**
+ * The three outcomes of the guarded write, deliberately free of HTTP: choosing a status code is the
+ * use case's job, not this layer's.
+ */
+export type ChangeUserRoleResult =
+  | { kind: 'CHANGED'; user: User }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'DEACTIVATED' }
+
 export type RequirePasswordRenewalCommand = {
   targetUserId: string
   /** The organization admin performing the reset, recorded against the event. */
@@ -157,6 +171,13 @@ export default abstract class UserRepository {
    * the check and the write, since `users_email_unique` is the authority on either.
    */
   abstract applyIdentity(command: ApplyUserIdentityCommand): Promise<ApplyUserIdentityResult>
+
+  /**
+   * Sets one user's role, refusing a deactivated target. Submitting the role the user already holds
+   * is a `CHANGED` outcome with an unchanged row: there is nothing to report as a failure, and no
+   * history that a no-op could pollute.
+   */
+  abstract changeRole(command: ChangeUserRoleCommand): Promise<ChangeUserRoleResult>
 
   /**
    * Records the password renewal requirement against an active user, together with the reset event,

@@ -35,7 +35,7 @@ test('opens the correction straight from the row', async () => {
   fireEvent.click(screen.getByRole('menuitem', { name: 'Edit' }))
 
   const panel = await screen.findByRole('dialog')
-  expect(within(panel).getByRole('heading', { name: 'Edit identity' })).toBeInTheDocument()
+  expect(within(panel).getByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
   expect(within(panel).getByRole('textbox', { name: 'First name' })).toHaveValue('Amélie')
   expect(router.state.location.search).toMatchObject({ userId: 'active-1', mode: 'edit' })
 })

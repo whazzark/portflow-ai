@@ -76,10 +76,10 @@ test('omits an unrecorded lifecycle event rather than showing it blank', async (
   expect(within(history).queryByText('Not specified')).not.toBeInTheDocument()
 })
 
-// Deactivation was added to this record by GH-20 and is covered by `../deactivate/`; identity
-// correction was added by GH-24 and is covered by `../identity/`, and is not an access action
-// anyway. Every other access action still belongs to a slice that has not shipped, and the record
-// must not grow one by accident.
+// Deactivation was added to this record by GH-20 and is covered by `../deactivate/`; the edit
+// (identity correction, GH-24, and role change, GH-28) is covered by `../identity/` and
+// `../role-change/`, and is not an access action anyway. Every other access action still belongs
+// to a slice that has not shipped, and the record must not grow one by accident.
 test('offers no access action but the deactivation', async () => {
   const user = userEvent.setup()
   mockUsers()

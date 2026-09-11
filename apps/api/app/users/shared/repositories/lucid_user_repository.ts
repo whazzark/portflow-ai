@@ -8,6 +8,8 @@ import isUniqueViolation from '#shared/database/is_unique_violation'
 import UserRepository, {
   type ApplyUserIdentityCommand,
   type ApplyUserIdentityResult,
+  type ChangeUserRoleCommand,
+  type ChangeUserRoleResult,
   type CreateUserCommand,
   type DeactivateUserCommand,
   type DeactivateUserResult,
@@ -121,6 +123,48 @@ export default class LucidUserRepository extends UserRepository {
       .orderBy('lastName', 'asc')
       .orderBy('firstName', 'asc')
       .orderBy('id', 'asc')
+  }
+
+  /**
+   * The same guard-as-concurrency-control as `renewPassword` below, for the same reason: a
+   * single-row conditional `UPDATE` is atomic on both PostgreSQL and SQLite, so
+   * `WHERE access_status <> 'DEACTIVATED'` is what refuses a target that was deactivated between
+   * the moment an administrator opened the record and the moment they confirmed. A read followed by
+   * an unguarded write would accept it.
+   *
+   * No transaction, unlike every other write in this file. `renewPassword` needs one because
+   * recording the password and revoking the other remembered connections must not be separable, and
+   * `suspendAvailable` needs one because it reads a related row inside the write. Here the write is
+   * a single statement, and the two reads around it are diagnostic — classifying a zero-row refusal,
+   * and reloading the row for the response. Neither can leave the user half-changed, and a target
+   * that moved again before a re-read is reported as its newest state, which is the honest answer.
+   *
+   * Submitting the role the user already holds still matches the guard, so it affects one row and
+   * comes back `CHANGED`: a success with an unchanged row, which is what the interface must show
+   * rather than a failure.
+   */
+  async changeRole(command: ChangeUserRoleCommand): Promise<ChangeUserRoleResult> {
+    const [affectedRows] = await User.query()
+      .where('id', command.userId)
+      .whereNot('accessStatus', 'DEACTIVATED')
+      .update({
+        role: command.role,
+        // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+        // bookkeeping timestamp is written by hand — as every other guarded write here does.
+        updatedAt: DateTime.now().toSQL({ includeOffset: false }),
+      })
+
+    if (Number(affectedRows) !== 1) {
+      const current = await User.query().where('id', command.userId).first()
+
+      return current ? { kind: 'DEACTIVATED' } : { kind: 'NOT_FOUND' }
+    }
+
+    // Reloaded with the lifecycle actors so the response carries the same projection
+    // `users.index` returns to an organization admin, who is the only caller that gets here.
+    const changed = await preloadAccessHistory(User.query().where('id', command.userId)).first()
+
+    return changed ? { kind: 'CHANGED', user: changed } : { kind: 'NOT_FOUND' }
   }
 
   /**

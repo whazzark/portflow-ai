@@ -228,6 +228,12 @@ const routes = {
     tokens: [{"old":"/api/v1/users/:id/deactivate","type":0,"val":"api","end":""},{"old":"/api/v1/users/:id/deactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/users/:id/deactivate","type":0,"val":"users","end":""},{"old":"/api/v1/users/:id/deactivate","type":1,"val":"id","end":""},{"old":"/api/v1/users/:id/deactivate","type":0,"val":"deactivate","end":""}],
     types: placeholder as Registry['users.deactivate']['types'],
   },
+  'users.change_role': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/users/:id/role',
+    tokens: [{"old":"/api/v1/users/:id/role","type":0,"val":"api","end":""},{"old":"/api/v1/users/:id/role","type":0,"val":"v1","end":""},{"old":"/api/v1/users/:id/role","type":0,"val":"users","end":""},{"old":"/api/v1/users/:id/role","type":1,"val":"id","end":""},{"old":"/api/v1/users/:id/role","type":0,"val":"role","end":""}],
+    types: placeholder as Registry['users.change_role']['types'],
+  },
   'users.password_reset': {
     methods: ["POST"],
     pattern: '/api/v1/users/:id/password-reset',

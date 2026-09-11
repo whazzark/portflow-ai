@@ -10,9 +10,10 @@ import { inviteUserValidator } from '#users/invite/invite_user_validator'
 import ListUsersUseCase from '#users/list/list_users_use_case'
 import ResetUserPasswordUseCase from '#users/password_reset/reset_user_password_use_case'
 import { resetUserPasswordValidator } from '#users/password_reset/reset_user_password_validator'
+import ChangeUserRoleUseCase from '#users/role_change/change_user_role_use_case'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 import UserPolicy from '#users/shared/user_policy'
-import { updateUserIdentityValidator } from '#users/shared/user_validator'
+import { changeUserRoleValidator, updateUserIdentityValidator } from '#users/shared/user_validator'
 
 @inject()
 export default class UsersController {
@@ -21,6 +22,7 @@ export default class UsersController {
     private inviteUserUseCase: InviteUserUseCase,
     private deactivateUserUseCase: DeactivateUserUseCase,
     private updateUserIdentityUseCase: UpdateUserIdentityUseCase,
+    private changeUserRoleUseCase: ChangeUserRoleUseCase,
     private resetUserPasswordUseCase: ResetUserPasswordUseCase,
   ) {}
 
@@ -101,6 +103,31 @@ export default class UsersController {
 
     // Only an organization admin reaches this command, and that is exactly the viewer the
     // collection already serves the access history to.
+    return serialize(
+      UserTransformer.transform(user, { includeAccessHistory: true }).useVariant(
+        'toAdministration',
+      ),
+    )
+  }
+
+  /**
+   * Authorization runs before the target is ever looked up, which is what keeps a refusal
+   * uninformative: a viewer who may not change roles receives the same denial whether the id names
+   * a pending user, a deactivated one, or nobody at all.
+   *
+   * The response carries the access history because the only viewer that reaches here is an
+   * organization admin — exactly the viewer that projection exists for.
+   */
+  async changeRole({ bouncer, request, serialize }: HttpContext) {
+    await bouncer.with(UserPolicy).authorize('changeRole')
+
+    const payload = await request.validateUsing(changeUserRoleValidator)
+
+    const user = await this.changeUserRoleUseCase.handle({
+      userId: payload.params.id,
+      role: payload.role,
+    })
+
     return serialize(
       UserTransformer.transform(user, { includeAccessHistory: true }).useVariant(
         'toAdministration',
