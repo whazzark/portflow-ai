@@ -49,6 +49,7 @@ export interface ApiDefinition {
   }
   users: {
     index: typeof routes['users.index']
+    store: typeof routes['users.store']
     deactivate: typeof routes['users.deactivate']
   }
   docks: {

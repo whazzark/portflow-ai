@@ -31,5 +31,13 @@ export default await Env.create(new URL('../', import.meta.url), {
   |----------------------------------------------------------
   */
   SESSION_DRIVER: Env.schema.enum(['cookie', 'memory'] as const),
-  WEB_ORIGIN: Env.schema.string.optional(),
+  /**
+   * The web application's public origin. Required, not optional: it is both the CORS allow-list and
+   * the base of every confidential activation link, and a link built from a guessed origin would be
+   * handed to a person as if it worked. A missing value fails at boot instead.
+   *
+   * `tld: false` because every non-production origin is `http://localhost:<port>`, which the default
+   * URL rule rejects for having no top-level domain; the protocol is still required.
+   */
+  WEB_ORIGIN: Env.schema.string({ format: 'url', tld: false }),
 })
