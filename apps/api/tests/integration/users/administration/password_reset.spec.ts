@@ -198,6 +198,22 @@ test.group('POST /api/v1/users/:id/password-reset', (group) => {
     assert.isNull(untouched.passwordRenewalRequiredAt)
   })
 
+  // PostgreSQL resolves an upper-cased identifier to the same row as its canonical lower-case
+  // spelling, so the refusal must survive the spelling, not the comparison that happens to match.
+  test('refuses a self-reset spelled with an upper-case identifier', async ({ assert, client }) => {
+    const administrator = await organizationAdmin()
+
+    const response = await client
+      .post(resetPathFor(administrator.id.toUpperCase()))
+      .loginAs(administrator)
+
+    response.assertStatus(422)
+    assert.equal(response.body().error.code, 'E_USER_PASSWORD_RESET_SELF')
+
+    const untouched = await administrator.refresh()
+    assert.isNull(untouched.passwordRenewalRequiredAt)
+  })
+
   test('revokes every remembered connection the target holds, and only theirs', async ({
     assert,
     client,

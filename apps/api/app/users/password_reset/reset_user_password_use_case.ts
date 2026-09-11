@@ -33,7 +33,11 @@ export default class ResetUserPasswordUseCase {
   async handle(input: ResetUserPasswordInput): Promise<User> {
     // Checked before the write, not after: requiring oneself to renew is a self-service password
     // change under another name, and it needs no database round trip to refuse (FR-007).
-    if (input.targetUserId === input.actorUserId) {
+    //
+    // Compared case-insensitively for the reason `DeactivateUserUseCase` records: PostgreSQL matches
+    // an upper-cased identifier against the canonical lower-case `uuid` it stores, so a
+    // case-sensitive `===` would let the administrator reset their own password.
+    if (input.targetUserId.toLowerCase() === input.actorUserId.toLowerCase()) {
       throw new PasswordResetSelfForbiddenException()
     }
 

@@ -167,6 +167,26 @@ test.group('Reset user password use case', (group) => {
     assert.isNull(untouched.passwordRenewalRequiredAt)
   })
 
+  // PostgreSQL matches an upper-cased identifier against the canonical lower-case `uuid` it stores,
+  // so a case-sensitive guard would refuse nothing. SQLite compares the same identifier as text and
+  // finds no row, which is why this asserts the exception: both dialects agree only on the refusal.
+  test('rejects a self-reset spelled with an upper-case identifier', async ({ assert }) => {
+    const administrator = await UserFactory.apply('active')
+      .merge({ role: 'ORGANIZATION_ADMIN' })
+      .create()
+
+    const useCase = await resetUserPasswordUseCase()
+    await assert.rejects(
+      () =>
+        useCase.handle({
+          targetUserId: administrator.id.toUpperCase(),
+          actorUserId: administrator.id,
+          resetAt: DateTime.now(),
+        }),
+      PasswordResetSelfForbiddenException.message,
+    )
+  })
+
   test('refreshes the event to the latest administrator when a user is reset twice', async ({
     assert,
   }) => {
