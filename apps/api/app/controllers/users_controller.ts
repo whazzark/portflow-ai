@@ -12,6 +12,8 @@ import { inviteUserValidator } from '#users/invite/invite_user_validator'
 import ListUsersUseCase from '#users/list/list_users_use_case'
 import ResetUserPasswordUseCase from '#users/password_reset/reset_user_password_use_case'
 import { resetUserPasswordValidator } from '#users/password_reset/reset_user_password_validator'
+import RemoveUserUseCase from '#users/removal/remove_user_use_case'
+import { removeUserValidator } from '#users/removal/remove_user_validator'
 import ChangeUserRoleUseCase from '#users/role_change/change_user_role_use_case'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 import UserPolicy from '#users/shared/user_policy'
@@ -27,6 +29,7 @@ export default class UsersController {
     private changeUserRoleUseCase: ChangeUserRoleUseCase,
     private resetUserPasswordUseCase: ResetUserPasswordUseCase,
     private cancelUserInvitationUseCase: CancelUserInvitationUseCase,
+    private removeUserUseCase: RemoveUserUseCase,
   ) {}
 
   /**
@@ -168,6 +171,23 @@ export default class UsersController {
         'toAdministration',
       ),
     )
+  }
+
+  /**
+   * Authorization first, for the reason `deactivate` records: a caller who may not remove users must
+   * not learn from a validation error, a 404, or a 409 whether an identifier names anyone.
+   *
+   * A `204` with no body, unlike every other write here: the user no longer exists, and nothing
+   * about them is kept to project.
+   */
+  async destroy({ bouncer, params, request, response }: HttpContext) {
+    await bouncer.with(UserPolicy).authorize('remove')
+
+    const payload = await request.validateUsing(removeUserValidator, { data: { params } })
+
+    await this.removeUserUseCase.handle({ id: payload.params.id })
+
+    response.status(204)
   }
 
   /**

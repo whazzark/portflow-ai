@@ -3,6 +3,7 @@ import type { ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import { DateTime } from 'luxon'
 import User from '#models/user'
 import UserActivationToken from '#models/user_activation_token'
+import isForeignKeyViolation from '#shared/database/is_foreign_key_violation'
 import isUniqueViolation from '#shared/database/is_unique_violation'
 
 import UserRepository, {
@@ -17,6 +18,8 @@ import UserRepository, {
   type DeactivateUserResult,
   type InviteUserCommand,
   type InviteUserResult,
+  type RemoveUserCommand,
+  type RemoveUserResult,
   type RenewPasswordCommand,
   type RenewPasswordResult,
   type RequirePasswordRenewalCommand,
@@ -168,6 +171,59 @@ export default class LucidUserRepository extends UserRepository {
     const changed = await preloadAccessHistory(User.query().where('id', command.userId)).first()
 
     return changed ? { kind: 'CHANGED', user: changed } : { kind: 'NOT_FOUND' }
+  }
+
+  /**
+   * The guard is the eligibility rule and the concurrency control at once, as in `changeRole` above:
+   * a single-row conditional `DELETE` is atomic on both dialects, so
+   * `WHERE access_status IN ('PENDING', 'CANCELLED')` is what refuses a user who activated their
+   * access between the workbench listing them and this statement, and what lets exactly one of two
+   * concurrent removals through. The re-read after a zero-row delete only names the reason.
+   *
+   * Nothing here is a second statement: the activation link goes with the user through
+   * `user_activation_tokens`' `ON DELETE CASCADE`, inside this very statement; so would a remembered
+   * connection, though a user who never signed in holds none. The `SET NULL` references — every
+   * `*_by_user_id` column on users and site references — cannot name this user at all: only an
+   * active user performs a lifecycle action or an archival, so no other record is rewritten.
+   *
+   * A `RESTRICT` reference is the one thing that can stand in the way, and the database is left to
+   * say so rather than a pre-check of `shifts`: a restricting table added later is then covered the
+   * day its migration lands. That refusal is why the one statement still runs in a transaction of
+   * its own. PostgreSQL aborts whatever transaction a failed statement ran in; in production this
+   * transaction holds nothing else, but under the suites' global transaction Lucid nests it as a
+   * savepoint, so a refused removal rolls back alone rather than aborting the test around it. This
+   * method takes no client, so it never joins a caller's `db.transaction()` — a caller that ever
+   * needs that must pass one in, and inherits this reasoning.
+   */
+  async removeNeverActivated(command: RemoveUserCommand): Promise<RemoveUserResult> {
+    let affectedRows: number
+
+    try {
+      const [deletedRows] = await User.transaction((trx) =>
+        User.query({ client: trx })
+          .where('id', command.id)
+          .whereIn('accessStatus', ['PENDING', 'CANCELLED'])
+          .delete(),
+      )
+
+      affectedRows = Number(deletedRows)
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        return { kind: 'REFERENCED' }
+      }
+
+      throw error
+    }
+
+    if (affectedRows === 1) {
+      return { kind: 'REMOVED' }
+    }
+
+    const current = await User.query().where('id', command.id).first()
+
+    return current
+      ? { kind: 'NOT_REMOVABLE', accessStatus: current.accessStatus }
+      : { kind: 'NOT_FOUND' }
   }
 
   /**

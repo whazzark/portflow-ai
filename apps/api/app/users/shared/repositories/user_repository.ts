@@ -125,6 +125,23 @@ export type ChangeUserRoleResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'DEACTIVATED' }
 
+export type RemoveUserCommand = {
+  id: string
+}
+
+/**
+ * What the guarded delete observed, never what the caller should be told.
+ *
+ * `REMOVED` carries no user: there is nothing left to project, and nothing about the removed user
+ * is kept. `NOT_REMOVABLE` carries the status the row actually had, which is what distinguishes an
+ * active user, whose access is withdrawn by deactivation, from a deactivated one, who is kept.
+ */
+export type RemoveUserResult =
+  | { kind: 'REMOVED' }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'NOT_REMOVABLE'; accessStatus: UserAccessStatus }
+  | { kind: 'REFERENCED' }
+
 export type RequirePasswordRenewalCommand = {
   targetUserId: string
   /** The organization admin performing the reset, recorded against the event. */
@@ -207,6 +224,14 @@ export default abstract class UserRepository {
    * history that a no-op could pollute.
    */
   abstract changeRole(command: ChangeUserRoleCommand): Promise<ChangeUserRoleResult>
+
+  /**
+   * Permanently deletes one user whose access was never activated — pending or cancelled — together
+   * with their activation link. Guarded on the row still being in one of those two statuses, so the
+   * decision is taken against the user as they are when the delete runs, and two concurrent removals
+   * resolve to one `REMOVED` and one `NOT_FOUND`.
+   */
+  abstract removeNeverActivated(command: RemoveUserCommand): Promise<RemoveUserResult>
 
   /**
    * Records the password renewal requirement against an active user, together with the reset event,

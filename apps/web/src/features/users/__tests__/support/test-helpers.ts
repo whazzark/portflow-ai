@@ -81,6 +81,87 @@ export function mockUsersWithDeactivation(
 }
 
 /**
+ * A workbench whose collection actually loses the user a removal succeeds on: the write handler drops
+ * the entry and the next read no longer serves it, so the tests observe the refresh the real
+ * workbench performs. A second removal of the same id meets the API's `404`.
+ */
+export function mockUsersWithRemoval(
+  viewer: { id: string; firstName: string; lastName: string } = ORGANIZATION_ADMIN,
+  users: UserDto[] = USERS,
+) {
+  let collection = users
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: viewer })),
+    http.get(`${API_BASE_URL}/api/v1/users`, () => HttpResponse.json({ data: collection })),
+    http.delete(`${API_BASE_URL}/api/v1/users/:id`, ({ params }) => {
+      if (!collection.some((user) => user.id === params.id)) {
+        return HttpResponse.json(
+          { error: { code: 'E_USER_NOT_FOUND', message: 'User not found' } },
+          { status: 404 },
+        )
+      }
+
+      collection = collection.filter((user) => user.id !== params.id)
+
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+}
+
+/** Registered after a collection mock, to override its removal handler with one refusal. */
+export function mockRemovalRefused(code: string, message: string, status = 409) {
+  server.use(
+    http.delete(`${API_BASE_URL}/api/v1/users/:id`, () =>
+      HttpResponse.json({ error: { code, message } }, { status }),
+    ),
+  )
+}
+
+/**
+ * The race the invitee won: they activated their access between the listing and the confirmation.
+ * The removal is refused as active, and the read that follows serves them as active — the two agree,
+ * which is the point, so this stands on its own, collection included.
+ */
+export function mockRemovalLostRace(
+  targetId: string,
+  viewer: { id: string; firstName: string; lastName: string } = ORGANIZATION_ADMIN,
+  users: UserDto[] = USERS,
+) {
+  const activated: UserDto[] = users.map((user) =>
+    user.id === targetId
+      ? { ...user, accessStatus: 'ACTIVE', activatedAt: '2026-09-10T09:03:00.000Z' }
+      : user,
+  )
+  let refused = false
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: viewer })),
+    http.get(`${API_BASE_URL}/api/v1/users`, () =>
+      HttpResponse.json({ data: refused ? activated : users }),
+    ),
+    http.delete(`${API_BASE_URL}/api/v1/users/:id`, () => {
+      refused = true
+
+      return HttpResponse.json(
+        {
+          error: {
+            code: 'E_USER_ACTIVE_CANNOT_BE_REMOVED',
+            message: 'Only users who never activated their access can be removed',
+          },
+        },
+        { status: 409 },
+      )
+    }),
+  )
+}
+
+/** The removal never reaches the API: the retryable failure path. */
+export function mockRemovalUnreachable() {
+  server.use(http.delete(`${API_BASE_URL}/api/v1/users/:id`, () => HttpResponse.error()))
+}
+
+/**
  * The role change endpoint, answering with the user the collection will report next. Callers that
  * need the table to follow the change pass an `onChanged` callback and re-mock the collection.
  */

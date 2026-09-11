@@ -24,9 +24,10 @@ import {
 } from '@/features/users/user-access'
 
 /**
- * Per-row menu, so correcting a user, resetting their password, or retiring their access does not
- * require opening their record first. It offers the same actions, under the same rules and with the
- * same confirmations, as the record footer — both ask `mayEditUserIdentity`, `canResetPassword`, and
+ * Per-row menu, so correcting a user, resetting their password, retiring their access, or removing
+ * a user who never activated it does not require opening their record first. It offers the same
+ * actions, under the same rules and with the same confirmations, as the record footer — both ask
+ * `mayEditUserIdentity`, `canResetPassword`, and
  * `userAccessActions`, and both mount `ResetPasswordDialog` and `UserAccessDialog`. View, then Edit,
  * then the password reset, then the access actions: the destructive item stays last, as in the site
  * reference row menus.
@@ -35,8 +36,9 @@ import {
  * `helpers/user-access-copy.ts` is not `lifecycle-copy.ts`: that menu is keyed to the site
  * reference lifecycle, down to the archive/reactivate vocabulary of its labels. What the two share
  * is the shell — a trigger, a portaled menu, one item per action — and it is small enough that
- * copying it costs less than a shared component with two vocabularies threaded through it. That
- * trade turns when the user record gains its own second and third access action.
+ * copying it costs less than a shared component with two vocabularies threaded through it. The
+ * user record now has three access actions — deactivation, invitation cancellation, and removal —
+ * and a pending row offers two of them, which is the point this trade was expected to turn.
  */
 export function UserRowActions({
   user,

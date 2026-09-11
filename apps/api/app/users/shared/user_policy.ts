@@ -45,6 +45,18 @@ export default class UserPolicy extends BasePolicy {
   }
 
   /**
+   * Whether the viewer may remove users at all. *Which* user is removable — one whose access was
+   * never activated — is a separate decision, owned by the guarded write in the repository, for the
+   * reason `deactivate` gives above.
+   *
+   * Its own method although it reads exactly like `deactivate`: the two rules agree today, and a
+   * shared ability would have to grow a parameter the day they stop agreeing.
+   */
+  remove(user: User): AuthorizerResponse {
+    return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'
+  }
+
+  /**
    * Whether the viewer may correct identities at all. *Which* user they may then correct is a
    * separate decision, owned by UpdateUserIdentityUseCase: an organization admin may use this seam,
    * just not on themselves.

@@ -5,18 +5,20 @@
  * lifecycle wording for every *site reference*, and every sentence in it derives from `CONTEXT.md`'s
  * archived site reference — "no longer available for new operations". A user is not a site
  * reference, and `CONTEXT.md` is explicit that "user archiving" is the wrong term for a
- * deactivation. What is shared is what should be: the two sentence shapes every write in the
- * product is reported with, which both modules take from `helpers/resource-copy`.
+ * deactivation — or, for that matter, a pending user removal. What is shared is what should be: the
+ * two sentence shapes every write in the product is reported with, which both modules take from
+ * `helpers/resource-copy`.
  *
  * Keyed by action, so a new access action adds keys here rather than a second dialog. Invitation
- * cancellation was the second: it brought a dialog title and a dismiss label of its own, because
- * "Cancel invitation user?" reads as nonsense and a confirmation whose two buttons both start with
- * "Cancel" asks the administrator to guess which one withdraws the access.
+ * cancellation brought a dialog title and a dismiss label of its own, because "Cancel invitation
+ * user?" reads as nonsense and a confirmation whose two buttons both start with "Cancel" asks the
+ * administrator to guess which one withdraws the access. Removal needed neither, and differs from
+ * deactivation only by its entries here.
  */
 
 import { confirmationMessage, namedRecord, refusalTitle } from '@/helpers/resource-copy'
 
-export type UserAccessAction = 'deactivate' | 'cancel-invitation'
+export type UserAccessAction = 'deactivate' | 'cancel-invitation' | 'remove'
 
 const USER_SINGULAR = 'user'
 
@@ -28,11 +30,13 @@ const USER_SINGULAR = 'user'
 export const USER_ACCESS_ACTION_LABELS: Record<UserAccessAction, string> = {
   deactivate: 'Deactivate',
   'cancel-invitation': 'Cancel invitation',
+  remove: 'Remove',
 }
 
 export const USER_ACCESS_PENDING_LABELS: Record<UserAccessAction, string> = {
   deactivate: 'Deactivating…',
   'cancel-invitation': 'Cancelling…',
+  remove: 'Removing…',
 }
 
 /**
@@ -43,6 +47,7 @@ export const USER_ACCESS_PENDING_LABELS: Record<UserAccessAction, string> = {
 export const USER_ACCESS_DISMISS_LABELS: Record<UserAccessAction, string> = {
   deactivate: 'Cancel',
   'cancel-invitation': 'Keep invitation',
+  remove: 'Cancel',
 }
 
 /**
@@ -53,6 +58,7 @@ export const USER_ACCESS_DISMISS_LABELS: Record<UserAccessAction, string> = {
 export const USER_ACCESS_TAKES_COMMENT: Record<UserAccessAction, boolean> = {
   deactivate: false,
   'cancel-invitation': true,
+  remove: false,
 }
 
 /**
@@ -62,22 +68,26 @@ export const USER_ACCESS_TAKES_COMMENT: Record<UserAccessAction, boolean> = {
 const USER_ACCESS_SUBJECTS: Record<UserAccessAction, string> = {
   deactivate: USER_SINGULAR,
   'cancel-invitation': 'invitation for',
+  remove: USER_SINGULAR,
 }
 
 const USER_ACCESS_PAST_PARTICIPLES: Record<UserAccessAction, string> = {
   deactivate: 'deactivated',
   'cancel-invitation': 'cancelled',
+  remove: 'removed',
 }
 
 const USER_ACCESS_FAILURE_VERBS: Record<UserAccessAction, string> = {
   deactivate: 'deactivate',
   'cancel-invitation': 'cancel',
+  remove: 'remove',
 }
 
 /** Titles name what is acted on — unlike buttons, they are read out of context. */
 const USER_ACCESS_DIALOG_TITLES: Record<UserAccessAction, string> = {
   deactivate: `${USER_ACCESS_ACTION_LABELS.deactivate} ${USER_SINGULAR}?`,
   'cancel-invitation': `${USER_ACCESS_ACTION_LABELS['cancel-invitation']}?`,
+  remove: `${USER_ACCESS_ACTION_LABELS.remove} ${USER_SINGULAR}?`,
 }
 
 export function userAccessDialogTitle(action: UserAccessAction) {
@@ -93,6 +103,13 @@ export function describeUserAccessEffect(action: UserAccessAction, name: string)
     return (
       `“${name}” will no longer be able to activate their access. The activation link they were ` +
       'given stops working immediately.'
+    )
+  }
+
+  if (action === 'remove') {
+    return (
+      `“${name}” is removed permanently, and this cannot be undone. Their activation link stops ` +
+      'working, and their email can be invited again.'
     )
   }
 
@@ -142,6 +159,15 @@ const USER_ACCESS_REFUSAL_REASONS: Record<UserAccessAction, Record<string, strin
     E_USER_ALREADY_DEACTIVATED:
       'This user activated their access and has since been deactivated. There is no invitation left to cancel.',
     E_USER_CANCELLED_INVITATION: 'This invitation has already been cancelled by someone else.',
+    E_USER_NOT_FOUND: 'This user no longer exists.',
+  },
+  remove: {
+    E_USER_ACTIVE_CANNOT_BE_REMOVED:
+      'This user has activated their access, so they are kept. Deactivate them instead.',
+    E_USER_DEACTIVATED_CANNOT_BE_REMOVED: 'This user once held access, so they are kept.',
+    E_USER_REFERENCED_CANNOT_BE_REMOVED:
+      'This user is named in operational records, so they are kept.',
+    // Also a second removal: nothing of the first is kept, so from here it reads the same.
     E_USER_NOT_FOUND: 'This user no longer exists.',
   },
 }

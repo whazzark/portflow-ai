@@ -37,6 +37,7 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 export const USER_ACCESS_ACTION_VARIANTS: Record<UserAccessAction, 'default' | 'destructive'> = {
   deactivate: 'destructive',
   'cancel-invitation': 'destructive',
+  remove: 'destructive',
 }
 
 /**
@@ -44,29 +45,39 @@ export const USER_ACCESS_ACTION_VARIANTS: Record<UserAccessAction, 'default' | '
  * the directory row menu alike, so the two can never disagree about what is available.
  *
  * The API enforces every condition regardless. Managing access is the organization admin's
- * responsibility; deactivation is the transition out of active access, and retiring your own access
- * is something another administrator does for you; invitation cancellation is the transition out of
- * pending access, which the viewer — active by definition — can never hold themselves. An action
- * that does not apply is absent rather than disabled — a dead control with no explanation reads as
- * a bug.
+ * responsibility, and acting on your own access is something another administrator does for you.
+ * Beyond that the access status decides. Deactivation withdraws access that was activated and keeps
+ * the person. A pending user is offered both ways out of their invitation: cancellation withdraws it
+ * and keeps the user, removal deletes a user whose access never was — so it is offered on a
+ * cancelled user too. A deactivated user is offered nothing. An action that does not apply is absent
+ * rather than disabled — a dead control with no explanation reads as a bug.
  */
 export function userAccessActions(viewer: SessionUser, user: UserDto): UserAccessAction[] {
-  if (viewer.role !== 'ORGANIZATION_ADMIN') {
+  if (viewer.role !== 'ORGANIZATION_ADMIN' || user.id === viewer.id) {
     return []
   }
 
-  if (user.accessStatus === 'PENDING') {
-    return ['cancel-invitation']
+  if (user.accessStatus === 'ACTIVE') {
+    return ['deactivate']
   }
 
-  return user.accessStatus === 'ACTIVE' && user.id !== viewer.id ? ['deactivate'] : []
+  if (user.accessStatus === 'PENDING') {
+    return ['cancel-invitation', 'remove']
+  }
+
+  if (user.accessStatus === 'CANCELLED') {
+    return ['remove']
+  }
+
+  return []
 }
 
 /**
  * The confirmation on its own, mounted by the record footer and by the row menu, so an access
- * change reads the same wherever it was started from. It owns the mutation hook and is mounted only
- * while a confirmation is open: the directory lists every user of a view, and an idle row must not
- * carry a mutation observer per action it could offer.
+ * change reads the same wherever it was started from, and whichever action it confirms — the action
+ * picks the sentence and the mutation, nothing else differs. It owns the mutation hooks and is
+ * mounted only while a confirmation is open: the directory lists every user of a view, and an idle
+ * row must not carry a mutation observer per action it could offer.
  *
  * A refusal keeps the dialog open so the administrator reads the reason in place, with any typed
  * comment intact; `event.preventDefault()` on the confirm action is what stops the dialog primitive
@@ -77,12 +88,14 @@ export function userAccessActions(viewer: SessionUser, user: UserDto): UserAcces
  * lifecycle and whose dismiss button is a fixed `Cancel`.
  *
  * With one exception, and it is the commonest refusal: when the reason is that this record moved on
- * — someone else deactivated this user, or cancelled their invitation, first — the refreshed
- * collection no longer lists them in the view the record was opened from, `UsersPage` closes the record it can no longer find, and the record footer
- * unmounts this dialog with it before the refusal is even caught. Nothing is lost by that: the
- * reason arrives as a toast, which outlives both, and holding a confirmation open over a record the
- * workbench has just retired would say the opposite of what happened. A row menu keeps the dialog
- * either way, because it never depended on the record being open.
+ * — someone else deactivated this user or cancelled their invitation first, the invitee activated
+ * their access before a cancellation or a removal, or someone else removed them — the refreshed
+ * collection no longer lists them in the view it was opened from, `UsersPage` closes the record it
+ * can no longer find, and the record footer unmounts this dialog with it before the refusal is even
+ * caught. A row menu goes the same way: the status view drops the row, and the dialog with it.
+ * Nothing is lost by that: the reason arrives as a toast, which outlives both, and holding a
+ * confirmation open over a user the workbench has just retired would say the opposite of what
+ * happened.
  */
 export function UserAccessDialog({
   action,
@@ -93,20 +106,27 @@ export function UserAccessDialog({
   user: UserDto
   onClose: () => void
 }) {
-  const { deactivate, cancelInvitation } = useUserMutations()
+  const { deactivate, cancelInvitation, remove } = useUserMutations()
   const commentId = useId()
   const [comment, setComment] = useState('')
   const name = formatFullName(user)
-  const isPending = action === 'deactivate' ? deactivate.isPending : cancelInvitation.isPending
+  const isPending = { deactivate, 'cancel-invitation': cancelInvitation, remove }[action].isPending
 
-  // Trimming is the API's job; the field sends what was typed, or `null` for nothing at all.
-  const request = () =>
-    action === 'deactivate'
-      ? deactivate.mutateAsync({ params: { id: user.id } })
-      : cancelInvitation.mutateAsync({
-          params: { id: user.id },
-          body: { comment: comment || null },
-        })
+  const request = () => {
+    if (action === 'cancel-invitation') {
+      // Trimming is the API's job; the field sends what was typed, or `null` for nothing at all.
+      return cancelInvitation.mutateAsync({
+        params: { id: user.id },
+        body: { comment: comment || null },
+      })
+    }
+
+    if (action === 'remove') {
+      return remove.mutateAsync({ params: { id: user.id } })
+    }
+
+    return deactivate.mutateAsync({ params: { id: user.id } })
+  }
 
   const submit = async () => {
     try {

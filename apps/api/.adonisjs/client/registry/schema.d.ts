@@ -439,6 +439,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'users.destroy': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/users/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#users/removal/remove_user_validator').removeUserValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#users/removal/remove_user_validator').removeUserValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/users_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['destroy']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'users.deactivate': {
     methods: ["POST"]
     pattern: '/api/v1/users/:id/deactivate'

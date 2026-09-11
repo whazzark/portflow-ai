@@ -88,6 +88,7 @@ router
             router.get('/', [controllers.Users, 'index']).as('index')
             router.post('/', [controllers.Users, 'store']).as('store')
             router.patch('/:id', [controllers.Users, 'update']).as('update')
+            router.delete('/:id', [controllers.Users, 'destroy']).as('destroy')
             router.post('/:id/deactivate', [controllers.Users, 'deactivate']).as('deactivate')
             router
               .post('/:id/cancel-invitation', [controllers.Users, 'cancelInvitation'])
