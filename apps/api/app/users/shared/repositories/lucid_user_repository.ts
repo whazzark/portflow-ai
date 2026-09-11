@@ -1,4 +1,4 @@
-import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
+import type { QueryClientContract, TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import { DateTime } from 'luxon'
 import User from '#models/user'
@@ -7,6 +7,8 @@ import isForeignKeyViolation from '#shared/database/is_foreign_key_violation'
 import isUniqueViolation from '#shared/database/is_unique_violation'
 
 import UserRepository, {
+  type AcceptInvitationCommand,
+  type AcceptInvitationResult,
   type ApplyUserIdentityCommand,
   type ApplyUserIdentityResult,
   type CancelPendingInvitationCommand,
@@ -25,6 +27,22 @@ import UserRepository, {
   type RequirePasswordRenewalCommand,
   type RequirePasswordRenewalResult,
 } from './user_repository.ts'
+
+/**
+ * Thrown inside the acceptance transaction to roll it back, and caught outside it: a zero-row guard
+ * is a refusal, not a failure, and it must undo whichever statement already ran.
+ */
+class UnusableActivationLink extends Error {}
+
+/**
+ * An instant in the exact format Lucid stored `@column.dateTime` values in on this dialect, so a
+ * comparison against such a column is an instant comparison on PostgreSQL and a well-ordered string
+ * comparison on SQLite. The model query builder binds a `DateTime` in a `where` as-is, which SQLite
+ * refuses, and `toSQL()` would add milliseconds the stored value never has.
+ */
+function asStoredDateTime(value: DateTime, client: QueryClientContract): string {
+  return value.toFormat(client.dialect.dateTimeFormat)
+}
 
 /**
  * Every user read that serializes the access history needs all six actor relations, and a missed
@@ -113,6 +131,86 @@ export default class LucidUserRepository extends UserRepository {
 
   findByEmail(email: string): Promise<User | null> {
     return User.query().whereRaw('LOWER(email) = ?', [email.toLowerCase()]).first()
+  }
+
+  findPendingByActivationTokenHash(hash: string, now: DateTime): Promise<User | null> {
+    const query = User.query()
+
+    return query
+      .where('accessStatus', 'PENDING')
+      .whereHas('activationToken', (token) => {
+        token.where('hash', hash).where('expiresAt', '>', asStoredDateTime(now, query.client))
+      })
+      .first()
+  }
+
+  /**
+   * The guarded delete of the token, not a lock, is the concurrency control: two acceptances racing
+   * on one link both reach it, and only one of them deletes the row — the loser matches zero rows,
+   * on PostgreSQL once the winner's row lock is released and on SQLite because writes serialize.
+   * The expiry is part of that guard, so a link that expired between the caller's early check and
+   * this write is refused here rather than accepted a moment too late.
+   *
+   * The user transition is guarded too, on `PENDING`, so a link whose user moved on — cancelled
+   * today, anything a later slice introduces — is never accepted. Either zero-row outcome throws
+   * inside the transaction, which rolls the other statement back: a consumed link with a pending
+   * user, or an active user whose link still works, is a half-accepted invitation.
+   *
+   * The row is deleted rather than marked as used: nothing reads a used link, the refusal a stale
+   * link meets is the same whatever became of it, and `user_activation_tokens` holds live links only.
+   */
+  async acceptInvitation(command: AcceptInvitationCommand): Promise<AcceptInvitationResult> {
+    try {
+      return await User.transaction(async (trx) => {
+        const token = await UserActivationToken.query({ client: trx })
+          .where('hash', command.tokenHash)
+          .first()
+
+        if (!token) {
+          throw new UnusableActivationLink()
+        }
+
+        const [consumed] = await UserActivationToken.query({ client: trx })
+          .where('id', token.id)
+          .where('expiresAt', '>', asStoredDateTime(command.acceptedAt, trx))
+          .delete()
+
+        if (Number(consumed) !== 1) {
+          throw new UnusableActivationLink()
+        }
+
+        const acceptedAt = command.acceptedAt.toSQL({ includeOffset: false })
+        const [activated] = await User.query({ client: trx })
+          .where('id', token.userId)
+          .where('accessStatus', 'PENDING')
+          .update({
+            accessStatus: 'ACTIVE',
+            password: command.hashedPassword,
+            activatedAt: acceptedAt,
+            // Self-attributed: the invited person causes their own activation.
+            activatedByUserId: token.userId,
+            // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+            // bookkeeping timestamp is written by hand — as every other guarded write here does.
+            updatedAt: acceptedAt,
+          })
+
+        if (Number(activated) !== 1) {
+          throw new UnusableActivationLink()
+        }
+
+        const user = await preloadAccessHistory(
+          User.query({ client: trx }).where('id', token.userId),
+        ).firstOrFail()
+
+        return { kind: 'ACCEPTED', user }
+      })
+    } catch (error) {
+      if (error instanceof UnusableActivationLink) {
+        return { kind: 'UNUSABLE' }
+      }
+
+      throw error
+    }
   }
 
   list(): Promise<User[]> {

@@ -20,7 +20,14 @@ const EXEMPT_ROUTE_NAMES = new Set(['auth.me', 'auth.logout', 'auth.password_ren
  * pattern, for the same reason as the set above: a second unauthenticated `/api/v1` route has to be
  * declared here before this sweep will pass.
  */
-const UNAUTHENTICATED_ROUTE_NAMES = new Set(['auth.login'])
+const UNAUTHENTICATED_ROUTE_NAMES = new Set([
+  'auth.login',
+  // Public like login: the activation link is the only proof they take. A confined session learns
+  // nothing from the preview that the link's holder would not, and the acceptance itself refuses
+  // any open session — confined or not — with its own `409`.
+  'auth.invitation_acceptance.preview',
+  'auth.invitation_acceptance.store',
+])
 
 const ARBITRARY_UUID = '00000000-0000-4000-8000-000000000000'
 
