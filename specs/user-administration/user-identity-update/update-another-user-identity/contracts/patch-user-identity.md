@@ -87,7 +87,7 @@ is written (D10).
 | `404` | `E_USER_NOT_FOUND` | No such user — and, by ADR-0003, the same answer a user of another organization would get (FR-007, D9) |
 | `409` | `E_USER_EMAIL_CONFLICT` | The address is held by another user, compared without regard to case or surrounding whitespace, whatever that user's access status (FR-010) |
 | `409` | `E_USER_PENDING_EMAIL_LOCKED` | The target is `PENDING` and the address would change, compared without regard to case (FR-015, D7). Message: "This user has not activated their access yet, so their email address cannot be changed. It can be corrected once they have activated their access." A pending user's names alone are accepted |
-| `422` | `E_VALIDATION_ERROR` | Malformed body, blank or over-long name, malformed address. Names the field at fault (FR-012) |
+| `422` | `E_VALIDATION_ERROR` | Malformed body, blank or over-long name, malformed address. Names the field at fault (FR-012). Also `:id` that is not a UUID, reported as `params.id`; no user is read |
 | `422` | `E_USER_IDENTITY_INVALID` | A value that survives VineJS but fails the domain helper |
 
 Every refusal changes nothing: each is decided against the target read `FOR UPDATE` inside the use

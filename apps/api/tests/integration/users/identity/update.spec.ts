@@ -244,6 +244,19 @@ test.group('PATCH /api/v1/users/:id authorization', () => {
 })
 
 test.group('PATCH /api/v1/users/:id validation', () => {
+  test('rejects a malformed identifier before any user is read', async ({ assert, client }) => {
+    const administrator = await anAdministrator()
+
+    const response = await client
+      .patch('/api/v1/users/not-a-uuid')
+      .json(correction('malformed'))
+      .loginAs(administrator)
+
+    response.assertStatus(422)
+    assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+    assert.equal(response.body().error.details[0].field, 'params.id')
+  })
+
   test('refuses a blank, whitespace-only, or over-long name', async ({ assert, client }) => {
     const administrator = await anAdministrator()
     const target = await UserFactory.apply('active').create()

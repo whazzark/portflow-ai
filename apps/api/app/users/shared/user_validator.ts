@@ -12,8 +12,14 @@ const nameField = () => vine.string().use(nonBlank()).minLength(1).maxLength(MAX
  *
  * `trim()` on the address alone, because a padded address is not a well-formed one and the
  * `email()` rule would refuse it before the use case ever normalizes it.
+ *
+ * `params.id` is checked for the reason `deactivateUserValidator` records: `users.id` is a real
+ * `uuid` column, so a non-UUID string reaching PostgreSQL raises `22P02` and surfaces as a 500.
  */
 export const updateUserIdentityValidator = vine.create({
+  params: vine.object({
+    id: vine.string().uuid(),
+  }),
   firstName: nameField(),
   lastName: nameField(),
   email: vine.string().trim().email().maxLength(MAX_USER_EMAIL_LENGTH),

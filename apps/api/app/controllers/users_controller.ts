@@ -55,14 +55,14 @@ export default class UsersController {
     )
   }
 
-  async update({ auth, bouncer, params, request, serialize }: HttpContext) {
+  async update({ auth, bouncer, request, serialize }: HttpContext) {
     await bouncer.with(UserPolicy).authorize('updateIdentity')
 
     const administrator = auth.getUserOrFail()
     const payload = await request.validateUsing(updateUserIdentityValidator)
 
     const user = await this.updateUserIdentityUseCase.handle({
-      targetUserId: params.id,
+      targetUserId: payload.params.id,
       requestedByUserId: administrator.id,
       firstName: payload.firstName,
       lastName: payload.lastName,
