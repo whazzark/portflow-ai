@@ -40,6 +40,7 @@ export type ScannedRoutes = {
     'users.index': { paramsTuple?: []; params?: {} }
     'users.store': { paramsTuple?: []; params?: {} }
     'users.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'users.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.deactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.cancel_invitation': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.change_role': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -167,6 +168,9 @@ export type ScannedRoutes = {
     'weighing_areas.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'warehouse_doors.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'warehouses.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+  }
+  DELETE: {
+    'users.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

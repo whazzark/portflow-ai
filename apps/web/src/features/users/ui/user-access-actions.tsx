@@ -25,9 +25,9 @@ type UserAccessActionsProps = {
  * `UserAccessRecord`, which owns the footer, the way `CustomerLifecycleActions` sits in the
  * customer record footer.
  *
- * Nothing here decides who may deactivate — the API does, and refuses whatever this component would
- * have offered by mistake. What to offer is `userAccessActions`'s answer, which the directory row
- * menu asks too.
+ * Nothing here decides who may deactivate, cancel an invitation, or remove — the API does, and refuses whatever this
+ * component would have offered by mistake. What to offer is `userAccessActions`'s answer, which
+ * the directory row menu asks too.
  *
  * The password reset sits beside those rather than among them, outside `userAccessActions`: it
  * changes a credential rather than an access status, and its confirmation shares none of
