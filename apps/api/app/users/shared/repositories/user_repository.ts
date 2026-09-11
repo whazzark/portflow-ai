@@ -92,6 +92,23 @@ export type ApplyUserIdentityResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'EMAIL_TAKEN' }
 
+export type RequirePasswordRenewalCommand = {
+  targetUserId: string
+  /** The organization admin performing the reset, recorded against the event. */
+  resetByUserId: string
+  resetAt: DateTime
+}
+
+/**
+ * `NOT_FOUND` and `NOT_ACTIVE` are distinguished because FR-006 wants a refusal naming the current
+ * access status and FR-014 wants every refusal distinguishable — see `password_reset_exceptions.ts`
+ * for why telling them apart discloses nothing to the only role that reaches this write.
+ */
+export type RequirePasswordRenewalResult =
+  | { kind: 'RESET'; user: User }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'NOT_ACTIVE' }
+
 export default abstract class UserRepository {
   abstract create(command: CreateUserCommand): Promise<User>
 
@@ -140,4 +157,16 @@ export default abstract class UserRepository {
    * the check and the write, since `users_email_unique` is the authority on either.
    */
   abstract applyIdentity(command: ApplyUserIdentityCommand): Promise<ApplyUserIdentityResult>
+
+  /**
+   * Records the password renewal requirement against an active user, together with the reset event,
+   * and revokes every remembered connection that user holds.
+   *
+   * The counterpart of `renewPassword`, one row over: that one clears the requirement and spares the
+   * connection it was performed from, this one records it and spares none — the administrator is not
+   * the target, so there is no connection to spare.
+   */
+  abstract requirePasswordRenewal(
+    command: RequirePasswordRenewalCommand,
+  ): Promise<RequirePasswordRenewalResult>
 }
