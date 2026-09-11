@@ -1,6 +1,9 @@
 import { toast } from 'sonner'
-import { z } from 'zod'
 import { FieldGroup } from '@/components/ui/field'
+import {
+  newPasswordSchema,
+  newPasswordSubmitSchema,
+} from '@/features/auth/helpers/new-password-schema'
 import {
   isAlreadyRenewedError,
   usePasswordRenewal,
@@ -8,24 +11,6 @@ import {
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { isUnauthorizedError, parseApiError } from '@/libraries/tuyau/api-error'
-
-// Mirrors `passwordRenewalValidator` on the API, which is authoritative. Deliberately unlike the
-// login form's `min(1)`: this is where the rule is set, not where a stored password is accepted.
-const passwordRenewalSchema = z.object({
-  password: z
-    .string()
-    .min(12, 'Password must be at least 12 characters.')
-    .max(128, 'Password must be at most 128 characters.'),
-  passwordConfirmation: z.string().min(1, 'Confirm your new password.'),
-})
-
-// The match is checked on submit only, so blurring the password field before the confirmation has
-// been typed does not accuse the user of a mismatch they have not made yet. Reported against
-// `passwordConfirmation`, the same field the API's `confirmed` rule names.
-const passwordRenewalSubmitSchema = passwordRenewalSchema.refine(
-  ({ password, passwordConfirmation }) => password === passwordConfirmation,
-  { message: 'Passwords do not match.', path: ['passwordConfirmation'] },
-)
 
 export function PasswordRenewalForm() {
   const passwordRenewal = usePasswordRenewal()
@@ -36,8 +21,8 @@ export function PasswordRenewalForm() {
       passwordConfirmation: '',
     },
     validators: {
-      onBlur: passwordRenewalSchema,
-      onSubmit: passwordRenewalSubmitSchema,
+      onBlur: newPasswordSchema,
+      onSubmit: newPasswordSubmitSchema,
     },
     onSubmit: async ({ formApi, value }) => {
       try {

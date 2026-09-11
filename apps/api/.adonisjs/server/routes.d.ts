@@ -6,6 +6,8 @@ export type ScannedRoutes = {
   ALL: {
     'health.show': { paramsTuple?: []; params?: {} }
     'auth.login': { paramsTuple?: []; params?: {} }
+    'auth.invitation_acceptance.preview': { paramsTuple?: []; params?: {} }
+    'auth.invitation_acceptance.store': { paramsTuple?: []; params?: {} }
     'auth.me': { paramsTuple?: []; params?: {} }
     'auth.logout': { paramsTuple?: []; params?: {} }
     'auth.password_renewal': { paramsTuple?: []; params?: {} }
@@ -118,6 +120,8 @@ export type ScannedRoutes = {
   }
   POST: {
     'auth.login': { paramsTuple?: []; params?: {} }
+    'auth.invitation_acceptance.preview': { paramsTuple?: []; params?: {} }
+    'auth.invitation_acceptance.store': { paramsTuple?: []; params?: {} }
     'auth.logout': { paramsTuple?: []; params?: {} }
     'auth.password_renewal': { paramsTuple?: []; params?: {} }
     'customers.store': { paramsTuple?: []; params?: {} }

@@ -1,14 +1,14 @@
-import { errors } from '@adonisjs/auth'
 import type { Authenticators } from '@adonisjs/auth/types'
-import { Secret } from '@adonisjs/core/helpers'
 import type { HttpContext } from '@adonisjs/core/http'
 import type { NextFn } from '@adonisjs/core/types/http'
-import { REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY } from '#auth/shared/remembered_connection'
-import User from '#models/user'
+import { authenticateOpenSession } from '#auth/shared/open_session'
 
 /**
  * Auth middleware is used authenticate HTTP requests and deny
  * access to unauthenticated users.
+ *
+ * What counts as an open session is defined in `open_session.ts`, shared with the invitation
+ * acceptance, which must answer the same question without refusing the request.
  */
 export default class AuthMiddleware {
   /**
@@ -23,43 +23,7 @@ export default class AuthMiddleware {
       guards?: (keyof Authenticators)[]
     } = {},
   ) {
-    const rememberedConnectionCookie = ctx.request.encryptedCookie('remember_web')
-    const rememberedConnection = rememberedConnectionCookie
-      ? await User.rememberMeTokens.verify(new Secret(rememberedConnectionCookie))
-      : null
-
-    await ctx.auth.authenticateUsing(options.guards, { loginRoute: this.redirectTo })
-
-    if (ctx.auth.use('web').viaRemember && rememberedConnection) {
-      ctx.session.put(
-        REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY,
-        rememberedConnection.expiresAt.getTime(),
-      )
-    }
-
-    const rememberedConnectionExpiresAt = ctx.session.get(
-      REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY,
-    )
-
-    if (
-      typeof rememberedConnectionExpiresAt === 'number' &&
-      rememberedConnectionExpiresAt <= Date.now()
-    ) {
-      ctx.session.forget('auth_web')
-
-      throw new errors.E_UNAUTHORIZED_ACCESS('Invalid or expired user session', {
-        guardDriverName: 'session',
-      })
-    }
-
-    const authenticatedUser = ctx.auth.use('web').getUserOrFail()
-    const user = await User.find(authenticatedUser.id)
-
-    if (user?.accessStatus !== 'ACTIVE') {
-      throw new errors.E_UNAUTHORIZED_ACCESS('Invalid or expired user session', {
-        guardDriverName: 'session',
-      })
-    }
+    await authenticateOpenSession(ctx, { guards: options.guards, loginRoute: this.redirectTo })
 
     return next()
   }

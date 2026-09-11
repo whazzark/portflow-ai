@@ -159,6 +159,24 @@ export type RequirePasswordRenewalResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'NOT_ACTIVE' }
 
+export type AcceptInvitationCommand = {
+  /** The digest of the presented activation secret, never the secret itself. */
+  tokenHash: string
+  /**
+   * Already hashed by the caller: scrypt at `cost: 16384` is deliberately slow and must never run
+   * inside a write.
+   */
+  hashedPassword: string
+  acceptedAt: DateTime
+}
+
+/**
+ * `UNUSABLE` covers every reason the link could not be consumed — none matched, it expired, its user
+ * is no longer pending, or a concurrent acceptance consumed it first. The caller never needs to know
+ * which: every one of them is the same refusal.
+ */
+export type AcceptInvitationResult = { kind: 'ACCEPTED'; user: User } | { kind: 'UNUSABLE' }
+
 export default abstract class UserRepository {
   abstract create(command: CreateUserCommand): Promise<User>
 
@@ -169,6 +187,21 @@ export default abstract class UserRepository {
    */
   abstract invite(command: InviteUserCommand): Promise<InviteUserResult>
   abstract findByEmail(email: string): Promise<User | null>
+
+  /**
+   * The pending user a presented activation link opens, or `null` when the link is unusable. A link
+   * is usable when an activation token matches the digest, has not expired at `now`, and belongs to
+   * a user still `PENDING` — the three conditions under which acceptance may consume it.
+   */
+  abstract findPendingByActivationTokenHash(hash: string, now: DateTime): Promise<User | null>
+
+  /**
+   * Consumes the activation link and activates its user, or refuses because the link is unusable.
+   * Both effects commit together: a consumed link with a pending user, or an active user whose link
+   * still works, is a half-accepted invitation. The guarded delete of the token is the concurrency
+   * control, so two acceptances racing on one link resolve to exactly one.
+   */
+  abstract acceptInvitation(command: AcceptInvitationCommand): Promise<AcceptInvitationResult>
 
   /**
    * Every user of the organization, with the administrator responsible for each recorded lifecycle

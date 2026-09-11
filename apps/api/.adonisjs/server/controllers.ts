@@ -8,6 +8,7 @@ export const controllers = {
   Discharges: () => import('#controllers/discharges_controller'),
   Docks: () => import('#controllers/docks_controller'),
   Health: () => import('#controllers/health_controller'),
+  InvitationAcceptance: () => import('#controllers/invitation_acceptance_controller'),
   Login: () => import('#controllers/login_controller'),
   Logout: () => import('#controllers/logout_controller'),
   Me: () => import('#controllers/me_controller'),
