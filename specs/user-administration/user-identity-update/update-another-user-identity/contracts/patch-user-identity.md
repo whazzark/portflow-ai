@@ -5,6 +5,10 @@
 Corrects the identifying information of another user of the organization. The only write this
 feature adds.
 
+**Revised 2026-09-11**: no `identityChanges` key in the response (history deferred, research.md D3),
+and a pending user's address change answers `409 E_USER_PENDING_EMAIL_LOCKED` instead of
+`E_USER_ACTIVATION_LINK_UNAVAILABLE` — no activation link is reissued (D7).
+
 ## Placement
 
 Inside the existing authenticated group of `apps/api/start/routes.ts` — `.prefix('/api/v1')`,
@@ -62,24 +66,16 @@ web can seed its cache from the response and the shape stays one contract:
     "activatedAt": "…", "activatedBy": { … },
     "cancelledAt": null, "cancelledBy": null,
     "deactivatedAt": null, "deactivatedBy": null,
-    "reactivatedAt": null, "reactivatedBy": null,
-    "identityChanges": [
-      {
-        "changedAt": "2026-09-10T14:12:03.000+02:00",
-        "changedBy": { "id": "…", "firstName": "Inès", "lastName": "Faure" },
-        "previous": { "firstName": "Camile", "lastName": "Renard", "email": "camile.renard@example.com" },
-        "next": { "firstName": "Camille", "lastName": "Renard", "email": "camille.renard@example.com" }
-      }
-    ]
+    "reactivatedAt": null, "reactivatedBy": null
   }
 }
 ```
 
-The lifecycle block and `identityChanges` are present because only an organization admin can reach
-this endpoint at all, and that is the viewer the access history is exposed to (FR-014).
+The lifecycle block is present because only an organization admin can reach this endpoint at all,
+and that is the viewer the access history is exposed to.
 
-A submission identical to the stored identity also returns `200` with the user unchanged and no new
-entry in `identityChanges` (FR-013, D10).
+A submission identical to the stored identity also returns `200` with the user unchanged, and nothing
+is written (D10).
 
 ## Failures
 
@@ -90,18 +86,18 @@ entry in `identityChanges` (FR-013, D10).
 | `403` | `E_USER_IDENTITY_SELF_UPDATE` | `:id` is the requesting administrator (FR-004). Message points at the self-service path, which GH-25 delivers |
 | `404` | `E_USER_NOT_FOUND` | No such user — and, by ADR-0003, the same answer a user of another organization would get (FR-007, D9) |
 | `409` | `E_USER_EMAIL_CONFLICT` | The address is held by another user, compared without regard to case or surrounding whitespace, whatever that user's access status (FR-010) |
-| `409` | `E_USER_ACTIVATION_LINK_UNAVAILABLE` | The target is `PENDING` and the email actually changes, and no activation link can be issued. Until GH-7 ships, this is every such request (FR-015, D7) |
+| `409` | `E_USER_PENDING_EMAIL_LOCKED` | The target is `PENDING` and the address would change, compared without regard to case (FR-015, D7). Message: "This user has not activated their access yet, so their email address cannot be changed. It can be corrected once they have activated their access." A pending user's names alone are accepted |
 | `422` | `E_VALIDATION_ERROR` | Malformed body, blank or over-long name, malformed address. Names the field at fault (FR-012) |
 | `422` | `E_USER_IDENTITY_INVALID` | A value that survives VineJS but fails the domain helper |
 
-Every refusal changes nothing: the write and its history row commit together or not at all (FR-011),
-and a refused activation-link issue rolls the whole correction back (FR-015).
+Every refusal changes nothing: each is decided against the target read `FOR UPDATE` inside the use
+case's transaction, before any write, and a correction is applied whole or not at all (FR-011).
 
 ## Authorization matrix
 
 | Viewer | Target | Outcome |
 |---|---|---|
-| Active organization admin | Another user, any access status | `200` |
+| Active organization admin | Another user, any access status | `200` — except a pending user's address change, `409 E_USER_PENDING_EMAIL_LOCKED` |
 | Active organization admin | Themselves | `403 E_USER_IDENTITY_SELF_UPDATE` |
 | Active organization admin | Unknown id | `404 E_USER_NOT_FOUND` |
 | Operations admin | Anyone | `403` |
@@ -111,10 +107,8 @@ and a refused activation-link issue rolls the whole correction back (FR-015).
 
 ## Contract stability
 
-`users.index` is unchanged except for the added `identityChanges` key on its existing
-`toAdministration()` projection — an addition, gated by the same `includeAccessHistory` flag, so the
-operations admin's payload is byte-for-byte what it was. `toObject()` (the `/auth/me` and
-`/auth/login` session contract) and `toSummary()` are untouched.
+`users.index` and its `toAdministration()` projection are unchanged by this slice. `toObject()` (the
+`/auth/me` and `/auth/login` session contract) and `toSummary()` are untouched.
 
 The Tuyau registry under `apps/api/.adonisjs/client/` regenerates from the route and controller, and
 `apps/web` picks the new route up as `tuyauQuery.users.update` (ADR-0005).

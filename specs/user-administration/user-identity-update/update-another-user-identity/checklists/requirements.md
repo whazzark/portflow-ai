@@ -42,3 +42,8 @@
 - Open point for planning, not a spec defect: FR-015 makes the pending-user branch depend on GH-7
   (activation links), which is not delivered. The dependency is recorded in the spec's Dependencies
   section but not yet as a GitHub issue dependency on #24.
+- Revised 2026-09-11 by the product owner, and re-checked against the same items — all still pass:
+  - FR-013 / FR-014 (the identity history, former US4, SC-005) are deferred; the history may return
+    as a slice of its own.
+  - FR-015 now refuses a pending user's email change with an explanation, instead of reissuing their
+    activation link. The dependency on GH-7 is gone (GH-7 has shipped anyway, as #292).

@@ -7,11 +7,16 @@ No `NEEDS CLARIFICATION` marker remains in the specification: the three that did
 decisions this plan rests on, each taken against the code as it exists and the conventions in
 `apps/api/AGENTS.md`, `apps/web/AGENTS.md`, and the ADRs.
 
+**Revised 2026-09-11**: the product owner deferred the identity history and chose a plain refusal for
+a pending user's email address. D3 and D4 are superseded, D7 is replaced, and D5, D8, D10, D11, and
+D12 are updated to match; each superseded decision keeps its reasoning so it can be picked up again.
+
 ## D1 — Where authorization, self-exclusion, and validation live
 
 **Decision**: `UserPolicy.updateIdentity(viewer)` answers *may this viewer correct identities at
 all* — active, `ORGANIZATION_ADMIN`. `UpdateUserIdentityUseCase` answers *may this correction be
-applied to this target* — not yourself, target exists, email free, pending link re-issued.
+applied to this target* — not yourself, target exists, email free, a pending user's mailbox
+unchanged.
 `updateUserIdentityValidator` answers *is this input well-formed*. The repository owns the lock, the
 transaction, and the conditional write.
 
@@ -47,7 +52,12 @@ user follow (FR-018).
 
 ## D3 — Identity history is a dedicated table, not columns on `users`
 
-**Decision**: Add a `user_identity_changes` table holding one immutable row per accepted correction:
+> **Superseded 2026-09-11 — deferred.** The product owner decided the history is not needed for now.
+> The table, its model and factory, and the `identityChanges` projection were built, then removed
+> before merge; a correction records nothing beyond the corrected columns and `updated_at`. The
+> reasoning below stands if the history returns — as its own slice, with its own migration.
+
+**Decision (as first taken)**: Add a `user_identity_changes` table holding one immutable row per accepted correction:
 the target user, the responsible administrator, the change time, and the full identity before and
 after — `previous_first_name`, `previous_last_name`, `previous_email`, `new_first_name`,
 `new_last_name`, `new_email`.
@@ -71,7 +81,10 @@ person called on that date" without replaying the chain.
 
 ## D4 — The history rides the collection, under the existing access-history gate
 
-**Decision**: `UserTransformer.toAdministration()` gains an `identityChanges` key, emitted through the
+> **Superseded 2026-09-11 — deferred with D3.** `toAdministration()` carries no `identityChanges` key,
+> and `GET /api/v1/users` is unchanged by this slice.
+
+**Decision (as first taken)**: `UserTransformer.toAdministration()` gains an `identityChanges` key, emitted through the
 same `this.when(includeAccessHistory, …)` gate the lifecycle events already use, so it reaches
 organization admins only (FR-014). `LucidUserRepository.list()` preloads the changes with their
 `changedBy` actor; `listActive()` does not.
@@ -88,29 +101,27 @@ a per-user seam, which is a spec change, not a silent one.
 ## D5 — Atomicity and concurrency: one transaction, one locked row
 
 **Decision**: the write is one transaction, opened by the use case, holding a locked read of the
-target, the identity `UPDATE`, the history `INSERT`, and — for a pending user reaching another
-mailbox — the activation link. Email conflicts are caught from the unique-index violation with
+target and the identity `UPDATE`. Email conflicts are caught from the unique-index violation with
 `isUniqueViolation`.
 
 **As delivered** (a refinement of the shape sketched here, recorded because it differs): the
 repository exposes two operations rather than one. `findByIdForUpdate(id, client)` is the locked
 read, and `applyIdentity(command)` is the conditional write — both taking the caller's transaction.
-ADR-0013 gives the use case the transactions that span several collaborators, and this one spans the
-repository and the `ActivationLinkIssuer` (D7), so a repository-owned transaction could not have
-contained the issuer's failure. A single `updateIdentity` owning its own transaction would have had
-to take the issuer as a callback, which is the boundary inversion ADR-0013 exists to prevent.
+The use case takes its decisions — self-target, unchanged submission, a pending user's mailbox —
+against the locked row, so the transaction has to span those decisions and the write, which
+ADR-0013 gives to the use case. A single repository-owned `updateIdentity` would have had to take the
+decisions as a callback, the boundary inversion ADR-0013 exists to prevent.
 
 **Rationale**: This is the pattern the truck lifecycle writes already use (`archiveAvailable`,
-`returnToService`): the lock is what makes "read the before-values, then write" safe, and it is the
-only way the recorded `previous_*` can be guaranteed to be what was actually replaced. It satisfies
-the edge case forbidding a mixed identity under concurrent corrections, and FR-011's atomicity — the
-identity and its history entry commit together or not at all.
+`returnToService`): the lock is what makes "read the stored values, decide, then write" safe. It
+satisfies the edge case forbidding a mixed identity under concurrent corrections, and FR-011's
+atomicity — either every submitted part is applied, or none is.
 
 **Alternatives considered**:
 
-- *A guarded conditional `UPDATE` with no lock*, as `renewPassword` uses: rejected — that write needs
-  no before-values; this one records them, and a compare-and-swap on three columns would be a
-  hand-rolled optimistic lock where a row lock already exists.
+- *A guarded conditional `UPDATE` with no lock*, as `renewPassword` uses: rejected — that write takes
+  no decision from the stored values; this one does, and a compare-and-swap on three columns would
+  be a hand-rolled optimistic lock where a row lock already exists.
 - *A client-supplied version or `If-Match`*: rejected — nothing else in the codebase carries one, and
   the spec asks that the outcome reflect current state, not that a stale form be rejected outright.
 
@@ -130,37 +141,41 @@ with the index as the backstop.
 **Consequence**: FR-010's "differs only by letter case or surrounding whitespace" is satisfied by
 trimming before comparison and by the existing `LOWER()` index — no new index, no new column.
 
-## D7 — The pending user's activation link, while GH-7 is undelivered
+## D7 — A pending user's email address is refused, with an explanation
 
-**Decision**: Introduce an `ActivationLinkIssuer` port under `#users/shared`, called by the use case
-inside the correction's transaction whenever the target is `PENDING` **and** the email address
-actually changes. Bind it, for now, to an implementation that reports the capability as unavailable,
-which the use case turns into `E_USER_ACTIVATION_LINK_UNAVAILABLE` (409) and the whole correction
-rolls back. GH-7 replaces the binding with the real issuer, and neither the use case nor the endpoint
-changes.
+> **Replaced 2026-09-11.** The first decision introduced an `ActivationLinkIssuer` port, called inside
+> the correction's transaction for a pending user whose address changes and bound to an
+> implementation reporting the capability unavailable until GH-7 shipped — answering
+> `E_USER_ACTIVATION_LINK_UNAVAILABLE`. GH-7 has since shipped (#292) with its own
+> `ActivationLinkIssuer` for invitations, and the product owner chose not to reissue links from a
+> correction at all. The port, its binding, and that code are gone.
 
-**Rationale**: This *is* FR-015 as written — "a failure to issue the new link MUST fail the whole
-correction rather than leave the user with no usable link". No activation link mechanism exists in the
-repository today (no table, no token, no mailer), so no outstanding link can point at a stale address:
-the invariant holds by construction, and the one branch that cannot be honoured fails closed with an
-explicit, testable outcome instead of silently corrupting an invitation. Correcting a pending user's
-*name*, and correcting any other user's email, are unaffected and fully delivered.
+**Decision**: When the target is `PENDING` and the submitted address differs from the stored one —
+compared case-insensitively, as the `LOWER(email)` index does — `UpdateUserIdentityUseCase` raises
+`PendingUserEmailChangeException`: `409 E_USER_PENDING_EMAIL_LOCKED`, "This user has not activated
+their access yet, so their email address cannot be changed. It can be corrected once they have
+activated their access." It is decided against the locked row, before any write, so nothing changes.
+A pending user's first and last name stay correctable and their outstanding activation link is left
+alone; re-casing the same address is not a mailbox change and goes through.
+
+**Rationale**: The invitation's link was handed out under the address on record. Moving that address
+while the link stays usable is the stale-mailbox state FR-015 first set out to prevent; replacing the
+link would mean a second single-read secret carried in the correction's response and shown to the
+administrator once — GH-7's machinery, which the product owner judged not worth a correction. A plain
+refusal that says *why* and *when* it becomes possible is the smallest honest answer, and it needs no
+port: the decision is one condition in the use case.
 
 **Alternatives considered**:
 
-- *Build a minimal activation-link mechanism here*: rejected — it is GH-7's outcome, and Principle II
-  forbids a second deliverable inside this spec. It would also be the second implementation to delete
-  when GH-7 lands.
-- *Silently allow the correction and leave the invitation as it was*: rejected — it is the behaviour
-  the clarification explicitly turned down, and it produces exactly the stale-mailbox state FR-015
-  exists to prevent.
+- *Reissue the link and return it once in the response*, on top of GH-7's `ActivationLinkIssuer`:
+  rejected for now by the product owner; it remains a possible follow-up, and would add a response
+  field and a one-time dialog to this slice.
+- *Silently allow the correction and leave the invitation as it was*: rejected — the link would stay
+  usable under an address the organization no longer recognizes as that user's.
 - *Refuse every correction of a pending user*: rejected — over-broad. FR-003 makes pending users
   correctable, and a misspelled name on a pending user is precisely the case administrators hit.
-
-**Confirmed at the plan review gate on 2026-09-10**: this is the one place where the delivered
-behaviour is narrower than a naive reading of the spec — a pending user's email cannot be corrected
-until GH-7 ships. The product owner confirmed the fail-closed design and chose not to make GH-7 a
-blocker of #24: this slice ships without it, and GH-7 later replaces the port's binding alone.
+- *Disable the email field for a pending user*: not chosen — the product owner asked for an explained
+  refusal, and the API has to refuse regardless (FR-006).
 
 ## D8 — Refusal vocabulary
 
@@ -172,13 +187,18 @@ uses:
 | `UserNotFoundException` | 404 | `E_USER_NOT_FOUND` |
 | `SelfIdentityUpdateException` | 403 | `E_USER_IDENTITY_SELF_UPDATE` |
 | `DuplicateUserEmailException` | 409 | `E_USER_EMAIL_CONFLICT` |
-| `ActivationLinkUnavailableException` | 409 | `E_USER_ACTIVATION_LINK_UNAVAILABLE` |
+| `PendingUserEmailChangeException` | 409 | `E_USER_PENDING_EMAIL_LOCKED` |
 | `InvalidUserIdentityException` | 422 | `E_USER_IDENTITY_INVALID` |
 
 **Rationale**: 403 rather than 409 for the self case: the administrator seam is not the one for that
 target, which is an authorization-shaped statement, and the message points at the self-service path.
-409 for the email conflict matches `E_TRUCK_REGISTRATION_CONFLICT`. Named domain exceptions keep the
-Tuyau contract stable (`apps/api/AGENTS.md`).
+409 for the email conflict matches `E_TRUCK_REGISTRATION_CONFLICT`, and 409 for the pending mailbox
+because it is the target's state, not the input, that refuses it (D7). Named domain exceptions keep
+the Tuyau contract stable (`apps/api/AGENTS.md`).
+
+*Revised 2026-09-11*: `PendingUserEmailChangeException` replaces `ActivationLinkUnavailableException`
+(`E_USER_ACTIVATION_LINK_UNAVAILABLE`), which named a temporary unavailability that is no longer the
+reason.
 
 ## D9 — Cross-organization refusal is satisfied by construction
 
@@ -190,40 +210,51 @@ exist" are the same 404 today.
 **Rationale**: Adding a filter would mean inventing an organization column the model does not have.
 Recording the reasoning here is what keeps FR-007 honest rather than silently unimplemented.
 
-## D10 — An unchanged submission records nothing
+## D10 — An unchanged submission writes nothing
 
 **Decision**: Inside the locked read, compare the normalized submission with the stored identity; if
-all three parts are equal, commit no `UPDATE` and no history row, and return the user unchanged with a
-success outcome. The comparison is exact — re-casing a stored value is a correction the record should
-show — while the *mailbox* comparison that decides whether an activation link must be replaced is
+all three parts are equal, commit no `UPDATE`, and return the user unchanged with a success outcome.
+The comparison is exact — re-casing a stored value is a correction like any other — while the
+*mailbox* comparison that decides whether a pending user's address would move (D7) is
 case-insensitive, matching the `LOWER(email)` index. `normalize_user_identity` exposes both.
 
-**Rationale**: FR-013 requires it explicitly, and it also keeps the pending-user branch (D7) from
-refusing a form that was opened and submitted untouched: no email change, no link to re-issue.
+**Rationale**: It keeps `updated_at` truthful, and it keeps the pending-user refusal (D7) from
+refusing a form that was opened and submitted untouched: no mailbox change, nothing to refuse.
 
 ## D11 — Web: the correction is a mode on the existing users route
 
-**Decision**: `/users` gains `mode: 'view' | 'edit'` in its Zod search schema, defaulting to `view`,
-cleared in the route `transform` when no `userId` is open. `UserSheet` renders `UserAccessRecord` in
-view mode and a new `EditUserIdentityPanel` in edit mode, left through the header's "Back to details".
-The entry point is offered only when the viewer is an organization admin and the open user is not
-themselves.
+**Decision**: `/users` carries `mode: 'create' | 'edit' | 'view'`, optional, in its Zod search
+schema — the shape `/customers` has. The route `transform` settles contradictions: `create` (GH-7's
+invitation panel) clears `userId`, and `edit` or `view` without a `userId` is dropped. `UserSheet`
+renders `UserAccessRecord` in view mode and a new `EditUserIdentityPanel` in edit mode, left through
+the header's "Back to details".
+
+**Entry points** (revised 2026-09-11 to follow the customer directory): an `Edit` item in the row
+actions menu — View, Edit, then the access actions — that opens the correction directly
+(`?userId=…&mode=edit`), and an `Edit` button on the left of the record footer, with the access actions
+on the right. Both ask one rule, `mayEditUserIdentity(viewer, user)` in
+`features/users/helpers/user-identity.ts` — an organization admin, never on their own record — the way
+`userAccessActions` keeps the row and the record agreeing on deactivation. `UserAccessRecord` owns the
+footer and renders none when no action is available; `UserAccessActions` renders only its buttons and
+confirmation, as `CustomerLifecycleActions` does inside `CustomerDetails`.
 
 **Rationale**: `apps/web/AGENTS.md` requires anything a user can be halfway through to live in the
 URL, names the parameter `mode` for a route carrying one resource, and requires the edit panel's
-"Back to details" affordance. Component-level gating keeps the interface honest while the API stays
-authoritative (FR-006).
+"Back to details" affordance. Matching the customer directory gives the two workbenches one grammar.
+Component-level gating keeps the interface honest while the API stays authoritative (FR-006).
 
 **Alternatives considered**:
 
 - *A separate dialog over the table row*: rejected — the record panel is where the user is already
   open, and the convention builds edit as a mode of the panel, as `edit-truck-panel.tsx` does.
+- *An `Edit` button in the record header*: the first delivery; replaced on 2026-09-11 by the footer
+  and row-menu placement above, which is where every site-reference directory puts it.
 - *`useState` for the mode*: rejected by the routing convention.
 
 ## D12 — Test seams and TDD order
 
 **Decision**: RED → GREEN → REFACTOR in this order — repository outcomes (Japa unit, SQLite per
-ADR-0014), use-case decisions (Japa unit with a fake issuer), endpoint authorization matrix and
+ADR-0014), use-case decisions (Japa unit with a stubbed repository), endpoint authorization matrix and
 response shape (Japa integration), then the workbench journeys (Vitest + Testing Library + MSW,
 through the real router).
 

@@ -27,12 +27,26 @@
 > frontend-only slice "Update User Identity From the Web Workbench"; that slice's self-service half
 > belongs to GH-25.
 
+## Clarifications
+
+### Session 2026-09-11
+
+- Q: Must every accepted correction be recorded as a dated, attributed history entry (US4, FR-013,
+  FR-014, SC-005)? → A: No, not for now. The history is deferred and leaves this slice; a correction
+  records nothing but the corrected identity.
+- Q: GH-7 has delivered activation links. Should correcting a pending user's email address replace
+  their link and show the new one to the administrator? → A: No. A pending user's email address is
+  not correctable; the refusal simply explains why and when it becomes correctable. Their name
+  remains correctable.
+- Q: Where is the correction offered in the workbench? → A: As in the customer directory: an `Edit`
+  item in the user row's actions menu, and an `Edit` action on the left of the open record's footer.
+
 ## User Scenarios & Testing *(mandatory)*
 
 This delivery is the first write slice of the User Identity Update roadmap. It makes the identifying
 information already consulted through GH-4 correctable by the administrator responsible for user
-access, and it establishes the identity rules — what an identity is, how it is validated, how a
-change is traced — that GH-25 later reuses under a self-service authorization path.
+access, and it establishes the identity rules — what an identity is and how it is validated — that
+GH-25 later reuses under a self-service authorization path.
 
 ### User Story 1 - Correct Another User's Identity (Priority: P1)
 
@@ -54,8 +68,9 @@ attribute of the user changed.
 2. **Given** an identity has just been corrected, **When** the updated user is consulted again, **Then** the correction is durable and the user's role, access status, lifecycle events, and credentials are unchanged.
 3. **Given** the identity form is open, **When** the organization admin changes only part of the identity, **Then** the untouched parts keep their current values and are not cleared.
 4. **Given** the identity form is open, **When** the organization admin abandons the change, **Then** nothing is modified and the user keeps the identity they had.
-5. **Given** the submitted identity is identical to the current one, **When** it is confirmed, **Then** the outcome is a success and no identity change is accounted for.
-6. **Given** the corrected user is pending and holds an outstanding activation link, **When** their email address is corrected, **Then** the outstanding link stops being usable and a new activation link is issued to the corrected address, in the same action as the correction.
+5. **Given** the submitted identity is identical to the current one, **When** it is confirmed, **Then** the outcome is a success and nothing is written.
+6. **Given** the corrected user is pending, **When** the organization admin submits a different email address for them, **Then** the correction is refused with a message explaining that the address of a user who has not activated their access yet cannot be changed, and when it can; nothing is changed and the form keeps what was typed.
+7. **Given** the corrected user is pending, **When** only their name is corrected, **Then** the correction is applied and their outstanding activation link is left untouched.
 
 ---
 
@@ -110,26 +125,11 @@ fault, changes nothing, and preserves what the administrator had typed.
 
 ---
 
-### User Story 4 - Account for Who Changed an Identity (Priority: P2)
+### User Story 4 - Account for Who Changed an Identity (Deferred)
 
-An organization admin can tell that a user's identifying information was changed administratively,
-by whom, and when, so that a disputed or surprising identity can be explained without a database
-investigation.
-
-**Why this priority**: Renaming someone else is an administrative act on another person's record;
-the organization needs to be able to account for it. It is valuable as soon as the correction
-exists, but the correction delivers value without it.
-
-**Independent Test**: Correct a user's identity as one organization admin, consult that user's access
-record as another, and verify the change is accounted for with its date and its responsible
-administrator, alongside the lifecycle events already presented.
-
-**Acceptance Scenarios**:
-
-1. **Given** an organization admin corrected another user's identity, **When** an organization admin consults that user, **Then** every correction is presented with its date, its responsible administrator, and the identity as it stood before and after it.
-2. **Given** a user's identity has never been corrected administratively, **When** their record is consulted, **Then** no identity change is presented as an empty or unknown value.
-3. **Given** an operations admin consults a user, **When** the record is presented, **Then** it carries no identity change information, since a responsible administrator is itself a user they may not consult.
-4. **Given** an identity correction was recorded, **When** the responsible administrator is later deactivated or has their own identity corrected, **Then** the recorded correction remains and resolves the administrator's current identity.
+Deferred on 2026-09-11 (see Clarifications): recording and presenting a dated, attributed history of
+identity corrections is not delivered by this slice. The story keeps its number so that US5 and the
+existing references to it stay stable; it may return as a slice of its own.
 
 ---
 
@@ -158,7 +158,8 @@ applied without a new sign-in.
 - An email address freed by a correction MUST become usable for another user, and an address released and re-taken MUST NOT resurrect the previous holder's record.
 - Correcting the identity of a user who is the responsible administrator of a recorded lifecycle event MUST update how that event names them, since the event resolves the administrator's current identity.
 - Correcting an identity MUST NOT affect the user's sessions, remembered connections, password, or password renewal requirement, and MUST NOT sign the user out, including when the corrected part is the address the user signs in with.
-- Correcting a pending user's email address MUST invalidate the activation link aimed at the previous address in the same action, so no outstanding link ever points at a mailbox the organization no longer recognizes as that user's.
+- Submitting a different email address for a pending user MUST be refused, whatever else the submission corrects, with a message the administrator can read as it stands; nothing MUST be changed. Their activation link was handed out under the address recorded at invitation, and this slice issues no replacement.
+- An address differing from a pending user's stored one only by letter case or surrounding whitespace is the same mailbox, so it MUST NOT trigger that refusal.
 - A correction that leaves a pending user's email address untouched MUST NOT disturb their outstanding activation link.
 - Identity values MUST be stored and presented as entered apart from insignificant surrounding whitespace: capitalization, accents, apostrophes, hyphens, and non-Latin characters MUST survive a correction unchanged.
 - Credentials, password material, activation links, and session or remember-me tokens MUST NOT be exposed or accepted by any part of this feature.
@@ -170,7 +171,7 @@ applied without a new sign-in.
 
 - **FR-001**: The system MUST let an active organization admin change the identifying information of another user of their operating organization.
 - **FR-002**: The identity subject to this feature MUST be exactly the user's first name, last name, and email address. No other attribute of the user MUST be changeable through this feature.
-- **FR-003**: The system MUST allow the correction of any user of the administrator's operating organization whatever that user's access status — pending, active, deactivated, or cancelled — since a mistyped identity is worth repairing wherever it was entered, and a cancelled invitation may later be restored.
+- **FR-003**: The system MUST allow the correction of any user of the administrator's operating organization whatever that user's access status — pending, active, deactivated, or cancelled — since a mistyped identity is worth repairing wherever it was entered, and a cancelled invitation may later be restored. For a pending user, FR-015 excludes the email address.
 - **FR-004**: The system MUST refuse an identity update targeting the requesting administrator themselves; self-service identity update is GH-25 and is not delivered here.
 - **FR-005**: The system MUST deny identity updates to operations admins, operations leads, observers, unauthenticated visitors, and any user whose access status is not active.
 - **FR-006**: The API MUST be the authoritative authorization boundary: the workbench MUST NOT offer, optimistically apply, or cache an identity change the API would refuse to the same viewer.
@@ -180,21 +181,21 @@ applied without a new sign-in.
 - **FR-010**: The system MUST keep the email address unique across the organization, comparing without regard to letter case or surrounding whitespace, and MUST reject a conflict whatever the access status of the user already holding the address.
 - **FR-011**: The system MUST apply an accepted correction atomically and MUST leave the user's role, access status, recorded lifecycle events, credentials, password renewal requirement, sessions, and remembered connections untouched.
 - **FR-012**: A refused update MUST change nothing and MUST name the part of the identity at fault so the administrator can correct it.
-- **FR-013**: The system MUST record every accepted identity change as a dated entry attributed to the responsible administrator, retaining the identity as it stood before the change and as it stands after it. The history MUST be cumulative: an earlier correction MUST remain readable after a later one, and a submission that changes nothing MUST record no entry.
-- **FR-014**: The identity change history MUST be exposed to organization admins only, on the same rule as the existing lifecycle events, since both a responsible administrator and a former identity are user information the other roles may not consult.
-- **FR-015**: The email address MUST be correctable through this feature. When the corrected user is pending, the correction MUST, in the same action, invalidate the activation link aimed at the previous address and issue a new activation link to the corrected address. A failure to issue the new link MUST fail the whole correction rather than leave the user with no usable link.
-- **FR-016**: The workbench MUST offer the identity correction from the user record already opened from the collection, MUST pre-fill it with the user's current identity, and MUST allow abandoning it without change.
+- **FR-013**: *Deferred 2026-09-11.* Recording each accepted identity change as a dated, attributed history entry is not delivered by this feature (see Clarifications).
+- **FR-014**: *Deferred 2026-09-11,* with FR-013: there is no identity change history to expose.
+- **FR-015**: The email address MUST be correctable through this feature for a user who is active, deactivated, or cancelled. For a pending user it MUST NOT be: a submission carrying a different address — compared as in FR-010 — MUST be refused as a whole, change nothing, and carry a message stating that the email address of a user who has not activated their access yet cannot be changed, and that it can be corrected once they have. A pending user's name MUST remain correctable, and a correction that keeps their address MUST leave their outstanding activation link untouched.
+- **FR-016**: The workbench MUST offer the identity correction from the user's row in the collection, through its actions menu, and from the user record already opened from it, through its footer — the placement the customer directory uses. It MUST pre-fill the correction with the user's current identity, and MUST allow abandoning it without change.
 - **FR-017**: The workbench MUST present the outcome of a correction unambiguously — applied, refused with the reason, or failed and retryable — and MUST never present a refused or failed correction as applied.
 - **FR-018**: The workbench MUST show the corrected identity in the collection, in the open record, and anywhere else the user is named, without requiring a new sign-in or a manual reload.
 - **FR-019**: The workbench MUST preserve the administrator's input across a refusal or a retryable failure.
-- **FR-020**: This feature MUST NOT provide self-service identity update, email-change confirmation, role change, invitation, invitation cancellation or restoration, standalone activation link renewal, pending user removal, deactivation, reactivation, password reset, or bulk identity edits. The link re-issued by FR-015 is a consequence of correcting a pending user's address, not a renewal action offered on its own.
+- **FR-020**: This feature MUST NOT provide self-service identity update, email-change confirmation, role change, invitation, invitation cancellation or restoration, activation link renewal or reissue, pending user removal, deactivation, reactivation, password reset, bulk identity edits, or an identity change history.
 
 ### Key Entities
 
 - **User**: A person holding access to the operating organization. Carries the identity this feature corrects, exactly one role, and exactly one access status.
 - **User Identity**: The identifying information of a user — first name, last name, and email address — distinct from their role, access status, and credentials. The email address is unique across the organization.
-- **User Identity Update**: The act of changing a user's identifying information, here performed by an organization admin on another user. Each accepted one is retained as a dated entry attributed to that administrator and carrying the identity before and after the change.
-- **User Activation Link**: The confidential link by which a pending user activates their access. It is aimed at the address recorded for that user, so correcting a pending user's address replaces it.
+- **User Identity Update**: The act of changing a user's identifying information, here performed by an organization admin on another user. Only the corrected identity is kept; no history of the change is retained by this feature.
+- **User Activation Link**: The confidential link by which a pending user activates their access, handed out at invitation under the address then recorded. This feature neither replaces nor invalidates it, which is why a pending user's address is not correctable here.
 - **Organization Admin**: The role responsible for user access and the only actor authorized by this feature.
 - **Operating Organization**: The scope owning the users an administrator may correct; users of another organization are out of reach.
 
@@ -206,19 +207,17 @@ applied without a new sign-in.
 - **SC-002**: In all validation tests — blank, over-long, malformed, duplicate, and case- or whitespace-variant values — the update is refused, the user's stored identity is unchanged, and the reported reason names the part of the identity at fault.
 - **SC-003**: 100% of accepted corrections are visible to the administrator without a further navigation step or a new sign-in, and 95% of them are confirmed within 2 seconds under normal operating conditions.
 - **SC-004**: In all concurrency tests, two simultaneous corrections of the same user leave one complete identity and one reported refusal, never a mixed identity and never a silent loss.
-- **SC-005**: For every user corrected administratively, an organization admin can determine from the user's record each correction, its date, its responsible administrator, and the identity before and after it, including after several successive corrections; an operations admin can determine none of it.
-- **SC-007**: In all pending-user tests, correcting the email address leaves the previous activation link unusable and exactly one usable link aimed at the corrected address, and a failure to issue that link leaves the address uncorrected.
+- **SC-005**: *Deferred 2026-09-11,* with FR-013.
+- **SC-007**: In all pending-user tests, submitting a different email address is refused with the explanatory message and leaves the user's identity and activation link unchanged, while correcting only the name — or re-casing the same address — is applied.
 - **SC-006**: In acceptance testing, an administrator corrects a known user's identity within 3 interactions of entering the user administration area, and no test run leaves a failed correction presented as applied.
 
 ## Dependencies
 
 - The identifying information this slice changes is persisted by GH-2, and the user workbench that
   displays it is delivered by GH-4. Both are delivered.
-- FR-015 presupposes the activation link mechanics of GH-7 — Invite a Pending User with a
-  Confidential Activation Link — which is not delivered yet. Only the pending-user branch of this
-  slice depends on it; correcting an active, deactivated, or cancelled user does not. Confirmed on
-  2026-09-10: GH-7 is deliberately not a blocker of this slice, which ships with that branch failing
-  closed as FR-015 prescribes. See plan.md, "Review gate".
+- GH-7 — Invite a Pending User with a Confidential Activation Link — is delivered (#292) and creates
+  the pending users and activation links FR-015 protects. This slice uses none of its mechanics: it
+  refuses a pending user's address change rather than replacing their link (clarified 2026-09-11).
 - It is the entry point of the roadmap's execution order: GH-25 depends on it, and GH-118 depends on
   GH-25.
 
@@ -230,8 +229,11 @@ applied without a new sign-in.
 - Role change and its protections — GH-28 and GH-29.
 - Every access status change: invitation, invitation cancellation and restoration, activation link
   renewal, pending user removal, deactivation, and reactivation.
-- Standalone activation link renewal — GH-9. Re-issuing a link here is a consequence of correcting
-  a pending user's address, not the renewal action an administrator invokes on its own.
+- Standalone activation link renewal — GH-9.
+- Correcting a pending user's email address, and the activation link replacement it would require
+  (clarified 2026-09-11).
+- A history of identity corrections — who changed an identity, when, and from what (former US4,
+  deferred 2026-09-11).
 - Password reset, password renewal, and any effect on credentials or sessions.
 - Bulk identity edits over a selection of users, and importing identities from an external directory.
 - Notifying a user that their identity was changed by an administrator.
@@ -250,19 +252,17 @@ applied without a new sign-in.
   business rule rather than a storage detail.
 - The user collection remains at or below the volume established by GH-4, so a correction refreshes
   the retrieved collection rather than introducing a per-user consultation seam.
-- The correction is performed from the user record already opened from the collection, following the
-  workbench conventions established by GH-4 and the site-reference directories.
+- The correction is offered from the user's row and from the user record opened from the collection,
+  following the workbench conventions established by GH-4 and the site-reference directories.
 - Names are free text: the feature validates presence and length, not the plausibility or the script
   of a person's name.
 - A correction is an ordinary administrative act and does not require a justification comment, unlike
   the commented corrections used in discharge operations.
 - The user whose identity is corrected is not notified by this feature; notification, if wanted,
-  belongs to a later slice. Issuing a new activation link to a pending user's corrected address is
-  not a notification: it is what makes their invitation reachable again.
-- The identity history is retained for the life of the user record and is not editable or erasable
-  through this feature.
-- A correction is presented in the access record alongside the lifecycle events GH-4 already shows,
-  under the same rule that withholds those events from anyone but an organization admin.
+  belongs to a later slice.
+- A pending user whose address was mistyped at invitation can still activate with the link the
+  administrator handed on, whatever channel carried it; their address is then correctable like any
+  active user's.
 
 ## Traceability
 
