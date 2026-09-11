@@ -66,6 +66,9 @@ export default class InviteUserUseCase {
     // The projection names the administrator responsible for the invitation, and this call already
     // holds them: hydrating the relation here spares the read that loading it would cost.
     result.user.$setRelated('invitedBy', input.invitedBy)
+    // Likewise the link just issued: the projection states until when it works, and without it the
+    // new user would read as holding no link at all — unlike its row in the collection.
+    result.user.$setRelated('activationToken', result.activationToken)
 
     return {
       user: result.user,

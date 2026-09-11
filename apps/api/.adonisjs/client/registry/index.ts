@@ -270,6 +270,12 @@ const routes = {
     tokens: [{"old":"/api/v1/users/:id/password-reset","type":0,"val":"api","end":""},{"old":"/api/v1/users/:id/password-reset","type":0,"val":"v1","end":""},{"old":"/api/v1/users/:id/password-reset","type":0,"val":"users","end":""},{"old":"/api/v1/users/:id/password-reset","type":1,"val":"id","end":""},{"old":"/api/v1/users/:id/password-reset","type":0,"val":"password-reset","end":""}],
     types: placeholder as Registry['users.password_reset']['types'],
   },
+  'users.activation_link_renewal': {
+    methods: ["POST"],
+    pattern: '/api/v1/users/:id/activation-link-renewal',
+    tokens: [{"old":"/api/v1/users/:id/activation-link-renewal","type":0,"val":"api","end":""},{"old":"/api/v1/users/:id/activation-link-renewal","type":0,"val":"v1","end":""},{"old":"/api/v1/users/:id/activation-link-renewal","type":0,"val":"users","end":""},{"old":"/api/v1/users/:id/activation-link-renewal","type":1,"val":"id","end":""},{"old":"/api/v1/users/:id/activation-link-renewal","type":0,"val":"activation-link-renewal","end":""}],
+    types: placeholder as Registry['users.activation_link_renewal']['types'],
+  },
   'docks.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/docks',

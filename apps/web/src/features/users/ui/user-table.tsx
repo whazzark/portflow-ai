@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { activationLinkState } from '@/features/users/helpers/activation-link'
 import { formatFullName } from '@/features/users/helpers/name'
 import {
   statusViewTableLabel,
@@ -169,6 +170,31 @@ const invitedColumn: ColumnDef<UserDto> = {
   },
 }
 
+/**
+ * Beside the invitation date in the pending view: so an organization admin can tell which
+ * invitations need a renewal without opening every record, the way the Password column marks who
+ * owes a renewal. Read from the live link's own expiry rather than derived from the invitation date,
+ * for the reason the invitation column gives. Blank for a link that still works, for the same reason
+ * the password column is blank for a user who owes nothing.
+ */
+const activationLinkColumn: ColumnDef<UserDto> = {
+  id: 'activationLink',
+  header: 'Activation link',
+  enableSorting: false,
+  cell: ({ row }) => {
+    const state = activationLinkState(row.original, Date.now())
+
+    if (state === 'expired') {
+      return <StatusIndicator label="Expired" variant="warning" />
+    }
+    if (state === 'missing') {
+      return <StatusIndicator label="Not issued" variant="warning" />
+    }
+
+    return null
+  },
+}
+
 // Last column, as in the customer, truck, and transport-company directories: the row's own
 // administration menu, so a correction or an access change never requires opening the record
 // first.
@@ -189,12 +215,13 @@ const actionsColumn: ColumnDef<UserDto> = {
 
 /**
  * The columns each status view shows, as stable references so the table never rebuilds them. Only
- * the fourth column varies: the password renewal indicator where a password can exist, and what the
- * administrator needs instead where it cannot.
+ * the columns after the role vary: the password renewal indicator where a password can exist, and
+ * what the administrator needs instead where it cannot — for a pending user, when they were invited
+ * and whether their activation link still works.
  */
 const COLUMNS_BY_VIEW: Record<UserStatusView, ColumnDef<UserDto>[]> = {
   active: [...identityColumns, passwordColumn, actionsColumn],
-  pending: [...identityColumns, invitedColumn, actionsColumn],
+  pending: [...identityColumns, invitedColumn, activationLinkColumn, actionsColumn],
   deactivated: [...identityColumns, passwordColumn, actionsColumn],
   cancelled: [...identityColumns, cancellationCommentColumn, actionsColumn],
 }

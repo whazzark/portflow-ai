@@ -88,4 +88,16 @@ export default class UserPolicy extends BasePolicy {
   resetPassword(user: User): AuthorizerResponse {
     return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'
   }
+
+  /**
+   * Issuing a new way into the application is an organization admin's alone, exactly like the
+   * invitation that issued the first one.
+   *
+   * *Which* users may then be renewed — pending ones only — is a separate decision, owned by the
+   * guarded write behind RenewActivationLinkUseCase, for the reason `deactivate` gives: a rule
+   * expressed here is one the administrator can never be told the reason for.
+   */
+  renewActivationLink(user: User): AuthorizerResponse {
+    return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'
+  }
 }

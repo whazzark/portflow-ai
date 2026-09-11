@@ -535,6 +535,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['resetPassword']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'users.activation_link_renewal': {
+    methods: ["POST"]
+    pattern: '/api/v1/users/:id/activation-link-renewal'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#users/activation_link_renewal/renew_activation_link_validator').renewActivationLinkValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#users/activation_link_renewal/renew_activation_link_validator').renewActivationLinkValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/users_controller').default['renewActivationLink']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['renewActivationLink']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'docks.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/docks'

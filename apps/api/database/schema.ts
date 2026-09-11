@@ -327,7 +327,7 @@ export class UserActivationTokenSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ['accessStatus', 'activatedAt', 'activatedByUserId', 'cancellationComment', 'cancelledAt', 'cancelledByUserId', 'createdAt', 'deactivatedAt', 'deactivatedByUserId', 'email', 'firstName', 'id', 'invitedAt', 'invitedByUserId', 'lastName', 'password', 'passwordRenewalRequiredAt', 'passwordResetAt', 'passwordResetByUserId', 'reactivatedAt', 'reactivatedByUserId', 'role', 'updatedAt'] as const
+  static $columns = ['accessStatus', 'activatedAt', 'activatedByUserId', 'activationLinkRenewedAt', 'activationLinkRenewedByUserId', 'cancellationComment', 'cancelledAt', 'cancelledByUserId', 'createdAt', 'deactivatedAt', 'deactivatedByUserId', 'email', 'firstName', 'id', 'invitedAt', 'invitedByUserId', 'lastName', 'password', 'passwordRenewalRequiredAt', 'passwordResetAt', 'passwordResetByUserId', 'reactivatedAt', 'reactivatedByUserId', 'role', 'updatedAt'] as const
   $columns = UserSchema.$columns
   @column()
   declare accessStatus: string
@@ -335,6 +335,10 @@ export class UserSchema extends BaseModel {
   declare activatedAt: DateTime | null
   @column()
   declare activatedByUserId: string | null
+  @column.dateTime()
+  declare activationLinkRenewedAt: DateTime | null
+  @column()
+  declare activationLinkRenewedByUserId: string | null
   @column()
   declare cancellationComment: string | null
   @column.dateTime()

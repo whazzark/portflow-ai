@@ -20,7 +20,19 @@ type ActivationLinkDialogProps = {
   /** Absent once the outcome has been left, or after a reload: the secret has no second read. */
   activationLink?: ActivationLinkDto
   invitedUser?: UserDto
+  /**
+   * What issued the link. It changes one sentence: a renewal has to say that the link the person
+   * may already hold no longer works. Everything that makes the link safe to hand out — shown once,
+   * copyable, dismissed only on purpose — is the same whichever issued it.
+   */
+  origin?: 'invitation' | 'renewal'
   onAcknowledge: () => void
+}
+
+function describeOutcome(origin: 'invitation' | 'renewal', name: string) {
+  return origin === 'renewal'
+    ? `A new activation link for ${name}. The previous link no longer works. Hand them this one so they can choose their password.`
+    : `${name} is now pending activation. Hand them this link so they can choose their password.`
 }
 
 /**
@@ -35,6 +47,7 @@ export function ActivationLinkDialog({
   open,
   activationLink,
   invitedUser,
+  origin = 'invitation',
   onAcknowledge,
 }: ActivationLinkDialogProps) {
   const invitedName = invitedUser ? formatFullName(invitedUser) : 'The invited user'
@@ -61,9 +74,7 @@ export function ActivationLinkDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Activation link</AlertDialogTitle>
-          <AlertDialogDescription>
-            {`${invitedName} is now pending activation. Hand them this link so they can choose their password.`}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{describeOutcome(origin, invitedName)}</AlertDialogDescription>
         </AlertDialogHeader>
         {activationLink ? (
           <div className="flex flex-col gap-4">

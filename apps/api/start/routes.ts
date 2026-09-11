@@ -107,6 +107,9 @@ router
             router
               .post('/:id/password-reset', [controllers.Users, 'resetPassword'])
               .as('password_reset')
+            router
+              .post('/:id/activation-link-renewal', [controllers.Users, 'renewActivationLink'])
+              .as('activation_link_renewal')
           })
           .prefix('/users')
           .as('users')

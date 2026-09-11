@@ -61,6 +61,7 @@ export interface ApiDefinition {
     cancelInvitation: typeof routes['users.cancel_invitation']
     changeRole: typeof routes['users.change_role']
     passwordReset: typeof routes['users.password_reset']
+    activationLinkRenewal: typeof routes['users.activation_link_renewal']
   }
   docks: {
     index: typeof routes['docks.index']
