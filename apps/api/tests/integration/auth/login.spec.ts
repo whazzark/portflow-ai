@@ -1,5 +1,6 @@
 import { test } from '@japa/runner'
 
+import { REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY } from '#auth/shared/remembered_connection'
 import { USER_FACTORY_PASSWORD, UserFactory } from '#database/factories/user_factory'
 
 test.group('Auth login', () => {
@@ -26,6 +27,28 @@ test.group('Auth login', () => {
     response.assertStatus(200)
     response.assertCookie('remember_web')
     assert.equal(response.cookie('remember_web')?.maxAge, 60 * 60 * 24 * 30)
+  })
+
+  test('keeps a session past the next request whatever expiry an earlier remembered connection left', async ({
+    assert,
+    client,
+  }) => {
+    const activeUser = await UserFactory.apply('active').create()
+
+    // What a browser keeps once a remembered connection outlived its fixed expiry: the session is
+    // refused and loses its user, but the expiry stays.
+    const response = await client
+      .post('/api/v1/auth/login')
+      .withSession({ [REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY]: Date.now() - 1000 })
+      .json({ email: activeUser.email, password: USER_FACTORY_PASSWORD })
+
+    response.assertStatus(200)
+    response.assertSessionMissing(REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY)
+
+    const me = await client.get('/api/v1/auth/me').withSession(response.session())
+
+    me.assertStatus(200)
+    assert.equal(me.body().data.id, activeUser.id)
   })
 
   test('rejects invalid credentials without creating a session', async ({ assert, client }) => {
