@@ -1,7 +1,7 @@
 import { TuyauHTTPError, TuyauNetworkError } from '@tuyau/core/client'
 import { expect, test } from 'vitest'
 
-import { parseApiError } from '@/libraries/tuyau/api-error'
+import { isNotFoundError, parseApiError } from '@/libraries/tuyau/api-error'
 
 test('maps a known API error shape to its code and message', () => {
   const error = new TuyauHTTPError(
@@ -63,4 +63,20 @@ test('maps a non-Tuyau error to a generic message', () => {
     code: 'UNKNOWN_ERROR',
     message: 'Something went wrong. Please try again.',
   })
+})
+
+function httpError(status: number) {
+  return new TuyauHTTPError(
+    // biome-ignore lint/suspicious/noExplicitAny: constructing a minimal fake ky HTTPError for the test
+    { response: { status } } as any,
+    { error: { code: 'E_ANY', message: 'Any' } },
+  )
+}
+
+test('recognizes a not-found answer and nothing else as not found', () => {
+  expect(isNotFoundError(httpError(404))).toBe(true)
+  expect(isNotFoundError(httpError(401))).toBe(false)
+  expect(isNotFoundError(httpError(500))).toBe(false)
+  expect(isNotFoundError(new TuyauNetworkError(new Error('fetch failed')))).toBe(false)
+  expect(isNotFoundError(new Error('boom'))).toBe(false)
 })

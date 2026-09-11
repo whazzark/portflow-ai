@@ -16,11 +16,17 @@ export function AuthenticatedHeader() {
   const { isMobile, state } = useSidebar()
   const matches = useMatches({
     select: (routeMatches) =>
-      routeMatches.flatMap((match) =>
-        match.staticData.breadcrumb
-          ? [{ href: match.pathname, label: match.staticData.breadcrumb }]
-          : [],
-      ),
+      routeMatches.flatMap((match) => {
+        const { breadcrumb } = match.staticData
+
+        if (!breadcrumb) {
+          return []
+        }
+
+        return [
+          { breadcrumb, href: match.pathname, params: match.params as Record<string, string> },
+        ]
+      }),
   })
   const toggleLabel = isMobile
     ? 'Open sidebar'
@@ -46,16 +52,21 @@ export function AuthenticatedHeader() {
             <BreadcrumbList className="flex-nowrap overflow-hidden">
               {matches.map((match, index) => {
                 const isCurrentPage = index === matches.length - 1
+                const Crumb = match.breadcrumb
+                const label = typeof Crumb === 'string' ? Crumb : <Crumb params={match.params} />
 
                 return (
                   <Fragment key={match.href}>
                     {index > 0 && <BreadcrumbSeparator />}
                     <BreadcrumbItem className="min-w-0">
                       {isCurrentPage ? (
-                        <BreadcrumbPage className="truncate">{match.label}</BreadcrumbPage>
+                        <BreadcrumbPage className="truncate">{label}</BreadcrumbPage>
                       ) : (
-                        <BreadcrumbLink render={<Link to={match.href} />}>
-                          {match.label}
+                        // Only a nested page has a crumb above its own, and its parent owns
+                        // the state it was opened from — a list's status and search. Keeping
+                        // the search returns the user to that list, not to its defaults.
+                        <BreadcrumbLink render={<Link search={true} to={match.href} />}>
+                          {label}
                         </BreadcrumbLink>
                       )}
                     </BreadcrumbItem>

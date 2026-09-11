@@ -8,10 +8,14 @@ export function NavigationMenuItem({ item }: { item: NavigationItem }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
 
   if (item.href) {
+    // A page nested under an entry, such as one discharge under the discharges list, still
+    // belongs to that entry.
+    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+
     return (
       <SidebarMenuItem>
         <SidebarMenuButton
-          isActive={pathname === item.href}
+          isActive={isActive}
           render={<Link to={item.href} />}
           tooltip={item.label}
         >

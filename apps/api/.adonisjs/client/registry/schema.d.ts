@@ -403,6 +403,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['index']>>>
     }
   }
+  'discharges.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/discharges/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['show']>>>
+    }
+  }
   'users.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/users'
