@@ -12,6 +12,14 @@ export const ACTIVATION_LINK_LIFETIME_IN_DAYS = 7
 
 const ACTIVATION_SECRET_BYTES = 32
 
+/**
+ * The only form of an activation secret the database ever holds. Shared by issuance and acceptance
+ * so that "the lookup hashes the way the issuer hashes" is one definition rather than a coincidence.
+ */
+export function digestActivationSecret(secret: string): string {
+  return createHash('sha256').update(secret).digest('hex')
+}
+
 export type IssuedActivationLink = {
   /** Handed to the inviting administrator once, and never readable again. */
   url: string
@@ -37,7 +45,7 @@ export default class ActivationLinkIssuer {
 
     return {
       url: `${env.get('WEB_ORIGIN')}/activate/${secret}`,
-      hash: createHash('sha256').update(secret).digest('hex'),
+      hash: digestActivationSecret(secret),
       expiresAt: DateTime.now().plus({ days: ACTIVATION_LINK_LIFETIME_IN_DAYS }),
     }
   }

@@ -31,6 +31,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/login_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'auth.invitation_acceptance.preview': {
+    methods: ["POST"]
+    pattern: '/api/v1/auth/invitation-acceptance/preview'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#auth/invitation_acceptance/invitation_acceptance_validator').invitationPreviewValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#auth/invitation_acceptance/invitation_acceptance_validator').invitationPreviewValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/invitation_acceptance_controller').default['preview']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/invitation_acceptance_controller').default['preview']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'auth.invitation_acceptance.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/auth/invitation-acceptance'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#auth/invitation_acceptance/invitation_acceptance_validator').invitationAcceptanceValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#auth/invitation_acceptance/invitation_acceptance_validator').invitationAcceptanceValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/invitation_acceptance_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/invitation_acceptance_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'auth.me': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/auth/me'

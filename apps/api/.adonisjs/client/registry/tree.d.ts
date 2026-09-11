@@ -7,6 +7,10 @@ export interface ApiDefinition {
   }
   auth: {
     login: typeof routes['auth.login']
+    invitationAcceptance: {
+      preview: typeof routes['auth.invitation_acceptance.preview']
+      store: typeof routes['auth.invitation_acceptance.store']
+    }
     me: typeof routes['auth.me']
     logout: typeof routes['auth.logout']
     passwordRenewal: typeof routes['auth.password_renewal']

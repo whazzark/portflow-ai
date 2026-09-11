@@ -24,6 +24,10 @@ export default class LoginController {
         REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY,
         Date.now() + REMEMBERED_CONNECTION_DURATION_MS,
       )
+    } else {
+      // `login` regenerates the session id but keeps its data: an expiry left behind by an earlier
+      // remembered connection would end this session at the very next request.
+      session.forget(REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY)
     }
 
     return serialize(UserTransformer.transform(user))

@@ -22,6 +22,15 @@ export default class UserTransformer extends BaseTransformer<User> {
     return this.pick(this.resource, ['id', 'firstName', 'lastName'])
   }
 
+  /**
+   * What the holder of an activation link sees before choosing a password: enough to recognize the
+   * access as theirs, and for a password manager to file the credential under the right email.
+   * Nothing more — no id, role, status, or date.
+   */
+  toActivationPreview() {
+    return this.pick(this.resource, ['firstName', 'lastName', 'email'])
+  }
+
   toObject() {
     return {
       ...this.pick(this.resource, [

@@ -18,6 +18,18 @@ const routes = {
     tokens: [{"old":"/api/v1/auth/login","type":0,"val":"api","end":""},{"old":"/api/v1/auth/login","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/login","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/login","type":0,"val":"login","end":""}],
     types: placeholder as Registry['auth.login']['types'],
   },
+  'auth.invitation_acceptance.preview': {
+    methods: ["POST"],
+    pattern: '/api/v1/auth/invitation-acceptance/preview',
+    tokens: [{"old":"/api/v1/auth/invitation-acceptance/preview","type":0,"val":"api","end":""},{"old":"/api/v1/auth/invitation-acceptance/preview","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/invitation-acceptance/preview","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/invitation-acceptance/preview","type":0,"val":"invitation-acceptance","end":""},{"old":"/api/v1/auth/invitation-acceptance/preview","type":0,"val":"preview","end":""}],
+    types: placeholder as Registry['auth.invitation_acceptance.preview']['types'],
+  },
+  'auth.invitation_acceptance.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/auth/invitation-acceptance',
+    tokens: [{"old":"/api/v1/auth/invitation-acceptance","type":0,"val":"api","end":""},{"old":"/api/v1/auth/invitation-acceptance","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/invitation-acceptance","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/invitation-acceptance","type":0,"val":"invitation-acceptance","end":""}],
+    types: placeholder as Registry['auth.invitation_acceptance.store']['types'],
+  },
   'auth.me': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/auth/me',

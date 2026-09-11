@@ -6,6 +6,15 @@ router.get('/health', [controllers.Health, 'show']).as('health.show')
 
 router.post('/api/v1/auth/login', [controllers.Login, 'store']).as('auth.login')
 
+// Public, like login: the activation link is the only proof the invited person presents. Both
+// routes read the secret from the body — never a path parameter, which access logs would record.
+router
+  .post('/api/v1/auth/invitation-acceptance/preview', [controllers.InvitationAcceptance, 'preview'])
+  .as('auth.invitation_acceptance.preview')
+router
+  .post('/api/v1/auth/invitation-acceptance', [controllers.InvitationAcceptance, 'store'])
+  .as('auth.invitation_acceptance.store')
+
 router
   .group(() => {
     router
