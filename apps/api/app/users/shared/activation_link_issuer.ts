@@ -34,10 +34,9 @@ export type IssuedActivationLink = {
 export default class ActivationLinkIssuer {
   issue(): IssuedActivationLink {
     const secret = randomBytes(ACTIVATION_SECRET_BYTES).toString('base64url')
-    const origin = env.get('WEB_ORIGIN').replace(/\/+$/, '')
 
     return {
-      url: `${origin}/activate/${secret}`,
+      url: `${env.get('WEB_ORIGIN')}/activate/${secret}`,
       hash: createHash('sha256').update(secret).digest('hex'),
       expiresAt: DateTime.now().plus({ days: ACTIVATION_LINK_LIFETIME_IN_DAYS }),
     }

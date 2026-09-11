@@ -1,5 +1,13 @@
 import { Env } from '@adonisjs/core/env'
 
+/**
+ * Validates `WEB_ORIGIN` and strips its trailing slashes, once, for every reader: a browser's
+ * `Origin` header never carries one, so a value kept as typed would build correct activation links
+ * while silently refusing every cross-origin request.
+ */
+export const validateWebOrigin = (key: string, value?: string) =>
+  Env.schema.string({ format: 'url', tld: false })(key, value).replace(/\/+$/, '')
+
 export default await Env.create(new URL('../', import.meta.url), {
   /*
   |----------------------------------------------------------
@@ -39,5 +47,5 @@ export default await Env.create(new URL('../', import.meta.url), {
    * `tld: false` because every non-production origin is `http://localhost:<port>`, which the default
    * URL rule rejects for having no top-level domain; the protocol is still required.
    */
-  WEB_ORIGIN: Env.schema.string({ format: 'url', tld: false }),
+  WEB_ORIGIN: validateWebOrigin,
 })
