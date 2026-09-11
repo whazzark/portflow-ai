@@ -37,5 +37,17 @@ export function useUserMutations() {
     }),
   )
 
-  return { invite, deactivate, updateIdentity, refreshUsers }
+  const changeRole = useMutation(
+    tuyauQuery.users.changeRole.mutationOptions({
+      onSuccess: async () => {
+        await refreshUsers()
+        // The viewer's own session too: were an administrator's own role ever changed, their
+        // navigation must follow. The Edit panel is never offered on the viewer's own record and
+        // GH-29 refuses the case in the API, so this is belt-and-braces — and one line.
+        await queryClient.invalidateQueries({ queryKey: tuyauQuery.auth.me.queryKey() })
+      },
+    }),
+  )
+
+  return { invite, deactivate, updateIdentity, changeRole, refreshUsers }
 }

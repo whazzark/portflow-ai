@@ -1,5 +1,6 @@
 import vine from '@vinejs/vine'
 
+import { USER_ROLES } from '#models/user'
 import { nonBlank } from '#shared/validators/lifecycle_validator'
 import { MAX_USER_EMAIL_LENGTH, MAX_USER_NAME_LENGTH } from '#users/shared/normalize_user_identity'
 
@@ -23,4 +24,12 @@ export const updateUserIdentityValidator = vine.create({
   firstName: nameField(),
   lastName: nameField(),
   email: vine.string().trim().email().maxLength(MAX_USER_EMAIL_LENGTH),
+})
+
+/**
+ * The destination role, validated against the model's own tuple so the accepted set can never drift
+ * from the four roles the domain defines.
+ */
+export const changeUserRoleValidator = vine.create({
+  role: vine.enum(USER_ROLES),
 })

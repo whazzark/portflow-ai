@@ -89,6 +89,7 @@ router
             router.post('/', [controllers.Users, 'store']).as('store')
             router.patch('/:id', [controllers.Users, 'update']).as('update')
             router.post('/:id/deactivate', [controllers.Users, 'deactivate']).as('deactivate')
+            router.patch('/:id/role', [controllers.Users, 'changeRole']).as('change_role')
           })
           .prefix('/users')
           .as('users')

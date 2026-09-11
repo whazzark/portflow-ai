@@ -10,6 +10,12 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
   OBSERVER: 'Observer',
 }
 
+/** The four roles as a selectable list, in the order the domain nests them. */
+export const USER_ROLE_OPTIONS = (Object.keys(USER_ROLE_LABELS) as UserRole[]).map((role) => ({
+  label: USER_ROLE_LABELS[role],
+  value: role,
+}))
+
 export const USER_ACCESS_STATUS_LABELS: Record<UserAccessStatus, string> = {
   ACTIVE: 'Active',
   PENDING: 'Pending',

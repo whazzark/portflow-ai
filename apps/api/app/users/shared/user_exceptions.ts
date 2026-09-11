@@ -69,3 +69,14 @@ export class InvalidUserIdentityException extends Exception {
   static code = 'E_USER_IDENTITY_INVALID'
   static message = 'User identity must carry a first name, a last name, and an email address'
 }
+
+/**
+ * A deactivated user's role is frozen until their access is restored. The message names
+ * reactivation because a refusal that only says "no" leaves the administrator guessing which of
+ * the four access statuses they are looking at.
+ */
+export class UserDeactivatedCannotChangeRoleException extends Exception {
+  static status = 409
+  static code = 'E_USER_DEACTIVATED_CANNOT_CHANGE_ROLE'
+  static message = 'Deactivated users cannot have their role changed; reactivate the user first'
+}

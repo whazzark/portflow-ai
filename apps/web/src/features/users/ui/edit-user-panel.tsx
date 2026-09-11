@@ -4,21 +4,16 @@ import { Button } from '@/components/ui/button'
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { formatFullName } from '@/features/users/helpers/name'
 import type { UserDto } from '@/features/users/types'
-import { UserIdentityForm, type UserIdentityValue } from '@/features/users/ui/user-identity-form'
+import { EditUserForm, type EditUserValue } from '@/features/users/ui/edit-user-form'
 
-type EditUserIdentityPanelProps = {
+type EditUserPanelProps = {
   user: UserDto
   onCancel: () => void
-  onUpdate: (value: UserIdentityValue) => Promise<UserDto>
+  onUpdate: (value: EditUserValue) => Promise<UserDto>
   onSuccess: (user: UserDto) => void
 }
 
-export function EditUserIdentityPanel({
-  user,
-  onCancel,
-  onUpdate,
-  onSuccess,
-}: EditUserIdentityPanelProps) {
+export function EditUserPanel({ user, onCancel, onUpdate, onSuccess }: EditUserPanelProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <SheetHeader>
@@ -26,14 +21,14 @@ export function EditUserIdentityPanel({
           <ArrowLeftIcon aria-hidden="true" />
           Back to details
         </Button>
-        <SheetTitle>Edit identity</SheetTitle>
+        <SheetTitle>Edit user</SheetTitle>
         <SheetDescription>
-          Correct {formatFullName(user)}'s name and email address. Their role and access status are
-          unchanged.
+          Correct {formatFullName(user)}'s name and email address, or change their role. Their
+          access status is unchanged.
         </SheetDescription>
       </SheetHeader>
       <div className="px-4 pb-6">
-        <UserIdentityForm onSuccess={onSuccess} onUpdate={onUpdate} user={user} />
+        <EditUserForm onSuccess={onSuccess} onUpdate={onUpdate} user={user} />
       </div>
     </div>
   )
