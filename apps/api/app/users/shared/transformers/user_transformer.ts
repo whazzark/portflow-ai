@@ -75,6 +75,8 @@ export default class UserTransformer extends BaseTransformer<User> {
       activatedBy: this.when(includeAccessHistory, () => this.toActor(this.resource.activatedBy)),
       cancelledAt: this.when(includeAccessHistory, () => this.resource.cancelledAt),
       cancelledBy: this.when(includeAccessHistory, () => this.toActor(this.resource.cancelledBy)),
+      // The administrator's own words on the latest cancellation, gated like the event it annotates.
+      cancellationComment: this.when(includeAccessHistory, () => this.resource.cancellationComment),
       deactivatedAt: this.when(includeAccessHistory, () => this.resource.deactivatedAt),
       deactivatedBy: this.when(includeAccessHistory, () =>
         this.toActor(this.resource.deactivatedBy),

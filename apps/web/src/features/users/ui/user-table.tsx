@@ -31,6 +31,7 @@ import { compareUsers } from '@/features/users/helpers/user-search'
 import type { UserDto } from '@/features/users/types'
 import { UserAvatar } from '@/features/users/ui/user-avatar'
 import { UserRowActions } from '@/features/users/ui/user-row-actions'
+import { formatDateTime } from '@/helpers/dates'
 
 declare module '@tanstack/react-table' {
   interface TableMeta<TData extends import('@tanstack/react-table').RowData> {
@@ -58,7 +59,7 @@ type UserTableProps = {
   onInvite?: () => void
 }
 
-const columns: ColumnDef<UserDto>[] = [
+const identityColumns: ColumnDef<UserDto>[] = [
   {
     id: 'name',
     header: 'Name',
@@ -101,37 +102,102 @@ const columns: ColumnDef<UserDto>[] = [
     sortingFn: (left, right) => compareUsers(left.original, right.original, 'role'),
     cell: ({ row }) => USER_ROLE_LABELS[row.original.role],
   },
-  {
-    id: 'password',
-    header: 'Password',
-    enableSorting: false,
-    // So an organization admin can tell who owes a renewal without opening every record. Blank
-    // rather than "None": a user who owes nothing has nothing to report, and a column of negatives
-    // would bury the few that matter. Viewers who may not consult the access history never receive
-    // the key, so the column is blank for them throughout.
-    cell: ({ row }) =>
-      owesPasswordRenewal(row.original) ? (
-        <StatusIndicator label="Renewal required" variant="warning" />
-      ) : null,
-  },
-  // Last column, as in the customer, truck, and transport-company directories: the row's own
-  // administration menu, so a correction or an access change never requires opening the record
-  // first.
-  {
-    id: 'actions',
-    header: () => <span className="sr-only">Actions</span>,
-    enableSorting: false,
-    cell: ({ row, table }) => (
-      <div className="flex justify-end">
-        <UserRowActions
-          onEdit={table.options.meta?.onEdit}
-          onView={table.options.meta?.onSelect}
-          user={row.original}
-        />
-      </div>
-    ),
-  },
 ]
+
+const passwordColumn: ColumnDef<UserDto> = {
+  id: 'password',
+  header: 'Password',
+  enableSorting: false,
+  // So an organization admin can tell who owes a renewal without opening every record. Blank
+  // rather than "None": a user who owes nothing has nothing to report, and a column of negatives
+  // would bury the few that matter. Viewers who may not consult the access history never receive
+  // the key, so the column is blank for them throughout.
+  cell: ({ row }) =>
+    owesPasswordRenewal(row.original) ? (
+      <StatusIndicator label="Renewal required" variant="warning" />
+    ) : null,
+}
+
+/**
+ * What the cancelled view shows in place of the password: a cancelled user never held one, so the
+ * renewal column could only ever be blank there, whereas why their access was withdrawn is the one
+ * thing an administrator scanning that view wants to know (`#12`). One line, with the whole comment
+ * on hover — it may run to 1,000 characters. Blank when none was written, for the reason the
+ * password column gives.
+ */
+const cancellationCommentColumn: ColumnDef<UserDto> = {
+  id: 'cancellationComment',
+  header: 'Comment',
+  enableSorting: false,
+  cell: ({ row }) => {
+    const comment = row.original.cancellationComment
+
+    return comment ? (
+      <span className="block max-w-xs truncate text-muted-foreground" title={comment}>
+        {comment}
+      </span>
+    ) : null
+  },
+}
+
+/**
+ * What the pending view shows in place of the password, for the same reason the cancelled view
+ * does: a pending user has not chosen one yet. When each invitation was issued is what lets an
+ * administrator spot the stale ones — to renew their link or cancel them — without opening every
+ * record. Deliberately the invitation date and not a derived link expiry: a renewed link will outlive
+ * the invitation it belongs to, so an expiry computed from this date would soon be wrong.
+ *
+ * The inviting administrator sits under the date, worded as the access history words it, so the
+ * administrator to ask about an invitation is on the row too. An invitation recorded without one
+ * shows its date alone.
+ */
+const invitedColumn: ColumnDef<UserDto> = {
+  id: 'invitedAt',
+  header: 'Invited',
+  enableSorting: false,
+  cell: ({ row }) => {
+    const { invitedAt, invitedBy } = row.original
+
+    return invitedAt ? (
+      <div className="grid">
+        <span className="tabular-nums">{formatDateTime(invitedAt)}</span>
+        {invitedBy && (
+          <span className="text-muted-foreground text-xs">by {formatFullName(invitedBy)}</span>
+        )}
+      </div>
+    ) : null
+  },
+}
+
+// Last column, as in the customer, truck, and transport-company directories: the row's own
+// administration menu, so a correction or an access change never requires opening the record
+// first.
+const actionsColumn: ColumnDef<UserDto> = {
+  id: 'actions',
+  header: () => <span className="sr-only">Actions</span>,
+  enableSorting: false,
+  cell: ({ row, table }) => (
+    <div className="flex justify-end">
+      <UserRowActions
+        onEdit={table.options.meta?.onEdit}
+        onView={table.options.meta?.onSelect}
+        user={row.original}
+      />
+    </div>
+  ),
+}
+
+/**
+ * The columns each status view shows, as stable references so the table never rebuilds them. Only
+ * the fourth column varies: the password renewal indicator where a password can exist, and what the
+ * administrator needs instead where it cannot.
+ */
+const COLUMNS_BY_VIEW: Record<UserStatusView, ColumnDef<UserDto>[]> = {
+  active: [...identityColumns, passwordColumn, actionsColumn],
+  pending: [...identityColumns, invitedColumn, actionsColumn],
+  deactivated: [...identityColumns, passwordColumn, actionsColumn],
+  cancelled: [...identityColumns, cancellationCommentColumn, actionsColumn],
+}
 
 export function UserTable({
   users,
@@ -148,6 +214,7 @@ export function UserTable({
   highlightedUserId,
   onInvite,
 }: UserTableProps) {
+  const columns = COLUMNS_BY_VIEW[view]
   const table = useReactTable({
     data: users,
     columns,

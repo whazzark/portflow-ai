@@ -74,6 +74,25 @@ export type DeactivateUserResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'NOT_ACTIVE'; accessStatus: UserAccessStatus }
 
+export type CancelPendingInvitationCommand = {
+  id: string
+  cancelledByUserId: string
+  cancelledAt: DateTime
+  /** Already normalized by the use case: trimmed, and `null` when blank. */
+  comment: string | null
+}
+
+/**
+ * What the guarded write observed, never what the caller should be told — the same split as
+ * `DeactivateUserResult`, and for the same reason: `NOT_PENDING` carries the status the row actually
+ * had, which is the only thing that tells an activated user from a deactivated one from an invitation
+ * someone else cancelled first.
+ */
+export type CancelPendingInvitationResult =
+  | { kind: 'CANCELLED'; user: User }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'NOT_PENDING'; accessStatus: UserAccessStatus }
+
 export type ApplyUserIdentityCommand = {
   id: string
   firstName: string
@@ -154,6 +173,16 @@ export default abstract class UserRepository {
    * exactly one deactivation.
    */
   abstract deactivateActive(command: DeactivateUserCommand): Promise<DeactivateUserResult>
+
+  /**
+   * Moves one user from pending to cancelled, recording the cancellation event and its comment, and
+   * deletes that user's activation token. The transition is guarded on the row still being pending,
+   * so concurrent attempts resolve to exactly one cancellation; the status change and the end of the
+   * link commit together or not at all.
+   */
+  abstract cancelPendingInvitation(
+    command: CancelPendingInvitationCommand,
+  ): Promise<CancelPendingInvitationResult>
 
   /**
    * The target user, read under a row lock inside the caller's transaction, so that the identity a

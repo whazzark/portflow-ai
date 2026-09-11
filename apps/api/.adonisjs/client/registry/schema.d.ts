@@ -451,6 +451,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['deactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'users.cancel_invitation': {
+    methods: ["POST"]
+    pattern: '/api/v1/users/:id/cancel-invitation'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#users/cancel_invitation/cancel_user_invitation_validator').cancelUserInvitationValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#users/cancel_invitation/cancel_user_invitation_validator').cancelUserInvitationValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/users_controller').default['cancelInvitation']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['cancelInvitation']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'users.change_role': {
     methods: ["PATCH"]
     pattern: '/api/v1/users/:id/role'

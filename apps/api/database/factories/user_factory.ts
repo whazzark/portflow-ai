@@ -31,6 +31,7 @@ export const UserFactory = factory
       activatedByUserId: null,
       cancelledAt: null,
       cancelledByUserId: null,
+      cancellationComment: null,
       deactivatedAt: null,
       deactivatedByUserId: null,
       reactivatedAt: null,
@@ -45,6 +46,7 @@ export const UserFactory = factory
     user.activatedByUserId = null
     user.cancelledAt = null
     user.cancelledByUserId = null
+    user.cancellationComment = null
     user.deactivatedAt = null
     user.deactivatedByUserId = null
     user.reactivatedAt = null
@@ -64,6 +66,7 @@ export const UserFactory = factory
     user.accessStatus = 'CANCELLED'
     user.cancelledAt = DateTime.now()
     user.cancelledByUserId = null
+    user.cancellationComment = null
   })
   /**
    * Repeats the `active` state's assignments rather than composing with it: `01_user_seeder.ts`
@@ -77,6 +80,7 @@ export const UserFactory = factory
     user.activatedByUserId = null
     user.cancelledAt = null
     user.cancelledByUserId = null
+    user.cancellationComment = null
     user.deactivatedAt = null
     user.deactivatedByUserId = null
     user.reactivatedAt = null
@@ -94,6 +98,7 @@ export const UserFactory = factory
     user.activatedByUserId = null
     user.cancelledAt = null
     user.cancelledByUserId = null
+    user.cancellationComment = null
     user.deactivatedAt = null
     user.deactivatedByUserId = null
     user.reactivatedAt = null
