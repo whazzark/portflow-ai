@@ -15,7 +15,7 @@ Content-Type: application/json
 
 | Part | Rule |
 |---|---|
-| `:id` | The target user's identifier. |
+| `:id` | The target user's identifier. Must be a UUID: `users.id` is a `uuid` column, so anything else is refused with a 422 before any user is read, rather than reaching PostgreSQL as a `22P02` and answering 500. |
 | `role` | Required. One of `ORGANIZATION_ADMIN`, `OPERATIONS_ADMIN`, `OPERATIONS_LEAD`, `OBSERVER` — validated against the `USER_ROLES` tuple in `#models/user`. |
 
 No other field is accepted. The body carries no comment, no reason, and no expected current role:
@@ -61,7 +61,7 @@ the user already holds is also a `200` with an unchanged row — not an error (F
 | 403 | — | The session's role is not organization admin. Returned before any target lookup. |
 | 404 | `E_USER_NOT_FOUND` | No user with that id. Reachable only by an organization admin. |
 | 409 | `E_USER_DEACTIVATED_CANNOT_CHANGE_ROLE` | The target is deactivated. The message names reactivation as the way forward (FR-003). |
-| 422 | — | `role` missing, or outside the four values. |
+| 422 | `E_VALIDATION_ERROR` | `role` missing or outside the four values, or `:id` not a UUID (`params.id`). Returned after authorization, so an unauthorized viewer still receives the 403. |
 
 Every failure leaves the target untouched (FR-005, SC-003).
 

@@ -115,13 +115,13 @@ export default class UsersController {
    * The response carries the access history because the only viewer that reaches here is an
    * organization admin — exactly the viewer that projection exists for.
    */
-  async changeRole({ bouncer, params, request, serialize }: HttpContext) {
+  async changeRole({ bouncer, request, serialize }: HttpContext) {
     await bouncer.with(UserPolicy).authorize('changeRole')
 
     const payload = await request.validateUsing(changeUserRoleValidator)
 
     const user = await this.changeUserRoleUseCase.handle({
-      userId: params.id,
+      userId: payload.params.id,
       role: payload.role,
     })
 

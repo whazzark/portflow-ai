@@ -29,7 +29,13 @@ export const updateUserIdentityValidator = vine.create({
 /**
  * The destination role, validated against the model's own tuple so the accepted set can never drift
  * from the four roles the domain defines.
+ *
+ * `params.id` is checked for the reason `deactivateUserValidator` records: `users.id` is a real
+ * `uuid` column, so a non-UUID string reaching PostgreSQL raises `22P02` and surfaces as a 500.
  */
 export const changeUserRoleValidator = vine.create({
+  params: vine.object({
+    id: vine.string().uuid(),
+  }),
   role: vine.enum(USER_ROLES),
 })

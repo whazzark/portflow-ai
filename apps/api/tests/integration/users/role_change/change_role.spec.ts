@@ -114,6 +114,19 @@ test.group('PATCH /api/v1/users/:id/role', () => {
     assert.equal(response.body().error.code, 'E_USER_NOT_FOUND')
   })
 
+  test('rejects a malformed identifier before any user is read', async ({ assert, client }) => {
+    const admin = await organizationAdmin()
+
+    const response = await client
+      .patch('/api/v1/users/not-a-uuid/role')
+      .loginAs(admin)
+      .json({ role: 'OBSERVER' })
+
+    response.assertStatus(422)
+    assert.equal(response.body().error.code, 'E_VALIDATION_ERROR')
+    assert.equal(response.body().error.details[0].field, 'params.id')
+  })
+
   test('refuses a role outside the four the domain defines', async ({ assert, client }) => {
     const admin = await organizationAdmin()
 
