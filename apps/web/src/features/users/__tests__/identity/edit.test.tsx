@@ -17,7 +17,7 @@ const openEditorFor = async (name: string) => {
   const record = await openRecordFor(name)
   fireEvent.click(within(record).getByRole('button', { name: 'Edit' }))
 
-  expect(await screen.findByRole('heading', { name: 'Edit identity' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
 
   return screen.getByRole('dialog')
 }
@@ -69,7 +69,7 @@ test('returns to the record once the correction is applied', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
   await waitFor(() => expect(router.state.location.search).toMatchObject({ mode: 'view' }))
-  expect(screen.queryByRole('heading', { name: 'Edit identity' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Edit user' })).not.toBeInTheDocument()
 })
 
 test('holds the open editor in the URL', async () => {
@@ -86,7 +86,7 @@ test('opens the editor directly from a shared address', async () => {
 
   renderUsers('/users?userId=active-1&mode=edit')
 
-  expect(await screen.findByRole('heading', { name: 'Edit identity' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'First name' })).toHaveValue('Amélie')
   expect(screen.getByRole('textbox', { name: 'Last name' })).toHaveValue('Bernard')
   expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue('amelie.bernard@portflow.test')
@@ -101,7 +101,7 @@ test('leaves the editor through Back to details without correcting anything', as
   fireEvent.click(within(editor).getByRole('button', { name: 'Back to details' }))
 
   expect(await screen.findByRole('heading', { name: /Amélie Bernard/ })).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Edit identity' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Edit user' })).not.toBeInTheDocument()
   expect(corrections).toHaveLength(0)
 })
 
@@ -130,7 +130,7 @@ test('reports a refused address on the email field and keeps what was typed', as
     await screen.findByText('Email address is already used by another user'),
   ).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue('bruno.costa@portflow.test')
-  expect(screen.getByRole('heading', { name: 'Edit identity' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
 })
 
 test('reports a field-level validation refusal on its own field', async () => {
@@ -158,7 +158,7 @@ test('explains, in the form, why a pending user’s address cannot change', asyn
 
   renderUsers('/users?status=pending&userId=pending-1&mode=edit')
 
-  expect(await screen.findByRole('heading', { name: 'Edit identity' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
   fill('Email', 'chloe.durand@portflow.example')
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 

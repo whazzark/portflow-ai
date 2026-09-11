@@ -1,5 +1,9 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import type { UserEvent } from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
-import type { UserDto } from '@/features/users/types'
+import { expect } from 'vitest'
+import { USER_ROLE_LABELS } from '@/features/users/helpers/user-labels'
+import type { UserDto, UserRole } from '@/features/users/types'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
 import {
@@ -71,6 +75,24 @@ export function mockUsersWithDeactivation(
       collection = collection.map((user) => (user.id === deactivated.id ? deactivated : user))
 
       return HttpResponse.json({ data: deactivated })
+    }),
+  )
+}
+
+/**
+ * The role change endpoint, answering with the user the collection will report next. Callers that
+ * need the table to follow the change pass an `onChanged` callback and re-mock the collection.
+ */
+export function mockRoleChange(
+  changed: UserDto,
+  onChanged: (role: UserRole) => void = () => undefined,
+) {
+  server.use(
+    http.patch(`${API_BASE_URL}/api/v1/users/:id/role`, async ({ request }) => {
+      const { role } = (await request.json()) as { role: UserRole }
+      onChanged(role)
+
+      return HttpResponse.json({ data: { ...changed, role } })
     }),
   )
 }
@@ -181,6 +203,58 @@ export function mockIdentityCorrectionRefused(
     http.get(`${API_BASE_URL}/api/v1/users`, () => HttpResponse.json({ data: users })),
     http.patch(`${API_BASE_URL}/api/v1/users/:id`, () => HttpResponse.json({ error }, { status })),
   )
+}
+
+/** The endpoint refuses the change — a business refusal, distinct from an unavailable endpoint. */
+export function mockRoleChangeRefused(
+  code = 'E_USER_DEACTIVATED_CANNOT_CHANGE_ROLE',
+  message = 'Deactivated users cannot have their role changed; reactivate the user first',
+  status = 409,
+) {
+  server.use(
+    http.patch(`${API_BASE_URL}/api/v1/users/:id/role`, () =>
+      HttpResponse.json({ error: { code, message } }, { status }),
+    ),
+  )
+}
+
+/** The endpoint is unavailable — a failure the administrator can retry, not a refusal. */
+export function mockRoleChangeUnavailable() {
+  server.use(http.patch(`${API_BASE_URL}/api/v1/users/:id/role`, () => HttpResponse.error()))
+}
+
+const ROLE_ORDER: UserRole[] = [
+  'ORGANIZATION_ADMIN',
+  'OPERATIONS_ADMIN',
+  'OPERATIONS_LEAD',
+  'OBSERVER',
+]
+
+/**
+ * Picks a role in the panel's select, by keyboard.
+ *
+ * The listbox is portalled outside the modal sheet, where `pointer-events: none` makes
+ * `userEvent.click` on an option hang and `fireEvent.click` land without committing the choice.
+ * The keyboard path is the one a user with a keyboard takes anyway, and it is the only one that
+ * exercises the real selection here.
+ */
+export async function selectRole(
+  user: UserEvent,
+  panel: HTMLElement,
+  from: UserRole,
+  to: UserRole,
+) {
+  const combobox = within(panel).getByRole('combobox', { name: 'Role' })
+  combobox.focus()
+  await user.keyboard('{Enter}')
+  // Waited for rather than assumed: arrowing before the listbox has mounted lands nowhere, which
+  // is what made this flaky when it was driven on timing alone.
+  await screen.findByRole('option', { name: USER_ROLE_LABELS[to] })
+
+  const steps = ROLE_ORDER.indexOf(to) - ROLE_ORDER.indexOf(from)
+  await user.keyboard((steps > 0 ? '{ArrowDown}' : '{ArrowUp}').repeat(Math.abs(steps)))
+  await user.keyboard('{Enter}')
+  await waitFor(() => expect(combobox).toHaveTextContent(USER_ROLE_LABELS[to]))
 }
 
 export function renderUsers(initialPath = '/users') {

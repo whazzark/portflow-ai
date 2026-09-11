@@ -451,6 +451,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['deactivate']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'users.change_role': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/users/:id/role'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#users/shared/user_validator').changeUserRoleValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#users/shared/user_validator').changeUserRoleValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/users_controller').default['changeRole']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['changeRole']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'users.password_reset': {
     methods: ["POST"]
     pattern: '/api/v1/users/:id/password-reset'

@@ -37,11 +37,25 @@ export function useUserMutations() {
     }),
   )
 
+  /** Refreshed on a refusal too, as `deactivate` is: a deactivated user is refused a new role. */
+  const changeRole = useMutation(
+    tuyauQuery.users.changeRole.mutationOptions({
+      onSuccess: async () => {
+        await refreshUsers()
+        // The viewer's own session too: were an administrator's own role ever changed, their
+        // navigation must follow. The Edit panel is never offered on the viewer's own record and
+        // GH-29 refuses the case in the API, so this is belt-and-braces — and one line.
+        await queryClient.invalidateQueries({ queryKey: tuyauQuery.auth.me.queryKey() })
+      },
+      onError: () => refreshUsers(),
+    }),
+  )
+
   const resetPassword = useMutation(
     tuyauQuery.users.passwordReset.mutationOptions({
       onSuccess: () => refreshUsers(),
     }),
   )
 
-  return { invite, deactivate, updateIdentity, resetPassword, refreshUsers }
+  return { invite, deactivate, updateIdentity, changeRole, resetPassword, refreshUsers }
 }

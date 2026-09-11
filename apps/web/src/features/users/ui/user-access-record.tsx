@@ -32,9 +32,10 @@ type UserAccessRecordProps = {
 
 /**
  * Identity, role, access status, and the recorded access history, with the actions the viewer may
- * take on this user in the footer — the correction on the left, the access actions and the password
- * reset (`#17`) on the right, as in the customer record. Invitation, cancellation, reactivation, and
- * role change are still owned by their own slices and are not offered here.
+ * take on this user in the footer — the edit on the left, the access actions and the password reset
+ * (`#17`) on the right, as in the customer record. The role is changed through that edit, alongside
+ * the identity. Invitation, cancellation, and reactivation are still owned by their own slices and
+ * are not offered here.
  *
  * A record with no action available renders no footer at all rather than an empty bordered bar.
  */

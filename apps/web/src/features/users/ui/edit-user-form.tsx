@@ -3,7 +3,11 @@ import { z } from 'zod'
 
 import { FieldGroup } from '@/components/ui/field'
 import { formatFullName } from '@/features/users/helpers/name'
-import { USER_SINGULAR } from '@/features/users/helpers/user-labels'
+import {
+  USER_ROLE_LABELS,
+  USER_ROLE_OPTIONS,
+  USER_SINGULAR,
+} from '@/features/users/helpers/user-labels'
 import type { UserDto } from '@/features/users/types'
 import {
   resourceFailureTitle,
@@ -17,7 +21,7 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 /** Mirrors the API bounds: `users.first_name`, `last_name`, and `email` are all `string` columns. */
 const MAX_LENGTH = 255
 
-const identitySchema = z.object({
+const userSchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required.').max(MAX_LENGTH),
   lastName: z.string().trim().min(1, 'Last name is required.').max(MAX_LENGTH),
   email: z
@@ -26,46 +30,53 @@ const identitySchema = z.object({
     .min(1, 'Email is required.')
     .max(MAX_LENGTH)
     .email('Enter a valid email address.'),
+  role: z.enum(['ORGANIZATION_ADMIN', 'OPERATIONS_ADMIN', 'OPERATIONS_LEAD', 'OBSERVER']),
 })
 
-export type UserIdentityValue = z.infer<typeof identitySchema>
+export type EditUserValue = z.infer<typeof userSchema>
 
 /**
  * The refusals this form can answer on a field of its own. Everything else is a form-level message,
- * shown as the API words it: a pending user's address that cannot change is about the user's state,
- * not about anything the administrator typed.
+ * shown as the API words it: a pending user's address that cannot change, or a deactivated user's
+ * role, is about the user's state, not about anything the administrator typed.
  */
-const FIELD_REFUSALS: Record<string, keyof UserIdentityValue> = {
+const FIELD_REFUSALS: Record<string, keyof EditUserValue> = {
   E_USER_EMAIL_CONFLICT: 'email',
 }
 
-type UserIdentityFormProps = {
+type EditUserFormProps = {
   user: UserDto
-  onUpdate: (value: UserIdentityValue) => Promise<UserDto>
+  onUpdate: (value: EditUserValue) => Promise<UserDto>
   onSuccess: (user: UserDto) => void
 }
 
-export function UserIdentityForm({ user, onUpdate, onSuccess }: UserIdentityFormProps) {
+export function EditUserForm({ user, onUpdate, onSuccess }: EditUserFormProps) {
+  // The API refuses any role change on a deactivated user, so the interface does not offer one: the
+  // role is shown as it stands, with the way to unfreeze it.
+  const roleIsFrozen = user.accessStatus === 'DEACTIVATED'
+
   const form = useAppForm({
     defaultValues: {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      role: user.role,
     },
     validators: {
-      onBlur: identitySchema,
-      onSubmit: identitySchema,
+      onBlur: userSchema,
+      onSubmit: userSchema,
     },
     onSubmit: async ({ formApi, value }) => {
       try {
-        const corrected = await onUpdate({
+        const saved = await onUpdate({
           firstName: value.firstName.trim(),
           lastName: value.lastName.trim(),
           email: value.email.trim(),
+          role: value.role,
         })
 
-        toast.success(resourceSuccessMessage('update', USER_SINGULAR, formatFullName(corrected)))
-        onSuccess(corrected)
+        toast.success(resourceSuccessMessage('update', USER_SINGULAR, formatFullName(saved)))
+        onSuccess(saved)
       } catch (error) {
         if (applyValidationError(formApi, error)) {
           return
@@ -113,6 +124,21 @@ export function UserIdentityForm({ user, onUpdate, onSuccess }: UserIdentityForm
               />
             )}
           </form.AppField>
+          {roleIsFrozen ? (
+            <div className="grid gap-1 text-sm">
+              <span className="font-medium">Role</span>
+              <span>{USER_ROLE_LABELS[user.role]}</span>
+              <span className="text-muted-foreground">
+                A deactivated user's role cannot be changed. Reactivate the user first.
+              </span>
+            </div>
+          ) : (
+            <form.AppField name="role">
+              {(field) => (
+                <field.SelectField label="Role" options={USER_ROLE_OPTIONS} required={true} />
+              )}
+            </form.AppField>
+          )}
         </FieldGroup>
         <form.FormError />
         <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS.update}>

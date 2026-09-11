@@ -1,19 +1,19 @@
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import type { UserDto } from '@/features/users/types'
-import { EditUserIdentityPanel } from '@/features/users/ui/edit-user-identity-panel'
+import type { EditUserValue } from '@/features/users/ui/edit-user-form'
+import { EditUserPanel } from '@/features/users/ui/edit-user-panel'
 import { UserAccessRecord } from '@/features/users/ui/user-access-record'
-import type { UserIdentityValue } from '@/features/users/ui/user-identity-form'
 
 type UserSheetProps = {
   /** Resolved from the retrieved collection — this feature adds no per-user consultation seam. */
   user?: UserDto
   mode: 'view' | 'edit'
-  /** Whether this viewer may correct this user. The API stays authoritative either way. */
+  /** Whether this viewer may edit this user. The API stays authoritative either way. */
   canEdit: boolean
   onClose: () => void
   onEdit: () => void
   onCancelEdit: () => void
-  onUpdate: (value: UserIdentityValue) => Promise<UserDto>
+  onUpdate: (value: EditUserValue) => Promise<UserDto>
   onUpdated: (user: UserDto) => void
 }
 
@@ -41,7 +41,7 @@ export function UserSheet({
       <SheetContent className="overflow-hidden" size="lg">
         {user &&
           (editing ? (
-            <EditUserIdentityPanel
+            <EditUserPanel
               onCancel={onCancelEdit}
               onSuccess={onUpdated}
               onUpdate={onUpdate}

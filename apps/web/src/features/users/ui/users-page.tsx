@@ -36,8 +36,8 @@ import { useUserMutations } from '@/features/users/mutations/use-user-mutations'
 import { userQueries } from '@/features/users/queries/user-queries'
 import type { ActivationLinkDto } from '@/features/users/types'
 import { ActivationLinkDialog } from '@/features/users/ui/activation-link-dialog'
+import type { EditUserValue } from '@/features/users/ui/edit-user-form'
 import { InviteUserPanel } from '@/features/users/ui/invite-user-panel'
-import type { UserIdentityValue } from '@/features/users/ui/user-identity-form'
 import { UserSheet } from '@/features/users/ui/user-sheet'
 import { UserTable } from '@/features/users/ui/user-table'
 
@@ -139,17 +139,36 @@ export function UsersPage() {
 
   const canEditOpenUser = openUser !== undefined && mayEditUserIdentity(viewer, openUser)
 
-  const correctIdentity = async (value: UserIdentityValue) => {
+  /**
+   * The identity and the role are two seams, so each receives only what changed. The identity is
+   * sent unless the role alone changed: a save that changes nothing still reaches the API, which
+   * answers it as the unchanged success it is, rather than the panel deciding that on its own.
+   *
+   * Sequential, not parallel: were the role refused after the identity landed, the refreshed
+   * collection already carries the correction, so a retry sends the role alone.
+   */
+  const saveUser = async ({ role, ...identity }: EditUserValue) => {
     if (!openUser) {
-      throw new Error('No user is open to correct')
+      throw new Error('No user is open to edit')
     }
 
-    const response = await mutations.updateIdentity.mutateAsync({
-      params: { id: openUser.id },
-      body: value,
-    })
+    const params = { id: openUser.id }
+    const identityChanged =
+      identity.firstName !== openUser.firstName ||
+      identity.lastName !== openUser.lastName ||
+      identity.email !== openUser.email
+    const roleChanged = role !== openUser.role
+    let saved = openUser
 
-    return response.data
+    if (identityChanged || !roleChanged) {
+      saved = (await mutations.updateIdentity.mutateAsync({ params, body: identity })).data
+    }
+
+    if (roleChanged) {
+      saved = (await mutations.changeRole.mutateAsync({ params, body: { role } })).data
+    }
+
+    return saved
   }
 
   const updateSearch = (value: string) =>
@@ -291,7 +310,7 @@ export function UsersPage() {
         onCancelEdit={() => setMode('view')}
         onClose={closeRecord}
         onEdit={() => setMode('edit')}
-        onUpdate={correctIdentity}
+        onUpdate={saveUser}
         onUpdated={() => setMode('view')}
         user={openUser}
       />
