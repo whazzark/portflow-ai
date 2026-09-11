@@ -83,6 +83,22 @@ export default class UserTransformer extends BaseTransformer<User> {
       reactivatedBy: this.when(includeAccessHistory, () =>
         this.toActor(this.resource.reactivatedBy),
       ),
+      passwordResetAt: this.when(includeAccessHistory, () => this.resource.passwordResetAt),
+      passwordResetBy: this.when(includeAccessHistory, () =>
+        this.toActor(this.resource.passwordResetBy),
+      ),
+      // Gated like the events above, and for the same reason: that an administrator acted on this
+      // user is the same class of information as the identity of the administrator who did.
+      //
+      // Derived rather than the raw `passwordRenewalRequiredAt`, which stays unserialized
+      // everywhere — the timestamp would say *when* an administrator acted, and where it came from
+      // is what `passwordResetAt` answers, correctly attributed. A requirement recorded by a
+      // reactivation will be dated by that event instead, which is why the state and the origin are
+      // separate keys rather than one derived pair.
+      passwordRenewalRequired: this.when(
+        includeAccessHistory,
+        () => this.resource.passwordRenewalRequiredAt !== null,
+      ),
     }
   }
 

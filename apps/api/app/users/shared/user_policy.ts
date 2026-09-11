@@ -42,4 +42,16 @@ export default class UserPolicy extends BasePolicy {
   updateIdentity(user: User): AuthorizerResponse {
     return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'
   }
+
+  /**
+   * Narrower than `list`: an operations admin may consult active users but holds no write access to
+   * them, so requiring a colleague to renew is an organization admin's alone.
+   *
+   * *Which* users may then be reset is a separate decision — active, and never the requester —
+   * owned by ResetUserPasswordUseCase, exactly as `list` leaves its own narrowing to
+   * ListUsersUseCase.
+   */
+  resetPassword(user: User): AuthorizerResponse {
+    return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'
+  }
 }

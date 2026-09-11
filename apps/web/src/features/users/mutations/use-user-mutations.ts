@@ -37,5 +37,11 @@ export function useUserMutations() {
     }),
   )
 
-  return { invite, deactivate, updateIdentity, refreshUsers }
+  const resetPassword = useMutation(
+    tuyauQuery.users.passwordReset.mutationOptions({
+      onSuccess: () => refreshUsers(),
+    }),
+  )
+
+  return { invite, deactivate, updateIdentity, resetPassword, refreshUsers }
 }

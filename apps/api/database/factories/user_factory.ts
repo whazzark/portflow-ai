@@ -83,6 +83,25 @@ export const UserFactory = factory
     user.reactivatedByUserId = null
     user.passwordRenewalRequiredAt = DateTime.now()
   })
+  /**
+   * A user whose requirement came from an administrator's reset, so the event columns are populated
+   * too. Repeats the assignments for the reason the state above gives.
+   */
+  .state('passwordReset', async (user) => {
+    user.accessStatus = 'ACTIVE'
+    user.password = await hashedFactoryPassword
+    user.activatedAt = DateTime.now()
+    user.activatedByUserId = null
+    user.cancelledAt = null
+    user.cancelledByUserId = null
+    user.deactivatedAt = null
+    user.deactivatedByUserId = null
+    user.reactivatedAt = null
+    user.reactivatedByUserId = null
+    user.passwordRenewalRequiredAt = DateTime.now()
+    user.passwordResetAt = DateTime.now()
+    user.passwordResetByUserId = null
+  })
   .state('reactivated', async (user) => {
     user.accessStatus = 'ACTIVE'
     user.password = await hashedFactoryPassword

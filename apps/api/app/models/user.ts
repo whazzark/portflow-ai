@@ -43,6 +43,12 @@ export default class User extends UserSchema {
   @belongsTo(() => User, { foreignKey: 'reactivatedByUserId' })
   declare reactivatedBy: BelongsTo<typeof User>
 
+  // Not an access-status event like the five above: a password reset changes no access status. It
+  // is recorded the same way because it answers the same question — when, and by which
+  // administrator.
+  @belongsTo(() => User, { foreignKey: 'passwordResetByUserId' })
+  declare passwordResetBy: BelongsTo<typeof User>
+
   /**
    * The live activation link of a pending user, at most one. This slice only writes it; the
    * acceptance, renewal, cancellation, and restoration slices are the readers.

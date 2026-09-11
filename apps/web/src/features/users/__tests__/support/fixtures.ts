@@ -127,6 +127,56 @@ export const ACTIVE_USERS = USERS.filter((user) => user.accessStatus === 'ACTIVE
  * What an operations admin receives: the active users, identity block only, with no lifecycle key
  * present at all.
  */
+/**
+ * An active user who already owes a renewal from a reset, with the administrator who performed it.
+ * Kept out of `USERS` so the default collection stays the one `#4`'s tests describe.
+ */
+export const RESET_USER: UserDto = {
+  id: 'active-reset',
+  firstName: 'Gaël',
+  lastName: 'Hamon',
+  email: 'gael.hamon@portflow.test',
+  role: 'OPERATIONS_LEAD',
+  accessStatus: 'ACTIVE',
+  ...NO_LIFECYCLE,
+  invitedAt: '2026-01-04T09:00:00.000Z',
+  invitedBy: RESPONSIBLE_ADMIN,
+  activatedAt: '2026-01-05T09:00:00.000Z',
+  activatedBy: RESPONSIBLE_ADMIN,
+  passwordResetAt: '2026-06-01T10:00:00.000Z',
+  passwordResetBy: RESPONSIBLE_ADMIN,
+  passwordRenewalRequired: true,
+} as UserDto
+
+/** The same user before any reset: no event, and no requirement outstanding. */
+export const RESETTABLE_USER: UserDto = {
+  ...RESET_USER,
+  id: 'active-resettable',
+  firstName: 'Inès',
+  lastName: 'Joly',
+  email: 'ines.joly@portflow.test',
+  passwordResetAt: null,
+  passwordResetBy: null,
+  passwordRenewalRequired: false,
+} as UserDto
+
+export const USERS_WITH_RESET: UserDto[] = [...USERS, RESET_USER, RESETTABLE_USER]
+
+/**
+ * What an operations admin receives for the same users: identity only. The reset keys are **absent**
+ * rather than null, exactly as every lifecycle key is.
+ */
+export const RESET_USERS_WITHOUT_LIFECYCLE = [RESET_USER, RESETTABLE_USER].map(
+  ({ id, firstName, lastName, email, role, accessStatus }) => ({
+    id,
+    firstName,
+    lastName,
+    email,
+    role,
+    accessStatus,
+  }),
+) as UserDto[]
+
 export const ACTIVE_USERS_WITHOUT_LIFECYCLE = ACTIVE_USERS.map(
   ({ id, firstName, lastName, email, role, accessStatus }) => ({
     id,

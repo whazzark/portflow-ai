@@ -11,6 +11,7 @@ import { SortIcon } from '@/components/data-table/sort-icon'
 import { HighlightedText } from '@/components/highlighted-text'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import { StatusIndicator } from '@/components/ui/status-indicator'
 import {
   Table,
   TableBody,
@@ -25,6 +26,7 @@ import {
   USER_ROLE_LABELS,
   type UserStatusView,
 } from '@/features/users/helpers/user-labels'
+import { owesPasswordRenewal } from '@/features/users/helpers/user-permissions'
 import { compareUsers } from '@/features/users/helpers/user-search'
 import type { UserDto } from '@/features/users/types'
 import { UserAvatar } from '@/features/users/ui/user-avatar'
@@ -98,6 +100,19 @@ const columns: ColumnDef<UserDto>[] = [
     accessorFn: (user) => USER_ROLE_LABELS[user.role],
     sortingFn: (left, right) => compareUsers(left.original, right.original, 'role'),
     cell: ({ row }) => USER_ROLE_LABELS[row.original.role],
+  },
+  {
+    id: 'password',
+    header: 'Password',
+    enableSorting: false,
+    // So an organization admin can tell who owes a renewal without opening every record. Blank
+    // rather than "None": a user who owes nothing has nothing to report, and a column of negatives
+    // would bury the few that matter. Viewers who may not consult the access history never receive
+    // the key, so the column is blank for them throughout.
+    cell: ({ row }) =>
+      owesPasswordRenewal(row.original) ? (
+        <StatusIndicator label="Renewal required" variant="warning" />
+      ) : null,
   },
   // Last column, as in the customer, truck, and transport-company directories: the row's own
   // administration menu, so a correction or an access change never requires opening the record

@@ -13,10 +13,11 @@ direct ones, since GitHub resolves the transitive ones.
 
 | ID | Sub-feature | Blocked by | Status | Artifact |
 |---|---|---|---|---|
-| GH-17 | Reset an Active User Password | — | planned | ./reset-an-active-user-password/ |
+| GH-17 | Reset an Active User Password | — | implemented | ./reset-an-active-user-password/ |
 
-GH-17 is the only remaining slice of this roadmap and nothing blocks it: the password renewal it
-requires is already delivered, so it can be started at any time.
+GH-17 is the only slice of this roadmap. Nothing blocked it — the password renewal it requires was
+already delivered by GH-117 — and it is implemented on `whazzark/reset-an-active-user-password`,
+pending review and merge.
 
 ## Cross-cutting context
 
