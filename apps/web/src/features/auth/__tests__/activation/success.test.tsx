@@ -1,7 +1,7 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse } from 'msw'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import {
   ACTIVATED_USER,
   ACTIVATION_TOKEN,
@@ -64,4 +64,41 @@ test('sends the token in the body and lands in the application, leaving no way b
   // Replaced, not pushed: the activation URL is gone from history, so Back cannot return to it.
   router.history.back()
   await waitFor(() => expect(router.state.location.pathname).not.toMatch(/^\/activate\//))
+})
+
+test('keeps the pending form, not a log-out notice, while the application is still loading', async () => {
+  const user = userEvent.setup()
+  const session = mockSession()
+  mockPreview()
+  mockAcceptance(() => {
+    session.user = ACTIVATED_USER
+
+    return HttpResponse.json({ data: ACTIVATED_USER })
+  })
+
+  const { router } = renderActivation()
+  await findActivationHeading()
+
+  // Held the way a first visit holds it while the application's code loads: the session is open
+  // by then, and the activation screen still mounted reads it.
+  let releaseNavigation = () => {}
+  const navigationHeld = new Promise<void>((resolve) => {
+    releaseNavigation = resolve
+  })
+  const navigate = router.navigate
+  const navigateSpy = vi.spyOn(router, 'navigate').mockImplementation(async (options) => {
+    await navigationHeld
+
+    return navigate(options)
+  })
+
+  await submitActivation(user, VALID_PASSWORD)
+  await waitFor(() => expect(navigateSpy).toHaveBeenCalled())
+  await act(() => new Promise((resolve) => setTimeout(resolve, 20)))
+
+  expect(screen.queryByText(/Log out to continue/)).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Activating…' })).toBeDisabled()
+
+  releaseNavigation()
+  expect(await screen.findByText(ACTIVATED_USER.email)).toBeInTheDocument()
 })

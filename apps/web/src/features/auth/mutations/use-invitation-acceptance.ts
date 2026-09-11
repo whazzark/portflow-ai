@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useIsMutating, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 
 import { resetSession } from '@/features/auth/session/session-cache'
@@ -31,6 +31,20 @@ export function isSessionOpenError(error: unknown) {
  */
 export function isSessionNotOpenedError(error: unknown) {
   return parseApiError(error).code === 'E_INVITATION_ACCEPTED_SESSION_NOT_OPENED'
+}
+
+// Read from the options the mutation runs with, not from `mutationKey()`: tuyau builds that one from
+// the client's property path (`invitationAcceptance`), the mutation's from the route name
+// (`invitation_acceptance`), and the two never match.
+const INVITATION_ACCEPTANCE_MUTATION_KEY =
+  tuyauQuery.auth.invitationAcceptance.store.mutationOptions().mutationKey
+
+/**
+ * An acceptance in flight, its own `onSuccess` included: that one opens the person's session and
+ * only then navigates away, so the screen reads a signed-in session it must not answer as one.
+ */
+export function useIsAcceptingInvitation() {
+  return useIsMutating({ mutationKey: INVITATION_ACCEPTANCE_MUTATION_KEY }) > 0
 }
 
 export function useInvitationAcceptance() {

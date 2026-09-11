@@ -5,7 +5,10 @@ import { Brand } from '@/components/brand/brand'
 import { Button, buttonVariants } from '@/components/ui/button'
 import type { SessionUser } from '@/features/auth/context/session-context'
 import { useSession } from '@/features/auth/context/use-session'
-import { isActivationLinkUnusableError } from '@/features/auth/mutations/use-invitation-acceptance'
+import {
+  isActivationLinkUnusableError,
+  useIsAcceptingInvitation,
+} from '@/features/auth/mutations/use-invitation-acceptance'
 import { useLogout } from '@/features/auth/mutations/use-logout'
 import { useActivationPreview } from '@/features/auth/queries/use-activation-preview'
 import { ActivationForm } from '@/features/auth/ui/activation-form'
@@ -14,6 +17,7 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 export function ActivationScreen({ token }: { token: string }) {
   const session = useSession()
   const preview = useActivationPreview(token)
+  const isAccepting = useIsAcceptingInvitation()
   // Set from the acceptance answer, so a link that dies between opening and submitting lands on the
   // same state as one that was dead from the start.
   const [isUnusable, setIsUnusable] = useState(false)
@@ -63,8 +67,10 @@ export function ActivationScreen({ token }: { token: string }) {
 
   // A browser holding a session never gets the form — typically the inviting administrator opening
   // the link they just copied, who would otherwise choose the invited person's password. The API
-  // refuses such an acceptance anyway; this is the courtesy that explains why.
-  if (session.status === 'authenticated') {
+  // refuses such an acceptance anyway; this is the courtesy that explains why. Not while an
+  // acceptance is in flight: the session it opens is the person's own, and the form, still pending,
+  // stays until the application replaces it.
+  if (session.status === 'authenticated' && !isAccepting) {
     return (
       <ActivationPanel
         title="Activate your access"
