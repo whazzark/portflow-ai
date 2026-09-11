@@ -115,3 +115,41 @@ test('closes the panel on a user deactivated between the identity and the role',
   expect(within(table).queryByText('Bruna Costa')).not.toBeInTheDocument()
 }, 15000)
 
+// The same race with the role alone: nothing lands, so only the refusal can bring the workbench
+// back in line with the server. The user leaves the active users and the panel goes with them,
+// rather than offering a role every save of which is refused. What must survive is the reason.
+test('closes the panel on a refusal whose collection has moved on', async () => {
+  const user = setupUser()
+  let collection = USERS
+  mockUsers()
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/users`, () => HttpResponse.json({ data: collection })),
+    http.patch(`${API_BASE_URL}/api/v1/users/:id/role`, () => {
+      collection = deactivatedElsewhere(USERS)
+
+      return HttpResponse.json(
+        {
+          error: {
+            code: 'E_USER_DEACTIVATED_CANNOT_CHANGE_ROLE',
+            message: 'Deactivated users cannot have their role changed; reactivate the user first',
+          },
+        },
+        { status: 409 },
+      )
+    }),
+  )
+
+  renderUsers('/users?userId=active-2&mode=edit')
+  const panel = await screen.findByRole('dialog')
+  await screen.findByRole('combobox', { name: 'Role' })
+
+  await selectRole(user, panel, 'OPERATIONS_LEAD', 'OBSERVER')
+  await user.click(within(panel).getByRole('button', { name: 'Save changes' }))
+
+  expect(
+    (await screen.findAllByText(/Deactivated users cannot have their role changed/i)).length,
+  ).toBeGreaterThan(0)
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  const table = await screen.findByRole('table', { name: 'Active users' })
+  expect(within(table).queryByText('Bruno Costa')).not.toBeInTheDocument()
+}, 15000)

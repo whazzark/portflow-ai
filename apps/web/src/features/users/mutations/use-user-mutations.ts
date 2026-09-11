@@ -37,6 +37,7 @@ export function useUserMutations() {
     }),
   )
 
+  /** Refreshed on a refusal too, as `deactivate` is: a deactivated user is refused a new role. */
   const changeRole = useMutation(
     tuyauQuery.users.changeRole.mutationOptions({
       onSuccess: async () => {
@@ -46,6 +47,7 @@ export function useUserMutations() {
         // GH-29 refuses the case in the API, so this is belt-and-braces — and one line.
         await queryClient.invalidateQueries({ queryKey: tuyauQuery.auth.me.queryKey() })
       },
+      onError: () => refreshUsers(),
     }),
   )
 
