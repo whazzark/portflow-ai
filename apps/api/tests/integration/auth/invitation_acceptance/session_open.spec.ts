@@ -105,6 +105,7 @@ test.group('Invitation acceptance from a browser holding a session', (group) => 
   })
 
   test('replaces a session whose remembered connection has outlived its fixed expiry', async ({
+    assert,
     client,
   }) => {
     const active = await UserFactory.apply('active').create()
@@ -121,6 +122,14 @@ test.group('Invitation acceptance from a browser holding a session', (group) => 
 
     response.assertStatus(200)
     response.assertSession('auth_web', pending.id)
+    response.assertSessionMissing(REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY)
+
+    // The session the acceptance opened must survive the very next request, the `auth.me` the web
+    // makes to land in the application.
+    const me = await client.get('/api/v1/auth/me').withSession(response.session())
+
+    me.assertStatus(200)
+    assert.equal(me.body().data.id, pending.id)
   })
 
   test('previews the link whatever session the browser holds', async ({ assert, client }) => {

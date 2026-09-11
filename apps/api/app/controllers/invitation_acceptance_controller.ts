@@ -9,6 +9,7 @@ import {
 } from '#auth/invitation_acceptance/invitation_acceptance_validator'
 import PreviewInvitationUseCase from '#auth/invitation_acceptance/preview_invitation_use_case'
 import { resolveOpenSessionUser } from '#auth/shared/open_session'
+import { REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY } from '#auth/shared/remembered_connection'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 
 /**
@@ -35,7 +36,7 @@ export default class InvitationAcceptanceController {
   }
 
   async store(ctx: HttpContext) {
-    const { request, auth, serialize } = ctx
+    const { request, auth, serialize, session } = ctx
     const payload = await request.validateUsing(invitationAcceptanceValidator)
 
     const signedInUser = await resolveOpenSessionUser(ctx)
@@ -50,8 +51,11 @@ export default class InvitationAcceptanceController {
     // After the commit, because the session belongs to this layer and the write to the repository.
     // No remember argument: an acceptance opens a temporary session only, and the person chooses a
     // remembered connection at a later login. `login` regenerates the session id, as it does at
-    // login, so no session fixed before the acceptance survives it.
+    // login, so no session fixed before the acceptance survives it. It keeps the session's data,
+    // though: a remembered connection's expiry left behind by the replaced session would end this
+    // one at the very next request.
     try {
+      session.forget(REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY)
       await auth.use('web').login(user)
     } catch (error) {
       throw new InvitationAcceptedSessionNotOpenedException(undefined, { cause: error })
