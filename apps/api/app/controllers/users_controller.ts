@@ -2,6 +2,8 @@ import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 
+import RenewActivationLinkUseCase from '#users/activation_link_renewal/renew_activation_link_use_case'
+import { renewActivationLinkValidator } from '#users/activation_link_renewal/renew_activation_link_validator'
 import CancelUserInvitationUseCase from '#users/cancel_invitation/cancel_user_invitation_use_case'
 import { cancelUserInvitationValidator } from '#users/cancel_invitation/cancel_user_invitation_validator'
 import DeactivateUserUseCase from '#users/deactivate/deactivate_user_use_case'
@@ -30,6 +32,7 @@ export default class UsersController {
     private resetUserPasswordUseCase: ResetUserPasswordUseCase,
     private cancelUserInvitationUseCase: CancelUserInvitationUseCase,
     private removeUserUseCase: RemoveUserUseCase,
+    private renewActivationLinkUseCase: RenewActivationLinkUseCase,
   ) {}
 
   /**
@@ -214,5 +217,34 @@ export default class UsersController {
         'toAdministration',
       ),
     )
+  }
+
+  /**
+   * Authorization first, for the reason `deactivate` records. The request carries no body: the
+   * validator checks the target identifier in the path, and the actor comes from the session.
+   *
+   * The new activation link travels in this response and nowhere else, exactly as the invitation's
+   * does in `store` — the envelope is the same so the workbench hands out both through one outcome.
+   * `200` rather than `201`: no user is created. `includeAccessHistory` is unconditionally true
+   * because the policy admits organization admins only.
+   */
+  async renewActivationLink({ auth, bouncer, params, request, serialize }: HttpContext) {
+    await bouncer.with(UserPolicy).authorize('renewActivationLink')
+
+    const administrator = auth.use('web').getUserOrFail()
+    const payload = await request.validateUsing(renewActivationLinkValidator, { data: { params } })
+
+    const { user, activationLink } = await this.renewActivationLinkUseCase.handle({
+      targetUserId: payload.params.id,
+      actorUserId: administrator.id,
+      renewedAt: DateTime.now(),
+    })
+
+    return serialize({
+      user: UserTransformer.transform(user, { includeAccessHistory: true }).useVariant(
+        'toAdministration',
+      ),
+      activationLink,
+    })
   }
 }

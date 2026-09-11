@@ -38,6 +38,7 @@ import type { ActivationLinkDto } from '@/features/users/types'
 import { ActivationLinkDialog } from '@/features/users/ui/activation-link-dialog'
 import type { EditUserValue } from '@/features/users/ui/edit-user-form'
 import { InviteUserPanel } from '@/features/users/ui/invite-user-panel'
+import { IssuedActivationLinkProvider } from '@/features/users/ui/issued-activation-link'
 import { UserSheet } from '@/features/users/ui/user-sheet'
 import { UserTable } from '@/features/users/ui/user-table'
 
@@ -238,111 +239,115 @@ export function UsersPage() {
   )
 
   return (
-    <div className="relative flex flex-col gap-6 p-4 md:h-[calc(100svh-3.5rem)] md:min-h-0 md:overflow-hidden md:p-6">
-      <h1 className="sr-only">Users</h1>
+    // A renewed link is presented here, at the page, so that neither the record nor the row it was
+    // renewed from can take it away by disappearing under it.
+    <IssuedActivationLinkProvider>
+      <div className="relative flex flex-col gap-6 p-4 md:h-[calc(100svh-3.5rem)] md:min-h-0 md:overflow-hidden md:p-6">
+        <h1 className="sr-only">Users</h1>
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-end">
-        <InputSearch
-          fieldClassName="max-w-xl md:flex-1"
-          id="user-search"
-          label="Search users"
-          onValueChange={updateSearch}
-          placeholder="Search by first name, last name, or email"
-          value={search}
-        />
-        <Select items={ROLE_FILTER_OPTIONS} onValueChange={updateRole} value={role}>
-          <SelectTrigger
-            aria-label="Filter by role"
-            className="text-muted-foreground data-[filtered=true]:text-foreground"
-            data-filtered={role !== 'all'}
-            id="user-role-filter"
-            size="sm"
-          >
-            <FilterIcon aria-hidden="true" />
-            <SelectValue placeholder="All roles" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {ROLE_FILTER_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        {canInvite && (
-          <Button className="md:ml-auto" onClick={openInvitation}>
-            Invite user
-          </Button>
-        )}
-      </div>
-
-      {consultsEveryStatus ? (
-        <Tabs className="min-h-0 flex-1" onValueChange={updateStatus} value={status}>
-          <TabsList aria-label="User access status" variant="line">
-            {USER_STATUS_VIEWS.map((view) => (
-              <TabsTrigger key={view} value={view}>
-                {statusViewLabel(view)}{' '}
-                <span className="text-muted-foreground tabular-nums">({countOf(view)})</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {USER_STATUS_VIEWS.map((view) => (
-            <TabsContent className="min-h-0 md:overflow-hidden" key={view} value={view}>
-              {status === view && tableFor(view)}
-            </TabsContent>
-          ))}
-        </Tabs>
-      ) : (
-        <section className="flex min-h-0 flex-1 flex-col gap-4">
-          <h2 className="font-medium text-sm">
-            {statusViewTableLabel('active')}{' '}
-            <span className="text-muted-foreground tabular-nums">({countOf('active')})</span>
-          </h2>
-          {tableFor('active')}
-        </section>
-      )}
-
-      <UserSheet
-        canEdit={canEditOpenUser}
-        mode={mode === 'edit' ? 'edit' : 'view'}
-        onCancelEdit={() => setMode('view')}
-        onClose={closeRecord}
-        onEdit={() => setMode('edit')}
-        onUpdate={saveUser}
-        onUpdated={() => setMode('view')}
-        user={openUser}
-      />
-
-      <Sheet
-        open={isInviting && !isShowingActivationLink}
-        // An invitation in flight cannot be taken back: leaving now would only hide its outcome.
-        onOpenChange={(open) => !open && !mutations.invite.isPending && closeInvitation()}
-      >
-        <SheetContent className="overflow-hidden" size="lg">
-          <InviteUserPanel
-            onInvite={async (value) => {
-              const result = await mutations.invite.mutateAsync({ body: value })
-
-              return result.data
-            }}
-            onSuccess={(invitation) => {
-              setIssuedActivationLink(invitation.activationLink)
-              void navigate({
-                search: (previous) => ({ ...previous, invitedUserId: invitation.user.id }),
-              })
-            }}
+        <div className="flex flex-col gap-4 md:flex-row md:items-end">
+          <InputSearch
+            fieldClassName="max-w-xl md:flex-1"
+            id="user-search"
+            label="Search users"
+            onValueChange={updateSearch}
+            placeholder="Search by first name, last name, or email"
+            value={search}
           />
-        </SheetContent>
-      </Sheet>
+          <Select items={ROLE_FILTER_OPTIONS} onValueChange={updateRole} value={role}>
+            <SelectTrigger
+              aria-label="Filter by role"
+              className="text-muted-foreground data-[filtered=true]:text-foreground"
+              data-filtered={role !== 'all'}
+              id="user-role-filter"
+              size="sm"
+            >
+              <FilterIcon aria-hidden="true" />
+              <SelectValue placeholder="All roles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {ROLE_FILTER_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          {canInvite && (
+            <Button className="md:ml-auto" onClick={openInvitation}>
+              Invite user
+            </Button>
+          )}
+        </div>
 
-      <ActivationLinkDialog
-        activationLink={issuedActivationLink}
-        invitedUser={invitedUser}
-        onAcknowledge={() => closeInvitation('pending')}
-        open={isShowingActivationLink}
-      />
-    </div>
+        {consultsEveryStatus ? (
+          <Tabs className="min-h-0 flex-1" onValueChange={updateStatus} value={status}>
+            <TabsList aria-label="User access status" variant="line">
+              {USER_STATUS_VIEWS.map((view) => (
+                <TabsTrigger key={view} value={view}>
+                  {statusViewLabel(view)}{' '}
+                  <span className="text-muted-foreground tabular-nums">({countOf(view)})</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {USER_STATUS_VIEWS.map((view) => (
+              <TabsContent className="min-h-0 md:overflow-hidden" key={view} value={view}>
+                {status === view && tableFor(view)}
+              </TabsContent>
+            ))}
+          </Tabs>
+        ) : (
+          <section className="flex min-h-0 flex-1 flex-col gap-4">
+            <h2 className="font-medium text-sm">
+              {statusViewTableLabel('active')}{' '}
+              <span className="text-muted-foreground tabular-nums">({countOf('active')})</span>
+            </h2>
+            {tableFor('active')}
+          </section>
+        )}
+
+        <UserSheet
+          canEdit={canEditOpenUser}
+          mode={mode === 'edit' ? 'edit' : 'view'}
+          onCancelEdit={() => setMode('view')}
+          onClose={closeRecord}
+          onEdit={() => setMode('edit')}
+          onUpdate={saveUser}
+          onUpdated={() => setMode('view')}
+          user={openUser}
+        />
+
+        <Sheet
+          open={isInviting && !isShowingActivationLink}
+          // An invitation in flight cannot be taken back: leaving now would only hide its outcome.
+          onOpenChange={(open) => !open && !mutations.invite.isPending && closeInvitation()}
+        >
+          <SheetContent className="overflow-hidden" size="lg">
+            <InviteUserPanel
+              onInvite={async (value) => {
+                const result = await mutations.invite.mutateAsync({ body: value })
+
+                return result.data
+              }}
+              onSuccess={(invitation) => {
+                setIssuedActivationLink(invitation.activationLink)
+                void navigate({
+                  search: (previous) => ({ ...previous, invitedUserId: invitation.user.id }),
+                })
+              }}
+            />
+          </SheetContent>
+        </Sheet>
+
+        <ActivationLinkDialog
+          activationLink={issuedActivationLink}
+          invitedUser={invitedUser}
+          onAcknowledge={() => closeInvitation('pending')}
+          open={isShowingActivationLink}
+        />
+      </div>
+    </IssuedActivationLinkProvider>
   )
 }

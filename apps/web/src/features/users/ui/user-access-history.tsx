@@ -45,6 +45,14 @@ function recordedEvents(user: UserDto): RecordedEvent[] {
       at: user.passwordResetAt,
       by: user.passwordResetBy,
     },
+    // Not an access-status event either — the user stays pending — and, like the reset, only the
+    // most recent renewal is recorded: it names who handed out the link that currently works.
+    {
+      key: 'activation-link-renewed',
+      label: 'Activation link renewed',
+      at: user.activationLinkRenewedAt,
+      by: user.activationLinkRenewedBy,
+    },
   ]
 
   return events

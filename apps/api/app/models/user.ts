@@ -49,9 +49,16 @@ export default class User extends UserSchema {
   @belongsTo(() => User, { foreignKey: 'passwordResetByUserId' })
   declare passwordResetBy: BelongsTo<typeof User>
 
+  // Not an access-status event either: a renewal leaves the user pending. Like the password reset,
+  // it records when, and by which administrator, a pending user's link was last replaced.
+  // biome-ignore lint/security/noSecrets: database column name, not a secret
+  @belongsTo(() => User, { foreignKey: 'activationLinkRenewedByUserId' })
+  declare activationLinkRenewedBy: BelongsTo<typeof User>
+
   /**
-   * The live activation link of a pending user, at most one. This slice only writes it; the
-   * acceptance, renewal, cancellation, and restoration slices are the readers.
+   * The live activation link of a pending user, at most one. The invitation writes it, the renewal
+   * replaces it and reads its expiry for the access record; the acceptance, cancellation, and
+   * restoration slices are its other readers.
    */
   @hasOne(() => UserActivationToken)
   declare activationToken: HasOne<typeof UserActivationToken>

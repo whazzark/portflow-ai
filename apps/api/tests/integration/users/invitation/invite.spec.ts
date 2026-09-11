@@ -48,6 +48,11 @@ test.group('POST /api/v1/users', (group) => {
     assert.isNull(user.reactivatedAt)
     assert.isNull(user.passwordResetAt)
     assert.isUndefined(user.password)
+    // The created user is projected exactly as a row of the collection would be: never renewed, and
+    // holding the link this very response hands out.
+    assert.isNull(user.activationLinkRenewedAt)
+    assert.isNull(user.activationLinkRenewedBy)
+    assert.equal(user.activationLinkExpiresAt, activationLink.expiresAt)
 
     assert.isTrue(activationLink.url.includes('/activate/'))
     assert.approximately(
@@ -90,7 +95,15 @@ test.group('POST /api/v1/users', (group) => {
     assert.isDefined(invited, 'the pending user is listed')
     assert.equal(invited.accessStatus, 'PENDING')
     assert.notInclude(payload, secret)
-    assert.notInclude(payload, 'activationLink')
+    assert.notInclude(payload, activationLink.url)
+    // On the key rather than an `'activationLink'` substring, which the renewal event and the live
+    // link's expiry (`#9`) would trip without carrying any secret.
+    assert.notProperty(invited, 'activationLink')
+    // The collection states until when the invited user's link works — never the link itself.
+    assert.equal(
+      DateTime.fromISO(invited.activationLinkExpiresAt).toUnixInteger(),
+      DateTime.fromISO(activationLink.expiresAt).toUnixInteger(),
+    )
     // On the key rather than a `'password'` substring, which `passwordRenewalRequired` and the
     // password reset event (`#17`) would trip without carrying any secret.
     assert.notProperty(invited, 'password')

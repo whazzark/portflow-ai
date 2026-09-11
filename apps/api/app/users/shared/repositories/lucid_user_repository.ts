@@ -22,6 +22,8 @@ import UserRepository, {
   type InviteUserResult,
   type RemoveUserCommand,
   type RemoveUserResult,
+  type RenewActivationLinkCommand,
+  type RenewActivationLinkResult,
   type RenewPasswordCommand,
   type RenewPasswordResult,
   type RequirePasswordRenewalCommand,
@@ -45,11 +47,15 @@ function asStoredDateTime(value: DateTime, client: QueryClientContract): string 
 }
 
 /**
- * Every user read that serializes the access history needs all six actor relations, and a missed
+ * Every user read that serializes the access history needs all seven actor relations, and a missed
  * one is invisible in types: Lucid resolves an unpreloaded relation to `undefined` and the
  * transformer turns that into `null`, so the actor reads as "nobody did this" on one endpoint and
  * is named on every other. Gathered here, in the shape `lucid_truck_repository.ts` already uses,
- * so a seventh lifecycle event is a one-line change.
+ * so an eighth lifecycle event is a one-line change.
+ *
+ * `activationToken` is not an actor: it is a pending user's live link, preloaded so the projection
+ * can state until when it works. Only its expiry is ever read from it — the digest never leaves this
+ * layer.
  */
 function preloadAccessHistory(
   query: ModelQueryBuilderContract<typeof User, User>,
@@ -61,6 +67,8 @@ function preloadAccessHistory(
     .preload('deactivatedBy')
     .preload('reactivatedBy')
     .preload('passwordResetBy')
+    .preload('activationLinkRenewedBy')
+    .preload('activationToken')
 }
 
 export default class LucidUserRepository extends UserRepository {
@@ -105,6 +113,8 @@ export default class LucidUserRepository extends UserRepository {
             passwordResetAt: null,
             passwordResetByUserId: null,
             passwordRenewalRequiredAt: null,
+            activationLinkRenewedAt: null,
+            activationLinkRenewedByUserId: null,
           },
           { client: trx },
         )
@@ -387,6 +397,89 @@ export default class LucidUserRepository extends UserRepository {
       ).firstOrFail()
 
       return { kind: 'RESET', user: reset }
+    })
+  }
+
+  /**
+   * One transaction, because the three writes are one effect: recording the renewal, retiring the
+   * previous link, and bringing the new one into being. A failure anywhere rolls all three back, so
+   * the previous link keeps working exactly as before and nothing claims a renewal that did not
+   * happen (FR-014).
+   *
+   * The previous link is **deleted**, not updated in place. Deleting treats a pending user who holds
+   * no link at all — one seeded before invitations existed — exactly like any other, and leaves
+   * `created_at` meaning "when this link was issued". The `user_id` unique index still guarantees a
+   * single row, and the deleted digest can never be looked up again, which is what makes the previous
+   * link stop working in the very commit that issues the new one (FR-003).
+   *
+   * **The `users` row lock is the serialization point for a pending user's link.** Every write that
+   * consumes or retires one — acceptance (GH-8), cancellation (GH-12) — must take the same lock (or
+   * guard on `access_status = 'PENDING'`), and acceptance must re-read the token by its digest
+   * *under* that lock. Then a renewal racing an acceptance of the previous link resolves in lock
+   * order and never both ways: renewal first, and the presented digest no longer exists; acceptance
+   * first, and this method answers `NOT_PENDING`.
+   */
+  renewActivationLink(command: RenewActivationLinkCommand): Promise<RenewActivationLinkResult> {
+    return User.transaction(async (trx) => {
+      const renewedAt = command.renewedAt.toSQL({ includeOffset: false })
+
+      // Read under the row lock before the write, for the two reasons `requirePasswordRenewal`
+      // gives: the refusal must name the status the target holds, which a zero-row `UPDATE` cannot
+      // tell apart from "no such row"; and on PostgreSQL the lock serializes concurrent renewals, so
+      // the second one deletes the first one's link and exactly one survives — the last issued.
+      const target = await User.query({ client: trx })
+        .where('id', command.targetUserId)
+        .forUpdate()
+        .first()
+
+      if (!target) {
+        return { kind: 'NOT_FOUND' }
+      }
+      if (target.accessStatus !== 'PENDING') {
+        return { kind: 'NOT_PENDING', accessStatus: target.accessStatus }
+      }
+
+      const [affectedRows] = await User.query({ client: trx })
+        .where('id', command.targetUserId)
+        .where('accessStatus', 'PENDING')
+        .update({
+          activationLinkRenewedAt: renewedAt,
+          activationLinkRenewedByUserId: command.renewedByUserId,
+          // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+          // bookkeeping timestamp is written by hand — as every other guarded write here does.
+          updatedAt: renewedAt,
+        })
+
+      if (Number(affectedRows) !== 1) {
+        // The row read above was PENDING, so a zero-row UPDATE means it moved on in between.
+        // PostgreSQL cannot reach this — the `forUpdate()` above holds the row — but knex emits no
+        // `FOR UPDATE` on SQLite, where a concurrent acceptance or cancellation would otherwise be
+        // answered with a link for a user who is no longer pending.
+        const current = await User.query({ client: trx }).where('id', command.targetUserId).first()
+
+        return current
+          ? { kind: 'NOT_PENDING', accessStatus: current.accessStatus }
+          : { kind: 'NOT_FOUND' }
+      }
+
+      await UserActivationToken.query({ client: trx })
+        .where('userId', command.targetUserId)
+        .delete()
+
+      const activationToken = await UserActivationToken.create(
+        {
+          userId: command.targetUserId,
+          hash: command.activationTokenHash,
+          expiresAt: command.activationTokenExpiresAt,
+        },
+        { client: trx },
+      )
+
+      const user = await preloadAccessHistory(
+        User.query({ client: trx }).where('id', command.targetUserId),
+      ).firstOrFail()
+
+      return { kind: 'RENEWED', user, activationToken }
     })
   }
 

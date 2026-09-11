@@ -192,3 +192,61 @@ export const ACTIVE_USERS_WITHOUT_LIFECYCLE = ACTIVE_USERS.map(
     accessStatus,
   }),
 ) as UserDto[]
+
+/**
+ * A pending user whose activation link is still valid and has never been renewed. The expiry sits
+ * far in the future so the fixture stays valid whatever day the suite runs.
+ */
+export const RENEWABLE_USER: UserDto = {
+  id: 'pending-renewable',
+  firstName: 'Karim',
+  lastName: 'Lemoine',
+  email: 'karim.lemoine@portflow.test',
+  role: 'OPERATIONS_LEAD',
+  accessStatus: 'PENDING',
+  ...NO_LIFECYCLE,
+  invitedAt: '2026-09-01T09:00:00.000Z',
+  invitedBy: RESPONSIBLE_ADMIN,
+  activationLinkRenewedAt: null,
+  activationLinkRenewedBy: null,
+  activationLinkExpiresAt: '2099-01-01T09:00:00.000Z',
+} as UserDto
+
+/** A pending user whose link an administrator already renewed once. */
+export const RENEWED_USER: UserDto = {
+  ...RENEWABLE_USER,
+  id: 'pending-renewed',
+  firstName: 'Léa',
+  lastName: 'Marchand',
+  email: 'lea.marchand@portflow.test',
+  activationLinkRenewedAt: '2026-09-05T10:00:00.000Z',
+  activationLinkRenewedBy: RESPONSIBLE_ADMIN,
+} as UserDto
+
+/** A pending user whose link expired without being renewed. */
+export const EXPIRED_LINK_USER: UserDto = {
+  ...RENEWABLE_USER,
+  id: 'pending-expired',
+  firstName: 'Maël',
+  lastName: 'Nicolas',
+  email: 'mael.nicolas@portflow.test',
+  activationLinkExpiresAt: '2020-01-01T09:00:00.000Z',
+} as UserDto
+
+/** A pending user holding no link at all — one seeded before invitations existed. */
+export const NO_LINK_USER: UserDto = {
+  ...RENEWABLE_USER,
+  id: 'pending-no-link',
+  firstName: 'Nora',
+  lastName: 'Olivier',
+  email: 'nora.olivier@portflow.test',
+  activationLinkExpiresAt: null,
+} as UserDto
+
+export const USERS_WITH_PENDING_LINKS: UserDto[] = [
+  ...USERS,
+  RENEWABLE_USER,
+  RENEWED_USER,
+  EXPIRED_LINK_USER,
+  NO_LINK_USER,
+]

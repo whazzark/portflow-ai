@@ -98,6 +98,23 @@ export default class UserTransformer extends BaseTransformer<User> {
       passwordResetBy: this.when(includeAccessHistory, () =>
         this.toActor(this.resource.passwordResetBy),
       ),
+      activationLinkRenewedAt: this.when(
+        includeAccessHistory,
+        () => this.resource.activationLinkRenewedAt,
+      ),
+      activationLinkRenewedBy: this.when(includeAccessHistory, () =>
+        this.toActor(this.resource.activationLinkRenewedBy),
+      ),
+      // The expiry, not an `expired` flag: validity is a comparison with the current time, and a
+      // flag computed here would go stale in a collection left open across the expiry. The workbench
+      // compares at render time instead. `null` for a pending user holding no link, and for every
+      // user who is not pending — a link matters only while its user is. Gated with the history:
+      // that an administrator issued a link is the same class of information as who did.
+      activationLinkExpiresAt: this.when(includeAccessHistory, () =>
+        this.resource.accessStatus === 'PENDING'
+          ? (this.resource.activationToken?.expiresAt ?? null)
+          : null,
+      ),
       // Gated like the events above, and for the same reason: that an administrator acted on this
       // user is the same class of information as the identity of the administrator who did.
       //

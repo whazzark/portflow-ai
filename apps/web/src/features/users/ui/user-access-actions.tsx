@@ -5,6 +5,7 @@ import {
   type UserAccessAction,
 } from '@/features/users/helpers/user-access-copy'
 import type { UserDto } from '@/features/users/types'
+import { RenewActivationLinkDialog } from '@/features/users/ui/renew-activation-link-dialog'
 import { ResetPasswordDialog } from '@/features/users/ui/reset-password-confirmation'
 import { USER_ACCESS_ACTION_VARIANTS, UserAccessDialog } from '@/features/users/user-access'
 
@@ -16,6 +17,8 @@ type UserAccessActionsProps = {
   actions: UserAccessAction[]
   /** `canResetPassword`'s answer, asked by the record for the same reason as `actions`. */
   mayResetPassword: boolean
+  /** `canRenewActivationLink`'s answer, asked by the record for the same reason. */
+  mayRenewActivationLink: boolean
   className?: string
   user: UserDto
 }
@@ -33,17 +36,23 @@ type UserAccessActionsProps = {
  * changes a credential rather than an access status, and its confirmation shares none of
  * `user-access-copy`'s sentence shapes. The row menu offers it too, from the same
  * `canResetPassword` answer and with the same `ResetPasswordDialog`.
+ *
+ * The activation link renewal sits beside it for the same reason — it replaces a pending user's
+ * credential-bearing link rather than changing their access status — and, like the reset, the row
+ * menu offers it from the same `canRenewActivationLink` answer and `RenewActivationLinkDialog`.
  */
 export function UserAccessActions({
   actions,
   mayResetPassword,
+  mayRenewActivationLink,
   className,
   user,
 }: UserAccessActionsProps) {
   const [openAction, setOpenAction] = useState<UserAccessAction | null>(null)
   const [isResetOpen, setIsResetOpen] = useState(false)
+  const [isRenewalOpen, setIsRenewalOpen] = useState(false)
 
-  if (actions.length === 0 && !mayResetPassword) {
+  if (actions.length === 0 && !mayResetPassword && !mayRenewActivationLink) {
     return null
   }
 
@@ -54,6 +63,11 @@ export function UserAccessActions({
         {mayResetPassword && (
           <Button onClick={() => setIsResetOpen(true)} type="button" variant="outline">
             Reset password
+          </Button>
+        )}
+        {mayRenewActivationLink && (
+          <Button onClick={() => setIsRenewalOpen(true)} type="button" variant="outline">
+            Renew activation link
           </Button>
         )}
         {actions.map((action) => (
@@ -71,6 +85,9 @@ export function UserAccessActions({
         <UserAccessDialog action={openAction} onClose={() => setOpenAction(null)} user={user} />
       )}
       {isResetOpen && <ResetPasswordDialog onClose={() => setIsResetOpen(false)} user={user} />}
+      {isRenewalOpen && (
+        <RenewActivationLinkDialog onClose={() => setIsRenewalOpen(false)} user={user} />
+      )}
     </div>
   )
 }

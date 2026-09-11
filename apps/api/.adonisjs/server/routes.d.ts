@@ -48,6 +48,7 @@ export type ScannedRoutes = {
     'users.cancel_invitation': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.change_role': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.password_reset': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'users.activation_link_renewal': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.index': { paramsTuple?: []; params?: {} }
     'docks.store': { paramsTuple?: []; params?: {} }
     'docks.available': { paramsTuple?: []; params?: {} }
@@ -145,6 +146,7 @@ export type ScannedRoutes = {
     'users.deactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.cancel_invitation': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.password_reset': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'users.activation_link_renewal': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.store': { paramsTuple?: []; params?: {} }
     'docks.archive_many': { paramsTuple?: []; params?: {} }
     'docks.archive': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

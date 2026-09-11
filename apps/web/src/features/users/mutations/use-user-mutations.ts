@@ -77,6 +77,22 @@ export function useUserMutations() {
     }),
   )
 
+  /**
+   * Refreshed on a refusal too, as `deactivate` is: the commonest refusal is a user who stopped being
+   * pending since this view loaded, and the reason should be read against a workbench that agrees.
+   *
+   * Not awaited, unlike the other writes: the new link is presented as soon as the server answers,
+   * not once the whole collection has been read again. And `gcTime: 0`, because the result carries a
+   * secret with a single read — the mutation cache would otherwise keep it in memory for minutes.
+   */
+  const renewActivationLink = useMutation(
+    tuyauQuery.users.activationLinkRenewal.mutationOptions({
+      gcTime: 0,
+      onSuccess: () => void refreshUsers(),
+      onError: () => void refreshUsers(),
+    }),
+  )
+
   return {
     invite,
     deactivate,
@@ -85,6 +101,7 @@ export function useUserMutations() {
     updateIdentity,
     changeRole,
     resetPassword,
+    renewActivationLink,
     refreshUsers,
   }
 }

@@ -1,6 +1,7 @@
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
 
+import { UserActivationTokenFactory } from '#database/factories/user_activation_token_factory'
 import { UserFactory } from '#database/factories/user_factory'
 
 type UserEntry = {
@@ -176,6 +177,10 @@ test.group('GET /api/v1/users', () => {
         'accessStatus',
         'activatedAt',
         'activatedBy',
+        // The live link's expiry only — never the link, its secret, or its digest.
+        'activationLinkExpiresAt',
+        'activationLinkRenewedAt',
+        'activationLinkRenewedBy',
         'cancellationComment',
         'cancelledAt',
         'cancelledBy',
@@ -202,5 +207,47 @@ test.group('GET /api/v1/users', () => {
     // administrator acted, where the reset event says it correctly attributed.
     assert.notInclude(serialized, 'passwordRenewalRequiredAt')
     assert.notInclude(serialized, 'token')
+  })
+  test('projects the live link’s expiry of a pending user to an organization admin', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const holding = await UserFactory.apply('invited').create()
+    const token = await UserActivationTokenFactory.merge({ userId: holding.id }).create()
+    const withoutLink = await UserFactory.apply('invited').create()
+    // An active user whose link row somehow survived: a link matters only while its user is
+    // pending, so its expiry must not surface.
+    const active = await UserFactory.apply('active').create()
+    await UserActivationTokenFactory.merge({ userId: active.id }).create()
+
+    const response = await client.get('/api/v1/users').loginAs(admin)
+
+    response.assertStatus(200)
+    const byId = (id: string) =>
+      response.body().data.find((entry: { id: string }) => entry.id === id)
+    assert.equal(
+      DateTime.fromISO(byId(holding.id).activationLinkExpiresAt).toUnixInteger(),
+      token.expiresAt.toUnixInteger(),
+    )
+    assert.isNull(byId(withoutLink.id).activationLinkExpiresAt)
+    assert.isNull(byId(active.id).activationLinkExpiresAt)
+    assert.notInclude(JSON.stringify(response.body()), '"hash"')
+  })
+
+  test('withholds the link’s expiry and its renewal from an operations admin', async ({
+    assert,
+    client,
+  }) => {
+    const viewer = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+
+    const response = await client.get('/api/v1/users').loginAs(viewer)
+
+    response.assertStatus(200)
+    for (const entry of response.body().data) {
+      assert.notProperty(entry, 'activationLinkExpiresAt')
+      assert.notProperty(entry, 'activationLinkRenewedAt')
+      assert.notProperty(entry, 'activationLinkRenewedBy')
+    }
   })
 })
