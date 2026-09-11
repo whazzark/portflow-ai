@@ -44,6 +44,7 @@ jobs:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_DATABASE: portflow
+      WEB_ORIGIN: http://localhost:3000
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup

@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
 
-import { beforeCreate, belongsTo } from '@adonisjs/lucid/orm'
-import type { BelongsTo } from '@adonisjs/lucid/types/relations'
+import { beforeCreate, belongsTo, hasOne } from '@adonisjs/lucid/orm'
+import type { BelongsTo, HasOne } from '@adonisjs/lucid/types/relations'
 import FixedExpiryRememberMeTokensProvider from '#auth/shared/fixed_expiry_remember_me_tokens_provider'
 import { UserSchema } from '#database/schema'
+import UserActivationToken from '#models/user_activation_token'
 
 export const USER_ACCESS_STATUSES = ['PENDING', 'ACTIVE', 'CANCELLED', 'DEACTIVATED'] as const
 export type UserAccessStatus = (typeof USER_ACCESS_STATUSES)[number]
@@ -41,6 +42,13 @@ export default class User extends UserSchema {
 
   @belongsTo(() => User, { foreignKey: 'reactivatedByUserId' })
   declare reactivatedBy: BelongsTo<typeof User>
+
+  /**
+   * The live activation link of a pending user, at most one. This slice only writes it; the
+   * acceptance, renewal, cancellation, and restoration slices are the readers.
+   */
+  @hasOne(() => UserActivationToken)
+  declare activationToken: HasOne<typeof UserActivationToken>
 
   @beforeCreate()
   static assignId(user: User) {

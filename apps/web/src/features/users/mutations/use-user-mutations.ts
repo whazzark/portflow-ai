@@ -12,6 +12,12 @@ export function useUserMutations() {
     })
   }
 
+  const invite = useMutation(
+    tuyauQuery.users.store.mutationOptions({
+      onSuccess: () => refreshUsers(),
+    }),
+  )
+
   /**
    * Refreshed on the failure path too, not only on success: a refusal usually means the record's
    * authoritative state moved on since this view loaded, and the administrator should read the
@@ -24,5 +30,5 @@ export function useUserMutations() {
     }),
   )
 
-  return { deactivate, refreshUsers }
+  return { invite, deactivate, refreshUsers }
 }

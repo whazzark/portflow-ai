@@ -48,6 +48,10 @@ type UserTableProps = {
   /** Users this status view holds before the search and the role filter narrow it. */
   totalInView: number
   onClearFilters: () => void
+  /** The user a just-completed invitation created. Decoration only: it selects nothing. */
+  highlightedUserId?: string
+  /** Offered in an empty view no filter is narrowing, to the viewers allowed to invite. */
+  onInvite?: () => void
 }
 
 const columns: ColumnDef<UserDto>[] = [
@@ -118,6 +122,8 @@ export function UserTable({
   onSelect,
   totalInView,
   onClearFilters,
+  highlightedUserId,
+  onInvite,
 }: UserTableProps) {
   const table = useReactTable({
     data: users,
@@ -182,7 +188,8 @@ export function UserTable({
           {rows.length > 0 ? (
             rows.map((row) => (
               <TableRow
-                className="cursor-pointer transition-colors"
+                className="cursor-pointer transition-colors data-[highlighted=true]:bg-accent/60"
+                data-highlighted={row.original.id === highlightedUserId}
                 key={row.id}
                 onClick={() => onSelect(row.original.id)}
               >
@@ -214,10 +221,16 @@ export function UserTable({
                         : emptyDescription}
                     </EmptyDescription>
                   </EmptyHeader>
-                  {isNoMatch && (
+                  {isNoMatch ? (
                     <Button onClick={onClearFilters} size="sm" variant="outline">
                       Clear filters
                     </Button>
+                  ) : (
+                    onInvite && (
+                      <Button onClick={onInvite} size="sm">
+                        Invite user
+                      </Button>
+                    )
                   )}
                 </Empty>
               </TableCell>

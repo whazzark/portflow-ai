@@ -1,13 +1,16 @@
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import { DateTime } from 'luxon'
-
 import User from '#models/user'
+import UserActivationToken from '#models/user_activation_token'
+import isUniqueViolation from '#shared/database/is_unique_violation'
 
 import UserRepository, {
   type CreateUserCommand,
   type DeactivateUserCommand,
   type DeactivateUserResult,
+  type InviteUserCommand,
+  type InviteUserResult,
   type RenewPasswordCommand,
   type RenewPasswordResult,
 } from './user_repository.ts'
@@ -33,6 +36,64 @@ function preloadAccessHistory(
 export default class LucidUserRepository extends UserRepository {
   create(command: CreateUserCommand): Promise<User> {
     return User.create(command)
+  }
+
+  /**
+   * The pending user and its activation token are two statements that must not be separable
+   * (FR-018), hence the transaction. The refusal is left to the `users_email_unique` index rather
+   * than to the caller's earlier lookup: only the index decides between two invitations of the same
+   * email racing each other, and it decides the same way whatever the timing.
+   *
+   * A violation is reported as `DUPLICATE_EMAIL` because that index is the only one this write can
+   * realistically collide on — the token digest is 256 bits of randomness.
+   */
+  async invite(command: InviteUserCommand): Promise<InviteUserResult> {
+    try {
+      return await User.transaction(async (trx) => {
+        const user = await User.create(
+          {
+            firstName: command.firstName,
+            lastName: command.lastName,
+            email: command.email,
+            role: command.role,
+            accessStatus: 'PENDING',
+            password: null,
+            invitedAt: command.invitedAt,
+            invitedByUserId: command.invitedByUserId,
+            // Written as explicit nulls rather than left unset: an invitation records one lifecycle
+            // event and no other (FR-003), and the instance the caller projects has to say so as
+            // plainly as the row does.
+            activatedAt: null,
+            activatedByUserId: null,
+            cancelledAt: null,
+            cancelledByUserId: null,
+            deactivatedAt: null,
+            deactivatedByUserId: null,
+            reactivatedAt: null,
+            reactivatedByUserId: null,
+            passwordRenewalRequiredAt: null,
+          },
+          { client: trx },
+        )
+
+        const activationToken = await UserActivationToken.create(
+          {
+            userId: user.id,
+            hash: command.activationTokenHash,
+            expiresAt: command.activationTokenExpiresAt,
+          },
+          { client: trx },
+        )
+
+        return { kind: 'CREATED', user, activationToken }
+      })
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        return { kind: 'DUPLICATE_EMAIL' }
+      }
+
+      throw error
+    }
   }
 
   findByEmail(email: string): Promise<User | null> {
