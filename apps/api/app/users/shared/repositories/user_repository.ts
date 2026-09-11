@@ -177,6 +177,26 @@ export type AcceptInvitationCommand = {
  */
 export type AcceptInvitationResult = { kind: 'ACCEPTED'; user: User } | { kind: 'UNUSABLE' }
 
+export type RenewActivationLinkCommand = {
+  targetUserId: string
+  /** The organization admin performing the renewal, recorded against the event. */
+  renewedByUserId: string
+  renewedAt: DateTime
+  /** The digest of the newly issued link, and the instant it stops being usable. */
+  activationTokenHash: string
+  activationTokenExpiresAt: DateTime
+}
+
+/**
+ * What the locked write observed, never what the caller should be told. `NOT_PENDING` carries the
+ * status the row actually held, because the refusal has to name it: it is what decides whether the
+ * administrator should reset a password, reactivate, or restore an invitation instead.
+ */
+export type RenewActivationLinkResult =
+  | { kind: 'RENEWED'; user: User; activationToken: UserActivationToken }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'NOT_PENDING'; accessStatus: UserAccessStatus }
+
 export default abstract class UserRepository {
   abstract create(command: CreateUserCommand): Promise<User>
 
@@ -277,4 +297,15 @@ export default abstract class UserRepository {
   abstract requirePasswordRenewal(
     command: RequirePasswordRenewalCommand,
   ): Promise<RequirePasswordRenewalResult>
+
+  /**
+   * Replaces a pending user's activation link and records the renewal event, as one indivisible
+   * effect: the previous link stops existing in the same commit that brings the new one into being,
+   * so a failure can never leave the user with no working link, and two renewals can never leave
+   * two. Decided against the target read under its row lock, so a user who stopped being pending in
+   * the meantime is refused rather than handed a link.
+   */
+  abstract renewActivationLink(
+    command: RenewActivationLinkCommand,
+  ): Promise<RenewActivationLinkResult>
 }

@@ -23,6 +23,22 @@ export function canResetPassword(viewer: Viewer, user: UserDto) {
 }
 
 /**
+ * Whether this viewer may replace this user's activation link.
+ *
+ * Mirrors the API rule rather than replacing it — `UserPolicy.renewActivationLink` plus the pending
+ * guard in the repository's renewal stay authoritative. A courtesy to the administrator, not a
+ * security boundary:
+ *
+ * - organization admins only: issuing a way into the application is theirs alone, as inviting is;
+ * - pending targets only: an active user has a password (reset it instead), a deactivated one is
+ *   reactivated, and a cancelled invitation is restored. No self rule is needed — a viewer is
+ *   active, so never pending.
+ */
+export function canRenewActivationLink(viewer: Viewer, user: UserDto) {
+  return viewer.role === 'ORGANIZATION_ADMIN' && user.accessStatus === 'PENDING'
+}
+
+/**
  * Whether this user currently owes a password renewal.
  *
  * The key is withheld from viewers who may not consult the access history, so its absence reads as
