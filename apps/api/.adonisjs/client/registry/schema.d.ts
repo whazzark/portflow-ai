@@ -415,6 +415,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['index']>>>
     }
   }
+  'users.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/users'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#users/invite/invite_user_validator').inviteUserValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#users/invite/invite_user_validator').inviteUserValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/users_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'users.deactivate': {
     methods: ["POST"]
     pattern: '/api/v1/users/:id/deactivate'

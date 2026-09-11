@@ -1,5 +1,8 @@
 import type { UserAccessStatus, UserRole } from '@/features/users/types'
 
+/** The noun every user write toast is built from. The phrasing belongs to `helpers/resource-copy`. */
+export const USER_SINGULAR = 'user'
+
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   ORGANIZATION_ADMIN: 'Organization admin',
   OPERATIONS_ADMIN: 'Operations admin',

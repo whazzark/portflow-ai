@@ -16,6 +16,15 @@ export default class UserPolicy extends BasePolicy {
   }
 
   /**
+   * Whether the viewer may grant access to the organization. Unlike consultation, invitation has a
+   * single permitted role, so the whole decision fits here: an operations admin consults active
+   * users, they do not create them.
+   */
+  invite(user: User): AuthorizerResponse {
+    return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'
+  }
+
+  /**
    * Whether the viewer may deactivate users at all. *Which* user they may then deactivate is a
    * separate decision, owned by DeactivateUserUseCase — the same split `list` makes above, and for
    * the same reason: every Bouncer denial surfaces as one `E_AUTHORIZATION_FAILURE`, so a rule

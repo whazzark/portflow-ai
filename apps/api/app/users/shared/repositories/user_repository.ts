@@ -2,6 +2,7 @@ import type { DateTime } from 'luxon'
 
 import type User from '#models/user'
 import type { UserAccessStatus, UserRole } from '#models/user'
+import type UserActivationToken from '#models/user_activation_token'
 
 export type CreateUserCommand = {
   firstName: string
@@ -11,6 +12,26 @@ export type CreateUserCommand = {
   invitedAt?: DateTime
   invitedByUserId?: string
 }
+
+export type InviteUserCommand = {
+  firstName: string
+  lastName: string
+  email: string
+  role: UserRole
+  invitedAt: DateTime
+  invitedByUserId: string
+  /** The digest of the issued activation link, and the instant it stops being usable. */
+  activationTokenHash: string
+  activationTokenExpiresAt: DateTime
+}
+
+/**
+ * A typed outcome rather than an exception: the repository owns the write, the use case owns which
+ * refusal the caller sees.
+ */
+export type InviteUserResult =
+  | { kind: 'CREATED'; user: User; activationToken: UserActivationToken }
+  | { kind: 'DUPLICATE_EMAIL' }
 
 export type RenewPasswordCommand = {
   userId: string
@@ -54,6 +75,13 @@ export type DeactivateUserResult =
 
 export default abstract class UserRepository {
   abstract create(command: CreateUserCommand): Promise<User>
+
+  /**
+   * Creates a pending user together with its activation token, or refuses because the email is
+   * already held. Both rows commit together: a user without a link, or a link without a user, is a
+   * half-granted access.
+   */
+  abstract invite(command: InviteUserCommand): Promise<InviteUserResult>
   abstract findByEmail(email: string): Promise<User | null>
 
   /**

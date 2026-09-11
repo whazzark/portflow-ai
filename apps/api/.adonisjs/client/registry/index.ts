@@ -210,6 +210,12 @@ const routes = {
     tokens: [{"old":"/api/v1/users","type":0,"val":"api","end":""},{"old":"/api/v1/users","type":0,"val":"v1","end":""},{"old":"/api/v1/users","type":0,"val":"users","end":""}],
     types: placeholder as Registry['users.index']['types'],
   },
+  'users.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/users',
+    tokens: [{"old":"/api/v1/users","type":0,"val":"api","end":""},{"old":"/api/v1/users","type":0,"val":"v1","end":""},{"old":"/api/v1/users","type":0,"val":"users","end":""}],
+    types: placeholder as Registry['users.store']['types'],
+  },
   'users.deactivate': {
     methods: ["POST"],
     pattern: '/api/v1/users/:id/deactivate',

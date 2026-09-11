@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { OnChangeFn, SortingState } from '@tanstack/react-table'
 import { FilterIcon } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { InputSearch } from '@/components/ui/input-search'
 import {
   Select,
@@ -12,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import {
@@ -29,7 +31,11 @@ import {
   userMatchesRole,
   userMatchesSearch,
 } from '@/features/users/helpers/user-search'
+import { useUserMutations } from '@/features/users/mutations/use-user-mutations'
 import { userQueries } from '@/features/users/queries/user-queries'
+import type { ActivationLinkDto } from '@/features/users/types'
+import { ActivationLinkDialog } from '@/features/users/ui/activation-link-dialog'
+import { InviteUserPanel } from '@/features/users/ui/invite-user-panel'
 import { UserSheet } from '@/features/users/ui/user-sheet'
 import { UserTable } from '@/features/users/ui/user-table'
 
@@ -41,15 +47,25 @@ const ROLE_FILTER_OPTIONS = [
 ]
 
 export function UsersPage() {
-  const { search, status, role, sort, order, userId } = usersRoute.useSearch()
+  const { search, status, role, sort, order, userId, mode, invitedUserId } = usersRoute.useSearch()
   const navigate = usersRoute.useNavigate()
   const viewer = useAuthenticatedUser()
   const usersQuery = useQuery(userQueries.list())
+  const mutations = useUserMutations()
+  // The one piece of in-progress state deliberately kept out of the URL: the activation link is a
+  // secret with a single read, and the address bar is neither private nor ephemeral. Losing it on a
+  // reload is the behaviour, not an accident — the panel then says so.
+  const [issuedActivationLink, setIssuedActivationLink] = useState<ActivationLinkDto | undefined>(
+    undefined,
+  )
 
   const users = usersQuery.data?.data ?? []
   // An operations admin consults the active set and nothing else, so no status view is offered:
   // an empty "Pending" or "Deactivated" tab would itself disclose a collection they may not read.
   const consultsEveryStatus = viewer.role === 'ORGANIZATION_ADMIN'
+  // Granting access is an organization admin's alone. The interface stays honest by not offering it
+  // to anyone else; the API refuses it whatever the interface does.
+  const canInvite = viewer.role === 'ORGANIZATION_ADMIN'
   const sorting: SortingState = [{ id: sort, desc: order === 'desc' }]
 
   // The status view partitions the collection; the search and the role filter then narrow what is
@@ -72,6 +88,39 @@ export function UsersPage() {
   // closes as soon as its user leaves the visible view.
   const visibleUsers = usersOf(consultsEveryStatus ? status : 'active')
   const openUser = userId ? visibleUsers.find((user) => user.id === userId) : undefined
+
+  const isInviting = canInvite && mode === 'create'
+  // The outcome replaces the form rather than sitting next to it: one invitation, one surface at a
+  // time. A link still held is shown whatever the mode: the access it grants already exists, so an
+  // invitation left while in flight must still surface its secret, which has no second read.
+  const isShowingActivationLink =
+    canInvite && Boolean(invitedUserId) && (mode === 'create' || Boolean(issuedActivationLink))
+  const invitedUser = invitedUserId
+    ? users.find((candidate) => candidate.id === invitedUserId)
+    : undefined
+
+  const openInvitation = () =>
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        userId: undefined,
+        invitedUserId: undefined,
+        mode: 'create',
+      }),
+    })
+
+  // Leaving the outcome is what ends the invitation: the pending view is where the new user now
+  // lives, and their record is left closed.
+  const closeInvitation = (nextStatus?: UserStatusView) => {
+    setIssuedActivationLink(undefined)
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        mode: undefined,
+        status: nextStatus ?? previous.status,
+      }),
+    })
+  }
 
   const openRecord = (nextUserId: string) =>
     void navigate({ search: (previous) => ({ ...previous, userId: nextUserId }) })
@@ -132,6 +181,8 @@ export function UsersPage() {
       emptyDescription="No user holds this access status yet."
       emptyTitle={statusViewEmptyTitle(view)}
       onClearFilters={clearFilters}
+      highlightedUserId={invitedUserId}
+      onInvite={canInvite ? openInvitation : undefined}
       onSelect={openRecord}
       onSortingChange={updateSorting}
       search={search}
@@ -176,6 +227,11 @@ export function UsersPage() {
             </SelectGroup>
           </SelectContent>
         </Select>
+        {canInvite && (
+          <Button className="md:ml-auto" onClick={openInvitation}>
+            Invite user
+          </Button>
+        )}
       </div>
 
       {consultsEveryStatus ? (
@@ -205,6 +261,35 @@ export function UsersPage() {
       )}
 
       <UserSheet onClose={closeRecord} user={openUser} />
+
+      <Sheet
+        open={isInviting && !isShowingActivationLink}
+        // An invitation in flight cannot be taken back: leaving now would only hide its outcome.
+        onOpenChange={(open) => !open && !mutations.invite.isPending && closeInvitation()}
+      >
+        <SheetContent className="overflow-hidden" size="lg">
+          <InviteUserPanel
+            onInvite={async (value) => {
+              const result = await mutations.invite.mutateAsync({ body: value })
+
+              return result.data
+            }}
+            onSuccess={(invitation) => {
+              setIssuedActivationLink(invitation.activationLink)
+              void navigate({
+                search: (previous) => ({ ...previous, invitedUserId: invitation.user.id }),
+              })
+            }}
+          />
+        </SheetContent>
+      </Sheet>
+
+      <ActivationLinkDialog
+        activationLink={issuedActivationLink}
+        invitedUser={invitedUser}
+        onAcknowledge={() => closeInvitation('pending')}
+        open={isShowingActivationLink}
+      />
     </div>
   )
 }
