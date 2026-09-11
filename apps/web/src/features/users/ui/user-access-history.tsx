@@ -28,6 +28,15 @@ function recordedEvents(user: UserDto): RecordedEvent[] {
     { key: 'cancelled', label: 'Cancelled', at: user.cancelledAt, by: user.cancelledBy },
     { key: 'deactivated', label: 'Deactivated', at: user.deactivatedAt, by: user.deactivatedBy },
     { key: 'reactivated', label: 'Reactivated', at: user.reactivatedAt, by: user.reactivatedBy },
+    // Not an access-status event like the five above — a reset changes no access status — but it
+    // answers the same question the record is here to answer, and it is never cleared, so it stays
+    // readable long after the user has renewed.
+    {
+      key: 'password-reset',
+      label: 'Password reset',
+      at: user.passwordResetAt,
+      by: user.passwordResetBy,
+    },
   ]
 
   return events

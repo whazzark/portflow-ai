@@ -8,6 +8,7 @@ import UpdateUserIdentityUseCase from '#users/identity/update_user_identity_use_
 import InviteUserUseCase from '#users/invite/invite_user_use_case'
 import { inviteUserValidator } from '#users/invite/invite_user_validator'
 import ListUsersUseCase from '#users/list/list_users_use_case'
+import ResetUserPasswordUseCase from '#users/password_reset/reset_user_password_use_case'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 import UserPolicy from '#users/shared/user_policy'
 import { updateUserIdentityValidator } from '#users/shared/user_validator'
@@ -19,6 +20,7 @@ export default class UsersController {
     private inviteUserUseCase: InviteUserUseCase,
     private deactivateUserUseCase: DeactivateUserUseCase,
     private updateUserIdentityUseCase: UpdateUserIdentityUseCase,
+    private resetUserPasswordUseCase: ResetUserPasswordUseCase,
   ) {}
 
   /**
@@ -100,6 +102,32 @@ export default class UsersController {
     // collection already serves the access history to.
     return serialize(
       UserTransformer.transform(user, { includeAccessHistory: true }).useVariant(
+        'toAdministration',
+      ),
+    )
+  }
+
+  /**
+   * No validator: the request carries no body. Every VineJS validator here exists to shape a
+   * payload, and there is nothing to shape — the target comes from the path and the actor from the
+   * session.
+   *
+   * `includeAccessHistory` is unconditionally true because the policy above admits organization
+   * admins only, which is exactly the audience allowed to consult it.
+   */
+  async resetPassword({ auth, bouncer, params, serialize }: HttpContext) {
+    await bouncer.with(UserPolicy).authorize('resetPassword')
+
+    const administrator = auth.use('web').getUserOrFail()
+
+    const target = await this.resetUserPasswordUseCase.handle({
+      targetUserId: params.id,
+      actorUserId: administrator.id,
+      resetAt: DateTime.now(),
+    })
+
+    return serialize(
+      UserTransformer.transform(target, { includeAccessHistory: true }).useVariant(
         'toAdministration',
       ),
     )

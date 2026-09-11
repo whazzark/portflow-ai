@@ -14,7 +14,9 @@ import {
   type UserAccessAction,
 } from '@/features/users/helpers/user-access-copy'
 import { mayEditUserIdentity } from '@/features/users/helpers/user-identity'
+import { canResetPassword } from '@/features/users/helpers/user-permissions'
 import type { UserDto } from '@/features/users/types'
+import { ResetPasswordDialog } from '@/features/users/ui/reset-password-confirmation'
 import {
   USER_ACCESS_ACTION_VARIANTS,
   UserAccessDialog,
@@ -22,11 +24,12 @@ import {
 } from '@/features/users/user-access'
 
 /**
- * Per-row menu, so correcting a user or retiring their access does not require opening their record
- * first. It offers the same actions, under the same rules and with the same confirmation, as the
- * record footer — both ask `mayEditUserIdentity` and `userAccessActions`, and both mount
- * `UserAccessDialog`. View, then Edit, then the access actions: the order of the site reference
- * row menus.
+ * Per-row menu, so correcting a user, resetting their password, or retiring their access does not
+ * require opening their record first. It offers the same actions, under the same rules and with the
+ * same confirmations, as the record footer — both ask `mayEditUserIdentity`, `canResetPassword`, and
+ * `userAccessActions`, and both mount `ResetPasswordDialog` and `UserAccessDialog`. View, then Edit,
+ * then the password reset, then the access actions: the destructive item stays last, as in the site
+ * reference row menus.
  *
  * Deliberately not `components/lifecycle/resource-row-actions.tsx`, for the reason
  * `helpers/user-access-copy.ts` is not `lifecycle-copy.ts`: that menu is keyed to the site
@@ -46,11 +49,13 @@ export function UserRowActions({
 }) {
   const viewer = useAuthenticatedUser()
   const [openAction, setOpenAction] = useState<UserAccessAction | null>(null)
+  const [isResetOpen, setIsResetOpen] = useState(false)
   const actions = userAccessActions(viewer, user)
   const canEdit = onEdit !== undefined && mayEditUserIdentity(viewer, user)
+  const mayResetPassword = canResetPassword(viewer, user)
 
   // A menu with nothing in it is not rendered at all, rather than as an empty popup.
-  if (onView === undefined && !canEdit && actions.length === 0) {
+  if (onView === undefined && !canEdit && !mayResetPassword && actions.length === 0) {
     return null
   }
 
@@ -74,6 +79,9 @@ export function UserRowActions({
         <DropdownMenuContent align="end">
           {onView && <DropdownMenuItem onClick={() => onView(user.id)}>View</DropdownMenuItem>}
           {canEdit && <DropdownMenuItem onClick={() => onEdit(user.id)}>Edit</DropdownMenuItem>}
+          {mayResetPassword && (
+            <DropdownMenuItem onClick={() => setIsResetOpen(true)}>Reset password</DropdownMenuItem>
+          )}
           {actions.map((action) => (
             <DropdownMenuItem
               key={action}
@@ -88,6 +96,7 @@ export function UserRowActions({
       {openAction && (
         <UserAccessDialog action={openAction} onClose={() => setOpenAction(null)} user={user} />
       )}
+      {isResetOpen && <ResetPasswordDialog onClose={() => setIsResetOpen(false)} user={user} />}
     </>
   )
 }

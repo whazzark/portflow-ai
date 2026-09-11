@@ -87,6 +87,8 @@ test.group('POST /api/v1/users', (group) => {
     assert.equal(invited.accessStatus, 'PENDING')
     assert.notInclude(payload, secret)
     assert.notInclude(payload, 'activationLink')
-    assert.notInclude(payload, 'password')
+    // On the key rather than a `'password'` substring, which `passwordRenewalRequired` and the
+    // password reset event (`#17`) would trip without carrying any secret.
+    assert.notProperty(invited, 'password')
   })
 })
