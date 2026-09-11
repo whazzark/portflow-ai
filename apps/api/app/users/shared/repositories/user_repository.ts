@@ -127,7 +127,8 @@ export default abstract class UserRepository {
   /**
    * The target user, read under a row lock inside the caller's transaction, so that the identity a
    * correction is decided against is the one it actually replaces and two concurrent corrections
-   * cannot interleave into a mixed identity.
+   * cannot interleave into a mixed identity. Carries the access history, like every read the
+   * administration projection serializes.
    *
    * Returns `null` when no such user exists — the documented not-found contract of a lookup.
    */

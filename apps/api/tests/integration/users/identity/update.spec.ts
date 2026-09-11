@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
 
 import { UserFactory } from '#database/factories/user_factory'
 
@@ -97,7 +98,14 @@ test.group('PATCH /api/v1/users/:id', () => {
 
   test('accepts a submission identical to the stored identity', async ({ assert, client }) => {
     const administrator = await anAdministrator()
-    const target = await UserFactory.apply('active').create()
+    // Merged rather than applied through the `active` state, which nulls the actors.
+    const target = await UserFactory.merge({
+      accessStatus: 'ACTIVE',
+      invitedAt: DateTime.now(),
+      invitedByUserId: administrator.id,
+      activatedAt: DateTime.now(),
+      activatedByUserId: administrator.id,
+    }).create()
     const unchanged = {
       firstName: target.firstName,
       lastName: target.lastName,
@@ -113,6 +121,15 @@ test.group('PATCH /api/v1/users/:id', () => {
     assert.equal(response.body().data.firstName, unchanged.firstName)
     assert.equal(response.body().data.lastName, unchanged.lastName)
     assert.equal(response.body().data.email, unchanged.email)
+    // The same projection a write returns: nothing was written, but the access history is still
+    // resolved rather than reading as "nobody invited this user".
+    const actor = {
+      id: administrator.id,
+      firstName: administrator.firstName,
+      lastName: administrator.lastName,
+    }
+    assert.deepEqual(response.body().data.invitedBy, actor)
+    assert.deepEqual(response.body().data.activatedBy, actor)
   })
 
   test('leaves everything but the identity untouched', async ({ assert, client }) => {

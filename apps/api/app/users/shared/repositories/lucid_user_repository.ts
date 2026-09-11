@@ -239,9 +239,13 @@ export default class LucidUserRepository extends UserRepository {
    *
    * `forUpdate()` is a no-op on SQLite, which serializes writes anyway; PostgreSQL is where it earns
    * its place.
+   *
+   * Preloaded because a submission that changes nothing returns this very instance, and the
+   * response projects the whole access history: a relation left unpreloaded would serialize as
+   * `null`.
    */
   findByIdForUpdate(id: string, client: TransactionClientContract): Promise<User | null> {
-    return User.query({ client }).where('id', id).forUpdate().first()
+    return preloadAccessHistory(User.query({ client }).where('id', id).forUpdate()).first()
   }
 
   /**
