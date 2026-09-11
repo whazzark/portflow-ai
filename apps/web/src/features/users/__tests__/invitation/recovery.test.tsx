@@ -82,6 +82,29 @@ test('grants one access when the invitation is submitted twice in a row', async 
   expect(invitations).toBe(1)
 })
 
+test('still shows the activation link when the panel is dismissed while the invitation is in flight', async () => {
+  const user = userEvent.setup()
+  mockUsers()
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/users`, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      return HttpResponse.json(
+        { data: { user: INVITED_USER, activationLink: ACTIVATION_LINK } },
+        { status: 201 },
+      )
+    }),
+  )
+
+  renderUsers()
+  const panel = await fillInvitation(user)
+  await user.click(within(panel).getByRole('button', { name: 'Invite user' }))
+  await user.keyboard('{Escape}')
+
+  // The access is granted whatever the administrator did meanwhile, so its secret is not dropped.
+  await within(await screen.findByRole('alertdialog')).findByText(ACTIVATION_LINK.url)
+})
+
 test('admits the activation link is gone rather than pretending to show it', async () => {
   const user = userEvent.setup()
   mockUsers()

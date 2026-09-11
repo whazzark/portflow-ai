@@ -91,8 +91,10 @@ export function UsersPage() {
 
   const isInviting = canInvite && mode === 'create'
   // The outcome replaces the form rather than sitting next to it: one invitation, one surface at a
-  // time.
-  const isShowingActivationLink = isInviting && Boolean(invitedUserId)
+  // time. A link still held is shown whatever the mode: the access it grants already exists, so an
+  // invitation left while in flight must still surface its secret, which has no second read.
+  const isShowingActivationLink =
+    canInvite && Boolean(invitedUserId) && (mode === 'create' || Boolean(issuedActivationLink))
   const invitedUser = invitedUserId
     ? users.find((candidate) => candidate.id === invitedUserId)
     : undefined
@@ -262,7 +264,8 @@ export function UsersPage() {
 
       <Sheet
         open={isInviting && !isShowingActivationLink}
-        onOpenChange={(open) => !open && closeInvitation()}
+        // An invitation in flight cannot be taken back: leaving now would only hide its outcome.
+        onOpenChange={(open) => !open && !mutations.invite.isPending && closeInvitation()}
       >
         <SheetContent className="overflow-hidden" size="lg">
           <InviteUserPanel
