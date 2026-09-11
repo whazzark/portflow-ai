@@ -160,7 +160,8 @@ test.group('GET /api/v1/users', () => {
    * positive: `passwordResetAt`, `passwordResetBy`, and `passwordRenewalRequired` are named after
    * `CONTEXT.md`'s `Password Reset` and carry no secret — a date, an administrator's name, and one
    * boolean. The intent is unchanged and the check is stricter: an exhaustive key set catches a new
-   * leak under *any* name, which the substring never did.
+   * leak under *any* name, which the substring never did. `cancellationComment` (`#12`) joined it as
+   * the administrator's own words on a cancellation — free text they wrote, never a credential.
    */
   test('never exposes credentials or tokens', async ({ assert, client }) => {
     const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
@@ -175,6 +176,7 @@ test.group('GET /api/v1/users', () => {
         'accessStatus',
         'activatedAt',
         'activatedBy',
+        'cancellationComment',
         'cancelledAt',
         'cancelledBy',
         'deactivatedAt',

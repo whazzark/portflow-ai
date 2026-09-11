@@ -2,6 +2,8 @@ import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 
+import CancelUserInvitationUseCase from '#users/cancel_invitation/cancel_user_invitation_use_case'
+import { cancelUserInvitationValidator } from '#users/cancel_invitation/cancel_user_invitation_validator'
 import DeactivateUserUseCase from '#users/deactivate/deactivate_user_use_case'
 import { deactivateUserValidator } from '#users/deactivate/deactivate_user_validator'
 import UpdateUserIdentityUseCase from '#users/identity/update_user_identity_use_case'
@@ -24,6 +26,7 @@ export default class UsersController {
     private updateUserIdentityUseCase: UpdateUserIdentityUseCase,
     private changeUserRoleUseCase: ChangeUserRoleUseCase,
     private resetUserPasswordUseCase: ResetUserPasswordUseCase,
+    private cancelUserInvitationUseCase: CancelUserInvitationUseCase,
   ) {}
 
   /**
@@ -99,6 +102,38 @@ export default class UsersController {
       id: payload.params.id,
       deactivatedByUserId: viewer.id,
       deactivatedAt: DateTime.now(),
+    })
+
+    // Only an organization admin reaches this command, and that is exactly the viewer the
+    // collection already serves the access history to.
+    return serialize(
+      UserTransformer.transform(user, { includeAccessHistory: true }).useVariant(
+        'toAdministration',
+      ),
+    )
+  }
+
+  /**
+   * Authorization first, for the reason `deactivate` records: a viewer who may not cancel
+   * invitations receives the same denial whether the id is malformed, unknown, or names a pending
+   * user — so the refusal discloses nothing about the target (FR-009).
+   *
+   * The body is optional; `request.body()` is merged with the route params so the validator reads
+   * both from one object, the shape the generated client contract expects.
+   */
+  async cancelInvitation({ auth, bouncer, params, request, serialize }: HttpContext) {
+    await bouncer.with(UserPolicy).authorize('cancelInvitation')
+
+    const viewer = auth.getUserOrFail()
+    const payload = await request.validateUsing(cancelUserInvitationValidator, {
+      data: { ...request.body(), params },
+    })
+
+    const user = await this.cancelUserInvitationUseCase.handle({
+      id: payload.params.id,
+      cancelledByUserId: viewer.id,
+      cancelledAt: DateTime.now(),
+      comment: payload.comment,
     })
 
     // Only an organization admin reaches this command, and that is exactly the viewer the

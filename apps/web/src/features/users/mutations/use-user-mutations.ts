@@ -31,6 +31,14 @@ export function useUserMutations() {
     }),
   )
 
+  /** Refreshed on a refusal too, for the reason `deactivate` gives. */
+  const cancelInvitation = useMutation(
+    tuyauQuery.users.cancelInvitation.mutationOptions({
+      onSuccess: () => refreshUsers(),
+      onError: () => refreshUsers(),
+    }),
+  )
+
   const updateIdentity = useMutation(
     tuyauQuery.users.update.mutationOptions({
       onSuccess: () => refreshUsers(),
@@ -57,5 +65,13 @@ export function useUserMutations() {
     }),
   )
 
-  return { invite, deactivate, updateIdentity, changeRole, resetPassword, refreshUsers }
+  return {
+    invite,
+    deactivate,
+    cancelInvitation,
+    updateIdentity,
+    changeRole,
+    resetPassword,
+    refreshUsers,
+  }
 }

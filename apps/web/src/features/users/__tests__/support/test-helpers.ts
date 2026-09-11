@@ -8,6 +8,7 @@ import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
 import {
   API_BASE_URL,
+  CANCELLED_AT,
   DEACTIVATED_AT,
   ORGANIZATION_ADMIN,
   RESPONSIBLE_ADMIN,
@@ -152,6 +153,119 @@ export function mockDeactivationRefused(code: string, message: string, status = 
 /** The request never reaches the API: the retryable failure path. */
 export function mockDeactivationUnreachable() {
   server.use(http.post(`${API_BASE_URL}/api/v1/users/:id/deactivate`, () => HttpResponse.error()))
+}
+
+/**
+ * A workbench whose collection actually changes when a cancellation succeeds, as
+ * `mockUsersWithDeactivation` does for deactivations: the write handler rewrites the entry — status,
+ * event, and the comment as the API would store it — and the next read serves it. Every request body
+ * is kept, so a test can assert what the dialog actually sent.
+ */
+export function mockUsersWithCancellation(
+  viewer: { id: string; firstName: string; lastName: string } = ORGANIZATION_ADMIN,
+  users: UserDto[] = USERS,
+) {
+  let collection = users
+  const requests: Array<{ id: string; body: unknown }> = []
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: viewer })),
+    http.get(`${API_BASE_URL}/api/v1/users`, () => HttpResponse.json({ data: collection })),
+    http.post(`${API_BASE_URL}/api/v1/users/:id/cancel-invitation`, async ({ params, request }) => {
+      const body = (await request.json().catch(() => null)) as { comment?: string | null } | null
+      requests.push({ id: String(params.id), body })
+
+      const target = collection.find((user) => user.id === params.id)
+
+      if (!target) {
+        return HttpResponse.json(
+          { error: { code: 'E_USER_NOT_FOUND', message: 'User not found' } },
+          { status: 404 },
+        )
+      }
+
+      const cancelled: UserDto = {
+        ...target,
+        accessStatus: 'CANCELLED',
+        cancelledAt: CANCELLED_AT,
+        cancelledBy: {
+          id: viewer.id,
+          firstName: viewer.firstName,
+          lastName: viewer.lastName,
+        },
+        cancellationComment: body?.comment?.trim() || null,
+      }
+
+      collection = collection.map((user) => (user.id === cancelled.id ? cancelled : user))
+
+      return HttpResponse.json({ data: cancelled })
+    }),
+  )
+
+  return { requests }
+}
+
+/**
+ * The race another administrator won: the write refuses because the invitation is already
+ * cancelled, and the read that follows says the same thing — the user has left the pending view.
+ */
+export function mockCancellationLostRace(
+  targetId: string,
+  viewer: { id: string; firstName: string; lastName: string } = ORGANIZATION_ADMIN,
+  users: UserDto[] = USERS,
+) {
+  const movedOn: UserDto[] = users.map((user) =>
+    user.id === targetId
+      ? {
+          ...user,
+          accessStatus: 'CANCELLED',
+          cancelledAt: CANCELLED_AT,
+          cancelledBy: RESPONSIBLE_ADMIN,
+        }
+      : user,
+  )
+  let refused = false
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: viewer })),
+    http.get(`${API_BASE_URL}/api/v1/users`, () =>
+      HttpResponse.json({ data: refused ? movedOn : users }),
+    ),
+    http.post(`${API_BASE_URL}/api/v1/users/:id/cancel-invitation`, () => {
+      refused = true
+
+      return HttpResponse.json(
+        {
+          error: {
+            code: 'E_USER_CANCELLED_INVITATION',
+            message: 'User invitation was cancelled before activation',
+          },
+        },
+        { status: 409 },
+      )
+    }),
+  )
+}
+
+/** Registered after a collection mock, to override its write handler with one refusal. */
+export function mockCancellationRefused(
+  code: string,
+  message: string,
+  status = 409,
+  details?: Array<{ field: string; message: string; rule: string }>,
+) {
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/users/:id/cancel-invitation`, () =>
+      HttpResponse.json({ error: { code, message, ...(details ? { details } : {}) } }, { status }),
+    ),
+  )
+}
+
+/** The request never reaches the API: the retryable failure path. */
+export function mockCancellationUnreachable() {
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/users/:id/cancel-invitation`, () => HttpResponse.error()),
+  )
 }
 
 /**

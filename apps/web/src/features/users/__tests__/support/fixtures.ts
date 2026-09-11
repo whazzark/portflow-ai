@@ -37,6 +37,9 @@ export const RESPONSIBLE_ADMIN = { id: 'admin-1', firstName: 'Yann', lastName: '
 /** The instant a deactivation staged by the test helpers records. */
 export const DEACTIVATED_AT = '2026-09-10T09:04:22.000Z'
 
+/** The instant a cancellation staged by the test helpers records. */
+export const CANCELLED_AT = '2026-09-11T14:03:27.000Z'
+
 const NO_LIFECYCLE = {
   invitedAt: null,
   invitedBy: null,
@@ -44,6 +47,7 @@ const NO_LIFECYCLE = {
   activatedBy: null,
   cancelledAt: null,
   cancelledBy: null,
+  cancellationComment: null,
   deactivatedAt: null,
   deactivatedBy: null,
   reactivatedAt: null,
@@ -118,6 +122,7 @@ export const USERS: UserDto[] = [
     invitedBy: RESPONSIBLE_ADMIN,
     cancelledAt: '2026-05-09T11:30:00.000Z',
     cancelledBy: RESPONSIBLE_ADMIN,
+    cancellationComment: 'Took a position elsewhere before starting.',
   },
 ]
 
