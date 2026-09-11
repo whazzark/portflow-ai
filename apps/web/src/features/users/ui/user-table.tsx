@@ -33,6 +33,7 @@ import { UserRowActions } from '@/features/users/ui/user-row-actions'
 declare module '@tanstack/react-table' {
   interface TableMeta<TData extends import('@tanstack/react-table').RowData> {
     onSelect?: (userId: string) => void
+    onEdit?: (userId: string) => void
   }
 }
 
@@ -45,6 +46,7 @@ type UserTableProps = {
   emptyTitle: string
   emptyDescription: string
   onSelect: (userId: string) => void
+  onEdit: (userId: string) => void
   /** Users this status view holds before the search and the role filter narrow it. */
   totalInView: number
   onClearFilters: () => void
@@ -98,14 +100,19 @@ const columns: ColumnDef<UserDto>[] = [
     cell: ({ row }) => USER_ROLE_LABELS[row.original.role],
   },
   // Last column, as in the customer, truck, and transport-company directories: the row's own
-  // administration menu, so an access change never requires opening the record first.
+  // administration menu, so a correction or an access change never requires opening the record
+  // first.
   {
     id: 'actions',
     header: () => <span className="sr-only">Actions</span>,
     enableSorting: false,
     cell: ({ row, table }) => (
       <div className="flex justify-end">
-        <UserRowActions onView={table.options.meta?.onSelect} user={row.original} />
+        <UserRowActions
+          onEdit={table.options.meta?.onEdit}
+          onView={table.options.meta?.onSelect}
+          user={row.original}
+        />
       </div>
     ),
   },
@@ -120,6 +127,7 @@ export function UserTable({
   emptyTitle,
   emptyDescription,
   onSelect,
+  onEdit,
   totalInView,
   onClearFilters,
   highlightedUserId,
@@ -134,7 +142,7 @@ export function UserTable({
     // and an `order` at all times. Left at its default, a third click on a header would clear the
     // sorting the URL cannot express, and the table would silently fall back to another column.
     enableSortingRemoval: false,
-    meta: { onSelect },
+    meta: { onSelect, onEdit },
     getRowId: (user) => user.id,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),

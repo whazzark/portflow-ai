@@ -35,3 +35,37 @@ export class UserAlreadyDeactivatedException extends Exception {
   static code = 'E_USER_ALREADY_DEACTIVATED'
   static message = 'User is already deactivated'
 }
+
+/**
+ * 403 rather than 409: an organization admin may use this seam, just not on themselves. The
+ * administrator seam is not the one for that target, which is an authorization-shaped statement.
+ */
+export class SelfIdentityUpdateException extends Exception {
+  static status = 403
+  static code = 'E_USER_IDENTITY_SELF_UPDATE'
+  static message = 'Your own identity is updated through the self-service path, not this one'
+}
+
+export class DuplicateUserEmailException extends Exception {
+  static status = 409
+  static code = 'E_USER_EMAIL_CONFLICT'
+  static message = 'Email address is already used by another user'
+}
+
+/**
+ * A pending user's email address is not correctable: their activation link was handed out under the
+ * address recorded at invitation, and this slice issues no replacement. The message is what the
+ * workbench shows the administrator as it stands, so it says why and when the address can change.
+ */
+export class PendingUserEmailChangeException extends Exception {
+  static status = 409
+  static code = 'E_USER_PENDING_EMAIL_LOCKED'
+  static message =
+    'This user has not activated their access yet, so their email address cannot be changed. It can be corrected once they have activated their access.'
+}
+
+export class InvalidUserIdentityException extends Exception {
+  static status = 422
+  static code = 'E_USER_IDENTITY_INVALID'
+  static message = 'User identity must carry a first name, a last name, and an email address'
+}

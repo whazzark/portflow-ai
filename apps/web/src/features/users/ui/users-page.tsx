@@ -16,6 +16,7 @@ import {
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
+import { mayEditUserIdentity } from '@/features/users/helpers/user-identity'
 import {
   statusViewEmptyTitle,
   statusViewLabel,
@@ -36,6 +37,7 @@ import { userQueries } from '@/features/users/queries/user-queries'
 import type { ActivationLinkDto } from '@/features/users/types'
 import { ActivationLinkDialog } from '@/features/users/ui/activation-link-dialog'
 import { InviteUserPanel } from '@/features/users/ui/invite-user-panel'
+import type { UserIdentityValue } from '@/features/users/ui/user-identity-form'
 import { UserSheet } from '@/features/users/ui/user-sheet'
 import { UserTable } from '@/features/users/ui/user-table'
 
@@ -123,10 +125,32 @@ export function UsersPage() {
   }
 
   const openRecord = (nextUserId: string) =>
-    void navigate({ search: (previous) => ({ ...previous, userId: nextUserId }) })
+    void navigate({ search: (previous) => ({ ...previous, userId: nextUserId, mode: 'view' }) })
 
   const closeRecord = () =>
-    void navigate({ search: (previous) => ({ ...previous, userId: undefined }) })
+    void navigate({ search: (previous) => ({ ...previous, userId: undefined, mode: undefined }) })
+
+  // From the row menu: straight to the correction, without passing through the record first.
+  const editRecord = (nextUserId: string) =>
+    void navigate({ search: (previous) => ({ ...previous, userId: nextUserId, mode: 'edit' }) })
+
+  const setMode = (nextMode: 'view' | 'edit') =>
+    void navigate({ search: (previous) => ({ ...previous, mode: nextMode }) })
+
+  const canEditOpenUser = openUser !== undefined && mayEditUserIdentity(viewer, openUser)
+
+  const correctIdentity = async (value: UserIdentityValue) => {
+    if (!openUser) {
+      throw new Error('No user is open to correct')
+    }
+
+    const response = await mutations.updateIdentity.mutateAsync({
+      params: { id: openUser.id },
+      body: value,
+    })
+
+    return response.data
+  }
 
   const updateSearch = (value: string) =>
     void navigate({ search: (previous) => ({ ...previous, search: value }) })
@@ -182,6 +206,7 @@ export function UsersPage() {
       emptyTitle={statusViewEmptyTitle(view)}
       onClearFilters={clearFilters}
       highlightedUserId={invitedUserId}
+      onEdit={editRecord}
       onInvite={canInvite ? openInvitation : undefined}
       onSelect={openRecord}
       onSortingChange={updateSorting}
@@ -260,7 +285,16 @@ export function UsersPage() {
         </section>
       )}
 
-      <UserSheet onClose={closeRecord} user={openUser} />
+      <UserSheet
+        canEdit={canEditOpenUser}
+        mode={mode === 'edit' ? 'edit' : 'view'}
+        onCancelEdit={() => setMode('view')}
+        onClose={closeRecord}
+        onEdit={() => setMode('edit')}
+        onUpdate={correctIdentity}
+        onUpdated={() => setMode('view')}
+        user={openUser}
+      />
 
       <Sheet
         open={isInviting && !isShowingActivationLink}
