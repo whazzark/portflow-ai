@@ -6,17 +6,14 @@ import { DateTime } from 'luxon'
 import { UserFactory } from '#database/factories/user_factory'
 import type User from '#models/user'
 import UpdateUserIdentityUseCase from '#users/identity/update_user_identity_use_case'
-import ActivationLinkReissuer, {
-  type ReissueActivationLinkResult,
-} from '#users/shared/activation_link_reissuer'
 import type {
   ApplyUserIdentityCommand,
   ApplyUserIdentityResult,
 } from '#users/shared/repositories/user_repository'
 import UserRepository from '#users/shared/repositories/user_repository'
 import {
-  ActivationLinkUnavailableException,
   DuplicateUserEmailException,
+  PendingUserEmailChangeException,
   SelfIdentityUpdateException,
   UserNotFoundException,
 } from '#users/shared/user_exceptions'
@@ -26,12 +23,8 @@ type RepositoryStub = {
   result?: ApplyUserIdentityResult
 }
 
-const swapCollaborators = (
-  stub: RepositoryStub,
-  issue: () => Promise<ReissueActivationLinkResult>,
-) => {
+const swapRepository = (stub: RepositoryStub) => {
   const applied: ApplyUserIdentityCommand[] = []
-  const issued: string[] = []
 
   app.container.swap(
     UserRepository,
@@ -47,19 +40,8 @@ const swapCollaborators = (
         },
       }) as unknown as UserRepository,
   )
-  app.container.swap(
-    ActivationLinkReissuer,
-    () =>
-      ({
-        reissueForCorrectedEmail: (command: { email: string }) => {
-          issued.push(command.email)
 
-          return issue()
-        },
-      }) as unknown as ActivationLinkReissuer,
-  )
-
-  return { applied, issued }
+  return { applied }
 }
 
 const inputFor = (target: User, overrides: Partial<Record<string, string>> = {}) => ({
@@ -72,31 +54,32 @@ const inputFor = (target: User, overrides: Partial<Record<string, string>> = {})
   ...overrides,
 })
 
+const handle = (input: ReturnType<typeof inputFor>) =>
+  (app.container.make(UpdateUserIdentityUseCase) as Promise<UpdateUserIdentityUseCase>).then(
+    (useCase) => useCase.handle(input),
+  )
+
 test.group('UpdateUserIdentityUseCase', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
   group.each.teardown(() => {
     app.container.restore(UserRepository)
-    app.container.restore(ActivationLinkReissuer)
   })
 
   test('applies a correction to an active user', async ({ assert }) => {
     const target = await UserFactory.apply('active').create()
-    const { applied, issued } = swapCollaborators({ target }, () =>
-      Promise.resolve({ kind: 'REISSUED' }),
-    )
+    const { applied } = swapRepository({ target })
 
-    await (await app.container.make(UpdateUserIdentityUseCase)).handle(inputFor(target))
+    await handle(inputFor(target))
 
     assert.lengthOf(applied, 1)
     assert.equal(applied[0].firstName, 'Camille')
-    assert.lengthOf(issued, 0)
   })
 
   test('trims the submitted identity before applying it', async ({ assert }) => {
     const target = await UserFactory.apply('active').create()
-    const { applied } = swapCollaborators({ target }, () => Promise.resolve({ kind: 'REISSUED' }))
+    const { applied } = swapRepository({ target })
 
-    await (await app.container.make(UpdateUserIdentityUseCase)).handle(
+    await handle(
       inputFor(target, { firstName: '  Camille  ', email: ' camille.renard@example.com ' }),
     )
 
@@ -108,89 +91,56 @@ test.group('UpdateUserIdentityUseCase', (group) => {
     const target = await UserFactory.apply('active')
       .merge({ firstName: 'Camille', lastName: 'Renard', email: 'camille.renard@example.com' })
       .create()
-    const { applied, issued } = swapCollaborators({ target }, () =>
-      Promise.resolve({ kind: 'REISSUED' }),
-    )
+    const { applied } = swapRepository({ target })
 
-    const user = await (await app.container.make(UpdateUserIdentityUseCase)).handle(
-      inputFor(target),
-    )
+    const user = await handle(inputFor(target))
 
     assert.equal(user.id, target.id)
     assert.lengthOf(applied, 0)
-    assert.lengthOf(issued, 0)
   })
 
   test('refuses an administrator correcting themselves', async ({ assert }) => {
     const target = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
-    const { applied } = swapCollaborators({ target }, () => Promise.resolve({ kind: 'REISSUED' }))
+    const { applied } = swapRepository({ target })
 
     await assert.rejects(
-      () =>
-        (app.container.make(UpdateUserIdentityUseCase) as Promise<UpdateUserIdentityUseCase>).then(
-          (useCase) => useCase.handle(inputFor(target, { requestedByUserId: target.id })),
-        ),
+      () => handle(inputFor(target, { requestedByUserId: target.id })),
       SelfIdentityUpdateException.message,
     )
     assert.lengthOf(applied, 0)
   })
 
   test('refuses an unknown target', async ({ assert }) => {
-    const { applied } = swapCollaborators({ target: null }, () =>
-      Promise.resolve({ kind: 'REISSUED' }),
-    )
+    const { applied } = swapRepository({ target: null })
     const absent = await UserFactory.apply('active').make()
 
-    await assert.rejects(
-      () =>
-        (app.container.make(UpdateUserIdentityUseCase) as Promise<UpdateUserIdentityUseCase>).then(
-          (useCase) => useCase.handle(inputFor(absent)),
-        ),
-      UserNotFoundException.message,
-    )
+    await assert.rejects(() => handle(inputFor(absent)), UserNotFoundException.message)
     assert.lengthOf(applied, 0)
   })
 
   test('raises a conflict when the address belongs to another user', async ({ assert }) => {
     const target = await UserFactory.apply('active').create()
-    swapCollaborators({ target, result: { kind: 'EMAIL_TAKEN' } }, () =>
-      Promise.resolve({ kind: 'REISSUED' }),
-    )
+    swapRepository({ target, result: { kind: 'EMAIL_TAKEN' } })
 
-    await assert.rejects(
-      () =>
-        (app.container.make(UpdateUserIdentityUseCase) as Promise<UpdateUserIdentityUseCase>).then(
-          (useCase) => useCase.handle(inputFor(target)),
-        ),
-      DuplicateUserEmailException.message,
-    )
+    await assert.rejects(() => handle(inputFor(target)), DuplicateUserEmailException.message)
   })
 
-  test('issues a fresh activation link when a pending user changes mailbox', async ({ assert }) => {
+  test('refuses to change the mailbox of a pending user, writing nothing', async ({ assert }) => {
     const target = await UserFactory.apply('invited').create()
-    const { applied, issued } = swapCollaborators({ target }, () =>
-      Promise.resolve({ kind: 'REISSUED' }),
-    )
+    const { applied } = swapRepository({ target })
 
-    await (await app.container.make(UpdateUserIdentityUseCase)).handle(inputFor(target))
-
-    assert.deepEqual(issued, ['camille.renard@example.com'])
-    assert.lengthOf(applied, 1)
+    await assert.rejects(() => handle(inputFor(target)), PendingUserEmailChangeException.message)
+    assert.lengthOf(applied, 0)
   })
 
-  test('leaves a pending user activation link alone when only the name changes', async ({
-    assert,
-  }) => {
+  test('corrects the name of a pending user whose address stays the same', async ({ assert }) => {
     const target = await UserFactory.apply('invited')
       .merge({ email: 'camille.renard@example.com' })
       .create()
-    const { applied, issued } = swapCollaborators({ target }, () =>
-      Promise.resolve({ kind: 'REISSUED' }),
-    )
+    const { applied } = swapRepository({ target })
 
-    await (await app.container.make(UpdateUserIdentityUseCase)).handle(inputFor(target))
+    await handle(inputFor(target))
 
-    assert.lengthOf(issued, 0)
     assert.lengthOf(applied, 1)
   })
 
@@ -198,44 +148,21 @@ test.group('UpdateUserIdentityUseCase', (group) => {
     const target = await UserFactory.apply('invited')
       .merge({ email: 'Camille.Renard@Example.com' })
       .create()
-    const { applied, issued } = swapCollaborators({ target }, () =>
-      Promise.resolve({ kind: 'REISSUED' }),
-    )
+    const { applied } = swapRepository({ target })
 
-    await (await app.container.make(UpdateUserIdentityUseCase)).handle(inputFor(target))
+    await handle(inputFor(target))
 
-    assert.lengthOf(issued, 0)
     assert.lengthOf(applied, 1)
   })
 
-  test('fails the whole correction when no activation link can be issued', async ({ assert }) => {
-    const target = await UserFactory.apply('invited').create()
-    const { applied } = swapCollaborators({ target }, () =>
-      Promise.resolve({ kind: 'UNAVAILABLE' }),
-    )
-
-    await assert.rejects(
-      () =>
-        (app.container.make(UpdateUserIdentityUseCase) as Promise<UpdateUserIdentityUseCase>).then(
-          (useCase) => useCase.handle(inputFor(target)),
-        ),
-      ActivationLinkUnavailableException.message,
-    )
-    assert.lengthOf(applied, 0)
-  })
-
-  test('never asks for an activation link for a user who is not pending', async ({ assert }) => {
+  test('lets a user who is not pending change mailbox', async ({ assert }) => {
     for (const state of ['active', 'deactivated', 'cancelled'] as const) {
       const target = await UserFactory.apply(state).create()
-      const { issued } = swapCollaborators({ target }, () =>
-        Promise.resolve({ kind: 'UNAVAILABLE' }),
-      )
+      const { applied } = swapRepository({ target })
 
-      await (await app.container.make(UpdateUserIdentityUseCase)).handle(
-        inputFor(target, { email: `camille.${target.id}@example.com` }),
-      )
+      await handle(inputFor(target, { email: `camille.${target.id}@example.com` }))
 
-      assert.lengthOf(issued, 0)
+      assert.lengthOf(applied, 1)
     }
   })
 })

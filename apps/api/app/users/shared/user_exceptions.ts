@@ -53,15 +53,15 @@ export class DuplicateUserEmailException extends Exception {
 }
 
 /**
- * Raised when a pending user's email address changes and no activation link can be issued to the
- * corrected address. Failing the whole correction is deliberate: the alternative would leave an
- * outstanding link aimed at a mailbox the organization no longer recognizes as that user's.
+ * A pending user's email address is not correctable: their activation link was handed out under the
+ * address recorded at invitation, and this slice issues no replacement. The message is what the
+ * workbench shows the administrator as it stands, so it says why and when the address can change.
  */
-export class ActivationLinkUnavailableException extends Exception {
+export class PendingUserEmailChangeException extends Exception {
   static status = 409
-  static code = 'E_USER_ACTIVATION_LINK_UNAVAILABLE'
+  static code = 'E_USER_PENDING_EMAIL_LOCKED'
   static message =
-    'The email address of a user who has not activated their access cannot be changed until an activation link can be issued to the new address'
+    'This user has not activated their access yet, so their email address cannot be changed. It can be corrected once they have activated their access.'
 }
 
 export class InvalidUserIdentityException extends Exception {

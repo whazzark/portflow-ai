@@ -14,9 +14,6 @@ import LucidTransportCompanyRepository from '#transport_companies/shared/reposit
 import TransportCompanyRepository from '#transport_companies/shared/repositories/transport_company_repository'
 import LucidTruckRepository from '#trucks/shared/repositories/lucid_truck_repository'
 import TruckRepository from '#trucks/shared/repositories/truck_repository'
-import ActivationLinkReissuer, {
-  UnavailableActivationLinkReissuer,
-} from '#users/shared/activation_link_reissuer'
 import LucidUserRepository from '#users/shared/repositories/lucid_user_repository'
 import UserRepository from '#users/shared/repositories/user_repository'
 import LucidWarehouseDoorRepository from '#warehouse_doors/shared/repositories/lucid_warehouse_door_repository'
@@ -32,14 +29,6 @@ export default class RepositoriesProvider {
   register() {
     this.app.container.bind(UserRepository, () => {
       return this.app.container.make(LucidUserRepository)
-    })
-
-    // Replacing a pending user's link needs the correction to hand the new secret back to the
-    // administrator, which its contract does not carry yet. Until it does, the only implementation
-    // reports the capability unavailable, which is what makes a pending user's email correction fail
-    // closed instead of leaving the previous link usable.
-    this.app.container.bind(ActivationLinkReissuer, () => {
-      return this.app.container.make(UnavailableActivationLinkReissuer)
     })
 
     this.app.container.bind(CustomerRepository, () => {

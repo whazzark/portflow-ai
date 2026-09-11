@@ -3,7 +3,6 @@ import db from '@adonisjs/lucid/services/db'
 import type { DateTime } from 'luxon'
 
 import type User from '#models/user'
-import ActivationLinkReissuer from '#users/shared/activation_link_reissuer'
 import {
   assertValidUserIdentity,
   isSameEmailAddress,
@@ -11,8 +10,8 @@ import {
 } from '#users/shared/normalize_user_identity'
 import UserRepository from '#users/shared/repositories/user_repository'
 import {
-  ActivationLinkUnavailableException,
   DuplicateUserEmailException,
+  PendingUserEmailChangeException,
   SelfIdentityUpdateException,
   UserNotFoundException,
 } from '#users/shared/user_exceptions'
@@ -29,17 +28,12 @@ export type UpdateUserIdentityInput = {
 
 @inject()
 export default class UpdateUserIdentityUseCase {
-  constructor(
-    private userRepository: UserRepository,
-    private activationLinkReissuer: ActivationLinkReissuer,
-  ) {}
+  constructor(private userRepository: UserRepository) {}
 
   /**
-   * The transaction is owned here rather than by the repository because the correction spans two
-   * collaborators: the identity write and, for a pending user reaching a different mailbox, the
-   * activation link that must replace the one aimed at the old address. Every refusal below throws
-   * inside it, which is what rolls the whole correction back — the behaviour the specification asks
-   * for when a link cannot be issued.
+   * The transaction is owned here rather than by the repository because every decision below is
+   * taken against the target read under its row lock, and the write that follows must land before
+   * anyone else's: a refusal throws inside it, and nothing is written.
    */
   handle(input: UpdateUserIdentityInput): Promise<User> {
     const identity = assertValidUserIdentity({
@@ -58,22 +52,16 @@ export default class UpdateUserIdentityUseCase {
         throw new SelfIdentityUpdateException()
       }
 
-      // Nothing to apply — and, for a pending user, no mailbox change, so no activation link to
-      // replace. A form opened and submitted untouched is a success.
+      // Nothing to apply. A form opened and submitted untouched is a success.
       if (isSameUserIdentity(target, identity)) {
         return target
       }
 
+      // A pending user's activation link was handed out under the address recorded at invitation,
+      // and this slice issues no replacement: their name can be corrected, their mailbox cannot.
+      // Re-casing the same address is not a mailbox change, so it goes through.
       if (target.accessStatus === 'PENDING' && !isSameEmailAddress(target.email, identity.email)) {
-        const reissue = await this.activationLinkReissuer.reissueForCorrectedEmail({
-          user: target,
-          email: identity.email,
-          client,
-        })
-
-        if (reissue.kind === 'UNAVAILABLE') {
-          throw new ActivationLinkUnavailableException()
-        }
+        throw new PendingUserEmailChangeException()
       }
 
       const result = await this.userRepository.applyIdentity({

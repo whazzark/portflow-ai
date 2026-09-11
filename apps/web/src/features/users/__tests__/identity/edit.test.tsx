@@ -151,15 +151,10 @@ test('reports a field-level validation refusal on its own field', async () => {
   expect(await screen.findByText('The first name field must not be blank')).toBeInTheDocument()
 })
 
-test('keeps a pending user reachable while their address cannot be moved', async () => {
-  mockIdentityCorrectionRefused(
-    {
-      code: 'E_USER_ACTIVATION_LINK_UNAVAILABLE',
-      message:
-        'The email address of a user who has not activated their access cannot be changed until an activation link can be issued to the new address',
-    },
-    409,
-  )
+test('explains, in the form, why a pending user’s address cannot change', async () => {
+  const explanation =
+    'This user has not activated their access yet, so their email address cannot be changed. It can be corrected once they have activated their access.'
+  mockIdentityCorrectionRefused({ code: 'E_USER_PENDING_EMAIL_LOCKED', message: explanation }, 409)
 
   renderUsers('/users?status=pending&userId=pending-1&mode=edit')
 
@@ -167,7 +162,15 @@ test('keeps a pending user reachable while their address cannot be moved', async
   fill('Email', 'chloe.durand@portflow.example')
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
-  expect(
-    await screen.findByText(/cannot be changed until an activation link can be issued/),
-  ).toBeInTheDocument()
+  // The form stays open on what was typed, with the reason next to it rather than on the email
+  // field: nothing the administrator typed is at fault.
+  const panel = screen.getByRole('dialog')
+  expect(await within(panel).findByText(explanation)).toBeInTheDocument()
+  expect(within(panel).getByRole('textbox', { name: 'Email' })).toHaveValue(
+    'chloe.durand@portflow.example',
+  )
+  expect(within(panel).getByRole('textbox', { name: 'Email' })).not.toHaveAttribute(
+    'aria-invalid',
+    'true',
+  )
 })

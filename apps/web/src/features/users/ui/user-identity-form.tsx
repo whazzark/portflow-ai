@@ -31,9 +31,9 @@ const identitySchema = z.object({
 export type UserIdentityValue = z.infer<typeof identitySchema>
 
 /**
- * The refusals this form can answer on a field of its own. Everything else is a form-level message:
- * a correction refused because no activation link can be issued is about the user's state, not
- * about anything the administrator typed.
+ * The refusals this form can answer on a field of its own. Everything else is a form-level message,
+ * shown as the API words it: a pending user's address that cannot change is about the user's state,
+ * not about anything the administrator typed.
  */
 const FIELD_REFUSALS: Record<string, keyof UserIdentityValue> = {
   E_USER_EMAIL_CONFLICT: 'email',

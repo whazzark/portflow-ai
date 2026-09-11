@@ -72,10 +72,9 @@ test.group('PATCH /api/v1/users/:id', () => {
     assert.equal(target.accessStatus, 'PENDING')
   })
 
-  // Until the correction can hand a replacement link back to the administrator, none can be issued
-  // for the corrected address, and the correction fails closed rather than leaving the link handed
-  // out under the previous one usable.
-  test('refuses to move a pending user to another mailbox while no activation link can be issued', async ({
+  // Their activation link was handed out under the address recorded at invitation, and this slice
+  // issues no replacement. The message is what the administrator reads, so it has to say why.
+  test('refuses to move a pending user to another mailbox, and says why', async ({
     assert,
     client,
   }) => {
@@ -89,7 +88,8 @@ test.group('PATCH /api/v1/users/:id', () => {
       .loginAs(administrator)
 
     response.assertStatus(409)
-    assert.equal(response.body().error.code, 'E_USER_ACTIVATION_LINK_UNAVAILABLE')
+    assert.equal(response.body().error.code, 'E_USER_PENDING_EMAIL_LOCKED')
+    assert.match(response.body().error.message, /has not activated their access yet/)
     await target.refresh()
     assert.equal(target.firstName, 'Camile')
     assert.equal(target.email, addressBefore)
