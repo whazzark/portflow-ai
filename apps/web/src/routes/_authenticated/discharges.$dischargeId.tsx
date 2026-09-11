@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
 
 import { dischargeQueries } from '@/features/discharges/queries/discharge-queries'
+import { DischargeBreadcrumb } from '@/features/discharges/ui/detail/discharge-breadcrumb'
 import { DischargeDetailError } from '@/features/discharges/ui/detail/discharge-detail-error'
 import { DischargeDetailPage } from '@/features/discharges/ui/detail/discharge-detail-page'
 import { DischargeDetailPending } from '@/features/discharges/ui/detail/discharge-detail-pending'
@@ -8,16 +9,8 @@ import { DischargeNotFound } from '@/features/discharges/ui/detail/discharge-not
 import { isNotFoundError } from '@/libraries/tuyau/api-error'
 import { ensureSessionUser } from '@/libraries/tuyau/session'
 
-// The shared header hands over the loader data untyped. Until a discharge has been read — while
-// pending, or when it is missing or failed — the crumb still needs a label.
-function dischargeBreadcrumb(loaderData: unknown) {
-  const detail = loaderData as { data?: { vesselName?: string } } | undefined
-
-  return detail?.data?.vesselName ?? 'Discharge'
-}
-
 export const Route = createFileRoute('/_authenticated/discharges/$dischargeId')({
-  staticData: { breadcrumb: dischargeBreadcrumb },
+  staticData: { breadcrumb: DischargeBreadcrumb },
   loader: async ({ context: { queryClient }, params: { dischargeId } }) => {
     await ensureSessionUser(queryClient)
 
