@@ -76,6 +76,8 @@ export default class LucidUserRepository extends UserRepository {
             deactivatedByUserId: null,
             reactivatedAt: null,
             reactivatedByUserId: null,
+            passwordResetAt: null,
+            passwordResetByUserId: null,
             passwordRenewalRequiredAt: null,
           },
           { client: trx },

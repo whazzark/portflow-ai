@@ -43,6 +43,7 @@ test.group('POST /api/v1/users', (group) => {
     assert.isNull(user.cancelledAt)
     assert.isNull(user.deactivatedAt)
     assert.isNull(user.reactivatedAt)
+    assert.isNull(user.passwordResetAt)
     assert.isUndefined(user.password)
 
     assert.isTrue(activationLink.url.includes('/activate/'))
