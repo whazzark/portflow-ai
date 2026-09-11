@@ -39,6 +39,18 @@ export function useUserMutations() {
     }),
   )
 
+  /**
+   * Refreshed on a refusal too, as `deactivate` is: a refusal means the user moved on — they
+   * activated their access, or someone else removed them first — and the reason reads best against a
+   * workbench that already agrees.
+   */
+  const remove = useMutation(
+    tuyauQuery.users.destroy.mutationOptions({
+      onSuccess: () => refreshUsers(),
+      onError: () => refreshUsers(),
+    }),
+  )
+
   const updateIdentity = useMutation(
     tuyauQuery.users.update.mutationOptions({
       onSuccess: () => refreshUsers(),
@@ -69,6 +81,7 @@ export function useUserMutations() {
     invite,
     deactivate,
     cancelInvitation,
+    remove,
     updateIdentity,
     changeRole,
     resetPassword,
