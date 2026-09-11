@@ -1,15 +1,44 @@
-# Requirements Checklist: Update Another User Identity
+# Specification Quality Checklist: Update Another User Identity
 
+**Purpose**: Validate specification completeness and quality before proceeding to planning
+**Created**: 2026-09-10
+**Feature**: [spec.md](../spec.md)
 **Feature ID**: `GH-24`
-**Spec**: `../spec.md`
 
-## Source acceptance criteria
+## Content Quality
 
-- [ ] Resolve all `[NEEDS CLARIFICATION]` markers before plan approval.
-- [ ] Define the actor, scope, intended behavior, and observable acceptance criteria for "Update Another User Identity" before planning.
+- [x] No implementation details (languages, frameworks, APIs)
+- [x] Focused on user value and business needs
+- [x] Written for non-technical stakeholders
+- [x] All mandatory sections completed
 
-## Verification
+## Requirement Completeness
 
-- [ ] Each item maps to a test or reviewable behavior.
-- [ ] API and web seams are covered where applicable.
-- [ ] No requirement is implemented outside the approved spec.
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
+- [x] Success criteria are measurable
+- [x] Success criteria are technology-agnostic (no implementation details)
+- [x] All acceptance scenarios are defined
+- [x] Edge cases are identified
+- [x] Scope is clearly bounded
+- [x] Dependencies and assumptions identified
+
+## Feature Readiness
+
+- [x] All functional requirements have clear acceptance criteria
+- [x] User scenarios cover primary flows
+- [x] Feature meets measurable outcomes defined in Success Criteria
+- [x] No implementation details leak into specification
+
+## Notes
+
+- All items pass. Three scope decisions were clarified on 2026-09-10 and written into the spec:
+  - FR-003: an organization admin may correct any user of their organization whatever the access
+    status, except themselves.
+  - FR-013: every accepted correction is retained as a dated, attributed entry carrying the identity
+    before and after the change.
+  - FR-015: the email address is in scope, and correcting a pending user's address invalidates the
+    outstanding activation link and issues a new one to the corrected address.
+- Open point for planning, not a spec defect: FR-015 makes the pending-user branch depend on GH-7
+  (activation links), which is not delivered. The dependency is recorded in the spec's Dependencies
+  section but not yet as a GitHub issue dependency on #24.

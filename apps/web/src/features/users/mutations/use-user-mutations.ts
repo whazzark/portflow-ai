@@ -1,16 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+
 import { userQueries } from '@/features/users/queries/user-queries'
 import { tuyauQuery } from '@/libraries/tuyau/client'
 
 export function useUserMutations() {
   const queryClient = useQueryClient()
 
-  const refreshUsers = async () => {
-    await queryClient.invalidateQueries({
-      exact: true,
-      queryKey: userQueries.list().queryKey,
-    })
-  }
+  /**
+   * The record is a view over the retrieved collection, so one invalidation refreshes the row, the
+   * counts, the open record, and every other place the corrected user is named.
+   */
+  const refreshUsers = () =>
+    queryClient.invalidateQueries({ exact: true, queryKey: userQueries.list().queryKey })
 
   const invite = useMutation(
     tuyauQuery.users.store.mutationOptions({
@@ -30,5 +31,11 @@ export function useUserMutations() {
     }),
   )
 
-  return { invite, deactivate, refreshUsers }
+  const updateIdentity = useMutation(
+    tuyauQuery.users.update.mutationOptions({
+      onSuccess: () => refreshUsers(),
+    }),
+  )
+
+  return { invite, deactivate, updateIdentity, refreshUsers }
 }

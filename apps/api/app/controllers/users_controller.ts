@@ -1,13 +1,16 @@
 import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
+
 import DeactivateUserUseCase from '#users/deactivate/deactivate_user_use_case'
 import { deactivateUserValidator } from '#users/deactivate/deactivate_user_validator'
+import UpdateUserIdentityUseCase from '#users/identity/update_user_identity_use_case'
 import InviteUserUseCase from '#users/invite/invite_user_use_case'
 import { inviteUserValidator } from '#users/invite/invite_user_validator'
 import ListUsersUseCase from '#users/list/list_users_use_case'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 import UserPolicy from '#users/shared/user_policy'
+import { updateUserIdentityValidator } from '#users/shared/user_validator'
 
 @inject()
 export default class UsersController {
@@ -15,6 +18,7 @@ export default class UsersController {
     private listUsersUseCase: ListUsersUseCase,
     private inviteUserUseCase: InviteUserUseCase,
     private deactivateUserUseCase: DeactivateUserUseCase,
+    private updateUserIdentityUseCase: UpdateUserIdentityUseCase,
   ) {}
 
   /**
@@ -48,6 +52,31 @@ export default class UsersController {
 
     return serialize(
       UserTransformer.transform(users, { includeAccessHistory }).useVariant('toAdministration'),
+    )
+  }
+
+  async update({ auth, bouncer, params, request, serialize }: HttpContext) {
+    await bouncer.with(UserPolicy).authorize('updateIdentity')
+
+    const administrator = auth.getUserOrFail()
+    const payload = await request.validateUsing(updateUserIdentityValidator)
+
+    const user = await this.updateUserIdentityUseCase.handle({
+      targetUserId: params.id,
+      requestedByUserId: administrator.id,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      email: payload.email,
+      changedAt: DateTime.now(),
+    })
+
+    // Only an organization admin reaches this seam at all, and that is exactly the viewer the
+    // access history is exposed to, so the corrected user comes back in the same projection the
+    // collection uses.
+    return serialize(
+      UserTransformer.transform(user, { includeAccessHistory: true }).useVariant(
+        'toAdministration',
+      ),
     )
   }
 

@@ -50,6 +50,7 @@ export interface ApiDefinition {
   users: {
     index: typeof routes['users.index']
     store: typeof routes['users.store']
+    update: typeof routes['users.update']
     deactivate: typeof routes['users.deactivate']
   }
   docks: {
