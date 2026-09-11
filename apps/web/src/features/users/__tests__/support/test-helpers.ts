@@ -132,6 +132,57 @@ export function mockDeactivationUnreachable() {
   server.use(http.post(`${API_BASE_URL}/api/v1/users/:id/deactivate`, () => HttpResponse.error()))
 }
 
+/**
+ * A collection that answers identity corrections the way the API does: the correction lands in the
+ * collection, so the refetch the mutation triggers is what carries it back to the workbench — the
+ * record being a view over that collection, exactly as in production.
+ */
+export function mockIdentityCorrection(
+  viewer: unknown = ORGANIZATION_ADMIN,
+  users: UserDto[] = USERS,
+) {
+  const collection = users.map((user) => ({ ...user }))
+  const corrections: Array<{ id: string; body: unknown }> = []
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: viewer })),
+    http.get(`${API_BASE_URL}/api/v1/users`, () => HttpResponse.json({ data: collection })),
+    http.patch(`${API_BASE_URL}/api/v1/users/:id`, async ({ params, request }) => {
+      const body = (await request.json()) as Record<string, string>
+      corrections.push({ id: String(params.id), body })
+
+      const target = collection.find((user) => user.id === params.id)
+
+      if (!target) {
+        return HttpResponse.json(
+          { error: { code: 'E_USER_NOT_FOUND', message: 'User not found' } },
+          { status: 404 },
+        )
+      }
+
+      Object.assign(target, body)
+
+      return HttpResponse.json({ data: target })
+    }),
+  )
+
+  return { collection, corrections }
+}
+
+/** The API refuses the correction. The panel must report it and keep what was typed. */
+export function mockIdentityCorrectionRefused(
+  error: { code: string; message: string; details?: Array<{ field: string; message: string }> },
+  status: number,
+  viewer: unknown = ORGANIZATION_ADMIN,
+  users: UserDto[] = USERS,
+) {
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: viewer })),
+    http.get(`${API_BASE_URL}/api/v1/users`, () => HttpResponse.json({ data: users })),
+    http.patch(`${API_BASE_URL}/api/v1/users/:id`, () => HttpResponse.json({ error }, { status })),
+  )
+}
+
 export function renderUsers(initialPath = '/users') {
   return renderApp(initialPath)
 }

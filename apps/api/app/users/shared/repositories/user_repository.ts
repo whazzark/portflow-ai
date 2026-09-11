@@ -1,3 +1,4 @@
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { DateTime } from 'luxon'
 
 import type User from '#models/user'
@@ -73,6 +74,24 @@ export type DeactivateUserResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'NOT_ACTIVE'; accessStatus: UserAccessStatus }
 
+export type ApplyUserIdentityCommand = {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  changedAt: DateTime
+  /**
+   * The correction's transaction, opened by the use case: the identity and the activation link a
+   * pending user's corrected address needs are one indivisible effect.
+   */
+  client: TransactionClientContract
+}
+
+export type ApplyUserIdentityResult =
+  | { kind: 'UPDATED'; user: User }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'EMAIL_TAKEN' }
+
 export default abstract class UserRepository {
   abstract create(command: CreateUserCommand): Promise<User>
 
@@ -104,4 +123,21 @@ export default abstract class UserRepository {
    * exactly one deactivation.
    */
   abstract deactivateActive(command: DeactivateUserCommand): Promise<DeactivateUserResult>
+
+  /**
+   * The target user, read under a row lock inside the caller's transaction, so that the identity a
+   * correction is decided against is the one it actually replaces and two concurrent corrections
+   * cannot interleave into a mixed identity. Carries the access history, like every read the
+   * administration projection serializes.
+   *
+   * Returns `null` when no such user exists — the documented not-found contract of a lookup.
+   */
+  abstract findByIdForUpdate(id: string, client: TransactionClientContract): Promise<User | null>
+
+  /**
+   * Writes the corrected identity. Conditional on the address still being
+   * free: `EMAIL_TAKEN` covers both a conflict seen before the write and one that appears between
+   * the check and the write, since `users_email_unique` is the authority on either.
+   */
+  abstract applyIdentity(command: ApplyUserIdentityCommand): Promise<ApplyUserIdentityResult>
 }

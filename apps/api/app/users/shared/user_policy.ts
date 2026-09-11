@@ -33,4 +33,13 @@ export default class UserPolicy extends BasePolicy {
   deactivate(user: User): AuthorizerResponse {
     return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'
   }
+
+  /**
+   * Whether the viewer may correct identities at all. *Which* user they may then correct is a
+   * separate decision, owned by UpdateUserIdentityUseCase: an organization admin may use this seam,
+   * just not on themselves.
+   */
+  updateIdentity(user: User): AuthorizerResponse {
+    return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'
+  }
 }

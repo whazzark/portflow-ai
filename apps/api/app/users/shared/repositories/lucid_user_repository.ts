@@ -6,6 +6,8 @@ import UserActivationToken from '#models/user_activation_token'
 import isUniqueViolation from '#shared/database/is_unique_violation'
 
 import UserRepository, {
+  type ApplyUserIdentityCommand,
+  type ApplyUserIdentityResult,
   type CreateUserCommand,
   type DeactivateUserCommand,
   type DeactivateUserResult,
@@ -226,5 +228,75 @@ export default class LucidUserRepository extends UserRepository {
     }
 
     await revocation.delete()
+  }
+
+  /**
+   * The lock, not a guard, is the concurrency control here: the use case decides from the stored
+   * identity — whether anything changed, whether a pending user reaches a different mailbox — and
+   * those decisions must still hold when the write lands, which means reading the stored values and
+   * writing the new ones under one lock. A compare-and-swap would need every replaced column in its `WHERE`, which is a hand-rolled
+   * optimistic lock where a row lock already exists — the shape the truck lifecycle writes use.
+   *
+   * `forUpdate()` is a no-op on SQLite, which serializes writes anyway; PostgreSQL is where it earns
+   * its place.
+   *
+   * Preloaded because a submission that changes nothing returns this very instance, and the
+   * response projects the whole access history: a relation left unpreloaded would serialize as
+   * `null`.
+   */
+  findByIdForUpdate(id: string, client: TransactionClientContract): Promise<User | null> {
+    return preloadAccessHistory(User.query({ client }).where('id', id).forUpdate()).first()
+  }
+
+  /**
+   * Runs inside the caller's transaction, never its own: the use case coordinates this write with
+   * the activation link a pending user's corrected address needs, and the two are one indivisible
+   * effect (ADR 0013).
+   */
+  async applyIdentity(command: ApplyUserIdentityCommand): Promise<ApplyUserIdentityResult> {
+    const { client } = command
+
+    // Asked before the write for the sake of a precise answer; `users_email_unique` on
+    // `LOWER(email)` remains the authority, and the catch below is what closes the window between
+    // this question and the write.
+    const holder = await User.query({ client })
+      .whereRaw('LOWER(email) = ?', [command.email.toLowerCase()])
+      .whereNot('id', command.id)
+      .first()
+
+    if (holder) {
+      return { kind: 'EMAIL_TAKEN' }
+    }
+
+    const changedAt = command.changedAt.toSQL({ includeOffset: false })
+
+    try {
+      await User.query({ client }).where('id', command.id).update({
+        firstName: command.firstName,
+        lastName: command.lastName,
+        email: command.email,
+        // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+        // bookkeeping timestamp is written by hand — as every other guarded write here does.
+        updatedAt: changedAt,
+      })
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        return { kind: 'EMAIL_TAKEN' }
+      }
+
+      throw error
+    }
+
+    // Also what answers an unknown id: the `UPDATE` above matched no row, so there is nothing to
+    // reload.
+    const corrected = await preloadAccessHistory(User.query({ client }))
+      .where('id', command.id)
+      .first()
+
+    if (!corrected) {
+      return { kind: 'NOT_FOUND' }
+    }
+
+    return { kind: 'UPDATED', user: corrected }
   }
 }
