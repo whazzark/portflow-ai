@@ -228,6 +228,12 @@ const routes = {
     tokens: [{"old":"/api/v1/users/:id/deactivate","type":0,"val":"api","end":""},{"old":"/api/v1/users/:id/deactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/users/:id/deactivate","type":0,"val":"users","end":""},{"old":"/api/v1/users/:id/deactivate","type":1,"val":"id","end":""},{"old":"/api/v1/users/:id/deactivate","type":0,"val":"deactivate","end":""}],
     types: placeholder as Registry['users.deactivate']['types'],
   },
+  'users.cancel_invitation': {
+    methods: ["POST"],
+    pattern: '/api/v1/users/:id/cancel-invitation',
+    tokens: [{"old":"/api/v1/users/:id/cancel-invitation","type":0,"val":"api","end":""},{"old":"/api/v1/users/:id/cancel-invitation","type":0,"val":"v1","end":""},{"old":"/api/v1/users/:id/cancel-invitation","type":0,"val":"users","end":""},{"old":"/api/v1/users/:id/cancel-invitation","type":1,"val":"id","end":""},{"old":"/api/v1/users/:id/cancel-invitation","type":0,"val":"cancel-invitation","end":""}],
+    types: placeholder as Registry['users.cancel_invitation']['types'],
+  },
   'users.change_role': {
     methods: ["PATCH"],
     pattern: '/api/v1/users/:id/role',

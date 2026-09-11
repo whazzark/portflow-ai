@@ -41,6 +41,9 @@ test.group('POST /api/v1/users', (group) => {
     assert.equal(user.invitedBy.id, admin.id)
     assert.isNull(user.activatedAt)
     assert.isNull(user.cancelledAt)
+    // Present and null, not absent: the projection an organization admin receives carries the
+    // cancellation comment key on every user, the one just invited included.
+    assert.isNull(user.cancellationComment)
     assert.isNull(user.deactivatedAt)
     assert.isNull(user.reactivatedAt)
     assert.isNull(user.passwordResetAt)

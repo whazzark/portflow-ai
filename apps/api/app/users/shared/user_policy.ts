@@ -35,6 +35,16 @@ export default class UserPolicy extends BasePolicy {
   }
 
   /**
+   * Whether the viewer may withdraw invitations at all. *Which* user's invitation may then be
+   * cancelled — a pending one, and no other — is decided by the guarded write the use case calls, for
+   * the reason `deactivate` gives above: a rule expressed here is a rule the administrator can never
+   * be told the reason for.
+   */
+  cancelInvitation(user: User): AuthorizerResponse {
+    return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'
+  }
+
+  /**
    * Whether the viewer may correct identities at all. *Which* user they may then correct is a
    * separate decision, owned by UpdateUserIdentityUseCase: an organization admin may use this seam,
    * just not on themselves.

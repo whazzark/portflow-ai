@@ -30,6 +30,18 @@ export class UserCancelledInvitationException extends Exception {
   static message = 'User invitation was cancelled before activation'
 }
 
+/**
+ * The target has already activated their access, so there is no invitation left to withdraw — the
+ * access that exists now is retired by deactivation, which the message names. Filed here rather than
+ * in the cancellation slice because restoring an invitation and removing a never-activated user
+ * refuse the very same target for the very same reason.
+ */
+export class UserAlreadyActivatedException extends Exception {
+  static status = 409
+  static code = 'E_USER_ALREADY_ACTIVATED'
+  static message = 'User has already activated their access; deactivate them instead'
+}
+
 export class UserAlreadyDeactivatedException extends Exception {
   static status = 409
   static code = 'E_USER_ALREADY_DEACTIVATED'

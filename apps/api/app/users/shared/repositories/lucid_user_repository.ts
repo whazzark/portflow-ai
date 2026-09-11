@@ -8,6 +8,8 @@ import isUniqueViolation from '#shared/database/is_unique_violation'
 import UserRepository, {
   type ApplyUserIdentityCommand,
   type ApplyUserIdentityResult,
+  type CancelPendingInvitationCommand,
+  type CancelPendingInvitationResult,
   type ChangeUserRoleCommand,
   type ChangeUserRoleResult,
   type CreateUserCommand,
@@ -74,6 +76,7 @@ export default class LucidUserRepository extends UserRepository {
             activatedByUserId: null,
             cancelledAt: null,
             cancelledByUserId: null,
+            cancellationComment: null,
             deactivatedAt: null,
             deactivatedByUserId: null,
             reactivatedAt: null,
@@ -345,6 +348,68 @@ export default class LucidUserRepository extends UserRepository {
       ).firstOrFail()
 
       return { kind: 'DEACTIVATED', user }
+    })
+  }
+
+  /**
+   * `deactivateActive` with the status and the side effect swapped, and it borrows both of that
+   * method's reasons. The guard `WHERE access_status = 'PENDING'` is the eligibility rule and the
+   * concurrency control at once: two racing cancellations match one row between them, and a target
+   * that was activated, deactivated, or cancelled after the workbench listed it matches none.
+   *
+   * The transaction makes the status change and the end of the link inseparable (FR-005): a
+   * cancelled user holding a live activation token, or a pending user whose token vanished under a
+   * cancellation that did not complete, is a half-withdrawn access.
+   *
+   * The token is **deleted**, not flagged: `user_activation_tokens` holds the one live link of a
+   * pending user, so once it is gone a presented secret matches nothing — exactly the answer an
+   * unknown link gets — and restoring the invitation later inserts a fresh row. A pending user who
+   * holds no token (seeded before invitations existed) makes the delete a no-op, which is still the
+   * outcome FR-004 asks for: no usable link remains.
+   *
+   * What this cannot do alone is stop a token being *written* for this user by a concurrent renewal
+   * or acceptance: inserting a token only takes a key-share lock on the `users` row, which this
+   * `UPDATE` does not block. Those writes must guard on the same row still being `PENDING` — the
+   * obligation recorded in the feature's HTTP contract.
+   */
+  cancelPendingInvitation(
+    command: CancelPendingInvitationCommand,
+  ): Promise<CancelPendingInvitationResult> {
+    return User.transaction(async (trx) => {
+      const changedAt = command.cancelledAt.toSQL({ includeOffset: false })
+      const [affectedRows] = await User.query({ client: trx })
+        .where('id', command.id)
+        .where('accessStatus', 'PENDING')
+        .update({
+          accessStatus: 'CANCELLED',
+          cancelledAt: changedAt,
+          cancelledByUserId: command.cancelledByUserId,
+          cancellationComment: command.comment,
+          // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+          // bookkeeping timestamp is written by hand — as every other guarded write here does.
+          updatedAt: changedAt,
+        })
+
+      if (Number(affectedRows) !== 1) {
+        // Only names the reason; the guard above already decided the outcome, so there is no
+        // check-then-act window here to lose. Nothing is written and no token is touched.
+        const user = await User.query({ client: trx }).where('id', command.id).first()
+
+        return user
+          ? { kind: 'NOT_PENDING', accessStatus: user.accessStatus }
+          : { kind: 'NOT_FOUND' }
+      }
+
+      await UserActivationToken.query({ client: trx }).where('userId', command.id).delete()
+
+      // Reloaded with every lifecycle actor resolved, for the reason `deactivateActive` gives: the
+      // response projects the whole access history, and a relation left unpreloaded would serialize
+      // as `null`.
+      const user = await preloadAccessHistory(
+        User.query({ client: trx }).where('id', command.id),
+      ).firstOrFail()
+
+      return { kind: 'CANCELLED', user }
     })
   }
 

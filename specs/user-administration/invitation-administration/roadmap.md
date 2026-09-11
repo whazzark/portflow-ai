@@ -13,7 +13,7 @@ The rows are ordered by execution order. Blockers are recorded as GitHub issue d
 
 | ID | Sub-feature | Blocked by | Status | Artifact |
 |---|---|---|---|---|
-| GH-12 | Cancel a Pending Invitation | GH-7 | planned | ./cancel-a-pending-invitation/ |
+| GH-12 | Cancel a Pending Invitation | GH-7 | implemented | ./cancel-a-pending-invitation/ |
 | GH-14 | Remove a Never-Activated User Permanently | GH-7 | planned | ./remove-a-never-activated-user-permanently/ |
 | GH-13 | Restore a Cancelled Invitation with a New Activation Link | GH-9, GH-12 | planned | ./restore-a-cancelled-invitation-with-a-new-activation-link/ |
 

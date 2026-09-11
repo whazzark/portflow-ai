@@ -9,6 +9,8 @@ type AccessEvent = {
   label: string
   at: string | null | undefined
   by: LifecycleActor
+  /** The administrator's own words on the event, where the event carries any. */
+  comment?: string | null
 }
 
 /** An event the organization actually recorded: it carries the date the record presents. */
@@ -25,7 +27,13 @@ function recordedEvents(user: UserDto): RecordedEvent[] {
   const events: AccessEvent[] = [
     { key: 'invited', label: 'Invited', at: user.invitedAt, by: user.invitedBy },
     { key: 'activated', label: 'Activated', at: user.activatedAt, by: user.activatedBy },
-    { key: 'cancelled', label: 'Cancelled', at: user.cancelledAt, by: user.cancelledBy },
+    {
+      key: 'cancelled',
+      label: 'Cancelled',
+      at: user.cancelledAt,
+      by: user.cancelledBy,
+      comment: user.cancellationComment,
+    },
     { key: 'deactivated', label: 'Deactivated', at: user.deactivatedAt, by: user.deactivatedBy },
     { key: 'reactivated', label: 'Reactivated', at: user.reactivatedAt, by: user.reactivatedBy },
     // Not an access-status event like the five above — a reset changes no access status — but it
@@ -64,6 +72,7 @@ export function UserAccessHistory({ user }: { user: UserDto }) {
             {event.by && (
               <span className="text-muted-foreground">by {formatFullName(event.by)}</span>
             )}
+            {event.comment && <span className="whitespace-pre-wrap">“{event.comment}”</span>}
           </li>
         ))}
       </ol>
