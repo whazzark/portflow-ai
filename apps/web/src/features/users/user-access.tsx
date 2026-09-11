@@ -138,7 +138,10 @@ export function UserAccessDialog({
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor={commentId}>{LIFECYCLE_COMMENT_LABEL}</FieldLabel>
+              {/* Frozen while in flight: the request already carries the text, so an edit made now
+                  would be silently dropped on success. */}
               <Textarea
+                disabled={isPending}
                 id={commentId}
                 maxLength={1000}
                 onChange={(event) => setComment(event.target.value)}

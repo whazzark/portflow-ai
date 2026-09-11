@@ -114,7 +114,7 @@ test('sends a null comment when the field was left empty', async () => {
   expect(requests[0]).toEqual({ id: 'pending-1', body: { comment: null } })
 })
 
-test('shows the cancellation in progress and refuses a second submission', async () => {
+test('shows the cancellation in progress, freezes the comment, and refuses a second submission', async () => {
   const user = userEvent.setup()
   mockUsersWithCancellation()
   let calls = 0
@@ -133,6 +133,7 @@ test('shows the cancellation in progress and refuses a second submission', async
 
   const pending = await within(dialog).findByRole('button', { name: 'Cancelling…' })
   expect(pending).toBeDisabled()
+  expect(within(dialog).getByRole('textbox', { name: 'Comment (optional)' })).toBeDisabled()
   await user.click(pending)
   expect(calls).toBe(1)
 })
