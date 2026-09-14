@@ -3,6 +3,7 @@ import type { DateTime } from 'luxon'
 
 import UserRepository from '#users/shared/repositories/user_repository'
 import {
+  DeactivationNoLongerAuthorizedException,
   SelfDeactivationException,
   UserAlreadyDeactivatedException,
   UserCancelledInvitationException,
@@ -18,7 +19,8 @@ export type DeactivateUserInput = {
 
 /**
  * Owns *which* user may be deactivated. Whether the viewer may deactivate anyone at all is
- * UserPolicy's decision, taken before this runs.
+ * UserPolicy's decision, taken before this runs — and taken again by the guarded write, against the
+ * actor as they stand when it lands, whose verdict this turns back into the policy's refusal.
  */
 @inject()
 export default class DeactivateUserUseCase {
@@ -45,6 +47,12 @@ export default class DeactivateUserUseCase {
 
     if (result.kind === 'DEACTIVATED') {
       return result.user
+    }
+
+    // Ahead of every reason about the target: the actor was demoted or deactivated after the policy
+    // let the request through, and is owed that policy's answer, not news about this user.
+    if (result.kind === 'ACTOR_NOT_ENTITLED') {
+      throw new DeactivationNoLongerAuthorizedException()
     }
 
     if (result.kind === 'NOT_FOUND') {

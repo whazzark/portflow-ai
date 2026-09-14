@@ -18,6 +18,19 @@ export class SelfDeactivationException extends Exception {
   static message = 'An organization admin cannot deactivate their own access'
 }
 
+/**
+ * The administrator was entitled when the request arrived and no longer is when the deactivation
+ * would take effect — deactivated or demoted by a change that landed in between. It renders exactly
+ * what `UserPolicy.deactivate`'s denial renders (Bouncer's `AuthorizationException`), rather than a
+ * code of its own: only someone who has already lost the entitlement can ever receive it, and they
+ * are owed the same answer, disclosing nothing about the target, as if the policy had said no.
+ */
+export class DeactivationNoLongerAuthorizedException extends Exception {
+  static status = 403
+  static code = 'E_AUTHORIZATION_FAILURE'
+  static message = 'Access denied'
+}
+
 export class UserPendingInvitationException extends Exception {
   static status = 409
   static code = 'E_USER_PENDING_INVITATION'
