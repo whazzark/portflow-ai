@@ -59,7 +59,11 @@ export default class ReactivateUserUseCase {
     }
 
     // `ACTIVE`: someone else reactivated this user first, or the administrator named themselves —
-    // a deactivated administrator holds no session, so no dedicated self refusal is needed.
+    // a deactivated administrator holds no session, so no dedicated self refusal is needed. And
+    // `DEACTIVATED`: a row that had been reactivated and retired again by the time the guarded write
+    // re-read it. Both say the same thing to the caller, as they do in `DeactivateUserUseCase`:
+    // someone else changed this user while the request was in flight, and the workbench the refusal
+    // returns to reads the status afresh.
     throw new UserAlreadyActiveException()
   }
 }

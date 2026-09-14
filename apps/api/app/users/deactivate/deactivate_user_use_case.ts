@@ -59,7 +59,7 @@ export default class DeactivateUserUseCase {
       throw new UserCancelledInvitationException()
     }
 
-    // `DEACTIVATED`, and — only once GH-32 can reactivate mid-request — a row that had moved back
+    // `DEACTIVATED`, and — now that GH-32 can reactivate mid-request — a row that had moved back
     // to active by the time the guarded write re-read it. Both say the same thing to the caller:
     // someone else changed this user while the request was in flight.
     throw new UserAlreadyDeactivatedException()
