@@ -102,8 +102,9 @@ export default class UserPolicy extends BasePolicy {
    * admin consults active users and may not touch a responsibility level, because a viewer who can
    * change a role can grant themselves the organization admin one.
    *
-   * Whether the *target* may have their role changed is a separate decision, owned by the guarded
-   * write in the repository — the same split `list` describes above.
+   * Whether the *target* may have their role changed is a separate decision — the same split `list`
+   * describes above — owned by ChangeUserRoleUseCase for the requester themselves, and by the locked
+   * write in the repository for a deactivated target and for the last active organization admin.
    */
   changeRole(user: User): AuthorizerResponse {
     return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'

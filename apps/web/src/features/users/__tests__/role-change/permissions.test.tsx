@@ -1,6 +1,12 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { ACTIVE_USERS_WITHOUT_LIFECYCLE, OPERATIONS_ADMIN } from '../support/fixtures'
+import type { UserDto } from '@/features/users/types'
+import {
+  ACTIVE_USERS_WITHOUT_LIFECYCLE,
+  OPERATIONS_ADMIN,
+  ORGANIZATION_ADMIN,
+  USERS,
+} from '../support/fixtures'
 import { mockUsers, renderUsers } from '../support/test-helpers'
 
 const asOperationsAdmin = (path = '/users') => {
@@ -24,6 +30,33 @@ test('opens the read-only record when an operations admin asks for the edit mode
 
   expect(screen.queryByRole('combobox', { name: 'Role' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Back to details' })).not.toBeInTheDocument()
+})
+
+/**
+ * GH-29 FR-010: the API refuses a self-role change whatever the interface does, and the interface
+ * never offers one — not even to an administrator who types the edit mode on their own record.
+ */
+test('offers no role control on the viewer’s own record, even when the mode is typed by hand', async () => {
+  const ownRecord = {
+    ...USERS[0],
+    id: ORGANIZATION_ADMIN.id,
+    firstName: ORGANIZATION_ADMIN.firstName,
+    lastName: ORGANIZATION_ADMIN.lastName,
+    email: ORGANIZATION_ADMIN.email,
+    role: 'ORGANIZATION_ADMIN',
+  } as UserDto
+  mockUsers(ORGANIZATION_ADMIN, [ownRecord, USERS[1]])
+
+  renderUsers(`/users?userId=${ORGANIZATION_ADMIN.id}&mode=edit`)
+  const record = await screen.findByRole('dialog')
+
+  await waitFor(() =>
+    expect(
+      within(record).getByRole('heading', { name: new RegExp(ORGANIZATION_ADMIN.firstName) }),
+    ).toBeInTheDocument(),
+  )
+  expect(within(record).queryByRole('combobox', { name: 'Role' })).not.toBeInTheDocument()
+  expect(within(record).queryByRole('heading', { name: 'Edit user' })).not.toBeInTheDocument()
 })
 
 test('shows an operations admin the role without an action beside it', async () => {
