@@ -154,6 +154,77 @@ test.group('PATCH /api/v1/users/:id/role', () => {
     await user.refresh()
     assert.equal(user.role, 'OBSERVER')
   })
+
+  // GH-29 FR-001, FR-003: this target is refused, whatever role is asked for — the one already held
+  // included — and as a conflict, not as a lack of permission to change roles.
+  test('refuses an organization admin changing their own role', async ({ assert, client }) => {
+    const admin = await organizationAdmin()
+
+    for (const role of [
+      'ORGANIZATION_ADMIN',
+      'OPERATIONS_ADMIN',
+      'OPERATIONS_LEAD',
+      'OBSERVER',
+    ] as const) {
+      const response = await client
+        .patch(`/api/v1/users/${admin.id}/role`)
+        .loginAs(admin)
+        .json({ role })
+
+      response.assertStatus(409)
+      assert.equal(response.body().error.code, 'E_USER_SELF_ROLE_CHANGE')
+      assert.equal(
+        response.body().error.message,
+        'Your own role can only be changed by another organization admin',
+      )
+    }
+
+    await admin.refresh()
+    assert.equal(admin.role, 'ORGANIZATION_ADMIN')
+    assert.equal(admin.accessStatus, 'ACTIVE')
+  })
+
+  // GH-29 FR-002: the route and PostgreSQL both accept this spelling as the same user.
+  test('refuses a self-role change named in upper case', async ({ assert, client }) => {
+    const admin = await organizationAdmin()
+
+    const response = await client
+      .patch(`/api/v1/users/${admin.id.toUpperCase()}/role`)
+      .loginAs(admin)
+      .json({ role: 'OBSERVER' })
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_USER_SELF_ROLE_CHANGE')
+    await admin.refresh()
+    assert.equal(admin.role, 'ORGANIZATION_ADMIN')
+  })
+
+  // GH-29 FR-011: authorization still runs first, so the self refusal is an organization admin's
+  // alone — anyone else naming themselves learns exactly what naming anybody else teaches.
+  test('denies a non-admin naming themselves exactly as naming anyone', async ({
+    assert,
+    client,
+  }) => {
+    for (const role of ['OPERATIONS_ADMIN', 'OPERATIONS_LEAD', 'OBSERVER'] as const) {
+      const viewer = await UserFactory.apply('active').merge({ role }).create()
+      const other = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+
+      const ownResponse = await client
+        .patch(`/api/v1/users/${viewer.id}/role`)
+        .loginAs(viewer)
+        .json({ role: 'ORGANIZATION_ADMIN' })
+      const otherResponse = await client
+        .patch(`/api/v1/users/${other.id}/role`)
+        .loginAs(viewer)
+        .json({ role: 'ORGANIZATION_ADMIN' })
+
+      ownResponse.assertStatus(403)
+      assert.deepEqual(ownResponse.body(), otherResponse.body())
+      await viewer.refresh()
+      assert.equal(viewer.role, role)
+    }
+  })
+
   test('rejects an unauthenticated role change', async ({ assert, client }) => {
     const user = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
 

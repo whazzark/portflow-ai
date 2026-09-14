@@ -222,12 +222,13 @@ export default class UsersController {
   /**
    * Authorization runs before the target is ever looked up, which is what keeps a refusal
    * uninformative: a viewer who may not change roles receives the same denial whether the id names
-   * a pending user, a deactivated one, or nobody at all.
+   * a pending user, a deactivated one, or nobody at all — themselves included, so the self-role
+   * change refusal is only ever met by an organization admin.
    *
    * The response carries the access history because the only viewer that reaches here is an
    * organization admin — exactly the viewer that projection exists for.
    */
-  async changeRole({ bouncer, request, serialize }: HttpContext) {
+  async changeRole({ auth, bouncer, request, serialize }: HttpContext) {
     await bouncer.with(UserPolicy).authorize('changeRole')
 
     const payload = await request.validateUsing(changeUserRoleValidator)
@@ -235,6 +236,7 @@ export default class UsersController {
     const user = await this.changeUserRoleUseCase.handle({
       userId: payload.params.id,
       role: payload.role,
+      requestedByUserId: auth.getUserOrFail().id,
     })
 
     return serialize(

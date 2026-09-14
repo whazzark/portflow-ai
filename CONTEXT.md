@@ -397,7 +397,7 @@ A dated change to a user's access status, optionally attributed to the user who 
 _Avoid_: user status update, access log entry
 
 **User Role Change**:
-The action of changing the responsibility level assigned to a user.
+The action of changing the responsibility level assigned to a user. An organization admin never changes their own role, and a role change never leaves the organization without an active organization admin.
 _Avoid_: permission edit, profile update
 
 **User Identity Update**:

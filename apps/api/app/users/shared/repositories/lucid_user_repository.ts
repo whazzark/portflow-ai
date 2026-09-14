@@ -249,49 +249,127 @@ export default class LucidUserRepository extends UserRepository {
   }
 
   /**
-   * The same guard-as-concurrency-control as `renewPassword` below, for the same reason: a
-   * single-row conditional `UPDATE` is atomic on both PostgreSQL and SQLite, so
-   * `WHERE access_status <> 'DEACTIVATED'` is what refuses a target that was deactivated between
-   * the moment an administrator opened the record and the moment they confirmed. A read followed by
-   * an unguarded write would accept it.
+   * One transaction, decided under the locks `lockTargetAndActiveOrganizationAdmins` takes. A single
+   * conditional `UPDATE` was enough while the only rule was about the target's own row; the rule
+   * that the organization keeps an active organization admin is about other rows too, and two
+   * administrators demoting each other write two *different* rows — a guard on each would see the
+   * other still an admin, and both would pass. Deciding on rows every such change must lock first is
+   * what judges them one after the other.
    *
-   * No transaction, unlike every other write in this file. `renewPassword` needs one because
-   * recording the password and revoking the other remembered connections must not be separable, and
-   * `suspendAvailable` needs one because it reads a related row inside the write. Here the write is
-   * a single statement, and the two reads around it are diagnostic — classifying a zero-row refusal,
-   * and reloading the row for the response. Neither can leave the user half-changed, and a target
-   * that moved again before a re-read is reported as its newest state, which is the honest answer.
-   *
-   * Submitting the role the user already holds still matches the guard, so it affects one row and
-   * comes back `CHANGED`: a success with an unchanged row, which is what the interface must show
-   * rather than a failure.
+   * Submitting the role the user already holds comes back `CHANGED`: a success with an unchanged
+   * row, which is what the interface must show rather than a failure. Submitting the organization
+   * admin role is never refused by the rule — it can only add to the admins who remain.
    */
-  async changeRole(command: ChangeUserRoleCommand): Promise<ChangeUserRoleResult> {
-    const [affectedRows] = await User.query()
-      .where('id', command.userId)
-      .whereNot('accessStatus', 'DEACTIVATED')
-      .update({
-        role: command.role,
-        // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
-        // bookkeeping timestamp is written by hand — as every other guarded write here does.
-        updatedAt: DateTime.now().toSQL({ includeOffset: false }),
-      })
+  changeRole(command: ChangeUserRoleCommand): Promise<ChangeUserRoleResult> {
+    // The canonical spelling `users.id` stores, used by every statement below. PostgreSQL would
+    // match an upper-cased identifier anyway; SQLite compares it as text and would not, so without
+    // this the admin half of the locking read could find a row the `UPDATE` then misses.
+    const userId = command.userId.toLowerCase()
 
-    if (Number(affectedRows) !== 1) {
-      const current = await User.query().where('id', command.userId).first()
+    return User.transaction(async (trx) => {
+      const { target, otherActiveOrganizationAdmins } =
+        await this.lockTargetAndActiveOrganizationAdmins(trx, userId)
 
-      return current ? { kind: 'DEACTIVATED' } : { kind: 'NOT_FOUND' }
-    }
+      if (!target) {
+        return { kind: 'NOT_FOUND' }
+      }
+      if (target.accessStatus === 'DEACTIVATED') {
+        return { kind: 'DEACTIVATED' }
+      }
+      if (
+        target.accessStatus === 'ACTIVE' &&
+        target.role === 'ORGANIZATION_ADMIN' &&
+        command.role !== 'ORGANIZATION_ADMIN' &&
+        otherActiveOrganizationAdmins.length === 0
+      ) {
+        return { kind: 'LAST_ACTIVE_ORGANIZATION_ADMIN' }
+      }
 
-    // Reloaded with the lifecycle actors so the response carries the same projection
-    // `users.index` returns to an organization admin, who is the only caller that gets here.
-    const changed = await preloadAccessHistory(User.query().where('id', command.userId)).first()
+      const [affectedRows] = await User.query({ client: trx })
+        .where('id', userId)
+        .whereNot('accessStatus', 'DEACTIVATED')
+        .update({
+          role: command.role,
+          // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+          // bookkeeping timestamp is written by hand — as every other guarded write here does.
+          updatedAt: DateTime.now().toSQL({ includeOffset: false }),
+        })
 
-    return changed ? { kind: 'CHANGED', user: changed } : { kind: 'NOT_FOUND' }
+      if (Number(affectedRows) !== 1) {
+        // The row read above was not deactivated, so a zero-row UPDATE means it moved on in between.
+        // PostgreSQL cannot reach this — the lock above holds the row — but knex emits no locking
+        // clause on SQLite, where the guard is what keeps a deactivated user's role frozen.
+        const current = await User.query({ client: trx }).where('id', userId).first()
+
+        return current ? { kind: 'DEACTIVATED' } : { kind: 'NOT_FOUND' }
+      }
+
+      // Reloaded with the lifecycle actors so the response carries the same projection
+      // `users.index` returns to an organization admin, who is the only caller that gets here.
+      const changed = await preloadAccessHistory(
+        User.query({ client: trx }).where('id', userId),
+      ).firstOrFail()
+
+      return { kind: 'CHANGED', user: changed }
+    })
   }
 
   /**
-   * The guard is the eligibility rule and the concurrency control at once, as in `changeRole` above:
+   * The target, and every other active organization admin, read under row locks held until the
+   * caller's transaction ends. Any change that could take the organization's last active
+   * organization admin away must decide on these rows, and must lock them here, the same way:
+   *
+   * - **One statement, in id order.** Every caller locks the same kind of rows in the same order, and
+   *   `id` never changes, so no two of them can deadlock. Locking the target first and the admins
+   *   second would: an administrator demoting another holds that row and waits on their own, while
+   *   the other does the reverse.
+   * - **What was waited for is re-read.** PostgreSQL re-evaluates the `WHERE` of any row a locking read
+   *   had to wait for, against the version that committed: an admin demoted or deactivated in the
+   *   meantime is simply not returned, and is not counted.
+   * - **`FOR NO KEY UPDATE`, not `FOR UPDATE`.** Every insert of a row referencing a user takes
+   *   `FOR KEY SHARE` on that user through its foreign-key check, which `FOR UPDATE` would conflict
+   *   with: an admin's ordinary work would wait on a role change, and a transaction referencing two
+   *   users could deadlock with it. `FOR NO KEY UPDATE` still conflicts with every writer that
+   *   matters — another such read, and any `UPDATE` of these rows, deactivation included. Lucid
+   *   exposes only `forUpdate()` and `forShare()`, so the clause is set on the knex builder; knex
+   *   emits nothing on SQLite, which serializes writers anyway.
+   *
+   * One limit, accepted: a user promoted to organization admin by a transaction that commits while
+   * this read waits was not in its snapshot, so is not counted. A demotion can then be refused where,
+   * a moment later, it would be allowed — the safe direction, and a retry succeeds.
+   *
+   * GH-21 must call this from `deactivateActive` before deactivating an organization admin: only
+   * then are a demotion and a deactivation judged one after the other, as two demotions are here.
+   *
+   * `id` must arrive in the lower-case spelling `users.id` stores: it is compared with the rows as
+   * text, as SQLite compares it.
+   */
+  private async lockTargetAndActiveOrganizationAdmins(
+    trx: TransactionClientContract,
+    id: string,
+  ): Promise<{ target: User | null; otherActiveOrganizationAdmins: User[] }> {
+    const query = User.query({ client: trx })
+      .where('id', id)
+      .orWhere((admins) =>
+        admins.where('role', 'ORGANIZATION_ADMIN').where('accessStatus', 'ACTIVE'),
+      )
+      .orderBy('id')
+    query.knexQuery.forNoKeyUpdate()
+
+    const rows = await query
+    const target = rows.find((row) => row.id === id) ?? null
+
+    return {
+      target,
+      otherActiveOrganizationAdmins: rows.filter(
+        (row) =>
+          row !== target && row.role === 'ORGANIZATION_ADMIN' && row.accessStatus === 'ACTIVE',
+      ),
+    }
+  }
+
+  /**
+   * The guard is the eligibility rule and the concurrency control at once, as in `deactivateActive` below:
    * a single-row conditional `DELETE` is atomic on both dialects, so
    * `WHERE access_status IN ('PENDING', 'CANCELLED')` is what refuses a user who activated their
    * access between the workbench listing them and this statement, and what lets exactly one of two
