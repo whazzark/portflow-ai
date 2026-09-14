@@ -112,9 +112,7 @@ export function UserRowActions({
             </DropdownMenuItem>
           )}
           {mayRestoreInvitation && (
-            <DropdownMenuItem onClick={() => setIsRestorationOpen(true)}>
-              Restore
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setIsRestorationOpen(true)}>Restore</DropdownMenuItem>
           )}
           {actions.map((action) => (
             <DropdownMenuItem

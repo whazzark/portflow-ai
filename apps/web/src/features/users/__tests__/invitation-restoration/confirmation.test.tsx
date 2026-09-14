@@ -66,9 +66,7 @@ test('keeps the invitation cancelled and discards the comment when dismissed', a
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   expect(requests).toHaveLength(0)
 
-  await user.click(
-    within(screen.getByRole('dialog')).getByRole('button', { name: 'Restore' }),
-  )
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Restore' }))
   dialog = await screen.findByRole('alertdialog')
   expect(within(dialog).getByRole('textbox', COMMENT)).toHaveValue('')
 })

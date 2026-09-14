@@ -105,9 +105,7 @@ test('records the restoration after the cancellation in the reopened record', as
   const entry = within(history).getByText('Invitation restored').closest('li') as HTMLElement
   expect(within(entry).getByText('by Claire Martin')).toBeInTheDocument()
   // The restored record offers no second restoration.
-  expect(
-    within(reopened).queryByRole('button', { name: 'Restore' }),
-  ).not.toBeInTheDocument()
+  expect(within(reopened).queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument()
 })
 
 test('makes the invitation refusal’s “Restore it instead” lead to an action on that user', async () => {

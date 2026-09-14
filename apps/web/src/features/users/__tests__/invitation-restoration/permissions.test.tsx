@@ -41,9 +41,7 @@ test.each([
   renderUsers()
   const record = await openFromView(user, view, name)
 
-  expect(
-    within(record).queryByRole('button', { name: 'Restore' }),
-  ).not.toBeInTheDocument()
+  expect(within(record).queryByRole('button', { name: 'Restore' })).not.toBeInTheDocument()
 })
 
 test('offers it to no one but an organization admin', async () => {
