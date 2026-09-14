@@ -1,8 +1,14 @@
+import app from '@adonisjs/core/services/app'
+import db from '@adonisjs/lucid/services/db'
+import type { ApiClient } from '@japa/api-client'
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
 
 import { USER_FACTORY_PASSWORD, UserFactory } from '#database/factories/user_factory'
 import User from '#models/user'
+import LucidUserRepository from '#users/shared/repositories/lucid_user_repository'
+import type { DeactivateUserCommand } from '#users/shared/repositories/user_repository'
+import UserRepository from '#users/shared/repositories/user_repository'
 
 const UNKNOWN_ID = '00000000-0000-4000-8000-999999999999'
 
@@ -10,6 +16,25 @@ const organizationAdmin = () =>
   UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
 
 const deactivatePath = (id: string) => `/api/v1/users/${id}/deactivate`
+
+/**
+ * The real repository, preceded by a change another administrator commits at the worst moment:
+ * after the request passed `UserPolicy.deactivate`, before the guarded write takes effect. The
+ * single-connection test database cannot run two transactions at once, so this is how the window
+ * the write must close is reproduced through the whole HTTP stack — every decision is still the
+ * real one, only the timing is arranged.
+ */
+class CompetingChangeRepository extends LucidUserRepository {
+  constructor(private competingChange: (actorId: string) => Promise<void>) {
+    super()
+  }
+
+  override async deactivateActive(command: DeactivateUserCommand) {
+    await this.competingChange(command.deactivatedByUserId)
+
+    return super.deactivateActive(command)
+  }
+}
 
 test.group('POST /api/v1/users/:id/deactivate', () => {
   test('deactivates an active user and returns the administration projection', async ({
@@ -235,5 +260,98 @@ test.group('POST /api/v1/users/:id/deactivate', () => {
     const target_after = await User.findOrFail(target.id)
     assert.equal(target_after.deactivatedByUserId, admin.id)
     assert.equal(first.body().data.deactivatedAt, target_after.deactivatedAt?.toISO())
+  })
+
+  // The last-admin protection must not overreach: the actor stays active, so the organization keeps
+  // an organization admin, and nothing competes with this request.
+  test('still deactivates the only other organization admin', async ({ assert, client }) => {
+    const admin = await organizationAdmin()
+    const other = await organizationAdmin()
+
+    const response = await client.post(deactivatePath(other.id)).loginAs(admin)
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.accessStatus, 'DEACTIVATED')
+    assert.equal((await User.findOrFail(admin.id)).accessStatus, 'ACTIVE')
+  })
+})
+
+test.group('POST /api/v1/users/:id/deactivate — actor changed while in flight', (group) => {
+  group.each.teardown(() => app.container.restore(UserRepository))
+
+  const competeWith = (change: (actorId: string) => Promise<void>) =>
+    app.container.swap(UserRepository, () => new CompetingChangeRepository(change))
+
+  const rememberedConnection = (userId: string) =>
+    db.table('remember_me_tokens').insert({
+      tokenable_id: userId,
+      hash: `hash-${userId}`,
+      expires_at: DateTime.now().plus({ days: 30 }).toSQL({ includeOffset: false }),
+      created_at: DateTime.now().toSQL({ includeOffset: false }),
+      updated_at: DateTime.now().toSQL({ includeOffset: false }),
+    })
+
+  /** What `UserPolicy.deactivate` answers a viewer who was never entitled, captured live. */
+  const policyDenial = async (client: ApiClient) => {
+    const viewer = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const target = await UserFactory.apply('active').create()
+    const response = await client.post(deactivatePath(target.id)).loginAs(viewer)
+    response.assertStatus(403)
+
+    return response.body()
+  }
+
+  test('refuses a deactivation whose actor was deactivated while it was in flight', async ({
+    assert,
+    client,
+  }) => {
+    const actor = await organizationAdmin()
+    const competitor = await organizationAdmin()
+    const target = await UserFactory.apply('active').create()
+    await rememberedConnection(target.id)
+    const denial = await policyDenial(client)
+    competeWith(async (actorId) => {
+      await User.query()
+        .where('id', actorId)
+        .update({
+          accessStatus: 'DEACTIVATED',
+          deactivatedAt: DateTime.now().toSQL({ includeOffset: false }),
+          deactivatedByUserId: competitor.id,
+        })
+    })
+
+    const response = await client.post(deactivatePath(target.id)).loginAs(actor)
+
+    response.assertStatus(403)
+    assert.deepEqual(response.body(), denial)
+    const untouched = await User.findOrFail(target.id)
+    assert.equal(untouched.accessStatus, 'ACTIVE')
+    assert.isNull(untouched.deactivatedByUserId)
+    assert.lengthOf(await db.from('remember_me_tokens').where('tokenable_id', target.id), 1)
+    // The refusal overwrote nothing on the actor either: their deactivation is the competitor's.
+    assert.equal((await User.findOrFail(actor.id)).deactivatedByUserId, competitor.id)
+
+    const next = await client.get('/api/v1/auth/me').loginAs(actor)
+    next.assertStatus(401)
+  })
+
+  test('refuses a deactivation whose actor was demoted while it was in flight', async ({
+    assert,
+    client,
+  }) => {
+    const actor = await organizationAdmin()
+    const target = await UserFactory.apply('active').create()
+    const denial = await policyDenial(client)
+    competeWith(async (actorId) => {
+      await User.query().where('id', actorId).update({ role: 'OPERATIONS_ADMIN' })
+    })
+
+    const response = await client.post(deactivatePath(target.id)).loginAs(actor)
+
+    response.assertStatus(403)
+    assert.deepEqual(response.body(), denial)
+    const untouched = await User.findOrFail(target.id)
+    assert.equal(untouched.accessStatus, 'ACTIVE')
+    assert.isNull(untouched.deactivatedByUserId)
   })
 })

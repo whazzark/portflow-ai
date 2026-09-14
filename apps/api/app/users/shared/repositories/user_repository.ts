@@ -68,11 +68,16 @@ export type DeactivateUserCommand = {
  *
  * `NOT_ACTIVE` carries the status the row actually had, which is the only thing that distinguishes
  * a pending invitation from a cancelled one from a user someone else deactivated first.
+ *
+ * `ACTOR_NOT_ENTITLED` says the actor was no longer an active organization admin when the write
+ * took effect. It carries nothing, and is observed before anything about the target: whoever lost
+ * the entitlement must learn nothing about the user they were deactivating.
  */
 export type DeactivateUserResult =
   | { kind: 'DEACTIVATED'; user: User }
   | { kind: 'NOT_FOUND' }
   | { kind: 'NOT_ACTIVE'; accessStatus: UserAccessStatus }
+  | { kind: 'ACTOR_NOT_ENTITLED' }
 
 export type ReactivateUserCommand = {
   id: string
@@ -303,6 +308,10 @@ export default abstract class UserRepository {
    * Moves one user from active to deactivated and revokes every remembered connection they hold.
    * The transition is guarded on the row still being active, so concurrent attempts resolve to
    * exactly one deactivation.
+   *
+   * Before that guard, the actor's and the target's rows are locked in id order and the actor is
+   * re-read under the lock: a deactivation takes effect only while its actor is still an active
+   * organization admin, which is what keeps one behind when administrators deactivate each other.
    */
   abstract deactivateActive(command: DeactivateUserCommand): Promise<DeactivateUserResult>
 

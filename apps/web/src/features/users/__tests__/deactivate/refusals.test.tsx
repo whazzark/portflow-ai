@@ -85,6 +85,30 @@ test('refreshes the collection on a refusal, not only on a success', async () =>
   await waitFor(() => expect(reads).toBeGreaterThan(1))
 })
 
+// The API refuses an administrator who was demoted or deactivated while their deactivation was in
+// flight with its policy's own 403, and the workbench reports it like any other refusal.
+test('reports a refusal for lost entitlement like any other refusal', async () => {
+  const user = userEvent.setup()
+  let reads = 0
+  mockUsersWithDeactivation()
+  mockDeactivationRefused('E_AUTHORIZATION_FAILURE', 'Access denied', 403)
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/users`, () => {
+      reads += 1
+
+      return HttpResponse.json({ data: USERS })
+    }),
+  )
+
+  renderUsers()
+  await waitFor(() => expect(reads).toBe(1))
+  await confirmDeactivation(user)
+
+  expect(await screen.findByText('Unable to deactivate user “Amélie Bernard”')).toBeInTheDocument()
+  expect(await screen.findByText('Access denied')).toBeInTheDocument()
+  await waitFor(() => expect(reads).toBeGreaterThan(1))
+})
+
 test('falls back to the API sentence for a reason it does not know', async () => {
   const user = userEvent.setup()
   mockUsersWithDeactivation()

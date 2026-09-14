@@ -9,9 +9,13 @@ import User from '#models/user'
 import UserRepository from '#users/shared/repositories/user_repository'
 
 /**
- * The guard, not a lock, is the concurrency control: `WHERE access_status = 'ACTIVE'` is what makes
- * two racing deactivations record exactly one. These cases prove the outcome union the use case
- * reads, and that a refusal leaves no trace at all.
+ * Two concurrency controls, each proven here by the commit orders it resolves. The guard
+ * `WHERE access_status = 'ACTIVE'` is what makes two deactivations of the *same* user record exactly
+ * one. The actor and target rows locked in id order, with the actor re-read under that lock, are
+ * what make two administrators deactivating *each other* resolve to exactly one — the second finds
+ * its own actor gone (research D2 of the GH-21 feature). The single-connection test database cannot
+ * run the two at once, so each race is played as the sequence it collapses to. These cases prove the
+ * outcome union the use case reads, and that a refusal leaves no trace at all.
  */
 test.group('Deactivate active user repository write', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
@@ -114,5 +118,118 @@ test.group('Deactivate active user repository write', (group) => {
     assert.deepEqual(second, { kind: 'NOT_ACTIVE', accessStatus: 'DEACTIVATED' })
     // The loser overwrites nothing: the recorded administrator is still the winner's.
     assert.equal((await User.findOrFail(target.id)).deactivatedByUserId, admin.id)
+  })
+
+  // Two administrators deactivating each other at the same instant collapse, under the row lock, to
+  // one of these two commit orders. Whichever lands second finds its own actor already deactivated.
+  test('refuses the second of two admins deactivating each other', async ({ assert }) => {
+    const first = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const second = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    await rememberedConnection(first.id)
+
+    const winner = await deactivate(second.id, first.id)
+    const loser = await deactivate(first.id, second.id)
+
+    assert.equal(winner.kind, 'DEACTIVATED')
+    assert.deepEqual(loser, { kind: 'ACTOR_NOT_ENTITLED' })
+    const remaining = await User.findOrFail(first.id)
+    assert.equal(remaining.accessStatus, 'ACTIVE')
+    assert.equal(remaining.role, 'ORGANIZATION_ADMIN')
+    assert.isNull(remaining.deactivatedAt)
+    assert.isNull(remaining.deactivatedByUserId)
+    assert.equal(await connectionsOf(first.id), 1)
+    assert.equal((await User.findOrFail(second.id)).deactivatedByUserId, first.id)
+  })
+
+  test('keeps an organization admin through a three-admin cycle', async ({ assert }) => {
+    const [a, b, c] = await UserFactory.apply('active')
+      .merge({ role: 'ORGANIZATION_ADMIN' })
+      .createMany(3)
+
+    const results = []
+    for (const [target, actor] of [
+      [b, a],
+      [c, b],
+      [a, c],
+    ]) {
+      results.push(await deactivate(target.id, actor.id))
+    }
+
+    assert.deepEqual(
+      results.map((result) => result.kind),
+      ['DEACTIVATED', 'ACTOR_NOT_ENTITLED', 'DEACTIVATED'],
+    )
+    const survivor = await User.findOrFail(c.id)
+    assert.equal(survivor.accessStatus, 'ACTIVE')
+    assert.equal(survivor.role, 'ORGANIZATION_ADMIN')
+    // Each deactivation that landed names an administrator who was still active when it did.
+    assert.equal((await User.findOrFail(b.id)).deactivatedByUserId, a.id)
+    assert.equal((await User.findOrFail(a.id)).deactivatedByUserId, c.id)
+  })
+
+  // A role change committed before the lock is one the write must see: the policy let an organization
+  // admin through, and by the time the deactivation lands they no longer are one.
+  test('refuses once the actor was demoted', async ({ assert }) => {
+    for (const role of ['OPERATIONS_ADMIN', 'OPERATIONS_LEAD', 'OBSERVER'] as const) {
+      const actor = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+      const target = await UserFactory.apply('active').create()
+      actor.role = role
+      await actor.save()
+
+      const result = await deactivate(target.id, actor.id)
+
+      assert.deepEqual(result, { kind: 'ACTOR_NOT_ENTITLED' }, role)
+      const untouched = await User.findOrFail(target.id)
+      assert.equal(untouched.accessStatus, 'ACTIVE')
+      assert.isNull(untouched.deactivatedAt)
+    }
+  })
+
+  test('reports lost entitlement ahead of any reason about the target', async ({ assert }) => {
+    const deactivatedActor = await UserFactory.apply('active')
+      .merge({ role: 'ORGANIZATION_ADMIN' })
+      .create()
+    deactivatedActor.accessStatus = 'DEACTIVATED'
+    await deactivatedActor.save()
+    const demotedActor = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+
+    for (const actor of [deactivatedActor, demotedActor]) {
+      for (const state of ['invited', 'cancelled', 'deactivated'] as const) {
+        const target = await UserFactory.apply(state).create()
+        await rememberedConnection(target.id)
+        const before = await User.findOrFail(target.id)
+
+        const result = await deactivate(target.id, actor.id)
+
+        assert.deepEqual(result, { kind: 'ACTOR_NOT_ENTITLED' }, `${actor.role} → ${state}`)
+        const after = await User.findOrFail(target.id)
+        assert.equal(after.accessStatus, before.accessStatus)
+        assert.deepEqual(
+          after.deactivatedAt?.toISO() ?? null,
+          before.deactivatedAt?.toISO() ?? null,
+        )
+        assert.equal(after.deactivatedByUserId, before.deactivatedByUserId)
+        assert.equal(await connectionsOf(target.id), 1)
+      }
+
+      assert.deepEqual(await deactivate('00000000-0000-4000-8000-999999999999', actor.id), {
+        kind: 'ACTOR_NOT_ENTITLED',
+      })
+    }
+  })
+
+  // The requirement is independent of the access status and of the role: the administrator still
+  // counts as an active organization admin, and still leaves one behind.
+  test('still counts an organization admin who owes a password renewal', async ({ assert }) => {
+    const actor = await UserFactory.apply('passwordRenewalRequired')
+      .merge({ role: 'ORGANIZATION_ADMIN' })
+      .create()
+    const target = await UserFactory.apply('active').create()
+    assert.equal(actor.accessStatus, 'ACTIVE')
+    assert.isNotNull(actor.passwordRenewalRequiredAt)
+
+    const result = await deactivate(target.id, actor.id)
+
+    assert.equal(result.kind, 'DEACTIVATED')
   })
 })

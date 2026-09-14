@@ -7,6 +7,7 @@ import { UserFactory } from '#database/factories/user_factory'
 import User from '#models/user'
 import DeactivateUserUseCase from '#users/deactivate/deactivate_user_use_case'
 import {
+  DeactivationNoLongerAuthorizedException,
   SelfDeactivationException,
   UserAlreadyDeactivatedException,
   UserCancelledInvitationException,
@@ -151,5 +152,30 @@ test.group('Deactivate user use case', (group) => {
     )
 
     assert.equal((await User.findOrFail(target.id)).deactivatedByUserId, admin.id)
+  })
+
+  // The policy let this administrator through; another one deactivated them before the write landed.
+  test('refuses as no longer authorized once the actor was deactivated', async ({ assert }) => {
+    const actor = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const target = await UserFactory.apply('active').create()
+    actor.accessStatus = 'DEACTIVATED'
+    await actor.save()
+
+    const error = await deactivate(target.id, actor.id).catch((cause: unknown) => cause)
+
+    assert.instanceOf(error, DeactivationNoLongerAuthorizedException)
+    assert.equal((error as DeactivationNoLongerAuthorizedException).status, 403)
+    assert.equal((error as DeactivationNoLongerAuthorizedException).code, 'E_AUTHORIZATION_FAILURE')
+    assert.equal((await User.findOrFail(target.id)).accessStatus, 'ACTIVE')
+  })
+
+  test('still refuses a self-deactivation first when the actor lost their access', async ({
+    assert,
+  }) => {
+    const actor = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    actor.accessStatus = 'DEACTIVATED'
+    await actor.save()
+
+    await assert.rejects(() => deactivate(actor.id, actor.id), SelfDeactivationException.message)
   })
 })

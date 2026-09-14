@@ -338,8 +338,11 @@ export default class LucidUserRepository extends UserRepository {
    * this read waits was not in its snapshot, so is not counted. A demotion can then be refused where,
    * a moment later, it would be allowed — the safe direction, and a retry succeeds.
    *
-   * GH-21 must call this from `deactivateActive` before deactivating an organization admin: only
-   * then are a demotion and a deactivation judged one after the other, as two demotions are here.
+   * `deactivateActive` does not call this: it locks its actor and its target through `lockUsers`,
+   * with the same clause and the same order, and re-reads the actor under that lock. A demotion and
+   * a deactivation always share a locked row — the deactivation's actor is an active organization
+   * admin, so this read locks it too — so they are judged one after the other all the same, and
+   * whichever queues second sees the organization admin the first removed.
    *
    * `id` must arrive in the lower-case spelling `users.id` stores: it is compared with the rows as
    * text, as SQLite compares it.
@@ -638,18 +641,41 @@ export default class LucidUserRepository extends UserRepository {
   }
 
   /**
-   * The guard is the concurrency control, exactly as in `renewPassword` above: `WHERE access_status
-   * = 'ACTIVE'` is what makes two racing deactivations record one deactivation, because the loser
-   * matches zero rows. The re-read that follows a zero-row update is only there to name the reason;
-   * it never decides the outcome, so there is no check-then-act window to lose.
+   * Two concurrency controls, for two different races.
    *
-   * The transaction is not there for the guard. It is there because recording the deactivation and
-   * revoking the user's remembered connections are two statements that must not be separable: a
-   * revocation that failed after the `UPDATE` had committed would leave a credential restoring
-   * access for its full 30 days to someone who has just been told they have none.
+   * Two deactivations of the *same* user are settled by the guard, exactly as in `renewPassword`
+   * above: `WHERE access_status = 'ACTIVE'` records one deactivation, because the loser matches
+   * zero rows. The re-read that follows a zero-row update is only there to name the reason; it
+   * never decides the outcome, so there is no check-then-act window to lose.
+   *
+   * Two administrators deactivating *each other* are not: each `UPDATE` touches a different row, so
+   * neither waits for the other, and under READ COMMITTED a check on the actor would read a snapshot
+   * where the other administrator is still active — both land, and the organization is left without
+   * an organization admin. So the actor's and the target's rows are locked first, and the actor is
+   * re-read under that lock: whichever request queues second reads the first one's committed result
+   * and finds its own actor gone. The deactivation takes effect only while its actor is still an
+   * active organization admin; with `SELF` already refused, that actor is the organization admin the
+   * write leaves behind.
+   *
+   * The transaction is also there because recording the deactivation and revoking the user's
+   * remembered connections are two statements that must not be separable: a revocation that failed
+   * after the `UPDATE` had committed would leave a credential restoring access for its full 30 days
+   * to someone who has just been told they have none.
    */
   deactivateActive(command: DeactivateUserCommand): Promise<DeactivateUserResult> {
     return User.transaction(async (trx) => {
+      const locked = await this.lockUsers(trx, [command.deactivatedByUserId, command.id])
+      const actorId = command.deactivatedByUserId.toLowerCase()
+      const actor = locked.find((user) => user.id.toLowerCase() === actorId)
+
+      // Before anything about the target is observed: an actor who lost the entitlement is told
+      // nothing about the user they were deactivating. Status and role are all that entitle, as in
+      // `UserPolicy.deactivate` — a password renewal requirement changes neither — and a demotion or
+      // deactivation committed before the lock is exactly what this re-read is here to see.
+      if (actor?.accessStatus !== 'ACTIVE' || actor.role !== 'ORGANIZATION_ADMIN') {
+        return { kind: 'ACTOR_NOT_ENTITLED' }
+      }
+
       const changedAt = command.deactivatedAt.toSQL({ includeOffset: false })
       const [affectedRows] = await User.query({ client: trx })
         .where('id', command.id)
@@ -915,6 +941,36 @@ export default class LucidUserRepository extends UserRepository {
    */
   findByIdForUpdate(id: string, client: TransactionClientContract): Promise<User | null> {
     return preloadAccessHistory(User.query({ client }).where('id', id).forUpdate()).first()
+  }
+
+  /**
+   * Locked by id, as `LucidWarehouseRepository.lockWarehouses` locks its rows, so that concurrent
+   * writes over overlapping sets of users always take the locks in the same order and queue behind
+   * each other rather than deadlock: two administrators deactivating each other would otherwise each
+   * hold their own row and wait on the other's, and one of them would get a 500.
+   *
+   * `FOR NO KEY UPDATE` rather than `FOR UPDATE`: it still conflicts with itself and with every
+   * `UPDATE` of these rows, which is all the queueing needs, but not with the `FOR KEY SHARE` a
+   * foreign-key check takes on the user it points to. `FOR UPDATE` would: an administrator resetting
+   * the password of the administrator deactivating them holds that row and writes
+   * `password_reset_by_user_id` pointing back at the row locked here, and each would wait on the
+   * other until PostgreSQL aborted one. Lucid wraps `forUpdate()` only, hence the knex query.
+   *
+   * Any write that can take the organization admin role or active access away from a user must
+   * decide under this same lock, or it can interleave with a deactivation and leave the organization
+   * without an active organization admin. `changeRole` does, through
+   * `lockTargetAndActiveOrganizationAdmins`: the same clause in the same order, over a set that
+   * always includes a row locked here.
+   *
+   * A no-op on SQLite, like `findByIdForUpdate` above; PostgreSQL is where it earns its place — and
+   * the only place it is proven, by the concurrent runs in the GH-21 quickstart: on the test
+   * database, removing the lock or its order fails nothing.
+   */
+  private lockUsers(trx: TransactionClientContract, ids: string[]) {
+    const query = User.query({ client: trx }).whereIn('id', ids).orderBy('id')
+    query.knexQuery.forNoKeyUpdate()
+
+    return query
   }
 
   /**
