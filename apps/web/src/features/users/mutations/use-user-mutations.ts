@@ -68,17 +68,31 @@ export function useUserMutations() {
     }),
   )
 
-  /** Refreshed on a refusal too, as `deactivate` is: a deactivated user is refused a new role. */
+  /**
+   * The collection, then the viewer's own session — on a refusal as much as on a success.
+   *
+   * A refusal because the organization must keep an active organization admin only ever reaches an
+   * administrator who lost that role, or their access, in the same collision: had they still been
+   * one, they would have been the admin who remains. Their session is therefore stale the moment the
+   * refusal arrives, and refetching it is what makes the workbench follow them — the panel gives
+   * way to the record their new role allows, or the frame to sign-in. A deactivated user's refusal
+   * is refreshed for the reason `deactivate` gives.
+   *
+   * Side by side rather than one after the other: the outcome is reported once both have settled,
+   * and the collection alone must not arrive in a new viewer's shape while the session still
+   * describes the old one.
+   */
+  const refreshAfterRoleChange = async () => {
+    await Promise.all([
+      refreshUsers(),
+      queryClient.invalidateQueries({ queryKey: tuyauQuery.auth.me.queryKey() }),
+    ])
+  }
+
   const changeRole = useMutation(
     tuyauQuery.users.changeRole.mutationOptions({
-      onSuccess: async () => {
-        await refreshUsers()
-        // The viewer's own session too: were an administrator's own role ever changed, their
-        // navigation must follow. The Edit panel is never offered on the viewer's own record and
-        // GH-29 refuses the case in the API, so this is belt-and-braces — and one line.
-        await queryClient.invalidateQueries({ queryKey: tuyauQuery.auth.me.queryKey() })
-      },
-      onError: () => refreshUsers(),
+      onSuccess: refreshAfterRoleChange,
+      onError: refreshAfterRoleChange,
     }),
   )
 

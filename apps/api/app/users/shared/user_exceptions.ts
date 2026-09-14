@@ -106,3 +106,31 @@ export class UserDeactivatedCannotChangeRoleException extends Exception {
   static code = 'E_USER_DEACTIVATED_CANNOT_CHANGE_ROLE'
   static message = 'Deactivated users cannot have their role changed; reactivate the user first'
 }
+
+/**
+ * A 409 for the reason `SelfDeactivationException` gives: the administrator may change roles, and
+ * what is refused is this one target. Refused whatever role is asked for — the one already held
+ * included — so no request naming oneself is ever answered as a success. Nobody's responsibility
+ * level rests on their own say, and no administrator can demote themselves by accident.
+ */
+export class SelfRoleChangeException extends Exception {
+  static status = 409
+  static code = 'E_USER_SELF_ROLE_CHANGE'
+  static message = 'Your own role can only be changed by another organization admin'
+}
+
+/**
+ * The organization would be left with nobody able to administer its users. Worded about that rule
+ * rather than about role changes, so that the deactivation guard (GH-21) can refuse with this very
+ * exception; and it names neither the admins who remain nor how many — the refusal states the rule,
+ * which holds whatever the count, and discloses nothing about anyone else.
+ *
+ * It only ever reaches an administrator who lost that role or their access in the same collision:
+ * an active organization admin asking would themselves be the admin who remains. That is why it
+ * does not say what to do next — they usually no longer can.
+ */
+export class LastActiveOrganizationAdminException extends Exception {
+  static status = 409
+  static code = 'E_USER_LAST_ACTIVE_ORGANIZATION_ADMIN'
+  static message = 'The organization must keep at least one active organization admin'
+}

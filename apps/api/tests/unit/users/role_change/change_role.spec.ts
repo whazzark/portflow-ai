@@ -6,31 +6,20 @@ import { UserFactory } from '#database/factories/user_factory'
 import User from '#models/user'
 import ChangeUserRoleUseCase from '#users/role_change/change_user_role_use_case'
 import {
+  SelfRoleChangeException,
   UserDeactivatedCannotChangeRoleException,
   UserNotFoundException,
 } from '#users/shared/user_exceptions'
 
+import { untouchedFields } from '../../../support/user_snapshots.ts'
+
 const changeRole = async () => app.container.make(ChangeUserRoleUseCase)
 
-/** Everything about a user this feature must leave exactly as it found it (FR-005, FR-016). */
-const untouchedFields = (user: User) => ({
-  accessStatus: user.accessStatus,
-  firstName: user.firstName,
-  lastName: user.lastName,
-  email: user.email,
-  password: user.password,
-  invitedAt: user.invitedAt?.toISO() ?? null,
-  invitedByUserId: user.invitedByUserId,
-  activatedAt: user.activatedAt?.toISO() ?? null,
-  activatedByUserId: user.activatedByUserId,
-  cancelledAt: user.cancelledAt?.toISO() ?? null,
-  cancelledByUserId: user.cancelledByUserId,
-  deactivatedAt: user.deactivatedAt?.toISO() ?? null,
-  deactivatedByUserId: user.deactivatedByUserId,
-  reactivatedAt: user.reactivatedAt?.toISO() ?? null,
-  reactivatedByUserId: user.reactivatedByUserId,
-  passwordRenewalRequiredAt: user.passwordRenewalRequiredAt?.toISO() ?? null,
-})
+/**
+ * The administrator asking, for every test that is not about asking for oneself. It names no user:
+ * the use case compares it with the target and reads nothing else from it.
+ */
+const REQUESTER_ID = '00000000-0000-4000-8000-00000000a0a0'
 
 // biome-ignore lint/security/noSecrets: use case name, not a secret
 test.group('ChangeUserRoleUseCase', (group) => {
@@ -41,6 +30,7 @@ test.group('ChangeUserRoleUseCase', (group) => {
       const user = await UserFactory.apply(state).merge({ role: 'OBSERVER' }).create()
 
       const changed = await (await changeRole()).handle({
+        requestedByUserId: REQUESTER_ID,
         userId: user.id,
         role: 'OPERATIONS_LEAD',
       })
@@ -59,7 +49,11 @@ test.group('ChangeUserRoleUseCase', (group) => {
     ] as const) {
       const user = await UserFactory.apply(state).merge({ role: 'OBSERVER' }).create()
 
-      await (await changeRole()).handle({ userId: user.id, role: 'ORGANIZATION_ADMIN' })
+      await (await changeRole()).handle({
+        requestedByUserId: REQUESTER_ID,
+        userId: user.id,
+        role: 'ORGANIZATION_ADMIN',
+      })
 
       await user.refresh()
       assert.equal(user.accessStatus, accessStatus)
@@ -74,6 +68,7 @@ test.group('ChangeUserRoleUseCase', (group) => {
     const before = untouchedFields(user)
 
     const changed = await (await changeRole()).handle({
+      requestedByUserId: REQUESTER_ID,
       userId: user.id,
       role: 'OPERATIONS_ADMIN',
     })
@@ -93,7 +88,11 @@ test.group('ChangeUserRoleUseCase', (group) => {
     await user.refresh()
     const before = untouchedFields(user)
 
-    await (await changeRole()).handle({ userId: user.id, role: 'ORGANIZATION_ADMIN' })
+    await (await changeRole()).handle({
+      requestedByUserId: REQUESTER_ID,
+      userId: user.id,
+      role: 'ORGANIZATION_ADMIN',
+    })
 
     await user.refresh()
     assert.deepEqual(untouchedFields(user), before)
@@ -105,7 +104,11 @@ test.group('ChangeUserRoleUseCase', (group) => {
   test('records no trace of the change', async ({ assert }) => {
     const user = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
 
-    await (await changeRole()).handle({ userId: user.id, role: 'OPERATIONS_LEAD' })
+    await (await changeRole()).handle({
+      requestedByUserId: REQUESTER_ID,
+      userId: user.id,
+      role: 'OPERATIONS_LEAD',
+    })
 
     const row = await User.query().where('id', user.id).firstOrFail()
     const recorded = Object.keys(row.$attributes).filter((column) =>
@@ -120,7 +123,11 @@ test.group('ChangeUserRoleUseCase', (group) => {
     user.invitedByUserId = inviter.id
     await user.save()
 
-    const changed = await (await changeRole()).handle({ userId: user.id, role: 'OBSERVER' })
+    const changed = await (await changeRole()).handle({
+      requestedByUserId: REQUESTER_ID,
+      userId: user.id,
+      role: 'OBSERVER',
+    })
 
     assert.equal(changed.invitedBy.id, inviter.id)
   })
@@ -128,7 +135,12 @@ test.group('ChangeUserRoleUseCase', (group) => {
     const user = await UserFactory.apply('deactivated').merge({ role: 'OBSERVER' }).create()
 
     await assert.rejects(
-      async () => (await changeRole()).handle({ userId: user.id, role: 'ORGANIZATION_ADMIN' }),
+      async () =>
+        (await changeRole()).handle({
+          requestedByUserId: REQUESTER_ID,
+          userId: user.id,
+          role: 'ORGANIZATION_ADMIN',
+        }),
       UserDeactivatedCannotChangeRoleException.message,
     )
 
@@ -140,6 +152,7 @@ test.group('ChangeUserRoleUseCase', (group) => {
     await assert.rejects(
       async () =>
         (await changeRole()).handle({
+          requestedByUserId: REQUESTER_ID,
           userId: '00000000-0000-4000-8000-000000000000',
           role: 'OBSERVER',
         }),
@@ -160,7 +173,12 @@ test.group('ChangeUserRoleUseCase', (group) => {
     await user.save()
 
     await assert.rejects(
-      async () => (await changeRole()).handle({ userId: asDisplayed.id, role: 'OPERATIONS_LEAD' }),
+      async () =>
+        (await changeRole()).handle({
+          requestedByUserId: REQUESTER_ID,
+          userId: asDisplayed.id,
+          role: 'OPERATIONS_LEAD',
+        }),
       UserDeactivatedCannotChangeRoleException.message,
     )
 
@@ -174,11 +192,92 @@ test.group('ChangeUserRoleUseCase', (group) => {
     const before = untouchedFields(user)
 
     await assert.rejects(async () =>
-      (await changeRole()).handle({ userId: user.id, role: 'ORGANIZATION_ADMIN' }),
+      (await changeRole()).handle({
+        requestedByUserId: REQUESTER_ID,
+        userId: user.id,
+        role: 'ORGANIZATION_ADMIN',
+      }),
     )
 
     await user.refresh()
     assert.deepEqual(untouchedFields(user), before)
     assert.equal(user.role, 'OBSERVER')
+  })
+
+  // GH-29 FR-001: the target is refused, not the role — even the one already held, which GH-28's
+  // unchanged-success rule would otherwise have answered with a 200.
+  test('refuses an administrator changing their own role, whatever the role', async ({
+    assert,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    await admin.refresh()
+    const before = untouchedFields(admin)
+
+    for (const role of [
+      'ORGANIZATION_ADMIN',
+      'OPERATIONS_ADMIN',
+      'OPERATIONS_LEAD',
+      'OBSERVER',
+    ] as const) {
+      await assert.rejects(
+        async () =>
+          (await changeRole()).handle({ requestedByUserId: admin.id, userId: admin.id, role }),
+        SelfRoleChangeException.message,
+      )
+    }
+
+    await admin.refresh()
+    assert.deepEqual(untouchedFields(admin), before)
+    assert.equal(admin.role, 'ORGANIZATION_ADMIN')
+  })
+
+  // GH-29 FR-002: PostgreSQL matches an upper-cased UUID against the stored lower-case row, so a
+  // case-sensitive comparison would let this request through.
+  test('refuses a self-role change whose identifier is upper-cased', async ({ assert }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+
+    await assert.rejects(
+      async () =>
+        (await changeRole()).handle({
+          requestedByUserId: admin.id,
+          userId: admin.id.toUpperCase(),
+          role: 'OBSERVER',
+        }),
+      SelfRoleChangeException.message,
+    )
+
+    await admin.refresh()
+    assert.equal(admin.role, 'ORGANIZATION_ADMIN')
+  })
+
+  // The target is read, locked, and written under the one spelling `users.id` stores, so an
+  // upper-cased identifier names the same user in every statement — on SQLite as on PostgreSQL.
+  test('changes the role of a user named with an upper-cased identifier', async ({ assert }) => {
+    const user = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+
+    const changed = await (await changeRole()).handle({
+      requestedByUserId: REQUESTER_ID,
+      userId: user.id.toUpperCase(),
+      role: 'OPERATIONS_LEAD',
+    })
+
+    assert.equal(changed.id, user.id)
+    await user.refresh()
+    assert.equal(user.role, 'OPERATIONS_LEAD')
+  })
+
+  // Decided from the request alone: were the target read first, this identifier would be a 404.
+  test('refuses a self-role change before reading anything', async ({ assert }) => {
+    const nobody = '00000000-0000-4000-8000-00000000b0b0'
+
+    await assert.rejects(
+      async () =>
+        (await changeRole()).handle({
+          requestedByUserId: nobody,
+          userId: nobody,
+          role: 'OBSERVER',
+        }),
+      SelfRoleChangeException.message,
+    )
   })
 })

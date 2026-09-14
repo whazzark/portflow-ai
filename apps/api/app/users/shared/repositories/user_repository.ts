@@ -174,13 +174,18 @@ export type ChangeUserRoleCommand = {
 }
 
 /**
- * The three outcomes of the guarded write, deliberately free of HTTP: choosing a status code is the
+ * The four outcomes of the locked write, deliberately free of HTTP: choosing a status code is the
  * use case's job, not this layer's.
+ *
+ * `LAST_ACTIVE_ORGANIZATION_ADMIN` reports what the write saw under its locks — the target was the
+ * only active organization admin left, and the change would have demoted them — the way
+ * `EMAIL_TAKEN` reports what `users_email_unique` saw.
  */
 export type ChangeUserRoleResult =
   | { kind: 'CHANGED'; user: User }
   | { kind: 'NOT_FOUND' }
   | { kind: 'DEACTIVATED' }
+  | { kind: 'LAST_ACTIVE_ORGANIZATION_ADMIN' }
 
 export type RemoveUserCommand = {
   id: string
@@ -359,9 +364,11 @@ export default abstract class UserRepository {
   abstract applyOwnPassword(command: ApplyOwnPasswordCommand): Promise<User>
 
   /**
-   * Sets one user's role, refusing a deactivated target. Submitting the role the user already holds
-   * is a `CHANGED` outcome with an unchanged row: there is nothing to report as a failure, and no
-   * history that a no-op could pollute.
+   * Sets one user's role, refusing a deactivated target and the demotion of the organization's last
+   * active organization admin. One transaction, opened by a locking read of the target and of every
+   * active organization admin, so the decision holds when the write lands however many changes
+   * collide. Submitting the role the user already holds is a `CHANGED` outcome with an unchanged
+   * row: there is nothing to report as a failure, and no history that a no-op could pollute.
    */
   abstract changeRole(command: ChangeUserRoleCommand): Promise<ChangeUserRoleResult>
 
