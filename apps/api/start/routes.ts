@@ -30,6 +30,14 @@ router
 
     router
       .group(() => {
+        // The signed-in user's own profile. Declared here, behind the renewal gate, rather than in
+        // the `/auth` group beside `me`: a user who owes a new password updates nothing else first,
+        // and they renew it through `/auth/password-renewal`, which asks for no current password.
+        router.patch('/me/profile', [controllers.OwnProfile, 'update']).as('me.profile.update')
+        router
+          .patch('/me/password', [controllers.OwnProfile, 'changePassword'])
+          .as('me.password.update')
+
         router
           .group(() => {
             router.post('/', [controllers.Customers, 'store']).as('store')

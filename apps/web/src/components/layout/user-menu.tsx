@@ -1,8 +1,8 @@
+import { Link } from '@tanstack/react-router'
 import { ChevronUpIcon, LogOutIcon, UserRoundIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,12 +107,11 @@ export function UserMenu({ user }: { user: SessionUser }) {
                 <DropdownMenuSeparator />
 
                 <DropdownMenuGroup>
-                  <DropdownMenuItem disabled>
+                  {/* A destination, named like the navigation entries rather than as an action: the
+                      page holds the identity and the password alike. */}
+                  <DropdownMenuItem render={<Link to="/profile" />}>
                     <UserRoundIcon />
                     <span>Profile</span>
-                    <Badge className="ml-auto" variant="secondary">
-                      Coming soon
-                    </Badge>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
 

@@ -88,6 +88,16 @@ export default class UserPolicy extends BasePolicy {
   }
 
   /**
+   * Whether the viewer may update their own identity. Broader than `updateIdentity`, deliberately:
+   * every active user may update themselves, whatever their role, while only an organization admin
+   * may correct someone else. There is no target to decide on — the self-service seam carries no
+   * user identifier.
+   */
+  updateOwnProfile(user: User): AuthorizerResponse {
+    return user.accessStatus === 'ACTIVE'
+  }
+
+  /**
    * Whether the viewer may change anyone's role. Deliberately narrower than `list`: an operations
    * admin consults active users and may not touch a responsibility level, because a viewer who can
    * change a role can grant themselves the organization admin one.

@@ -11,6 +11,8 @@ export type ScannedRoutes = {
     'auth.me': { paramsTuple?: []; params?: {} }
     'auth.logout': { paramsTuple?: []; params?: {} }
     'auth.password_renewal': { paramsTuple?: []; params?: {} }
+    'me.profile.update': { paramsTuple?: []; params?: {} }
+    'me.password.update': { paramsTuple?: []; params?: {} }
     'customers.store': { paramsTuple?: []; params?: {} }
     'customers.index': { paramsTuple?: []; params?: {} }
     'customers.available': { paramsTuple?: []; params?: {} }
@@ -172,6 +174,8 @@ export type ScannedRoutes = {
     'warehouses.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PATCH: {
+    'me.profile.update': { paramsTuple?: []; params?: {} }
+    'me.password.update': { paramsTuple?: []; params?: {} }
     'customers.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'transport_companies.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'trucks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

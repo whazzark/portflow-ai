@@ -15,6 +15,14 @@ export interface ApiDefinition {
     logout: typeof routes['auth.logout']
     passwordRenewal: typeof routes['auth.password_renewal']
   }
+  me: {
+    profile: {
+      update: typeof routes['me.profile.update']
+    }
+    password: {
+      update: typeof routes['me.password.update']
+    }
+  }
   customers: {
     store: typeof routes['customers.store']
     index: typeof routes['customers.index']

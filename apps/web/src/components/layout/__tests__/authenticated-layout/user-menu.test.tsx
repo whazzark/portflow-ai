@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
@@ -94,13 +94,15 @@ test('renders the protected frame with navigation for an authenticated user', as
   expect(within(menu).getByText('CM')).toBeInTheDocument()
   expect(within(menu).getByText('Claire Martin')).toBeInTheDocument()
   expect(within(menu).getByText('active.user@portflow.test')).toBeInTheDocument()
-  expect(within(menu).getByRole('menuitem', { name: /Profile/ })).toHaveAttribute(
-    'aria-disabled',
-    'true',
-  )
-  expect(within(menu).getByText('Coming soon')).toBeInTheDocument()
+  const profileEntry = within(menu).getByRole('menuitem', { name: 'Profile' })
+  expect(profileEntry).not.toHaveAttribute('aria-disabled', 'true')
+  expect(within(menu).queryByText('Coming soon')).not.toBeInTheDocument()
   expect(within(menu).getByRole('menuitem', { name: 'Log out' })).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/')
+
+  fireEvent.click(profileEntry)
+
+  await waitFor(() => expect(router.state.location.pathname).toBe('/profile'))
 })
 
 test('hides user administration from non-administrative roles', async () => {
