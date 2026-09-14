@@ -373,7 +373,7 @@ A comment entered during operations lead validation to provide additional detail
 _Avoid_: correction comment, note
 
 **Organization Admin**:
-A user responsible for managing users and their access within an operating organization, including read and write access to active and deactivated users, with the permissions of an operations admin, operations lead, and observer.
+A user responsible for managing users and their access within an operating organization, including read and write access to active and deactivated users, with the permissions of an operations admin, operations lead, and observer. The operating organization must always keep at least one active organization admin.
 _Avoid_: operations admin, user manager
 
 **User Invitation**:
