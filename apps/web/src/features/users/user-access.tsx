@@ -36,6 +36,8 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 
 export const USER_ACCESS_ACTION_VARIANTS: Record<UserAccessAction, 'default' | 'destructive'> = {
   deactivate: 'destructive',
+  // Restores access and removes nothing: a red button would misstate it.
+  reactivate: 'default',
   'cancel-invitation': 'destructive',
   remove: 'destructive',
 }
@@ -47,10 +49,11 @@ export const USER_ACCESS_ACTION_VARIANTS: Record<UserAccessAction, 'default' | '
  * The API enforces every condition regardless. Managing access is the organization admin's
  * responsibility, and acting on your own access is something another administrator does for you.
  * Beyond that the access status decides. Deactivation withdraws access that was activated and keeps
- * the person. A pending user is offered both ways out of their invitation: cancellation withdraws it
- * and keeps the user, removal deletes a user whose access never was — so it is offered on a
- * cancelled user too. A deactivated user is offered nothing. An action that does not apply is absent
- * rather than disabled — a dead control with no explanation reads as a bug.
+ * the person, and reactivation restores it to a deactivated user under a new password. A pending
+ * user is offered both ways out of their invitation: cancellation withdraws it and keeps the user,
+ * removal deletes a user whose access never was — so it is offered on a cancelled user too. An
+ * action that does not apply is absent rather than disabled — a dead control with no explanation
+ * reads as a bug.
  */
 export function userAccessActions(viewer: SessionUser, user: UserDto): UserAccessAction[] {
   if (viewer.role !== 'ORGANIZATION_ADMIN' || user.id === viewer.id) {
@@ -67,6 +70,10 @@ export function userAccessActions(viewer: SessionUser, user: UserDto): UserAcces
 
   if (user.accessStatus === 'CANCELLED') {
     return ['remove']
+  }
+
+  if (user.accessStatus === 'DEACTIVATED') {
+    return ['reactivate']
   }
 
   return []
@@ -106,11 +113,13 @@ export function UserAccessDialog({
   user: UserDto
   onClose: () => void
 }) {
-  const { deactivate, cancelInvitation, remove } = useUserMutations()
+  const { deactivate, reactivate, cancelInvitation, remove } = useUserMutations()
   const commentId = useId()
   const [comment, setComment] = useState('')
   const name = formatFullName(user)
-  const isPending = { deactivate, 'cancel-invitation': cancelInvitation, remove }[action].isPending
+  const isPending = { deactivate, reactivate, 'cancel-invitation': cancelInvitation, remove }[
+    action
+  ].isPending
 
   const request = () => {
     if (action === 'cancel-invitation') {
@@ -123,6 +132,10 @@ export function UserAccessDialog({
 
     if (action === 'remove') {
       return remove.mutateAsync({ params: { id: user.id } })
+    }
+
+    if (action === 'reactivate') {
+      return reactivate.mutateAsync({ params: { id: user.id } })
     }
 
     return deactivate.mutateAsync({ params: { id: user.id } })

@@ -13,12 +13,13 @@
  * cancellation brought a dialog title and a dismiss label of its own, because "Cancel invitation
  * user?" reads as nonsense and a confirmation whose two buttons both start with "Cancel" asks the
  * administrator to guess which one withdraws the access. Removal needed neither, and differs from
- * deactivation only by its entries here.
+ * deactivation only by its entries here. Reactivation, the deactivation's reverse, is the one action
+ * here that restores access rather than withdrawing it, and differs by its entries alone too.
  */
 
 import { confirmationMessage, namedRecord, refusalTitle } from '@/helpers/resource-copy'
 
-export type UserAccessAction = 'deactivate' | 'cancel-invitation' | 'remove'
+export type UserAccessAction = 'deactivate' | 'reactivate' | 'cancel-invitation' | 'remove'
 
 const USER_SINGULAR = 'user'
 
@@ -29,12 +30,14 @@ const USER_SINGULAR = 'user'
  */
 export const USER_ACCESS_ACTION_LABELS: Record<UserAccessAction, string> = {
   deactivate: 'Deactivate',
+  reactivate: 'Reactivate',
   'cancel-invitation': 'Cancel invitation',
   remove: 'Remove',
 }
 
 export const USER_ACCESS_PENDING_LABELS: Record<UserAccessAction, string> = {
   deactivate: 'Deactivating…',
+  reactivate: 'Reactivating…',
   'cancel-invitation': 'Cancelling…',
   remove: 'Removing…',
 }
@@ -46,6 +49,7 @@ export const USER_ACCESS_PENDING_LABELS: Record<UserAccessAction, string> = {
  */
 export const USER_ACCESS_DISMISS_LABELS: Record<UserAccessAction, string> = {
   deactivate: 'Cancel',
+  reactivate: 'Cancel',
   'cancel-invitation': 'Keep invitation',
   remove: 'Cancel',
 }
@@ -57,6 +61,7 @@ export const USER_ACCESS_DISMISS_LABELS: Record<UserAccessAction, string> = {
  */
 export const USER_ACCESS_TAKES_COMMENT: Record<UserAccessAction, boolean> = {
   deactivate: false,
+  reactivate: false,
   'cancel-invitation': true,
   remove: false,
 }
@@ -67,18 +72,21 @@ export const USER_ACCESS_TAKES_COMMENT: Record<UserAccessAction, boolean> = {
  */
 const USER_ACCESS_SUBJECTS: Record<UserAccessAction, string> = {
   deactivate: USER_SINGULAR,
+  reactivate: USER_SINGULAR,
   'cancel-invitation': 'invitation for',
   remove: USER_SINGULAR,
 }
 
 const USER_ACCESS_PAST_PARTICIPLES: Record<UserAccessAction, string> = {
   deactivate: 'deactivated',
+  reactivate: 'reactivated',
   'cancel-invitation': 'cancelled',
   remove: 'removed',
 }
 
 const USER_ACCESS_FAILURE_VERBS: Record<UserAccessAction, string> = {
   deactivate: 'deactivate',
+  reactivate: 'reactivate',
   'cancel-invitation': 'cancel',
   remove: 'remove',
 }
@@ -86,6 +94,7 @@ const USER_ACCESS_FAILURE_VERBS: Record<UserAccessAction, string> = {
 /** Titles name what is acted on — unlike buttons, they are read out of context. */
 const USER_ACCESS_DIALOG_TITLES: Record<UserAccessAction, string> = {
   deactivate: `${USER_ACCESS_ACTION_LABELS.deactivate} ${USER_SINGULAR}?`,
+  reactivate: `${USER_ACCESS_ACTION_LABELS.reactivate} ${USER_SINGULAR}?`,
   'cancel-invitation': `${USER_ACCESS_ACTION_LABELS['cancel-invitation']}?`,
   remove: `${USER_ACCESS_ACTION_LABELS.remove} ${USER_SINGULAR}?`,
 }
@@ -110,6 +119,15 @@ export function describeUserAccessEffect(action: UserAccessAction, name: string)
     return (
       `“${name}” is removed permanently, and this cannot be undone. Their activation link stops ` +
       'working, and their email can be invited again.'
+    )
+  }
+
+  // Both halves of the consequence, since the administrator will be the one to tell them: access
+  // comes back, and it comes back through a new password — no credential is handed over.
+  if (action === 'reactivate') {
+    return (
+      `“${name}” can sign in again with the password they held before, and must choose a new ` +
+      'password before using the application.'
     )
   }
 
@@ -151,6 +169,14 @@ const USER_ACCESS_REFUSAL_REASONS: Record<UserAccessAction, Record<string, strin
     E_USER_CANCELLED_INVITATION:
       'This user’s invitation was already withdrawn before they activated it.',
     E_USER_ALREADY_DEACTIVATED: 'This user has already been deactivated by someone else.',
+    E_USER_NOT_FOUND: 'This user no longer exists.',
+  },
+  reactivate: {
+    E_USER_ALREADY_ACTIVE: 'This user is already active. Someone else may have reactivated them.',
+    E_USER_PENDING_INVITATION:
+      'This user has never activated their access. Renew their activation link instead.',
+    E_USER_CANCELLED_INVITATION:
+      'This user’s invitation was withdrawn before they activated it. Restore it instead.',
     E_USER_NOT_FOUND: 'This user no longer exists.',
   },
   'cancel-invitation': {
