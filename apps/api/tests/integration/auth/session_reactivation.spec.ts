@@ -1,4 +1,6 @@
+import db from '@adonisjs/lucid/services/db'
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
 
 import { USER_FACTORY_PASSWORD, UserFactory } from '#database/factories/user_factory'
 
@@ -102,5 +104,40 @@ test.group('Auth session opened before a reactivation', () => {
     const next = await client.get('/api/v1/auth/me').withSession(restored.session())
 
     next.assertStatus(200)
+  })
+
+  test('refuses a remembered connection that outlived a reactivation', async ({ client }) => {
+    const user = await UserFactory.apply('active').create()
+
+    const login = await client
+      .post('/api/v1/auth/login')
+      .json({ email: user.email, password: USER_FACTORY_PASSWORD, rememberMe: true })
+
+    login.assertStatus(200)
+    const remembered = login.cookie('remember_web')
+
+    if (!remembered) {
+      throw new Error('Expected a remembered connection cookie')
+    }
+
+    // A reactivation that leaves the connection standing: `reactivateDeactivated` revokes every one
+    // of them, so both rows are written by hand here to model the write that one day forgets to.
+    // The connection is aged rather than the reactivation dated ahead, so the order of the two is
+    // unambiguous however fast the test runs. Each column is written in the shape its owner writes:
+    // a SQL string for the Lucid model's timestamp, a `Date` for the token provider's own.
+    await db
+      .from('remember_me_tokens')
+      .where('tokenable_id', user.id)
+      .update({ created_at: new Date(Date.now() - 60 * 60 * 1000) })
+    await db
+      .from('users')
+      .where('id', user.id)
+      .update({ reactivated_at: DateTime.now().toSQL({ includeOffset: false }) })
+
+    const restored = await client
+      .get('/api/v1/auth/me')
+      .encryptedCookie('remember_web', remembered.value)
+
+    restored.assertStatus(401)
   })
 })

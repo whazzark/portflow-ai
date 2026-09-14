@@ -47,3 +47,27 @@ export function recordSessionReactivation(session: Session, user: User) {
 export function matchesSessionReactivation(session: Session, user: User) {
   return (session.get(REACTIVATION_SESSION_KEY) ?? null) === reactivationOf(user)
 }
+
+/**
+ * Whether a remembered connection may open a session under the user's latest reactivation — asked
+ * only on restoration, where the session is recorded from the user on the very same request and the
+ * equality above can therefore say nothing.
+ *
+ * A reactivation revokes every remembered connection made before it, so a surviving one always
+ * qualifies; this asks the credential itself rather than trusting that revocation, so the rule still
+ * holds here if a future write ever leaves a connection standing across a reactivation. The
+ * comparison is a clock one, unlike `matchesSessionReactivation`: the two sides are different
+ * columns, and a connection made after the reactivation carries no copy of it.
+ */
+export function rememberedConnectionMatchesReactivation(
+  rememberedConnection: { createdAt: Date } | null,
+  user: User,
+) {
+  const reactivation = reactivationOf(user)
+
+  if (reactivation === null) {
+    return true
+  }
+
+  return rememberedConnection !== null && rememberedConnection.createdAt.getTime() >= reactivation
+}

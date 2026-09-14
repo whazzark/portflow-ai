@@ -7,6 +7,7 @@ import {
   matchesSessionReactivation,
   REACTIVATION_SESSION_KEY,
   recordSessionReactivation,
+  rememberedConnectionMatchesReactivation,
 } from '#auth/shared/session_reactivation'
 import User from '#models/user'
 
@@ -70,9 +71,10 @@ export async function authenticateOpenSession(
   }
 
   // A session restored from a remembered connection just came into being, so it is stamped with the
-  // reactivation it opens under — safe because the reactivation revokes every remembered connection
-  // made before it, so none that survives can predate it.
-  if (restoredOnThisRequest) {
+  // reactivation it opens under — which is also what would make the check below say nothing about
+  // this request. So the connection is asked first, and one that predates the reactivation leaves
+  // the session unstamped for the check to refuse, rather than being stamped as if it qualified.
+  if (restoredOnThisRequest && rememberedConnectionMatchesReactivation(rememberedConnection, user)) {
     recordSessionReactivation(ctx.session, user)
   }
 
