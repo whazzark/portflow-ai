@@ -1,0 +1,13 @@
+# Orca worktree hooks: every new worktree gets its own database, ports and session cookie, and
+# gives them back when it is archived or removed. See scripts/worktree/.
+#
+# A worktree branched from before these scripts existed does not have them: it only installs its
+# dependencies, and has nothing to give back.
+scripts:
+  setup: |
+    if [ -f scripts/worktree/setup.sh ]; then bash scripts/worktree/setup.sh; else pnpm install; fi
+  archive: |
+    if [ -f scripts/worktree/teardown.sh ]; then bash scripts/worktree/teardown.sh; fi
+
+# Agents start once the worktree is installed, migrated and seeded.
+setupAgentStartupPolicy: wait-for-setup

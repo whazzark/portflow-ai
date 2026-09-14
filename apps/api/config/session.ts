@@ -4,7 +4,7 @@ import env from '#start/env'
 
 const sessionConfig = defineConfig({
   enabled: true,
-  cookieName: 'adonis-session',
+  cookieName: env.get('SESSION_COOKIE_NAME', 'adonis-session'),
 
   /**
    * When set to true, the session id cookie will be deleted
