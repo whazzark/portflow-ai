@@ -32,6 +32,9 @@ export const UserFactory = factory
       cancelledAt: null,
       cancelledByUserId: null,
       cancellationComment: null,
+      invitationRestoredAt: null,
+      invitationRestoredByUserId: null,
+      invitationRestorationComment: null,
       deactivatedAt: null,
       deactivatedByUserId: null,
       reactivatedAt: null,
@@ -47,6 +50,9 @@ export const UserFactory = factory
     user.cancelledAt = null
     user.cancelledByUserId = null
     user.cancellationComment = null
+    user.invitationRestoredAt = null
+    user.invitationRestoredByUserId = null
+    user.invitationRestorationComment = null
     user.deactivatedAt = null
     user.deactivatedByUserId = null
     user.reactivatedAt = null
@@ -81,6 +87,9 @@ export const UserFactory = factory
     user.cancelledAt = null
     user.cancelledByUserId = null
     user.cancellationComment = null
+    user.invitationRestoredAt = null
+    user.invitationRestoredByUserId = null
+    user.invitationRestorationComment = null
     user.deactivatedAt = null
     user.deactivatedByUserId = null
     user.reactivatedAt = null
@@ -99,6 +108,9 @@ export const UserFactory = factory
     user.cancelledAt = null
     user.cancelledByUserId = null
     user.cancellationComment = null
+    user.invitationRestoredAt = null
+    user.invitationRestoredByUserId = null
+    user.invitationRestorationComment = null
     user.deactivatedAt = null
     user.deactivatedByUserId = null
     user.reactivatedAt = null

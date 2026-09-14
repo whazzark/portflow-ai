@@ -327,7 +327,7 @@ export class UserActivationTokenSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ['accessStatus', 'activatedAt', 'activatedByUserId', 'activationLinkRenewedAt', 'activationLinkRenewedByUserId', 'cancellationComment', 'cancelledAt', 'cancelledByUserId', 'createdAt', 'deactivatedAt', 'deactivatedByUserId', 'email', 'firstName', 'id', 'invitedAt', 'invitedByUserId', 'lastName', 'password', 'passwordRenewalRequiredAt', 'passwordResetAt', 'passwordResetByUserId', 'reactivatedAt', 'reactivatedByUserId', 'role', 'updatedAt'] as const
+  static $columns = ['accessStatus', 'activatedAt', 'activatedByUserId', 'activationLinkRenewedAt', 'activationLinkRenewedByUserId', 'cancellationComment', 'cancelledAt', 'cancelledByUserId', 'createdAt', 'deactivatedAt', 'deactivatedByUserId', 'email', 'firstName', 'id', 'invitationRestorationComment', 'invitationRestoredAt', 'invitationRestoredByUserId', 'invitedAt', 'invitedByUserId', 'lastName', 'password', 'passwordRenewalRequiredAt', 'passwordResetAt', 'passwordResetByUserId', 'reactivatedAt', 'reactivatedByUserId', 'role', 'updatedAt'] as const
   $columns = UserSchema.$columns
   @column()
   declare accessStatus: string
@@ -357,6 +357,12 @@ export class UserSchema extends BaseModel {
   declare firstName: string
   @column({ isPrimary: true })
   declare id: string
+  @column()
+  declare invitationRestorationComment: string | null
+  @column.dateTime()
+  declare invitationRestoredAt: DateTime | null
+  @column()
+  declare invitationRestoredByUserId: string | null
   @column.dateTime()
   declare invitedAt: DateTime | null
   @column()

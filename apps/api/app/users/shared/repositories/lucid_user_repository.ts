@@ -30,6 +30,8 @@ import UserRepository, {
   type RenewPasswordResult,
   type RequirePasswordRenewalCommand,
   type RequirePasswordRenewalResult,
+  type RestoreCancelledInvitationCommand,
+  type RestoreCancelledInvitationResult,
 } from './user_repository.ts'
 
 /**
@@ -49,11 +51,11 @@ function asStoredDateTime(value: DateTime, client: QueryClientContract): string 
 }
 
 /**
- * Every user read that serializes the access history needs all seven actor relations, and a missed
+ * Every user read that serializes the access history needs all eight actor relations, and a missed
  * one is invisible in types: Lucid resolves an unpreloaded relation to `undefined` and the
  * transformer turns that into `null`, so the actor reads as "nobody did this" on one endpoint and
  * is named on every other. Gathered here, in the shape `lucid_truck_repository.ts` already uses,
- * so an eighth lifecycle event is a one-line change.
+ * so a ninth lifecycle event is a one-line change.
  *
  * `activationToken` is not an actor: it is a pending user's live link, preloaded so the projection
  * can state until when it works. Only its expiry is ever read from it — the digest never leaves this
@@ -66,6 +68,7 @@ function preloadAccessHistory(
     .preload('invitedBy')
     .preload('activatedBy')
     .preload('cancelledBy')
+    .preload('invitationRestoredBy')
     .preload('deactivatedBy')
     .preload('reactivatedBy')
     .preload('passwordResetBy')
@@ -108,6 +111,9 @@ export default class LucidUserRepository extends UserRepository {
             cancelledAt: null,
             cancelledByUserId: null,
             cancellationComment: null,
+            invitationRestoredAt: null,
+            invitationRestoredByUserId: null,
+            invitationRestorationComment: null,
             deactivatedAt: null,
             deactivatedByUserId: null,
             reactivatedAt: null,
@@ -714,6 +720,80 @@ export default class LucidUserRepository extends UserRepository {
       ).firstOrFail()
 
       return { kind: 'CANCELLED', user }
+    })
+  }
+
+  /**
+   * `cancelPendingInvitation` run backwards, and it borrows that method's reasons. The guard
+   * `WHERE access_status = 'CANCELLED'` is the eligibility rule and the concurrency control at once:
+   * two racing restorations match one row between them — the loser re-evaluates the `WHERE` once the
+   * winner commits, finds `PENDING`, and matches nothing — so exactly one link is ever issued. A
+   * target that was restored, removed, or otherwise moved on after the workbench listed it matches
+   * none. No `SELECT … FOR UPDATE` is needed: the renewal takes one because it changes no status and
+   * so has nothing to guard on.
+   *
+   * The transaction makes the status change and the new link inseparable (FR-007): a pending user
+   * left without a link by a restoration that did not complete, or a cancelled user holding one, is a
+   * half-restored invitation.
+   *
+   * Every token the user still holds is **deleted before** the new one is inserted. GH-12 already
+   * deleted the link at cancellation, so this is normally a no-op — but acceptance (GH-8) takes any
+   * live token of a *pending* user, and a token that survived a cancellation would come back to life
+   * the moment its user is pending again (FR-006). The delete makes that impossible whatever state a
+   * legacy or seeded row is in, and keeps the `user_id` unique index from turning such a row into a
+   * failure.
+   *
+   * A removal racing this write resolves in row-lock order: restoration first, and the removal then
+   * deletes a pending user, the new token going with it (`ON DELETE CASCADE`); removal first, and
+   * this `UPDATE` matches nothing.
+   */
+  restoreCancelledInvitation(
+    command: RestoreCancelledInvitationCommand,
+  ): Promise<RestoreCancelledInvitationResult> {
+    return User.transaction(async (trx) => {
+      const changedAt = command.restoredAt.toSQL({ includeOffset: false })
+      const [affectedRows] = await User.query({ client: trx })
+        .where('id', command.id)
+        .where('accessStatus', 'CANCELLED')
+        .update({
+          accessStatus: 'PENDING',
+          invitationRestoredAt: changedAt,
+          invitationRestoredByUserId: command.restoredByUserId,
+          invitationRestorationComment: command.comment,
+          // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+          // bookkeeping timestamp is written by hand — as every other guarded write here does.
+          updatedAt: changedAt,
+        })
+
+      if (Number(affectedRows) !== 1) {
+        // Only names the reason; the guard above already decided the outcome, so there is no
+        // check-then-act window here to lose. No token is deleted or inserted.
+        const current = await User.query({ client: trx }).where('id', command.id).first()
+
+        return current
+          ? { kind: 'NOT_CANCELLED', accessStatus: current.accessStatus }
+          : { kind: 'NOT_FOUND' }
+      }
+
+      await UserActivationToken.query({ client: trx }).where('userId', command.id).delete()
+
+      const activationToken = await UserActivationToken.create(
+        {
+          userId: command.id,
+          hash: command.activationTokenHash,
+          expiresAt: command.activationTokenExpiresAt,
+        },
+        { client: trx },
+      )
+
+      // Reloaded with every lifecycle actor resolved, for the reason `deactivateActive` gives: the
+      // response projects the whole access history, and a relation left unpreloaded would serialize
+      // as `null`.
+      const user = await preloadAccessHistory(
+        User.query({ client: trx }).where('id', command.id),
+      ).firstOrFail()
+
+      return { kind: 'RESTORED', user, activationToken }
     })
   }
 

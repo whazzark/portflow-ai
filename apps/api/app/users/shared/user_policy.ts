@@ -55,6 +55,18 @@ export default class UserPolicy extends BasePolicy {
   }
 
   /**
+   * Restoring an invitation issues a new way into the application, which is an organization admin's
+   * alone, exactly like the invitation that issued the first one.
+   *
+   * *Which* invitation may then be restored — a cancelled one, and no other — is decided by the
+   * guarded write behind RestoreUserInvitationUseCase, for the reason `deactivate` gives: a rule
+   * expressed here is one the administrator can never be told the reason for.
+   */
+  restoreInvitation(user: User): AuthorizerResponse {
+    return user.accessStatus === 'ACTIVE' && user.role === 'ORGANIZATION_ADMIN'
+  }
+
+  /**
    * Whether the viewer may remove users at all. *Which* user is removable — one whose access was
    * never activated — is a separate decision, owned by the guarded write in the repository, for the
    * reason `deactivate` gives above.

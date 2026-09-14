@@ -37,13 +37,16 @@ export default class User extends UserSchema {
   @belongsTo(() => User, { foreignKey: 'cancelledByUserId' })
   declare cancelledBy: BelongsTo<typeof User>
 
+  @belongsTo(() => User, { foreignKey: 'invitationRestoredByUserId' })
+  declare invitationRestoredBy: BelongsTo<typeof User>
+
   @belongsTo(() => User, { foreignKey: 'deactivatedByUserId' })
   declare deactivatedBy: BelongsTo<typeof User>
 
   @belongsTo(() => User, { foreignKey: 'reactivatedByUserId' })
   declare reactivatedBy: BelongsTo<typeof User>
 
-  // Not an access-status event like the five above: a password reset changes no access status. It
+  // Not an access-status event like the six above: a password reset changes no access status. It
   // is recorded the same way because it answers the same question — when, and by which
   // administrator.
   @belongsTo(() => User, { foreignKey: 'passwordResetByUserId' })
@@ -57,8 +60,8 @@ export default class User extends UserSchema {
 
   /**
    * The live activation link of a pending user, at most one. The invitation writes it, the renewal
-   * replaces it and reads its expiry for the access record; the acceptance, cancellation, and
-   * restoration slices are its other readers.
+   * and the restoration replace it, the projection reads its expiry for the access record, and the
+   * acceptance and the cancellation delete it.
    */
   @hasOne(() => UserActivationToken)
   declare activationToken: HasOne<typeof UserActivationToken>

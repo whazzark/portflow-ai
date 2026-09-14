@@ -47,6 +47,7 @@ export type ScannedRoutes = {
     'users.deactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.cancel_invitation': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'users.restore_invitation': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.change_role': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.password_reset': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.activation_link_renewal': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -147,6 +148,7 @@ export type ScannedRoutes = {
     'users.deactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.cancel_invitation': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'users.restore_invitation': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.password_reset': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.activation_link_renewal': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.store': { paramsTuple?: []; params?: {} }

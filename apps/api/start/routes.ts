@@ -104,6 +104,9 @@ router
             router
               .post('/:id/cancel-invitation', [controllers.Users, 'cancelInvitation'])
               .as('cancel_invitation')
+            router
+              .post('/:id/restore-invitation', [controllers.Users, 'restoreInvitation'])
+              .as('restore_invitation')
             router.patch('/:id/role', [controllers.Users, 'changeRole']).as('change_role')
             router
               .post('/:id/password-reset', [controllers.Users, 'resetPassword'])

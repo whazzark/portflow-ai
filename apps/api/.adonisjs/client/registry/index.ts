@@ -264,6 +264,12 @@ const routes = {
     tokens: [{"old":"/api/v1/users/:id/cancel-invitation","type":0,"val":"api","end":""},{"old":"/api/v1/users/:id/cancel-invitation","type":0,"val":"v1","end":""},{"old":"/api/v1/users/:id/cancel-invitation","type":0,"val":"users","end":""},{"old":"/api/v1/users/:id/cancel-invitation","type":1,"val":"id","end":""},{"old":"/api/v1/users/:id/cancel-invitation","type":0,"val":"cancel-invitation","end":""}],
     types: placeholder as Registry['users.cancel_invitation']['types'],
   },
+  'users.restore_invitation': {
+    methods: ["POST"],
+    pattern: '/api/v1/users/:id/restore-invitation',
+    tokens: [{"old":"/api/v1/users/:id/restore-invitation","type":0,"val":"api","end":""},{"old":"/api/v1/users/:id/restore-invitation","type":0,"val":"v1","end":""},{"old":"/api/v1/users/:id/restore-invitation","type":0,"val":"users","end":""},{"old":"/api/v1/users/:id/restore-invitation","type":1,"val":"id","end":""},{"old":"/api/v1/users/:id/restore-invitation","type":0,"val":"restore-invitation","end":""}],
+    types: placeholder as Registry['users.restore_invitation']['types'],
+  },
   'users.change_role': {
     methods: ["PATCH"],
     pattern: '/api/v1/users/:id/role',

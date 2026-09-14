@@ -7,6 +7,7 @@ import {
 import type { UserDto } from '@/features/users/types'
 import { RenewActivationLinkDialog } from '@/features/users/ui/renew-activation-link-dialog'
 import { ResetPasswordDialog } from '@/features/users/ui/reset-password-confirmation'
+import { RestoreInvitationDialog } from '@/features/users/ui/restore-invitation-dialog'
 import { USER_ACCESS_ACTION_VARIANTS, UserAccessDialog } from '@/features/users/user-access'
 
 type UserAccessActionsProps = {
@@ -19,6 +20,8 @@ type UserAccessActionsProps = {
   mayResetPassword: boolean
   /** `canRenewActivationLink`'s answer, asked by the record for the same reason. */
   mayRenewActivationLink: boolean
+  /** `canRestoreInvitation`'s answer, asked by the record for the same reason. */
+  mayRestoreInvitation: boolean
   className?: string
   user: UserDto
 }
@@ -40,19 +43,31 @@ type UserAccessActionsProps = {
  * The activation link renewal sits beside it for the same reason — it replaces a pending user's
  * credential-bearing link rather than changing their access status — and, like the reset, the row
  * menu offers it from the same `canRenewActivationLink` answer and `RenewActivationLinkDialog`.
+ *
+ * The invitation restoration sits beside them too. It does change an access status, but what it
+ * hands back is a new activation link shown once, not a toast, so its confirmation is
+ * `RestoreInvitationDialog` rather than `UserAccessDialog` — offered from `canRestoreInvitation`,
+ * which the row menu asks as well.
  */
 export function UserAccessActions({
   actions,
   mayResetPassword,
   mayRenewActivationLink,
+  mayRestoreInvitation,
   className,
   user,
 }: UserAccessActionsProps) {
   const [openAction, setOpenAction] = useState<UserAccessAction | null>(null)
   const [isResetOpen, setIsResetOpen] = useState(false)
   const [isRenewalOpen, setIsRenewalOpen] = useState(false)
+  const [isRestorationOpen, setIsRestorationOpen] = useState(false)
 
-  if (actions.length === 0 && !mayResetPassword && !mayRenewActivationLink) {
+  if (
+    actions.length === 0 &&
+    !mayResetPassword &&
+    !mayRenewActivationLink &&
+    !mayRestoreInvitation
+  ) {
     return null
   }
 
@@ -68,6 +83,11 @@ export function UserAccessActions({
         {mayRenewActivationLink && (
           <Button onClick={() => setIsRenewalOpen(true)} type="button" variant="outline">
             Renew activation link
+          </Button>
+        )}
+        {mayRestoreInvitation && (
+          <Button onClick={() => setIsRestorationOpen(true)} type="button" variant="outline">
+            Restore invitation
           </Button>
         )}
         {actions.map((action) => (
@@ -87,6 +107,9 @@ export function UserAccessActions({
       {isResetOpen && <ResetPasswordDialog onClose={() => setIsResetOpen(false)} user={user} />}
       {isRenewalOpen && (
         <RenewActivationLinkDialog onClose={() => setIsRenewalOpen(false)} user={user} />
+      )}
+      {isRestorationOpen && (
+        <RestoreInvitationDialog onClose={() => setIsRestorationOpen(false)} user={user} />
       )}
     </div>
   )
