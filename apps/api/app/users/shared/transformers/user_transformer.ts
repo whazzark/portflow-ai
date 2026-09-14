@@ -86,6 +86,19 @@ export default class UserTransformer extends BaseTransformer<User> {
       cancelledBy: this.when(includeAccessHistory, () => this.toActor(this.resource.cancelledBy)),
       // The administrator's own words on the latest cancellation, gated like the event it annotates.
       cancellationComment: this.when(includeAccessHistory, () => this.resource.cancellationComment),
+      // The restoration that made a cancelled invitation pending again, with the administrator's
+      // own words on it — gated like the cancellation it reverses, which stays beside it.
+      invitationRestoredAt: this.when(
+        includeAccessHistory,
+        () => this.resource.invitationRestoredAt,
+      ),
+      invitationRestoredBy: this.when(includeAccessHistory, () =>
+        this.toActor(this.resource.invitationRestoredBy),
+      ),
+      invitationRestorationComment: this.when(
+        includeAccessHistory,
+        () => this.resource.invitationRestorationComment,
+      ),
       deactivatedAt: this.when(includeAccessHistory, () => this.resource.deactivatedAt),
       deactivatedBy: this.when(includeAccessHistory, () =>
         this.toActor(this.resource.deactivatedBy),

@@ -22,17 +22,26 @@ type ActivationLinkDialogProps = {
   invitedUser?: UserDto
   /**
    * What issued the link. It changes one sentence: a renewal has to say that the link the person
-   * may already hold no longer works. Everything that makes the link safe to hand out — shown once,
-   * copyable, dismissed only on purpose — is the same whichever issued it.
+   * may already hold no longer works, and a restoration that the invitation is pending again while
+   * any link from before the cancellation stays dead. Everything that makes the link safe to hand out
+   * — shown once, copyable, dismissed only on purpose — is the same whichever issued it.
    */
-  origin?: 'invitation' | 'renewal'
+  origin?: ActivationLinkOrigin
   onAcknowledge: () => void
 }
 
-function describeOutcome(origin: 'invitation' | 'renewal', name: string) {
-  return origin === 'renewal'
-    ? `A new activation link for ${name}. The previous link no longer works. Hand them this one so they can choose their password.`
-    : `${name} is now pending activation. Hand them this link so they can choose their password.`
+export type ActivationLinkOrigin = 'invitation' | 'renewal' | 'restoration'
+
+function describeOutcome(origin: ActivationLinkOrigin, name: string) {
+  if (origin === 'renewal') {
+    return `A new activation link for ${name}. The previous link no longer works. Hand them this one so they can choose their password.`
+  }
+
+  if (origin === 'restoration') {
+    return `${name}'s invitation is pending again. Any link they were given before still does not work. Hand them this one so they can choose their password.`
+  }
+
+  return `${name} is now pending activation. Hand them this link so they can choose their password.`
 }
 
 /**

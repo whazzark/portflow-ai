@@ -83,7 +83,11 @@ export function RenewActivationLinkDialog({
     try {
       const result = await renewActivationLink.mutateAsync({ params: { id: user.id } })
 
-      presentActivationLink({ user: result.data.user, activationLink: result.data.activationLink })
+      presentActivationLink({
+        user: result.data.user,
+        activationLink: result.data.activationLink,
+        origin: 'renewal',
+      })
       onClose()
     } catch (cause) {
       toast.error(`Unable to renew ${name}'s activation link`, {

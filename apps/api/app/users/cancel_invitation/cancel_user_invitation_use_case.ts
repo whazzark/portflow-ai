@@ -58,10 +58,10 @@ export default class CancelUserInvitationUseCase {
         throw new UserAlreadyActivatedException()
       case 'DEACTIVATED':
         throw new UserAlreadyDeactivatedException()
-      // `PENDING` only once restoration exists: an invitation that was cancelled when the guard ran
-      // and restored by the time the refusal was classified. Both say the same thing to the caller
-      // — someone else changed this invitation while the request was in flight — which is what the
-      // cancelled refusal tells them, and the refreshed collection shows them where it stands now.
+      // `PENDING` is an invitation that was cancelled when the guard ran and restored (GH-13) by the
+      // time the refusal was classified. Both say the same thing to the caller — someone else
+      // changed this invitation while the request was in flight — which is what the cancelled
+      // refusal tells them, and the refreshed collection shows them where it stands now.
       case 'CANCELLED':
       case 'PENDING':
         throw new UserCancelledInvitationException()

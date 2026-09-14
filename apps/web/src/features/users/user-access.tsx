@@ -51,9 +51,10 @@ export const USER_ACCESS_ACTION_VARIANTS: Record<UserAccessAction, 'default' | '
  * Beyond that the access status decides. Deactivation withdraws access that was activated and keeps
  * the person, and reactivation restores it to a deactivated user under a new password. A pending
  * user is offered both ways out of their invitation: cancellation withdraws it and keeps the user,
- * removal deletes a user whose access never was — so it is offered on a cancelled user too. An
- * action that does not apply is absent rather than disabled — a dead control with no explanation
- * reads as a bug.
+ * removal deletes a user whose access never was — so it is offered on a cancelled user too. A
+ * cancelled user is also offered the restoration of their invitation, outside this list
+ * (`canRestoreInvitation`), because it ends in a link shown once rather than a toast. An action that
+ * does not apply is absent rather than disabled — a dead control with no explanation reads as a bug.
  */
 export function userAccessActions(viewer: SessionUser, user: UserDto): UserAccessAction[] {
   if (viewer.role !== 'ORGANIZATION_ADMIN' || user.id === viewer.id) {

@@ -104,6 +104,19 @@ export function useUserMutations() {
     }),
   )
 
+  /**
+   * The renewal's shape, for the renewal's reasons: the result carries a secret with a single read,
+   * so `gcTime: 0`; the link is presented as soon as the server answers, so the refresh is not
+   * awaited; and a refusal usually means the user moved on, so the collection is refreshed then too.
+   */
+  const restoreInvitation = useMutation(
+    tuyauQuery.users.restoreInvitation.mutationOptions({
+      gcTime: 0,
+      onSuccess: () => void refreshUsers(),
+      onError: () => void refreshUsers(),
+    }),
+  )
+
   return {
     invite,
     deactivate,
@@ -114,6 +127,7 @@ export function useUserMutations() {
     changeRole,
     resetPassword,
     renewActivationLink,
+    restoreInvitation,
     refreshUsers,
   }
 }

@@ -32,9 +32,11 @@ export class UserCancelledInvitationException extends Exception {
 
 /**
  * The target has already activated their access, so there is no invitation left to withdraw — the
- * access that exists now is retired by deactivation, which the message names. Filed here rather than
- * in the cancellation slice because restoring an invitation and removing a never-activated user
- * refuse the very same target for the very same reason.
+ * access that exists now is retired by deactivation, which the message names. Filed here because
+ * that target is refused by more than the cancellation, though only the cancellation uses this code:
+ * the removal names its own refusal (`E_USER_ACTIVE_CANNOT_BE_REMOVED`), and the restoration names
+ * the status it found (`E_USER_NOT_CANCELLED`), since pointing to deactivation is the wrong advice
+ * for either.
  */
 export class UserAlreadyActivatedException extends Exception {
   static status = 409

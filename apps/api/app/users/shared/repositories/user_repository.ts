@@ -109,6 +109,28 @@ export type CancelPendingInvitationResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'NOT_PENDING'; accessStatus: UserAccessStatus }
 
+export type RestoreCancelledInvitationCommand = {
+  id: string
+  restoredByUserId: string
+  restoredAt: DateTime
+  /** Already normalized by the use case: trimmed, and `null` when blank. */
+  comment: string | null
+  /** The digest of the newly issued link, and the instant it stops being usable. */
+  activationTokenHash: string
+  activationTokenExpiresAt: DateTime
+}
+
+/**
+ * What the guarded write observed, never what the caller should be told — the split
+ * `CancelPendingInvitationResult` makes, mirrored. `NOT_CANCELLED` carries the status the row
+ * actually had, because the refusal has to name it: it is what tells a pending invitation (renew its
+ * link instead) from an activated user from a deactivated one (reactivate instead).
+ */
+export type RestoreCancelledInvitationResult =
+  | { kind: 'RESTORED'; user: User; activationToken: UserActivationToken }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'NOT_CANCELLED'; accessStatus: UserAccessStatus }
+
 export type ApplyUserIdentityCommand = {
   id: string
   firstName: string
@@ -277,6 +299,17 @@ export default abstract class UserRepository {
   abstract cancelPendingInvitation(
     command: CancelPendingInvitationCommand,
   ): Promise<CancelPendingInvitationResult>
+
+  /**
+   * Moves one user from cancelled back to pending, recording the restoration event and its comment,
+   * and gives them exactly one new activation link: every token the user still holds is deleted and
+   * the new one inserted. The transition is guarded on the row still being cancelled, so concurrent
+   * attempts resolve to exactly one restoration and one link; the status change and the new link
+   * commit together or not at all. The cancellation and invitation events are left as they were.
+   */
+  abstract restoreCancelledInvitation(
+    command: RestoreCancelledInvitationCommand,
+  ): Promise<RestoreCancelledInvitationResult>
 
   /**
    * The target user, read under a row lock inside the caller's transaction, so that the identity a

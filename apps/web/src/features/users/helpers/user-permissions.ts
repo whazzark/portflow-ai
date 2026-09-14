@@ -39,6 +39,22 @@ export function canRenewActivationLink(viewer: Viewer, user: UserDto) {
 }
 
 /**
+ * Whether this viewer may restore this user's cancelled invitation.
+ *
+ * Mirrors the API rule rather than replacing it — `UserPolicy.restoreInvitation` plus the cancelled
+ * guard in the repository's restoration stay authoritative. A courtesy to the administrator, not a
+ * security boundary:
+ *
+ * - organization admins only: restoring issues a way into the application, as inviting does;
+ * - cancelled targets only: a pending user's link is renewed instead, an active user has nothing to
+ *   restore, and a deactivated one is reactivated. No self rule is needed — a viewer is active, so
+ *   never cancelled.
+ */
+export function canRestoreInvitation(viewer: Viewer, user: UserDto) {
+  return viewer.role === 'ORGANIZATION_ADMIN' && user.accessStatus === 'CANCELLED'
+}
+
+/**
  * Whether this user currently owes a password renewal.
  *
  * The key is withheld from viewers who may not consult the access history, so its absence reads as

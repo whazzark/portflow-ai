@@ -14,10 +14,15 @@ import {
   type UserAccessAction,
 } from '@/features/users/helpers/user-access-copy'
 import { mayEditUserIdentity } from '@/features/users/helpers/user-identity'
-import { canRenewActivationLink, canResetPassword } from '@/features/users/helpers/user-permissions'
+import {
+  canRenewActivationLink,
+  canResetPassword,
+  canRestoreInvitation,
+} from '@/features/users/helpers/user-permissions'
 import type { UserDto } from '@/features/users/types'
 import { RenewActivationLinkDialog } from '@/features/users/ui/renew-activation-link-dialog'
 import { ResetPasswordDialog } from '@/features/users/ui/reset-password-confirmation'
+import { RestoreInvitationDialog } from '@/features/users/ui/restore-invitation-dialog'
 import {
   USER_ACCESS_ACTION_VARIANTS,
   UserAccessDialog,
@@ -26,12 +31,14 @@ import {
 
 /**
  * Per-row menu, so correcting a user, resetting their password, renewing their activation link,
- * retiring or restoring their access, or removing a user who never activated it does not require
- * opening their record first. It offers the same actions, under the same rules and with the same confirmations, as
- * the record footer — both ask `mayEditUserIdentity`, `canResetPassword`, `canRenewActivationLink`,
- * and `userAccessActions`, and both mount `ResetPasswordDialog`, `RenewActivationLinkDialog`, and
- * `UserAccessDialog`. View, then Edit, then the password reset and the link renewal, then the access
- * actions: the destructive item stays last, as in the site reference row menus.
+ * restoring a cancelled invitation, retiring or reactivating their access, or removing a user who never
+ * activated it does not require opening their record first. It offers the same actions, under the
+ * same rules and with the same confirmations, as the record footer — both ask `mayEditUserIdentity`,
+ * `canResetPassword`, `canRenewActivationLink`, `canRestoreInvitation`, and `userAccessActions`, and
+ * both mount `ResetPasswordDialog`, `RenewActivationLinkDialog`, `RestoreInvitationDialog`, and
+ * `UserAccessDialog`. View, then Edit, then the password reset, the link renewal, and the
+ * restoration, then the access actions: the destructive item stays last, as in the site reference
+ * row menus.
  *
  * Deliberately not `components/lifecycle/resource-row-actions.tsx`, for the reason
  * `helpers/user-access-copy.ts` is not `lifecycle-copy.ts`: that menu is keyed to the site
@@ -55,10 +62,12 @@ export function UserRowActions({
   const [openAction, setOpenAction] = useState<UserAccessAction | null>(null)
   const [isResetOpen, setIsResetOpen] = useState(false)
   const [isRenewalOpen, setIsRenewalOpen] = useState(false)
+  const [isRestorationOpen, setIsRestorationOpen] = useState(false)
   const actions = userAccessActions(viewer, user)
   const canEdit = onEdit !== undefined && mayEditUserIdentity(viewer, user)
   const mayResetPassword = canResetPassword(viewer, user)
   const mayRenewActivationLink = canRenewActivationLink(viewer, user)
+  const mayRestoreInvitation = canRestoreInvitation(viewer, user)
 
   // A menu with nothing in it is not rendered at all, rather than as an empty popup.
   if (
@@ -66,6 +75,7 @@ export function UserRowActions({
     !canEdit &&
     !mayResetPassword &&
     !mayRenewActivationLink &&
+    !mayRestoreInvitation &&
     actions.length === 0
   ) {
     return null
@@ -101,6 +111,9 @@ export function UserRowActions({
               Renew activation link
             </DropdownMenuItem>
           )}
+          {mayRestoreInvitation && (
+            <DropdownMenuItem onClick={() => setIsRestorationOpen(true)}>Restore</DropdownMenuItem>
+          )}
           {actions.map((action) => (
             <DropdownMenuItem
               key={action}
@@ -118,6 +131,9 @@ export function UserRowActions({
       {isResetOpen && <ResetPasswordDialog onClose={() => setIsResetOpen(false)} user={user} />}
       {isRenewalOpen && (
         <RenewActivationLinkDialog onClose={() => setIsRenewalOpen(false)} user={user} />
+      )}
+      {isRestorationOpen && (
+        <RestoreInvitationDialog onClose={() => setIsRestorationOpen(false)} user={user} />
       )}
     </>
   )

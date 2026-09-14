@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import type { UserDto } from '@/features/users/types'
-import { canRenewActivationLink } from './user-permissions'
+import { canRenewActivationLink, canRestoreInvitation } from './user-permissions'
 
 const ORGANIZATION_ADMIN = { id: 'viewer', role: 'ORGANIZATION_ADMIN' } as const
 
@@ -25,6 +25,26 @@ describe('canRenewActivationLink', () => {
     'never offers it to an %s',
     (role) => {
       expect(canRenewActivationLink({ id: 'viewer', role }, userWith('PENDING'))).toBe(false)
+    },
+  )
+})
+
+describe('canRestoreInvitation', () => {
+  test('lets an organization admin restore a cancelled invitation', () => {
+    expect(canRestoreInvitation(ORGANIZATION_ADMIN, userWith('CANCELLED'))).toBe(true)
+  })
+
+  test.each(['PENDING', 'ACTIVE', 'DEACTIVATED'] as const)(
+    'never offers it on a %s user, whom the API would refuse',
+    (accessStatus) => {
+      expect(canRestoreInvitation(ORGANIZATION_ADMIN, userWith(accessStatus))).toBe(false)
+    },
+  )
+
+  test.each(['OPERATIONS_ADMIN', 'OPERATIONS_LEAD', 'OBSERVER'] as const)(
+    'never offers it to an %s',
+    (role) => {
+      expect(canRestoreInvitation({ id: 'viewer', role }, userWith('CANCELLED'))).toBe(false)
     },
   )
 })
