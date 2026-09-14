@@ -49,6 +49,18 @@ export class UserAlreadyDeactivatedException extends Exception {
 }
 
 /**
+ * The reactivation's counterpart of `UserAlreadyDeactivatedException`: the target holds access right
+ * now — someone else reactivated them first, or the administrator named themselves. Not
+ * `UserAlreadyActivatedException`, which says the invitation is behind this user and tells the
+ * administrator to deactivate them instead: advice that is wrong here.
+ */
+export class UserAlreadyActiveException extends Exception {
+  static status = 409
+  static code = 'E_USER_ALREADY_ACTIVE'
+  static message = 'User is already active'
+}
+
+/**
  * 403 rather than 409: an organization admin may use this seam, just not on themselves. The
  * administrator seam is not the one for that target, which is an authorization-shaped statement.
  */

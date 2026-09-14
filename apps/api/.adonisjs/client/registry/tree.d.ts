@@ -58,6 +58,7 @@ export interface ApiDefinition {
     update: typeof routes['users.update']
     destroy: typeof routes['users.destroy']
     deactivate: typeof routes['users.deactivate']
+    reactivate: typeof routes['users.reactivate']
     cancelInvitation: typeof routes['users.cancel_invitation']
     changeRole: typeof routes['users.change_role']
     passwordReset: typeof routes['users.password_reset']

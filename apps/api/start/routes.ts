@@ -100,6 +100,7 @@ router
             router.patch('/:id', [controllers.Users, 'update']).as('update')
             router.delete('/:id', [controllers.Users, 'destroy']).as('destroy')
             router.post('/:id/deactivate', [controllers.Users, 'deactivate']).as('deactivate')
+            router.post('/:id/reactivate', [controllers.Users, 'reactivate']).as('reactivate')
             router
               .post('/:id/cancel-invitation', [controllers.Users, 'cancelInvitation'])
               .as('cancel_invitation')

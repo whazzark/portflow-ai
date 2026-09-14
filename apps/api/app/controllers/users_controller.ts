@@ -14,6 +14,8 @@ import { inviteUserValidator } from '#users/invite/invite_user_validator'
 import ListUsersUseCase from '#users/list/list_users_use_case'
 import ResetUserPasswordUseCase from '#users/password_reset/reset_user_password_use_case'
 import { resetUserPasswordValidator } from '#users/password_reset/reset_user_password_validator'
+import ReactivateUserUseCase from '#users/reactivate/reactivate_user_use_case'
+import { reactivateUserValidator } from '#users/reactivate/reactivate_user_validator'
 import RemoveUserUseCase from '#users/removal/remove_user_use_case'
 import { removeUserValidator } from '#users/removal/remove_user_validator'
 import ChangeUserRoleUseCase from '#users/role_change/change_user_role_use_case'
@@ -33,6 +35,7 @@ export default class UsersController {
     private cancelUserInvitationUseCase: CancelUserInvitationUseCase,
     private removeUserUseCase: RemoveUserUseCase,
     private renewActivationLinkUseCase: RenewActivationLinkUseCase,
+    private reactivateUserUseCase: ReactivateUserUseCase,
   ) {}
 
   /**
@@ -108,6 +111,33 @@ export default class UsersController {
       id: payload.params.id,
       deactivatedByUserId: viewer.id,
       deactivatedAt: DateTime.now(),
+    })
+
+    // Only an organization admin reaches this command, and that is exactly the viewer the
+    // collection already serves the access history to.
+    return serialize(
+      UserTransformer.transform(user, { includeAccessHistory: true }).useVariant(
+        'toAdministration',
+      ),
+    )
+  }
+
+  /**
+   * Authorization first, for the reason `deactivate` records: a caller who may not reactivate must
+   * not learn from a validation error, a 404, or a 409 whether an identifier names a deactivated
+   * user. The request carries no body — the actor comes from the session — and the response carries
+   * no credential: the reactivated user signs in with the password they already hold.
+   */
+  async reactivate({ auth, bouncer, params, request, serialize }: HttpContext) {
+    await bouncer.with(UserPolicy).authorize('reactivate')
+
+    const viewer = auth.getUserOrFail()
+    const payload = await request.validateUsing(reactivateUserValidator, { data: { params } })
+
+    const user = await this.reactivateUserUseCase.handle({
+      id: payload.params.id,
+      reactivatedByUserId: viewer.id,
+      reactivatedAt: DateTime.now(),
     })
 
     // Only an organization admin reaches this command, and that is exactly the viewer the

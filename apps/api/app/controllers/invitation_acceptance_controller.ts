@@ -10,6 +10,7 @@ import {
 import PreviewInvitationUseCase from '#auth/invitation_acceptance/preview_invitation_use_case'
 import { resolveOpenSessionUser } from '#auth/shared/open_session'
 import { REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY } from '#auth/shared/remembered_connection'
+import { recordSessionReactivation } from '#auth/shared/session_reactivation'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 
 /**
@@ -57,6 +58,7 @@ export default class InvitationAcceptanceController {
     try {
       session.forget(REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY)
       await auth.use('web').login(user)
+      recordSessionReactivation(session, user)
     } catch (error) {
       throw new InvitationAcceptedSessionNotOpenedException(undefined, { cause: error })
     }

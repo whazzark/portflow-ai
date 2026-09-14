@@ -37,6 +37,9 @@ export const RESPONSIBLE_ADMIN = { id: 'admin-1', firstName: 'Yann', lastName: '
 /** The instant a deactivation staged by the test helpers records. */
 export const DEACTIVATED_AT = '2026-09-10T09:04:22.000Z'
 
+/** The instant a reactivation staged by the test helpers records. */
+export const REACTIVATED_AT = '2026-09-11T08:12:05.000Z'
+
 /** The instant a cancellation staged by the test helpers records. */
 export const CANCELLED_AT = '2026-09-11T14:03:27.000Z'
 

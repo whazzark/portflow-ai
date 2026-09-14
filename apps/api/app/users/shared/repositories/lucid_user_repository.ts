@@ -20,6 +20,8 @@ import UserRepository, {
   type DeactivateUserResult,
   type InviteUserCommand,
   type InviteUserResult,
+  type ReactivateUserCommand,
+  type ReactivateUserResult,
   type RemoveUserCommand,
   type RemoveUserResult,
   type RenewActivationLinkCommand,
@@ -595,6 +597,61 @@ export default class LucidUserRepository extends UserRepository {
       ).firstOrFail()
 
       return { kind: 'DEACTIVATED', user }
+    })
+  }
+
+  /**
+   * `deactivateActive` with the guard reversed, and it inherits that method's argument: `WHERE
+   * access_status = 'DEACTIVATED'` is the eligibility rule and the concurrency control at once, so
+   * two racing reactivations match one row between them. The re-read after a zero-row update only
+   * names the reason; it never decides the outcome.
+   *
+   * One statement writes the status, the reactivation event, and the password renewal requirement,
+   * so an active user whose pre-deactivation credential works unchallenged is not a state this write
+   * can leave behind, even halfway. The requirement is stamped with the reactivation instant: the
+   * column is read as a boolean everywhere, and what the record presents as its origin is each
+   * event's own pair of columns. `deactivated_*` and `password_reset_*` stay — they record events
+   * that happened — and the password is not touched: the user signs in with it and renews.
+   *
+   * The remembered connections are deleted in the same transaction although `deactivateActive`
+   * already deleted them and a deactivated user cannot create one: a user deactivated before that
+   * revocation existed would otherwise carry a 30-day credential straight through the reactivation.
+   * `session_reactivation.ts` stamps a restored session with the current reactivation, which is only
+   * safe because no remembered connection from before it survives this commit.
+   */
+  reactivateDeactivated(command: ReactivateUserCommand): Promise<ReactivateUserResult> {
+    return User.transaction(async (trx) => {
+      const changedAt = command.reactivatedAt.toSQL({ includeOffset: false })
+      const [affectedRows] = await User.query({ client: trx })
+        .where('id', command.id)
+        .where('accessStatus', 'DEACTIVATED')
+        .update({
+          accessStatus: 'ACTIVE',
+          reactivatedAt: changedAt,
+          reactivatedByUserId: command.reactivatedByUserId,
+          passwordRenewalRequiredAt: changedAt,
+          // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+          // bookkeeping timestamp is written by hand — as every other guarded write here does.
+          updatedAt: changedAt,
+        })
+
+      if (Number(affectedRows) !== 1) {
+        const user = await User.query({ client: trx }).where('id', command.id).first()
+
+        return user
+          ? { kind: 'NOT_DEACTIVATED', accessStatus: user.accessStatus }
+          : { kind: 'NOT_FOUND' }
+      }
+
+      await this.revokeEveryRememberedConnection(trx, command.id)
+
+      // Reloaded with every lifecycle actor resolved, for the reason `deactivateActive` gives — and
+      // here the deactivation this reverses must arrive resolved alongside the reactivation.
+      const user = await preloadAccessHistory(
+        User.query({ client: trx }).where('id', command.id),
+      ).firstOrFail()
+
+      return { kind: 'REACTIVATED', user }
     })
   }
 

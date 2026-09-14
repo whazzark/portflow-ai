@@ -74,6 +74,22 @@ export type DeactivateUserResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'NOT_ACTIVE'; accessStatus: UserAccessStatus }
 
+export type ReactivateUserCommand = {
+  id: string
+  reactivatedByUserId: string
+  reactivatedAt: DateTime
+}
+
+/**
+ * `DeactivateUserResult` with the guard reversed, and for the same reason: `NOT_DEACTIVATED` carries
+ * the status the row actually had, which is the only thing that tells a pending invitation from a
+ * cancelled one from a user someone else reactivated first.
+ */
+export type ReactivateUserResult =
+  | { kind: 'REACTIVATED'; user: User }
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'NOT_DEACTIVATED'; accessStatus: UserAccessStatus }
+
 export type CancelPendingInvitationCommand = {
   id: string
   cancelledByUserId: string
@@ -243,6 +259,14 @@ export default abstract class UserRepository {
    * exactly one deactivation.
    */
   abstract deactivateActive(command: DeactivateUserCommand): Promise<DeactivateUserResult>
+
+  /**
+   * Moves one user from deactivated back to active, records the reactivation event and the password
+   * renewal requirement, and revokes every remembered connection they hold — as one indivisible
+   * effect. Guarded on the row still being deactivated, so concurrent attempts resolve to exactly
+   * one reactivation. The password is left as it is: the user signs in with it and renews.
+   */
+  abstract reactivateDeactivated(command: ReactivateUserCommand): Promise<ReactivateUserResult>
 
   /**
    * Moves one user from pending to cancelled, recording the cancellation event and its comment, and
