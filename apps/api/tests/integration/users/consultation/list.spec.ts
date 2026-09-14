@@ -189,6 +189,10 @@ test.group('GET /api/v1/users', () => {
         'email',
         'firstName',
         'id',
+        // The restoration event and the administrator's own words on it — never the link it issued.
+        'invitationRestorationComment',
+        'invitationRestoredAt',
+        'invitationRestoredBy',
         'invitedAt',
         'invitedBy',
         'lastName',
@@ -248,6 +252,46 @@ test.group('GET /api/v1/users', () => {
       assert.notProperty(entry, 'activationLinkExpiresAt')
       assert.notProperty(entry, 'activationLinkRenewedAt')
       assert.notProperty(entry, 'activationLinkRenewedBy')
+    }
+  })
+
+  test('projects a restoration, its administrator, and its comment to an organization admin', async ({
+    assert,
+    client,
+  }) => {
+    const admin = await UserFactory.apply('active').merge({ role: 'ORGANIZATION_ADMIN' }).create()
+    const restorer = await UserFactory.apply('active')
+      .merge({ role: 'ORGANIZATION_ADMIN' })
+      .create()
+    const restored = await UserFactory.apply('invited').create()
+    restored.invitationRestoredAt = DateTime.fromISO('2026-09-11T09:30:00.000Z')
+    restored.invitationRestoredByUserId = restorer.id
+    restored.invitationRestorationComment = 'Start date confirmed.'
+    await restored.save()
+
+    const response = await client.get('/api/v1/users').loginAs(admin)
+
+    response.assertStatus(200)
+    const entry = response.body().data.find((row: { id: string }) => row.id === restored.id)
+    assert.isNotNull(entry.invitationRestoredAt)
+    assert.deepEqual(entry.invitationRestoredBy, {
+      id: restorer.id,
+      firstName: restorer.firstName,
+      lastName: restorer.lastName,
+    })
+    assert.equal(entry.invitationRestorationComment, 'Start date confirmed.')
+  })
+
+  test('withholds the restoration from an operations admin', async ({ assert, client }) => {
+    const viewer = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+
+    const response = await client.get('/api/v1/users').loginAs(viewer)
+
+    response.assertStatus(200)
+    for (const entry of response.body().data) {
+      assert.notProperty(entry, 'invitationRestoredAt')
+      assert.notProperty(entry, 'invitationRestoredBy')
+      assert.notProperty(entry, 'invitationRestorationComment')
     }
   })
 })

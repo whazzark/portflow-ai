@@ -13,6 +13,7 @@ import { USER_ACCESS_STATUS_LABELS, USER_ROLE_LABELS } from '@/features/users/he
 import {
   canRenewActivationLink,
   canResetPassword,
+  canRestoreInvitation,
   owesPasswordRenewal,
 } from '@/features/users/helpers/user-permissions'
 import type { UserAccessStatus, UserDto } from '@/features/users/types'
@@ -60,10 +61,11 @@ type UserAccessRecordProps = {
 /**
  * Identity, role, access status, and the recorded access history, with the actions the viewer may
  * take on this user in the footer — the edit on the left, the access actions, the password reset
- * (`#17`), and the activation link renewal (`#9`) on the right, as in the customer record. The role
- * is changed through that edit, alongside the identity. The access actions are deactivation,
- * reactivation (`#32`), invitation cancellation (`#12`), and removal, whichever `userAccessActions`
- * offers; invitation is owned by its own panel and is not offered here.
+ * (`#17`), the activation link renewal (`#9`), and the invitation restoration (`#13`) on the right,
+ * as in the customer record. The role is changed through that edit, alongside the identity. The
+ * access actions are deactivation, reactivation (`#32`), invitation cancellation (`#12`), and removal
+ * (`#14`), whichever `userAccessActions` offers; invitation is owned by its own panel and is not
+ * offered here.
  *
  * A pending user's record also states where their activation link stands — valid until, expired,
  * or never issued — so the administrator can tell whether it needs renewing without asking the
@@ -76,6 +78,7 @@ export function UserAccessRecord({ user, canEdit, onEdit }: UserAccessRecordProp
   const accessActions = userAccessActions(viewer, user)
   const mayResetPassword = canResetPassword(viewer, user)
   const mayRenewActivationLink = canRenewActivationLink(viewer, user)
+  const mayRestoreInvitation = canRestoreInvitation(viewer, user)
   const linkState = activationLinkState(user, Date.now())
   const activationLink = linkState
     ? describeActivationLink(linkState, user.activationLinkExpiresAt)
@@ -122,7 +125,11 @@ export function UserAccessRecord({ user, canEdit, onEdit }: UserAccessRecordProp
         <Separator className="my-6" />
         <UserAccessHistory user={user} />
       </div>
-      {(canEdit || accessActions.length > 0 || mayResetPassword || mayRenewActivationLink) && (
+      {(canEdit ||
+        accessActions.length > 0 ||
+        mayResetPassword ||
+        mayRenewActivationLink ||
+        mayRestoreInvitation) && (
         <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
           {canEdit && <Button onClick={onEdit}>Edit</Button>}
           {/* Pushed right on its own too, so a record offering no correction keeps the access
@@ -132,6 +139,7 @@ export function UserAccessRecord({ user, canEdit, onEdit }: UserAccessRecordProp
             className="sm:ml-auto"
             mayRenewActivationLink={mayRenewActivationLink}
             mayResetPassword={mayResetPassword}
+            mayRestoreInvitation={mayRestoreInvitation}
             user={user}
           />
         </SheetFooter>

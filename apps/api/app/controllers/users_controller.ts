@@ -18,6 +18,8 @@ import ReactivateUserUseCase from '#users/reactivate/reactivate_user_use_case'
 import { reactivateUserValidator } from '#users/reactivate/reactivate_user_validator'
 import RemoveUserUseCase from '#users/removal/remove_user_use_case'
 import { removeUserValidator } from '#users/removal/remove_user_validator'
+import RestoreUserInvitationUseCase from '#users/restore_invitation/restore_user_invitation_use_case'
+import { restoreUserInvitationValidator } from '#users/restore_invitation/restore_user_invitation_validator'
 import ChangeUserRoleUseCase from '#users/role_change/change_user_role_use_case'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 import UserPolicy from '#users/shared/user_policy'
@@ -36,6 +38,7 @@ export default class UsersController {
     private removeUserUseCase: RemoveUserUseCase,
     private renewActivationLinkUseCase: RenewActivationLinkUseCase,
     private reactivateUserUseCase: ReactivateUserUseCase,
+    private restoreUserInvitationUseCase: RestoreUserInvitationUseCase,
   ) {}
 
   /**
@@ -179,6 +182,41 @@ export default class UsersController {
         'toAdministration',
       ),
     )
+  }
+
+  /**
+   * Authorization first, for the reason `deactivate` records: a viewer who may not restore
+   * invitations receives the same denial whether the id is malformed, unknown, or names a cancelled
+   * user — so the refusal discloses nothing about the target (FR-013). The body is optional and read
+   * as `cancelInvitation` reads it.
+   *
+   * The new activation link travels in this response and nowhere else, exactly as the invitation's
+   * does in `store` and the renewal's in `renewActivationLink` — the envelope is the same so the
+   * workbench hands out all three through one outcome. `200` rather than `201`: no user is created.
+   * `includeAccessHistory` is unconditionally true because the policy admits organization admins
+   * only.
+   */
+  async restoreInvitation({ auth, bouncer, params, request, serialize }: HttpContext) {
+    await bouncer.with(UserPolicy).authorize('restoreInvitation')
+
+    const viewer = auth.getUserOrFail()
+    const payload = await request.validateUsing(restoreUserInvitationValidator, {
+      data: { ...request.body(), params },
+    })
+
+    const { user, activationLink } = await this.restoreUserInvitationUseCase.handle({
+      id: payload.params.id,
+      restoredByUserId: viewer.id,
+      restoredAt: DateTime.now(),
+      comment: payload.comment,
+    })
+
+    return serialize({
+      user: UserTransformer.transform(user, { includeAccessHistory: true }).useVariant(
+        'toAdministration',
+      ),
+      activationLink,
+    })
   }
 
   /**

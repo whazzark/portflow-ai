@@ -51,6 +51,9 @@ const NO_LIFECYCLE = {
   cancelledAt: null,
   cancelledBy: null,
   cancellationComment: null,
+  invitationRestoredAt: null,
+  invitationRestoredBy: null,
+  invitationRestorationComment: null,
   deactivatedAt: null,
   deactivatedBy: null,
   reactivatedAt: null,
@@ -253,3 +256,34 @@ export const USERS_WITH_PENDING_LINKS: UserDto[] = [
   EXPIRED_LINK_USER,
   NO_LINK_USER,
 ]
+
+/** The instant a restoration staged by the test helpers records. */
+export const RESTORED_AT = '2026-09-12T08:15:00.000Z'
+
+/**
+ * A pending user whose invitation was cancelled and then restored, each with the administrator's own
+ * words, and who holds the valid link the restoration issued. Kept out of `USERS` so the default
+ * collection stays the one the other suites count.
+ */
+export const RESTORED_USER: UserDto = {
+  id: 'pending-restored',
+  firstName: 'Inès',
+  lastName: 'Garnier',
+  email: 'ines.garnier@portflow.test',
+  role: 'OPERATIONS_LEAD',
+  accessStatus: 'PENDING',
+  ...NO_LIFECYCLE,
+  invitedAt: '2026-08-20T09:00:00.000Z',
+  invitedBy: RESPONSIBLE_ADMIN,
+  cancelledAt: '2026-08-25T10:00:00.000Z',
+  cancelledBy: RESPONSIBLE_ADMIN,
+  cancellationComment: 'Start date postponed.',
+  invitationRestoredAt: '2026-09-01T09:00:00.000Z',
+  invitationRestoredBy: RESPONSIBLE_ADMIN,
+  invitationRestorationComment: 'Start date confirmed.',
+  activationLinkRenewedAt: null,
+  activationLinkRenewedBy: null,
+  activationLinkExpiresAt: '2099-01-01T09:00:00.000Z',
+} as UserDto
+
+export const USERS_WITH_RESTORED: UserDto[] = [...USERS, RESTORED_USER]

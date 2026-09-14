@@ -60,6 +60,7 @@ export interface ApiDefinition {
     deactivate: typeof routes['users.deactivate']
     reactivate: typeof routes['users.reactivate']
     cancelInvitation: typeof routes['users.cancel_invitation']
+    restoreInvitation: typeof routes['users.restore_invitation']
     changeRole: typeof routes['users.change_role']
     passwordReset: typeof routes['users.password_reset']
     activationLinkRenewal: typeof routes['users.activation_link_renewal']

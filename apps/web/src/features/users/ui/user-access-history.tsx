@@ -34,9 +34,18 @@ function recordedEvents(user: UserDto): RecordedEvent[] {
       by: user.cancelledBy,
       comment: user.cancellationComment,
     },
+    // An access-status event too — cancelled back to pending — carrying the administrator's own words
+    // beside it, as the cancellation does. The cancellation it reverses stays above it, dated earlier.
+    {
+      key: 'invitation-restored',
+      label: 'Invitation restored',
+      at: user.invitationRestoredAt,
+      by: user.invitationRestoredBy,
+      comment: user.invitationRestorationComment,
+    },
     { key: 'deactivated', label: 'Deactivated', at: user.deactivatedAt, by: user.deactivatedBy },
     { key: 'reactivated', label: 'Reactivated', at: user.reactivatedAt, by: user.reactivatedBy },
-    // Not an access-status event like the five above — a reset changes no access status — but it
+    // Not an access-status event like the six above — a reset changes no access status — but it
     // answers the same question the record is here to answer, and it is never cleared, so it stays
     // readable long after the user has renewed.
     {

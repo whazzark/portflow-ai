@@ -15,7 +15,7 @@ The rows are ordered by execution order. Blockers are recorded as GitHub issue d
 |---|---|---|---|---|
 | GH-12 | Cancel a Pending Invitation | GH-7 | implemented | ./cancel-a-pending-invitation/ |
 | GH-14 | Remove a Never-Activated User Permanently | GH-7 | planned | ./remove-a-never-activated-user-permanently/ |
-| GH-13 | Restore a Cancelled Invitation with a New Activation Link | GH-9, GH-12 | planned | ./restore-a-cancelled-invitation-with-a-new-activation-link/ |
+| GH-13 | Restore a Cancelled Invitation with a New Activation Link | GH-9, GH-12 | implemented | ./restore-a-cancelled-invitation-with-a-new-activation-link/ |
 
 GH-12 and GH-14 are the only pair that can be delivered in parallel. Both act on the pending user
 GH-7 creates, in the same workbench, but neither blocks the other.
