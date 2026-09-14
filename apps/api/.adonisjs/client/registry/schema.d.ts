@@ -91,6 +91,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/password_renewal_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'me.profile.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/me/profile'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#users/profile/update_own_profile_validator').updateOwnProfileValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#users/profile/update_own_profile_validator').updateOwnProfileValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/own_profile_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/own_profile_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'me.password.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/me/password'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#users/profile/change_own_password_validator').changeOwnPasswordValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#users/profile/change_own_password_validator').changeOwnPasswordValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/own_profile_controller').default['changePassword']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/own_profile_controller').default['changePassword']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'customers.store': {
     methods: ["POST"]
     pattern: '/api/v1/customers'

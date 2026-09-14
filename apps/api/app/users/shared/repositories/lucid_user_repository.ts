@@ -9,6 +9,7 @@ import isUniqueViolation from '#shared/database/is_unique_violation'
 import UserRepository, {
   type AcceptInvitationCommand,
   type AcceptInvitationResult,
+  type ApplyOwnPasswordCommand,
   type ApplyUserIdentityCommand,
   type ApplyUserIdentityResult,
   type CancelPendingInvitationCommand,
@@ -888,5 +889,34 @@ export default class LucidUserRepository extends UserRepository {
     }
 
     return { kind: 'UPDATED', user: corrected }
+  }
+
+  /**
+   * Runs inside the caller's transaction, never its own: replacing the credential and revoking the
+   * connections established under it are one indivisible effect. A revocation that failed after the
+   * `UPDATE` had committed would leave a credential restoring access for its full 30 days under a
+   * password the user has just replaced — the very window a password change exists to close.
+   */
+  async applyOwnPassword(command: ApplyOwnPasswordCommand): Promise<User> {
+    const { client } = command
+
+    await User.query({ client })
+      .where('id', command.id)
+      .update({
+        password: command.hashedPassword,
+        // The query-builder `.update()` bypasses the model's autoUpdate column hook, so the
+        // bookkeeping timestamp is written by hand — as every other guarded write here does.
+        updatedAt: command.changedAt.toSQL({ includeOffset: false }),
+      })
+
+    const revocation = client.from('remember_me_tokens').where('tokenable_id', command.id)
+
+    if (command.keptRememberedConnectionId !== null) {
+      revocation.whereNot('id', command.keptRememberedConnectionId)
+    }
+
+    await revocation.delete()
+
+    return User.query({ client }).where('id', command.id).firstOrFail()
   }
 }

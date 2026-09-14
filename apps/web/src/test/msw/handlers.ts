@@ -19,6 +19,24 @@ export const handlers = [
 
   http.post(`${API_BASE_URL}/api/v1/auth/logout`, () => new HttpResponse(null, { status: 204 })),
 
+  // The submitted identity merged over a signed-in user, as the API answers it. Tests needing a
+  // session that follows the update, or a refusal, override this.
+  http.patch(`${API_BASE_URL}/api/v1/me/profile`, async ({ request }) => {
+    const body = (await request.json()) as { firstName: string; lastName: string; email: string }
+
+    return HttpResponse.json({
+      data: {
+        id: 'self-1',
+        firstName: body.firstName,
+        lastName: body.lastName,
+        email: body.email,
+        role: 'OBSERVER',
+        accessStatus: 'ACTIVE',
+        passwordRenewalRequired: false,
+      },
+    })
+  }),
+
   http.get(`${API_BASE_URL}/api/v1/transport-companies`, () =>
     HttpResponse.json({
       data: [

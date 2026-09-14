@@ -2,6 +2,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { FieldGroup } from '@/components/ui/field'
+import { identitySchemaFields } from '@/features/users/helpers/identity-schema'
 import { formatFullName } from '@/features/users/helpers/name'
 import {
   USER_ROLE_LABELS,
@@ -18,18 +19,8 @@ import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
-/** Mirrors the API bounds: `users.first_name`, `last_name`, and `email` are all `string` columns. */
-const MAX_LENGTH = 255
-
 const userSchema = z.object({
-  firstName: z.string().trim().min(1, 'First name is required.').max(MAX_LENGTH),
-  lastName: z.string().trim().min(1, 'Last name is required.').max(MAX_LENGTH),
-  email: z
-    .string()
-    .trim()
-    .min(1, 'Email is required.')
-    .max(MAX_LENGTH)
-    .email('Enter a valid email address.'),
+  ...identitySchemaFields,
   role: z.enum(['ORGANIZATION_ADMIN', 'OPERATIONS_ADMIN', 'OPERATIONS_LEAD', 'OBSERVER']),
 })
 

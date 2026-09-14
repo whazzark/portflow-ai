@@ -149,6 +149,25 @@ export type ApplyUserIdentityResult =
   | { kind: 'NOT_FOUND' }
   | { kind: 'EMAIL_TAKEN' }
 
+export type ApplyOwnPasswordCommand = {
+  id: string
+  /**
+   * Already hashed by the caller: scrypt at `cost: 16384` is deliberately slow and must never run
+   * inside a write, let alone while a row lock is held.
+   */
+  hashedPassword: string
+  changedAt: DateTime
+  /**
+   * The remembered connection the request presented, which survives the change. Every other one is
+   * revoked: each restores access for up to 30 days without presenting a password, and they were
+   * established under the credential being replaced. `null` revokes them all — the safe direction,
+   * as `renewPassword` records.
+   */
+  keptRememberedConnectionId: number | null
+  /** The change's transaction, opened by the use case, which decides against the locked row. */
+  client: TransactionClientContract
+}
+
 export type ChangeUserRoleCommand = {
   userId: string
   role: UserRole
@@ -327,6 +346,17 @@ export default abstract class UserRepository {
    * the check and the write, since `users_email_unique` is the authority on either.
    */
   abstract applyIdentity(command: ApplyUserIdentityCommand): Promise<ApplyUserIdentityResult>
+
+  /**
+   * Writes the password a user chose for themselves and revokes every remembered connection but the
+   * one the change was performed from. Runs inside the caller's transaction, never its own: the use
+   * case decides against the row it read under lock — still active, owing no renewal, still holding
+   * the password that was verified — and the write must land under those same decisions.
+   *
+   * No typed outcome: every refusal is taken before this is reached, so there is nothing left for
+   * the write to observe.
+   */
+  abstract applyOwnPassword(command: ApplyOwnPasswordCommand): Promise<User>
 
   /**
    * Sets one user's role, refusing a deactivated target. Submitting the role the user already holds
