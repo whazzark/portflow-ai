@@ -74,7 +74,10 @@ export async function authenticateOpenSession(
   // reactivation it opens under — which is also what would make the check below say nothing about
   // this request. So the connection is asked first, and one that predates the reactivation leaves
   // the session unstamped for the check to refuse, rather than being stamped as if it qualified.
-  if (restoredOnThisRequest && rememberedConnectionMatchesReactivation(rememberedConnection, user)) {
+  if (
+    restoredOnThisRequest &&
+    rememberedConnectionMatchesReactivation(rememberedConnection, user)
+  ) {
     recordSessionReactivation(ctx.session, user)
   }
 
