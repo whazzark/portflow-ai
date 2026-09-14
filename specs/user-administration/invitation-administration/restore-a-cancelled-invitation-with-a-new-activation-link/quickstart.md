@@ -33,11 +33,11 @@ pnpm dev                       # api on :3333, web on :3000
    activation link as **link A**, then acknowledge the outcome.
 2. Open that pending user and **Cancel invitation** with the comment `Start date postponed.`
    (GH-12). Switch to **Cancelled** and open the user.
-3. The footer offers **Restore invitation**, and the row menu offers it between **Edit** and
+3. The footer offers **Restore**, and the row menu offers it between **Edit** and
    **Remove** (FR-015). Neither appears on a pending, active, or deactivated user.
 4. Click it. The confirmation reads **Restore invitation?**, names the user, says the invitation
    will be pending again with a new link valid for 7 days shown once, says any earlier link stays
-   unusable, and offers **Comment (optional)**. Its buttons are **Cancel** and **Restore invitation**
+   unusable, and offers **Comment (optional)**. Its buttons are **Cancel** and **Restore**
    (FR-016). Type a comment, click **Cancel**: nothing changes, and reopening shows an empty field
    (US4-4).
 5. Reopen it, type `  Start date confirmed.  `, and confirm. The button reads **Restoring…** and

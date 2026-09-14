@@ -153,7 +153,7 @@ export function RestoreInvitationDialog({ user, onClose }: { user: UserDto; onCl
               void submit()
             }}
           >
-            {isPending ? 'Restoring…' : 'Restore invitation'}
+            {isPending ? 'Restoring…' : 'Restore'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

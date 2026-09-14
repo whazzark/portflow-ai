@@ -42,7 +42,7 @@
 - The central invariant is FR-006: GH-8 treats a link as usable again once its user is pending, so
   the restoration must guarantee that no link issued before it survives.
 - Defaults chosen instead of clarification markers, each recorded in Assumptions: the restoration is
-  its own dated, attributed access status change; the action reads "Restore invitation" with a
+  its own dated, attributed access status change; the action reads "Restore" with a
   "Cancel" dismiss button; and the workbench stays on the cancelled view afterwards.
 - Resolved in clarification (2026-09-11): an optional restoration comment of at most 1,000
   characters under the cancellation comment's rules (FR-003a, FR-016, FR-019); the earlier

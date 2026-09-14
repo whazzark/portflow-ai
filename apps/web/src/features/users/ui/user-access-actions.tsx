@@ -87,7 +87,7 @@ export function UserAccessActions({
         )}
         {mayRestoreInvitation && (
           <Button onClick={() => setIsRestorationOpen(true)} type="button" variant="outline">
-            Restore invitation
+            Restore
           </Button>
         )}
         {actions.map((action) => (

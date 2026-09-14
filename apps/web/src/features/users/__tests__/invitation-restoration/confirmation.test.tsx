@@ -41,7 +41,7 @@ test('offers an optional comment of at most 1,000 characters', async () => {
   expect(within(dialog).getByRole('textbox', COMMENT)).toHaveAttribute('maxLength', '1000')
 })
 
-test('reads Cancel and Restore invitation', async () => {
+test('reads Cancel and Restore', async () => {
   const user = userEvent.setup()
   mockUsersWithRestoration()
 
@@ -51,7 +51,7 @@ test('reads Cancel and Restore invitation', async () => {
   const labels = within(dialog)
     .getAllByRole('button')
     .map((button) => button.textContent)
-  expect(labels).toEqual(['Cancel', 'Restore invitation'])
+  expect(labels).toEqual(['Cancel', 'Restore'])
 })
 
 test('keeps the invitation cancelled and discards the comment when dismissed', async () => {
@@ -67,7 +67,7 @@ test('keeps the invitation cancelled and discards the comment when dismissed', a
   expect(requests).toHaveLength(0)
 
   await user.click(
-    within(screen.getByRole('dialog')).getByRole('button', { name: 'Restore invitation' }),
+    within(screen.getByRole('dialog')).getByRole('button', { name: 'Restore' }),
   )
   dialog = await screen.findByRole('alertdialog')
   expect(within(dialog).getByRole('textbox', COMMENT)).toHaveValue('')
@@ -92,7 +92,7 @@ test('sends the typed comment', async () => {
   renderUsers('/users?status=cancelled')
   const dialog = await startRestorationFromRecord(user)
   await user.type(within(dialog).getByRole('textbox', COMMENT), 'Start date confirmed.')
-  await user.click(within(dialog).getByRole('button', { name: 'Restore invitation' }))
+  await user.click(within(dialog).getByRole('button', { name: 'Restore' }))
 
   await waitFor(() => expect(requests).toHaveLength(1))
   expect(requests[0]).toEqual({ id: 'cancelled-1', body: { comment: 'Start date confirmed.' } })
@@ -104,7 +104,7 @@ test('sends a null comment when the field was left empty', async () => {
 
   renderUsers('/users?status=cancelled')
   const dialog = await startRestorationFromRecord(user)
-  await user.click(within(dialog).getByRole('button', { name: 'Restore invitation' }))
+  await user.click(within(dialog).getByRole('button', { name: 'Restore' }))
 
   await waitFor(() => expect(requests).toHaveLength(1))
   expect(requests[0]).toEqual({ id: 'cancelled-1', body: { comment: null } })
@@ -125,7 +125,7 @@ test('shows the restoration in progress, locks the dialog, and refuses a second 
 
   renderUsers('/users?status=cancelled')
   const dialog = await startRestorationFromRecord(user)
-  await user.click(within(dialog).getByRole('button', { name: 'Restore invitation' }))
+  await user.click(within(dialog).getByRole('button', { name: 'Restore' }))
 
   const pending = await within(dialog).findByRole('button', { name: 'Restoring…' })
   expect(pending).toBeDisabled()
@@ -149,7 +149,7 @@ test('shows why an over-long comment was refused, and keeps it to shorten', asyn
   renderUsers('/users?status=cancelled')
   const dialog = await startRestorationFromRecord(user)
   await user.type(within(dialog).getByRole('textbox', COMMENT), 'Too long, as the API says.')
-  await user.click(within(dialog).getByRole('button', { name: 'Restore invitation' }))
+  await user.click(within(dialog).getByRole('button', { name: 'Restore' }))
 
   expect(
     await screen.findByText('The comment field must not be greater than 1000 characters'),

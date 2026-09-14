@@ -244,12 +244,11 @@ only working link), the link handed to the page before the dialog closes, and a 
 `gcTime: 0`. The renewal set this family apart for the same reason, and `UserAccessActions` already
 documents why credential-issuing actions sit beside the status actions rather than among them.
 
-**Placement and labels**: the record footer shows **Restore invitation** as an outline button beside
+**Placement and labels**: the record footer shows **Restore** as an outline button beside
 the others. The row menu lists it after Edit and before **Remove**, which stays last because it is
-destructive. The dialog title is **Restore invitation?**, the confirm button **Restore invitation**
-(**Restoring…** while in flight), the dismiss button **Cancel** (FR-015, FR-016). The label names what
-is restored, as "Cancel invitation" and "Renew activation link" do (the button-label rule's
-exception for a noun naming what the action acts on).
+destructive. The dialog title is **Restore invitation?**, the confirm button **Restore**
+(**Restoring…** while in flight), the dismiss button **Cancel** (FR-015, FR-016). The label carries the
+action alone: the record, the row, and the dialog title already say what is restored.
 
 **Alternatives considered**: a fourth `UserAccessAction`, `'restore-invitation'`. It would give the
 offer rule one home, but `UserAccessDialog` would need a second success path, a pending-lock on

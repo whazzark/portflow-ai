@@ -27,7 +27,7 @@ test('offers the restoration to an organization admin on a cancelled user record
   renderUsers()
   const record = await openFromView(user, 'Cancelled', CANCELLED_USER)
 
-  expect(within(record).getByRole('button', { name: 'Restore invitation' })).toBeInTheDocument()
+  expect(within(record).getByRole('button', { name: 'Restore' })).toBeInTheDocument()
 })
 
 test.each([
@@ -42,7 +42,7 @@ test.each([
   const record = await openFromView(user, view, name)
 
   expect(
-    within(record).queryByRole('button', { name: 'Restore invitation' }),
+    within(record).queryByRole('button', { name: 'Restore' }),
   ).not.toBeInTheDocument()
 })
 
@@ -57,6 +57,6 @@ test('offers it to no one but an organization admin', async () => {
   await user.click(within(table).getByRole('button', { name: 'View user Amélie Bernard' }))
 
   expect(
-    within(screen.getByRole('dialog')).queryByRole('button', { name: 'Restore invitation' }),
+    within(screen.getByRole('dialog')).queryByRole('button', { name: 'Restore' }),
   ).not.toBeInTheDocument()
 })

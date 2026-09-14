@@ -32,12 +32,12 @@ test.each([
     renderUsers('/users?status=cancelled')
     const dialog = await startRestorationFromRecord(user)
     await user.type(within(dialog).getByRole('textbox', COMMENT), 'Start date confirmed.')
-    await user.click(within(dialog).getByRole('button', { name: 'Restore invitation' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Restore' }))
 
     expect(await screen.findByText("Unable to restore Élodie Fabre's invitation")).toBeVisible()
     expect(screen.getByRole('alertdialog')).toBe(dialog)
     expect(within(dialog).getByRole('textbox', COMMENT)).toHaveValue('Start date confirmed.')
-    const confirm = within(dialog).getByRole('button', { name: 'Restore invitation' })
+    const confirm = within(dialog).getByRole('button', { name: 'Restore' })
     await waitFor(() => expect(confirm).toBeEnabled())
     expect(screen.queryByTestId('activation-link')).not.toBeInTheDocument()
 
@@ -85,9 +85,9 @@ test('drops a row that moved on from the refreshed view, and still says why', as
 
   renderUsers('/users?status=cancelled')
   await openCancelledRowMenu(CANCELLED_USER)
-  await user.click(screen.getByRole('menuitem', { name: 'Restore invitation' }))
+  await user.click(screen.getByRole('menuitem', { name: 'Restore' }))
   const confirmation = await screen.findByRole('alertdialog')
-  await user.click(within(confirmation).getByRole('button', { name: 'Restore invitation' }))
+  await user.click(within(confirmation).getByRole('button', { name: 'Restore' }))
 
   expect(
     await screen.findByText(

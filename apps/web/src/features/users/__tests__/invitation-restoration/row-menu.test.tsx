@@ -12,7 +12,7 @@ test('offers the restoration in a cancelled row menu, between Edit and Remove', 
   await openCancelledRowMenu(CANCELLED_USER)
 
   const items = screen.getAllByRole('menuitem').map((item) => item.textContent)
-  expect(items).toEqual(['View', 'Edit', 'Restore invitation', 'Remove'])
+  expect(items).toEqual(['View', 'Edit', 'Restore', 'Remove'])
 })
 
 test.each([
@@ -26,7 +26,7 @@ test.each([
   fireEvent.click(await screen.findByRole('button', { name: `Actions for ${name}` }))
   await screen.findByRole('menu')
 
-  expect(screen.queryByRole('menuitem', { name: 'Restore invitation' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('menuitem', { name: 'Restore' })).not.toBeInTheDocument()
 })
 
 test('restores from the row menu with the same confirmation, and the link outlives the row', async () => {
@@ -35,13 +35,13 @@ test('restores from the row menu with the same confirmation, and the link outliv
 
   renderUsers('/users?status=cancelled')
   await openCancelledRowMenu(CANCELLED_USER)
-  await user.click(screen.getByRole('menuitem', { name: 'Restore invitation' }))
+  await user.click(screen.getByRole('menuitem', { name: 'Restore' }))
 
   const confirmation = await screen.findByRole('alertdialog')
   expect(
     within(confirmation).getByRole('heading', { name: 'Restore invitation?' }),
   ).toBeInTheDocument()
-  await user.click(within(confirmation).getByRole('button', { name: 'Restore invitation' }))
+  await user.click(within(confirmation).getByRole('button', { name: 'Restore' }))
 
   expect(await screen.findByTestId('activation-link')).toHaveTextContent(NEW_LINK)
   expect(requests).toEqual([{ id: 'cancelled-1', body: { comment: null } }])

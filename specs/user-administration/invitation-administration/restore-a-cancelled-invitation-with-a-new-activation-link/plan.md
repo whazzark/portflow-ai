@@ -18,7 +18,7 @@ the `{ user, activationLink }` envelope the invitation and the renewal already u
 target status is refused with one code, `E_USER_NOT_CANCELLED`, naming the status in `meta`, and a
 refusal changes nothing.
 
-The web gains **Restore invitation** on a cancelled user's record and row menu. It opens a dedicated
+The web gains **Restore** on a cancelled user's record and row menu. It opens a dedicated
 confirmation with the lifecycle comment field, and on success hands the link to the page-level
 `IssuedActivationLinkProvider`, so the once-only outcome stays open while the restored user leaves
 the cancelled view under it. The access history gains an **Invitation restored** event with its

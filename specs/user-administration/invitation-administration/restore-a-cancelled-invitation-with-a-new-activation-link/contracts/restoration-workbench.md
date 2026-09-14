@@ -15,18 +15,18 @@ boundary (FR-014). Absent rather than disabled when it does not apply.
 
 | Viewer | Target | Record footer | Row menu |
 |---|---|---|---|
-| organization admin | cancelled | **Restore invitation** | **Restore invitation** |
+| organization admin | cancelled | **Restore** | **Restore** |
 | organization admin | pending, active, deactivated | — | — |
 | operations admin, lead, observer | any | — | — (cancelled users are not listed to them) |
 
 ## Entry points
 
-- **Record footer** (`ui/user-access-actions.tsx`): an outline button **Restore invitation**, beside
+- **Record footer** (`ui/user-access-actions.tsx`): an outline button **Restore**, beside
   **Renew activation link**, before the status actions. `ui/user-access-record.tsx` asks
   `canRestoreInvitation` and passes `mayRestoreInvitation`, as it does `mayRenewActivationLink`.
-- **Row menu** (`ui/user-row-actions.tsx`): the item **Restore invitation** after **Edit** and before
+- **Row menu** (`ui/user-row-actions.tsx`): the item **Restore** after **Edit** and before
   **Remove**, which stays last because it is destructive. On a cancelled row the menu reads View,
-  Edit, Restore invitation, Remove.
+  Edit, Restore, Remove.
 
 Both mount the same `RestoreInvitationDialog`, only while open (FR-015).
 
@@ -38,7 +38,7 @@ Both mount the same `RestoreInvitationDialog`, only while open (FR-015).
 | Description | {First Last}'s invitation will be pending again. A new activation link, valid for 7 days, will be shown once for you to pass on. Any link they were given before stays unusable. |
 | Field | the lifecycle comment field: `LIFECYCLE_COMMENT_LABEL`, `LIFECYCLE_COMMENT_DESCRIPTION`, `maxLength={1000}`, frozen while in flight |
 | Dismiss | **Cancel** — disabled while in flight |
-| Confirm | **Restore invitation**, then **Restoring…** while in flight, disabled |
+| Confirm | **Restore**, then **Restoring…** while in flight, disabled |
 
 - Dismissing (Cancel, Escape, outside click) before submission unmounts the dialog, which discards
   the comment and sends nothing (US4-4).

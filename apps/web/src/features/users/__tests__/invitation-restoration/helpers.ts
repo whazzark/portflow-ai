@@ -140,7 +140,7 @@ export async function startRestorationFromRecord(
   name = CANCELLED_USER,
 ) {
   const record = await openCancelledRecordFor(user, name)
-  await user.click(within(record).getByRole('button', { name: 'Restore invitation' }))
+  await user.click(within(record).getByRole('button', { name: 'Restore' }))
 
   return screen.findByRole('alertdialog')
 }

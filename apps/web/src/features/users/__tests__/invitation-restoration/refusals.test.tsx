@@ -10,7 +10,7 @@ import { mockRestorationRefused, startRestorationFromRecord } from './helpers'
 
 async function submitRestoration(user: ReturnType<typeof userEvent.setup>) {
   const confirmation = await startRestorationFromRecord(user)
-  await user.click(within(confirmation).getByRole('button', { name: 'Restore invitation' }))
+  await user.click(within(confirmation).getByRole('button', { name: 'Restore' }))
 
   return confirmation
 }
@@ -96,11 +96,11 @@ test('keeps the confirmation open after a refusal, and refreshes the collection'
   renderUsers('/users?status=cancelled')
   const confirmation = await startRestorationFromRecord(user)
   const readsBeforeRefusal = collectionReads
-  await user.click(within(confirmation).getByRole('button', { name: 'Restore invitation' }))
+  await user.click(within(confirmation).getByRole('button', { name: 'Restore' }))
 
   await screen.findByText('You are not allowed to restore an invitation.')
   await waitFor(() => expect(collectionReads).toBeGreaterThan(readsBeforeRefusal))
   expect(screen.getByRole('alertdialog')).toBe(confirmation)
-  expect(within(confirmation).getByRole('button', { name: 'Restore invitation' })).toBeEnabled()
+  expect(within(confirmation).getByRole('button', { name: 'Restore' })).toBeEnabled()
   expect(screen.queryByTestId('activation-link')).not.toBeInTheDocument()
 })

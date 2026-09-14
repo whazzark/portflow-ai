@@ -16,7 +16,7 @@ import {
 
 const restoreFromRecord = async (user: ReturnType<typeof userEvent.setup>) => {
   const confirmation = await startRestorationFromRecord(user)
-  await user.click(within(confirmation).getByRole('button', { name: 'Restore invitation' }))
+  await user.click(within(confirmation).getByRole('button', { name: 'Restore' }))
 
   return screen.findByTestId('activation-link')
 }
@@ -106,7 +106,7 @@ test('records the restoration after the cancellation in the reopened record', as
   expect(within(entry).getByText('by Claire Martin')).toBeInTheDocument()
   // The restored record offers no second restoration.
   expect(
-    within(reopened).queryByRole('button', { name: 'Restore invitation' }),
+    within(reopened).queryByRole('button', { name: 'Restore' }),
   ).not.toBeInTheDocument()
 })
 
@@ -141,5 +141,5 @@ test('makes the invitation refusal’s “Restore it instead” lead to an actio
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   const record = await openCancelledRecordFor(user, CANCELLED_USER)
 
-  expect(within(record).getByRole('button', { name: 'Restore invitation' })).toBeInTheDocument()
+  expect(within(record).getByRole('button', { name: 'Restore' })).toBeInTheDocument()
 })
