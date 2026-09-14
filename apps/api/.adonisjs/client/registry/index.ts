@@ -48,6 +48,18 @@ const routes = {
     tokens: [{"old":"/api/v1/auth/password-renewal","type":0,"val":"api","end":""},{"old":"/api/v1/auth/password-renewal","type":0,"val":"v1","end":""},{"old":"/api/v1/auth/password-renewal","type":0,"val":"auth","end":""},{"old":"/api/v1/auth/password-renewal","type":0,"val":"password-renewal","end":""}],
     types: placeholder as Registry['auth.password_renewal']['types'],
   },
+  'me.profile.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/me/profile',
+    tokens: [{"old":"/api/v1/me/profile","type":0,"val":"api","end":""},{"old":"/api/v1/me/profile","type":0,"val":"v1","end":""},{"old":"/api/v1/me/profile","type":0,"val":"me","end":""},{"old":"/api/v1/me/profile","type":0,"val":"profile","end":""}],
+    types: placeholder as Registry['me.profile.update']['types'],
+  },
+  'me.password.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/me/password',
+    tokens: [{"old":"/api/v1/me/password","type":0,"val":"api","end":""},{"old":"/api/v1/me/password","type":0,"val":"v1","end":""},{"old":"/api/v1/me/password","type":0,"val":"me","end":""},{"old":"/api/v1/me/password","type":0,"val":"password","end":""}],
+    types: placeholder as Registry['me.password.update']['types'],
+  },
   'customers.store': {
     methods: ["POST"],
     pattern: '/api/v1/customers',

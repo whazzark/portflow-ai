@@ -13,8 +13,8 @@ The rows are ordered by execution order. Blockers are recorded as GitHub issue d
 
 | ID | Sub-feature | Blocked by | Status | Artifact |
 |---|---|---|---|---|
-| GH-24 | Update Another User Identity | — | planned | ./update-another-user-identity/ |
-| GH-25 | Let Active Users Update Their Identity | GH-24 | planned | ./let-active-users-update-their-identity/ |
+| GH-24 | Update Another User Identity | — | delivered | ./update-another-user-identity/ |
+| GH-25 | Let Active Users Update Their Identity | GH-24 | in-progress | ./let-active-users-update-their-identity/ |
 
 The two slices are a chain: GH-25 reuses the identity rules GH-24 delivers under a different
 authorization path, so nothing here can be run in parallel. GH-118, outside this roadmap,

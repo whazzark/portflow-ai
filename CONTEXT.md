@@ -402,7 +402,11 @@ _Avoid_: permission edit, profile update
 
 **User Identity Update**:
 The action of changing the identifying information of a user, either by the user themselves or by an organization admin.
-_Avoid_: profile update, account edit
+_Avoid_: account edit
+
+**Profile**:
+What an active user manages about themselves: their identity, and their password. It names the self-service screen, not an action — the actions are a user identity update and a password change, and each keeps its own name. An organization admin correcting someone else is not touching a profile.
+_Avoid_: account, my account, settings
 
 **Login**:
 The action by which an active user establishes an authenticated session by presenting valid credentials. Every non-active access status is rejected with the same outcome as invalid credentials, so the response never reveals which reason applied.
@@ -427,6 +431,10 @@ _Avoid_: password expiry, locked account, forced logout
 **Password Renewal**:
 The action by which a user carrying a password renewal requirement chooses a new password, clearing the requirement. It is the user-side counterpart of a password reset and of a user reactivation, which are the administrator-side actions that require it. Until it is completed, the session reaches nothing but the renewal, the session representation, and logout, and completing it revokes the user's remembered connections on every other browser.
 _Avoid_: password change, password reset, password recovery
+
+**Password Change**:
+The action by which an active user replaces their own password, presenting the current one to prove they hold it. It is theirs to start, unlike a password renewal, which an administrator's password reset or a user reactivation imposes, and unlike which it asks for the current password — an open session is not a credential. It keeps the connection it was performed from and revokes every other remembered connection.
+_Avoid_: password renewal, password reset, password recovery
 
 **User Invitation Cancellation**:
 The action of withdrawing access before a pending user has activated it.
