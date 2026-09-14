@@ -11,6 +11,7 @@ import {
   CANCELLED_AT,
   DEACTIVATED_AT,
   ORGANIZATION_ADMIN,
+  REACTIVATED_AT,
   RESPONSIBLE_ADMIN,
   USERS,
 } from './fixtures'
@@ -78,6 +79,106 @@ export function mockUsersWithDeactivation(
       return HttpResponse.json({ data: deactivated })
     }),
   )
+}
+
+/**
+ * A workbench whose collection actually changes when a reactivation succeeds, as
+ * `mockUsersWithDeactivation` does for deactivations: the write handler rewrites the entry — status,
+ * event, and the renewal the reactivation requires — and the next read serves it. Every reactivated
+ * id is kept, so a test can assert how many requests the dialog actually sent.
+ */
+export function mockUsersWithReactivation(
+  viewer: { id: string; firstName: string; lastName: string } = ORGANIZATION_ADMIN,
+  users: UserDto[] = USERS,
+) {
+  let collection = users
+  const requests: string[] = []
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: viewer })),
+    http.get(`${API_BASE_URL}/api/v1/users`, () => HttpResponse.json({ data: collection })),
+    http.post(`${API_BASE_URL}/api/v1/users/:id/reactivate`, ({ params }) => {
+      requests.push(String(params.id))
+      const target = collection.find((user) => user.id === params.id)
+
+      if (!target) {
+        return HttpResponse.json(
+          { error: { code: 'E_USER_NOT_FOUND', message: 'User not found' } },
+          { status: 404 },
+        )
+      }
+
+      const reactivated: UserDto = {
+        ...target,
+        accessStatus: 'ACTIVE',
+        reactivatedAt: REACTIVATED_AT,
+        reactivatedBy: {
+          id: viewer.id,
+          firstName: viewer.firstName,
+          lastName: viewer.lastName,
+        },
+        passwordRenewalRequired: true,
+      }
+
+      collection = collection.map((user) => (user.id === reactivated.id ? reactivated : user))
+
+      return HttpResponse.json({ data: reactivated })
+    }),
+  )
+
+  return { requests }
+}
+
+/**
+ * Someone else reactivated the user first: the command is refused as already active, and the
+ * collection read afterwards serves the user as active — so the refreshed deactivated view drops them.
+ */
+export function mockReactivationLostRace(
+  targetId: string,
+  viewer: { id: string; firstName: string; lastName: string } = ORGANIZATION_ADMIN,
+  users: UserDto[] = USERS,
+) {
+  const movedOn: UserDto[] = users.map((user) =>
+    user.id === targetId
+      ? {
+          ...user,
+          accessStatus: 'ACTIVE',
+          reactivatedAt: REACTIVATED_AT,
+          reactivatedBy: RESPONSIBLE_ADMIN,
+          passwordRenewalRequired: true,
+        }
+      : user,
+  )
+  let refused = false
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: viewer })),
+    http.get(`${API_BASE_URL}/api/v1/users`, () =>
+      HttpResponse.json({ data: refused ? movedOn : users }),
+    ),
+    http.post(`${API_BASE_URL}/api/v1/users/:id/reactivate`, () => {
+      refused = true
+
+      return HttpResponse.json(
+        { error: { code: 'E_USER_ALREADY_ACTIVE', message: 'User is already active' } },
+        { status: 409 },
+      )
+    }),
+  )
+}
+
+/** Registered after a collection mock, to override its write handler with one refusal. */
+export function mockReactivationRefused(code: string, message: string, status = 409) {
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/users/:id/reactivate`, () =>
+      HttpResponse.json({ error: { code, message } }, { status }),
+    ),
+  )
+}
+
+/** The request never reaches the API: the retryable failure path. */
+export function mockReactivationUnreachable() {
+  server.use(http.post(`${API_BASE_URL}/api/v1/users/:id/reactivate`, () => HttpResponse.error()))
 }
 
 /**

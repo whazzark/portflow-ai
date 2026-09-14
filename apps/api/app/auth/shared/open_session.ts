@@ -3,6 +3,11 @@ import type { Authenticators } from '@adonisjs/auth/types'
 import { Secret } from '@adonisjs/core/helpers'
 import type { HttpContext } from '@adonisjs/core/http'
 import { REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY } from '#auth/shared/remembered_connection'
+import {
+  matchesSessionReactivation,
+  REACTIVATION_SESSION_KEY,
+  recordSessionReactivation,
+} from '#auth/shared/session_reactivation'
 import User from '#models/user'
 
 export type AuthenticateOpenSessionOptions = {
@@ -13,7 +18,8 @@ export type AuthenticateOpenSessionOptions = {
 /**
  * What "this request carries an open session" means in this application, in one place: the guard
  * authenticates it — restoring it from a remembered connection if need be — the remembered
- * connection it came from has not outlived its fixed expiry, and its user is still active.
+ * connection it came from has not outlived its fixed expiry, its user is still active, and it was
+ * opened under that user's latest reactivation (`session_reactivation.ts`).
  *
  * Throws `E_UNAUTHORIZED_ACCESS` on any failure, with the guard's own message when no session
  * exists at all and "Invalid or expired user session" when one exists but no longer counts.
@@ -30,7 +36,9 @@ export async function authenticateOpenSession(
 
   await ctx.auth.authenticateUsing(options.guards, { loginRoute: options.loginRoute })
 
-  if (ctx.auth.use('web').viaRemember && rememberedConnection) {
+  const restoredOnThisRequest = ctx.auth.use('web').viaRemember
+
+  if (restoredOnThisRequest && rememberedConnection) {
     ctx.session.put(
       REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY,
       rememberedConnection.expiresAt.getTime(),
@@ -56,6 +64,24 @@ export async function authenticateOpenSession(
   const user = await User.find(authenticatedUser.id)
 
   if (user?.accessStatus !== 'ACTIVE') {
+    throw new errors.E_UNAUTHORIZED_ACCESS('Invalid or expired user session', {
+      guardDriverName: 'session',
+    })
+  }
+
+  // A session restored from a remembered connection just came into being, so it is stamped with the
+  // reactivation it opens under — safe because the reactivation revokes every remembered connection
+  // made before it, so none that survives can predate it.
+  if (restoredOnThisRequest) {
+    recordSessionReactivation(ctx.session, user)
+  }
+
+  // Forgotten, not merely refused: the browser then holds no user at all, and signing in again
+  // opens a session under the current reactivation.
+  if (!matchesSessionReactivation(ctx.session, user)) {
+    ctx.session.forget('auth_web')
+    ctx.session.forget(REACTIVATION_SESSION_KEY)
+
     throw new errors.E_UNAUTHORIZED_ACCESS('Invalid or expired user session', {
       guardDriverName: 'session',
     })

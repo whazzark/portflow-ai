@@ -31,6 +31,17 @@ export function useUserMutations() {
     }),
   )
 
+  /**
+   * Refreshed on a refusal too, for the reason `deactivate` gives: the commonest refusal is a user
+   * someone else already reactivated, who has left the deactivated view since this one loaded.
+   */
+  const reactivate = useMutation(
+    tuyauQuery.users.reactivate.mutationOptions({
+      onSuccess: () => refreshUsers(),
+      onError: () => refreshUsers(),
+    }),
+  )
+
   /** Refreshed on a refusal too, for the reason `deactivate` gives. */
   const cancelInvitation = useMutation(
     tuyauQuery.users.cancelInvitation.mutationOptions({
@@ -96,6 +107,7 @@ export function useUserMutations() {
   return {
     invite,
     deactivate,
+    reactivate,
     cancelInvitation,
     remove,
     updateIdentity,

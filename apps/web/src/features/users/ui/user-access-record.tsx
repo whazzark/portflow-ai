@@ -61,9 +61,9 @@ type UserAccessRecordProps = {
  * Identity, role, access status, and the recorded access history, with the actions the viewer may
  * take on this user in the footer — the edit on the left, the access actions, the password reset
  * (`#17`), and the activation link renewal (`#9`) on the right, as in the customer record. The role
- * is changed through that edit, alongside the identity. The access actions are deactivation and
- * invitation cancellation (`#12`), whichever `userAccessActions` offers; invitation and reactivation
- * are owned by their own slices and are not offered here.
+ * is changed through that edit, alongside the identity. The access actions are deactivation,
+ * reactivation (`#32`), invitation cancellation (`#12`), and removal, whichever `userAccessActions`
+ * offers; invitation is owned by its own panel and is not offered here.
  *
  * A pending user's record also states where their activation link stands — valid until, expired,
  * or never issued — so the administrator can tell whether it needs renewing without asking the

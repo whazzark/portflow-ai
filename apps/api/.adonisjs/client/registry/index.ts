@@ -252,6 +252,12 @@ const routes = {
     tokens: [{"old":"/api/v1/users/:id/deactivate","type":0,"val":"api","end":""},{"old":"/api/v1/users/:id/deactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/users/:id/deactivate","type":0,"val":"users","end":""},{"old":"/api/v1/users/:id/deactivate","type":1,"val":"id","end":""},{"old":"/api/v1/users/:id/deactivate","type":0,"val":"deactivate","end":""}],
     types: placeholder as Registry['users.deactivate']['types'],
   },
+  'users.reactivate': {
+    methods: ["POST"],
+    pattern: '/api/v1/users/:id/reactivate',
+    tokens: [{"old":"/api/v1/users/:id/reactivate","type":0,"val":"api","end":""},{"old":"/api/v1/users/:id/reactivate","type":0,"val":"v1","end":""},{"old":"/api/v1/users/:id/reactivate","type":0,"val":"users","end":""},{"old":"/api/v1/users/:id/reactivate","type":1,"val":"id","end":""},{"old":"/api/v1/users/:id/reactivate","type":0,"val":"reactivate","end":""}],
+    types: placeholder as Registry['users.reactivate']['types'],
+  },
   'users.cancel_invitation': {
     methods: ["POST"],
     pattern: '/api/v1/users/:id/cancel-invitation',

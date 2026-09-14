@@ -28,7 +28,7 @@ describe('userAccessActions', () => {
     ['ACTIVE', ['deactivate']],
     ['PENDING', ['cancel-invitation', 'remove']],
     ['CANCELLED', ['remove']],
-    ['DEACTIVATED', []],
+    ['DEACTIVATED', ['reactivate']],
   ] as const)('offers an organization admin the right action on a %s user', (status, actions) => {
     expect(userAccessActions(organizationAdmin, userIn(status))).toEqual(actions)
   })

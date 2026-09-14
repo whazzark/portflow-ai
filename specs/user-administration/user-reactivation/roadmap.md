@@ -13,11 +13,12 @@ direct ones, since GitHub resolves the transitive ones.
 
 | ID | Sub-feature | Blocked by | Status | Artifact |
 |---|---|---|---|---|
-| GH-32 | Reactivate a User with Fresh Credentials | GH-20 | planned | ./reactivate-a-user-with-fresh-credentials/ |
+| GH-32 | Reactivate a User with Fresh Credentials | GH-20 | implemented | ./reactivate-a-user-with-fresh-credentials/ |
 
-GH-32 is the only remaining slice of this roadmap. It waits on GH-20, in the GH-19 roadmap,
-which is what produces a deactivated user to reactivate; the password renewal it records is
-already delivered.
+GH-32 is the only remaining slice of this roadmap. Its one blocker, GH-20 in the GH-19 roadmap,
+is delivered and produces the deactivated user to reactivate; the password renewal requirement it
+records, and the renewal step that clears it, are delivered too. It is implemented on
+`whazzark/reactivate-a-user-with-fresh-credentials`, pending review and merge.
 
 ## Cross-cutting context
 

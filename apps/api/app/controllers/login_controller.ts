@@ -6,6 +6,7 @@ import {
   REMEMBERED_CONNECTION_DURATION_MS,
   REMEMBERED_CONNECTION_EXPIRES_AT_SESSION_KEY,
 } from '#auth/shared/remembered_connection'
+import { recordSessionReactivation } from '#auth/shared/session_reactivation'
 import UserTransformer from '#users/shared/transformers/user_transformer'
 
 @inject()
@@ -18,6 +19,9 @@ export default class LoginController {
     const user = await this.loginUserUseCase.handle(payload)
 
     await auth.use('web').login(user, payload.rememberMe)
+    // `login` keeps the previous session's data, so whatever reactivation a stale session recorded is
+    // overwritten here with the one this sign-in opens under.
+    recordSessionReactivation(session, user)
 
     if (payload.rememberMe) {
       session.put(
