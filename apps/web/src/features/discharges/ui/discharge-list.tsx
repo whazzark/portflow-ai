@@ -1,6 +1,13 @@
 import { Link, useNavigate } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import {
   Table,
   TableBody,
@@ -32,9 +39,11 @@ type DischargeListProps = {
   discharges: DischargeDto[]
   isNoMatch: boolean
   status: DischargeStatusFilter
+  /** Offered inside a genuinely empty collection, never beside a search that matched nothing. */
+  createAction?: ReactNode
 }
 
-export function DischargeList({ discharges, isNoMatch, status }: DischargeListProps) {
+export function DischargeList({ createAction, discharges, isNoMatch, status }: DischargeListProps) {
   const navigate = useNavigate({ from: '/discharges' })
 
   // The list's status and search travel with the detail, so its way back restores them.
@@ -129,6 +138,7 @@ export function DischargeList({ discharges, isNoMatch, status }: DischargeListPr
                         : EMPTY_DESCRIPTIONS[status]}
                     </EmptyDescription>
                   </EmptyHeader>
+                  {createAction && !isNoMatch && <EmptyContent>{createAction}</EmptyContent>}
                 </Empty>
               </TableCell>
             </TableRow>

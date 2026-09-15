@@ -124,34 +124,49 @@ export default class LucidCustomerRepository extends CustomerRepository {
     }
   }
 
-  async archiveAvailable(command: ArchiveCustomerCommand): Promise<ArchiveCustomerResult> {
-    const [affectedRows] = await Customer.query()
-      .where('id', command.id)
-      .where('status', 'AVAILABLE')
-      .update({
-        status: 'ARCHIVED',
-        archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
-        archivedByUserId: command.archivedByUserId,
-        archiveComment: command.archiveComment,
-        updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
-      })
-
-    if (affectedRows === 0) {
-      const customer = await Customer.find(command.id)
+  /**
+   * The customer is locked and its usage read in the same transaction. A usage read before the lock
+   * could be overtaken by a discharge preparation committing in between, which locks the customer
+   * `FOR SHARE` before writing its lots: holding `FOR UPDATE` here makes the two queue.
+   */
+  archiveAvailable(command: ArchiveCustomerCommand): Promise<ArchiveCustomerResult> {
+    return Customer.transaction(async (trx) => {
+      const customer = await Customer.query({ client: trx })
+        .where('id', command.id)
+        .forUpdate()
+        .first()
 
       if (!customer) {
         return { kind: 'NOT_FOUND' }
       }
+      if (customer.status === 'ARCHIVED') {
+        return { kind: 'ALREADY_ARCHIVED' }
+      }
 
-      return customer.status === 'ARCHIVED' ? { kind: 'ALREADY_ARCHIVED' } : { kind: 'NOT_FOUND' }
-    }
+      const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
+        referenceType: 'CUSTOMER',
+        referenceIds: [command.id],
+        client: trx,
+      })
+      if (usedIds.has(command.id)) {
+        return { kind: 'IN_USE' }
+      }
 
-    const customer = await Customer.find(command.id)
-    if (!customer) {
-      return { kind: 'NOT_FOUND' }
-    }
+      await Customer.query({ client: trx })
+        .where('id', command.id)
+        .where('status', 'AVAILABLE')
+        .update({
+          status: 'ARCHIVED',
+          archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
+          archivedByUserId: command.archivedByUserId,
+          archiveComment: command.archiveComment,
+          updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
+        })
 
-    return { kind: 'ARCHIVED', customer }
+      const archived = await Customer.query({ client: trx }).where('id', command.id).firstOrFail()
+
+      return { kind: 'ARCHIVED', customer: archived }
+    })
   }
 
   async reactivateArchived(command: ReactivateCustomerCommand): Promise<ReactivateCustomerResult> {

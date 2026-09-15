@@ -5,6 +5,7 @@ import User from '#models/user'
 import UserActivationToken from '#models/user_activation_token'
 import isForeignKeyViolation from '#shared/database/is_foreign_key_violation'
 import isUniqueViolation from '#shared/database/is_unique_violation'
+import { SHIFT_RESPONSIBLE_ROLES } from '#users/shared/shift_responsible_eligibility'
 
 import UserRepository, {
   type AcceptInvitationCommand,
@@ -243,6 +244,15 @@ export default class LucidUserRepository extends UserRepository {
   listActive(): Promise<User[]> {
     return User.query()
       .where('accessStatus', 'ACTIVE')
+      .orderBy('lastName', 'asc')
+      .orderBy('firstName', 'asc')
+      .orderBy('id', 'asc')
+  }
+
+  listEligibleShiftResponsibles(): Promise<User[]> {
+    return User.query()
+      .where('accessStatus', 'ACTIVE')
+      .whereIn('role', [...SHIFT_RESPONSIBLE_ROLES])
       .orderBy('lastName', 'asc')
       .orderBy('firstName', 'asc')
       .orderBy('id', 'asc')

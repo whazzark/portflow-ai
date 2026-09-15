@@ -62,6 +62,7 @@ export type ArchiveDockResult =
   | { kind: 'ARCHIVED'; dock: Dock }
   | { kind: 'NOT_FOUND' }
   | { kind: 'ALREADY_ARCHIVED' }
+  | { kind: 'IN_USE' }
 
 export type ReactivateDockResult =
   | { kind: 'REACTIVATED'; dock: Dock }

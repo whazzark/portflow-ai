@@ -7,7 +7,6 @@ import {
   DockNotFoundException,
 } from '#docks/shared/dock_exceptions'
 import DockRepository from '#docks/shared/repositories/dock_repository'
-import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 
 export type ArchiveDockInput = {
   id: string
@@ -18,10 +17,7 @@ export type ArchiveDockInput = {
 
 @inject()
 export default class ArchiveDockUseCase {
-  constructor(
-    private dockRepository: DockRepository,
-    private usageChecker: SiteReferenceUsageChecker,
-  ) {}
+  constructor(private dockRepository: DockRepository) {}
 
   async handle(input: ArchiveDockInput) {
     const dock = await this.dockRepository.findById(input.id)
@@ -32,15 +28,6 @@ export default class ArchiveDockUseCase {
 
     if (dock.status === 'ARCHIVED') {
       throw new DockAlreadyArchivedException()
-    }
-
-    const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
-      referenceType: 'DOCK',
-      referenceIds: [input.id],
-    })
-
-    if (usedIds.has(input.id)) {
-      throw new DockInUseException()
     }
 
     const result = await this.dockRepository.archiveAvailable({
@@ -56,6 +43,11 @@ export default class ArchiveDockUseCase {
 
     if (result.kind === 'ALREADY_ARCHIVED') {
       throw new DockAlreadyArchivedException()
+    }
+
+    // Decided by the repository under the dock's lock, never from a usage read beforehand.
+    if (result.kind === 'IN_USE') {
+      throw new DockInUseException()
     }
 
     return result.dock

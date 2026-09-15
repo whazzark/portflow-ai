@@ -8,6 +8,7 @@ import CancelUserInvitationUseCase from '#users/cancel_invitation/cancel_user_in
 import { cancelUserInvitationValidator } from '#users/cancel_invitation/cancel_user_invitation_validator'
 import DeactivateUserUseCase from '#users/deactivate/deactivate_user_use_case'
 import { deactivateUserValidator } from '#users/deactivate/deactivate_user_validator'
+import ListEligibleShiftResponsiblesUseCase from '#users/eligible_shift_responsibles/list_eligible_shift_responsibles_use_case'
 import UpdateUserIdentityUseCase from '#users/identity/update_user_identity_use_case'
 import InviteUserUseCase from '#users/invite/invite_user_use_case'
 import { inviteUserValidator } from '#users/invite/invite_user_validator'
@@ -39,6 +40,7 @@ export default class UsersController {
     private renewActivationLinkUseCase: RenewActivationLinkUseCase,
     private reactivateUserUseCase: ReactivateUserUseCase,
     private restoreUserInvitationUseCase: RestoreUserInvitationUseCase,
+    private listEligibleShiftResponsiblesUseCase: ListEligibleShiftResponsiblesUseCase,
   ) {}
 
   /**
@@ -73,6 +75,14 @@ export default class UsersController {
     return serialize(
       UserTransformer.transform(users, { includeAccessHistory }).useVariant('toAdministration'),
     )
+  }
+
+  async eligibleShiftResponsibles({ bouncer, serialize }: HttpContext) {
+    await bouncer.with(UserPolicy).authorize('listEligibleShiftResponsibles')
+
+    const users = await this.listEligibleShiftResponsiblesUseCase.handle()
+
+    return serialize(UserTransformer.transform(users).useVariant('toSummary'))
   }
 
   async update({ auth, bouncer, request, serialize }: HttpContext) {

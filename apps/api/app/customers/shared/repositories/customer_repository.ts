@@ -62,6 +62,7 @@ export type ArchiveCustomerResult =
   | { kind: 'ARCHIVED'; customer: Customer }
   | { kind: 'NOT_FOUND' }
   | { kind: 'ALREADY_ARCHIVED' }
+  | { kind: 'IN_USE' }
 
 export type ReactivateCustomerResult =
   | { kind: 'REACTIVATED'; customer: Customer }

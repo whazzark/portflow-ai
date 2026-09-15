@@ -6,6 +6,8 @@ import { FieldError } from '@/components/ui/field'
 
 import { fieldContext, formContext, useFormContext } from './contexts'
 import { CheckboxField } from './fields/checkbox-field'
+import { ComboboxField } from './fields/combobox-field'
+import { DateTimeField } from './fields/date-time-field'
 import { SelectField } from './fields/select-field'
 import { TextField } from './fields/text-field'
 import { TextareaField } from './fields/textarea-field'
@@ -67,8 +69,15 @@ function SubmitButton({
   )
 }
 
-export const { useAppForm } = createFormHook({
-  fieldComponents: { CheckboxField, SelectField, TextareaField, TextField },
+export const { useAppForm, withFieldGroup } = createFormHook({
+  fieldComponents: {
+    CheckboxField,
+    ComboboxField,
+    DateTimeField,
+    SelectField,
+    TextareaField,
+    TextField,
+  },
   fieldContext,
   formComponents: { Form, FormError, SubmitButton },
   formContext,

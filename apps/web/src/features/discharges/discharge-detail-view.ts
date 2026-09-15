@@ -1,5 +1,5 @@
 import type { DischargeDetailDto } from '@/features/discharges/types'
-import { formatDateTime } from '@/helpers/dates'
+import { formatDateTime, fromDateTimeLocalValue } from '@/helpers/dates'
 
 type DischargeStatus = DischargeDetailDto['status']
 
@@ -62,6 +62,67 @@ export function formatTonnes(value: string) {
   const [whole, decimals = '000'] = value.split('.')
 
   return `${WHOLE_TONNES.format(BigInt(whole))}.${decimals} t`
+}
+
+const TONNAGE_PATTERN = /^(\d{1,9})(?:\.(\d{1,3}))?$/
+
+/**
+ * The exact sum of the tonnages among `values` that are valid, as a fixed-3 decimal string, or
+ * `null` when none is. Counted in thousandths of a tonne so no floating point is involved: this
+ * previews the expected tonnage while a preparation is typed, and the API's own sum must match it.
+ */
+export function sumTonnes(values: string[]) {
+  let thousandths = 0n
+  let counted = 0
+
+  for (const value of values) {
+    const match = TONNAGE_PATTERN.exec(value.trim())
+    if (!match) {
+      continue
+    }
+
+    thousandths += BigInt(match[1]) * 1000n + BigInt((match[2] ?? '').padEnd(3, '0'))
+    counted += 1
+  }
+
+  if (counted === 0) {
+    return null
+  }
+
+  return `${thousandths / 1000n}.${String(thousandths % 1000n).padStart(3, '0')}`
+}
+
+/** Planned times are entered to the minute, so the summary shows them to the minute. */
+const PLANNED_TIME = new Intl.DateTimeFormat('en-GB', { dateStyle: 'short', timeStyle: 'short' })
+
+export function formatPlannedTime(iso: string) {
+  return PLANNED_TIME.format(new Date(iso))
+}
+
+/**
+ * The period a preparation's shifts cover while it is typed: from the earliest start to the latest
+ * end among shifts whose period is valid, as instants, or `null` until one is.
+ */
+export function plannedCoverage(shifts: Array<{ plannedStartAt: string; plannedEndAt: string }>) {
+  let start: number | null = null
+  let end: number | null = null
+
+  for (const shift of shifts) {
+    const shiftStart = Date.parse(fromDateTimeLocalValue(shift.plannedStartAt) ?? '')
+    const shiftEnd = Date.parse(fromDateTimeLocalValue(shift.plannedEndAt) ?? '')
+    if (Number.isNaN(shiftStart) || Number.isNaN(shiftEnd) || shiftEnd <= shiftStart) {
+      continue
+    }
+
+    start = start === null ? shiftStart : Math.min(start, shiftStart)
+    end = end === null ? shiftEnd : Math.max(end, shiftEnd)
+  }
+
+  if (start === null || end === null) {
+    return null
+  }
+
+  return { start: new Date(start).toISOString(), end: new Date(end).toISOString() }
 }
 
 export function formatPeriod(period: Period, dischargeStatus: DischargeStatus) {

@@ -1,17 +1,34 @@
+import { useState } from 'react'
+
 import { ResourceDetailField } from '@/components/resource/resource-details'
+import { Button } from '@/components/ui/button'
 import { formatTonnes } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
+import { EditDischargeIdentitySheet } from '@/features/discharges/ui/detail/edit-discharge-identity-sheet'
 import { ReferenceLabel } from '@/features/discharges/ui/detail/reference-label'
 import { formatDateTime } from '@/helpers/dates'
 
 type DischargeIdentityCardProps = {
   discharge: DischargeDetailDto
+  /** Whether the viewer may correct this discharge now: a preparer, on a planned discharge. */
+  canCorrect: boolean
 }
 
-export function DischargeIdentityCard({ discharge }: DischargeIdentityCardProps) {
+export function DischargeIdentityCard({ discharge, canCorrect }: DischargeIdentityCardProps) {
+  const [isEditing, setIsEditing] = useState(false)
+
   return (
-    <DetailSection title="Overview">
+    <DetailSection
+      actions={
+        canCorrect ? (
+          <Button onClick={() => setIsEditing(true)} size="sm" variant="outline">
+            Edit
+          </Button>
+        ) : undefined
+      }
+      title="Overview"
+    >
       <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <ResourceDetailField label="IMO" value={discharge.vesselImo} />
         <div className="grid gap-1">
@@ -32,6 +49,13 @@ export function DischargeIdentityCard({ discharge }: DischargeIdentityCardProps)
           <ResourceDetailField label="Vessel comment" value={discharge.vesselComment} />
         </div>
       </dl>
+      {canCorrect && (
+        <EditDischargeIdentitySheet
+          discharge={discharge}
+          onOpenChange={setIsEditing}
+          open={isEditing}
+        />
+      )}
     </DetailSection>
   )
 }
