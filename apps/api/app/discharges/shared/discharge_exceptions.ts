@@ -39,5 +39,5 @@ export class ShiftNotFoundException extends Exception {
 export class ShiftNotPlannedException extends Exception {
   static status = 409
   static code = 'E_SHIFT_NOT_PLANNED'
-  static message = "Only a planned shift's trucks can be selected"
+  static message = 'Only a planned shift can be corrected'
 }

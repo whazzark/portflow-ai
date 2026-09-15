@@ -26,13 +26,17 @@ Seeded accounts, which all sign in with `USER_FACTORY_PASSWORD` from
 | `claire.martin@portflow.ai` | Organization admin | yes |
 | `lucas.moreau@portflow.ai` | Observer | no |
 
-Seeded discharges used below:
+Seeded discharges used below. Their shifts are placed around the moment the seed runs, so the
+active one always has a shift under way:
 
-| Discharge | Status | Truck pool | Planned shift |
+| Discharge | Status | Truck pool | Shifts |
 |---|---|---|---|
-| `MV Atlantic Dawn` | Planned | Holds the first seeded truck | Selects that truck |
-| `MV Ocean Cedar` | Active | Holds the second seeded truck | — |
-| `MV Loire Star` | Closed | The first truck, released | — |
+| `MV Atlantic Dawn` | Planned | 9 held trucks, `AA-101-PF` first, one suspended; most also held by other planned discharges | 5 planned; the first selects 7 trucks, `AA-101-PF` included |
+| `MV Ocean Cedar` | Active | 9 held trucks, `BB-202-PF` first and held by no other discharge; `CC-303-PF` released | 14, one under way |
+| `MV Loire Star` | Closed | 6 released trucks, `AA-101-PF` included | 4 completed |
+
+The seed also holds other planned, active, and closed discharges with larger plans, among them
+`MV Timeline Multi-Jours`, whose shifts cross midnight and leave breaks for the shift timeline.
 
 ## Run
 
@@ -74,9 +78,9 @@ curl -s -b lead.txt $API/discharges/$CEDAR | jq -c '.data.truckPool[0].otherHold
 
 # Same reservation again: 200, pool unchanged (idempotent)
 curl -s -b lead.txt -H 'content-type: application/json' -d "{\"truckIds\":[\"$FREE\"]}" \
-  $API/discharges/$DAWN/truck-pool | jq '.data.truckPool | length'                                           # 3
+  $API/discharges/$DAWN/truck-pool | jq '.data.truckPool | length'                                           # 11
 
-# Shift selection: replace with the free truck only; the seeded truck's selection is removed
+# Shift selection: replace with the free truck only; the seeded trucks' selections are removed
 curl -s -X PUT -b lead.txt -H 'content-type: application/json' -d "{\"truckIds\":[\"$FREE\"]}" \
   $API/discharges/$DAWN/shifts/$SHIFT/trucks | jq -c '[.data.shifts[0].trucks[] | select(.effectiveTo==null) | .truckId]'
 
@@ -117,21 +121,22 @@ under concurrency (research.md Decision 4).
 Sign in to the web app as the operations lead, on a fresh seed:
 
 0. Open `MV Atlantic Dawn`. The header shows the vessel, `Planned`, the dock, the expected start,
-   and the tonnage. The tabs read `Overview`, `Product lots (n)`, `Truck pool (1)`, `Shifts (n)`.
+   and the tonnage. The tabs read `Overview`, `Product lots (6)`, `Truck pool (9)`, `Shifts (5)`.
    The Overview's `Preparation` card lists the three sections; follow its `Truck pool` link.
-1. On the Truck pool tab, the card shows `Add trucks`, a checkbox, and `Withdraw` on its held truck.
+1. On the Truck pool tab, the card shows `Add trucks`, and a checkbox and `Withdraw` on each held
+   truck. Trucks other planned discharges also hold carry their `Also held` badge.
 2. Choose `Add trucks`. The sheet lists candidates. The Ocean Cedar truck carries
    `Also held · MV Ocean Cedar · Active`. Search by a company name. Select two trucks, including
    that one, clear the search, check that the count still says `2 selected`, and choose `Reserve`.
    The sheet closes, a toast says `2 trucks reserved`, and the pool shows both, the shared one with
    its badge.
-3. Open `MV Ocean Cedar` (active). Its held truck shows `Also held · MV Atlantic Dawn · Planned`, and
+3. Open `MV Ocean Cedar` (active). Its `BB-202-PF` shows `Also held · MV Atlantic Dawn · Planned`, and
    there is no checkbox or action.
-4. Back on Dawn's Shifts tab, choose `Edit` in the planned shift's Trucks group. The sheet has the seeded truck
-   checked. Check the two new trucks, uncheck the seeded one, and save. The shift lists exactly the
-   two new trucks.
+4. Back on Dawn's Shifts tab, choose `Edit` in the first shift's Trucks group. The sheet has its seven
+   seeded trucks checked. Check the two new trucks, uncheck the seeded ones, and save. The shift
+   lists exactly the two new trucks.
 5. On the Truck pool tab, select the two new trucks and choose `Withdraw (2)`. The confirmation names both
-   trucks and lists the planned shift's period. Confirm. The pool no longer lists them, not even as
+   trucks and lists the first shift's period. Confirm. The pool no longer lists them, not even as
    released, and the shift shows `None selected`.
 6. Sign in as the observer. Dawn's Truck pool and Shifts tabs show the pool and shifts with no
    checkbox, `Add trucks`, `Withdraw`, or `Edit`; its Overview still shows the `Preparation` card.

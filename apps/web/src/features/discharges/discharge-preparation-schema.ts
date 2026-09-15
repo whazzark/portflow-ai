@@ -479,3 +479,102 @@ export function productLotFormValues(lot: DetailLot): ProductLotFormValues {
     description: lot.description ?? '',
   }
 }
+
+/** A planned shift corrected at once: its period, its responsible, and the resources it uses. */
+export const shiftCorrectionFieldsSchema = plannedShiftSchema.extend({
+  truckIds: z.array(z.string()),
+  warehouseDoorIds: z.array(z.string()),
+  weighingAreaIds: z.array(z.string()),
+})
+
+export type ShiftCorrectionFormValues = z.input<typeof shiftCorrectionFieldsSchema>
+
+type PlannedPeriod = { plannedStartAt: string | null; plannedEndAt: string | null }
+
+/**
+ * The rules across the corrected period and the discharge's other shifts, with the errors where
+ * creation puts them: an end not after the start on the end, an overlap on the start.
+ */
+export function shiftCorrectionRulesSchema(otherShifts: PlannedPeriod[]) {
+  return z.custom<ShiftCorrectionFormValues>().superRefine((values, context) => {
+    const period = localPeriodMillis(values.plannedStartAt, values.plannedEndAt)
+    const start = Date.parse(fromDateTimeLocalValue(values.plannedStartAt) ?? '')
+    const end = Date.parse(fromDateTimeLocalValue(values.plannedEndAt) ?? '')
+
+    if (!period) {
+      if (!Number.isNaN(start) && !Number.isNaN(end)) {
+        context.addIssue({
+          code: 'custom',
+          message: 'The planned end must be after the planned start',
+          path: ['plannedEndAt'],
+        })
+      }
+
+      return
+    }
+
+    // Periods that only touch do not overlap, as the API judges them.
+    const overlaps = otherShifts.some((other) => {
+      const otherStart = Date.parse(other.plannedStartAt ?? '')
+      const otherEnd = Date.parse(other.plannedEndAt ?? '')
+
+      return period.start < otherEnd && otherStart < period.end
+    })
+    if (overlaps) {
+      context.addIssue({
+        code: 'custom',
+        message: 'This shift overlaps another shift',
+        path: ['plannedStartAt'],
+      })
+    }
+  })
+}
+
+type CorrectedShift = DischargeDetailDto['shifts'][number]
+
+const currentIds = <Row extends { effectiveTo: string | null }>(
+  rows: Row[],
+  idOf: (row: Row) => string,
+) => rows.filter((row) => row.effectiveTo === null).map(idOf)
+
+export function shiftCorrectionFormValues(shift: CorrectedShift): ShiftCorrectionFormValues {
+  return {
+    plannedStartAt: toDateTimeLocalValue(shift.plannedStartAt),
+    plannedEndAt: toDateTimeLocalValue(shift.plannedEndAt),
+    responsibleUserId: shift.responsible.id,
+    truckIds: currentIds(shift.trucks, (truck) => truck.truckId),
+    warehouseDoorIds: currentIds(shift.warehouseDoors, (door) => door.warehouseDoor.id),
+    weighingAreaIds: currentIds(shift.weighingAreas, (area) => area.weighingArea.id),
+  }
+}
+
+export function toShiftCorrectionBody(values: ShiftCorrectionFormValues) {
+  return {
+    plannedStartAt: fromDateTimeLocalValue(values.plannedStartAt) as string,
+    plannedEndAt: fromDateTimeLocalValue(values.plannedEndAt) as string,
+    responsibleUserId: values.responsibleUserId,
+    truckIds: values.truckIds,
+    warehouseDoorIds: values.warehouseDoorIds,
+    weighingAreaIds: values.weighingAreaIds,
+  }
+}
+
+/** The fields a shift correction renders, which the API's refusals are mapped onto. */
+export const SHIFT_CORRECTION_FIELDS = [
+  'plannedStartAt',
+  'plannedEndAt',
+  'responsibleUserId',
+  'truckIds',
+  'warehouseDoorIds',
+  'weighingAreaIds',
+] as const
+
+const SHIFT_RESOURCE_API_FIELD = /^(truckIds|warehouseDoorIds|weighingAreaIds)\.\d+$/
+
+/**
+ * The form field an API path refers to: a refused resource, reported at its position in a list,
+ * belongs to that list, which shows the reason on the resource itself.
+ */
+export function shiftCorrectionFieldOf(apiField: string) {
+  return SHIFT_RESOURCE_API_FIELD.exec(apiField)?.[1] ?? apiField
+}

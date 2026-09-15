@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { buildDoorPeriod, buildLot } from '@/features/discharges/__tests__/support/fixtures'
+import {
+  buildDoorPeriod,
+  buildLot,
+  buildShift,
+} from '@/features/discharges/__tests__/support/fixtures'
 import {
   formatPeriod,
+  formatShiftDuration,
   formatShiftPeriod,
   formatTonnes,
   groupLotsByCustomer,
@@ -9,6 +14,7 @@ import {
   lotDoorNotice,
   lotRemovalBlock,
   plannedCoverage,
+  shiftResources,
   splitPeriods,
   sumTonnes,
 } from '@/features/discharges/discharge-detail-view'
@@ -181,5 +187,86 @@ describe('product lots by customer', () => {
     expect(lotRemovalBlock(buildLot(), 1)).toBe('E_DISCHARGE_LAST_PRODUCT_LOT')
     expect(lotRemovalBlock(withEndedDoor, 1)).toBe('E_DISCHARGE_LAST_PRODUCT_LOT')
     expect(lotRemovalBlock(withEndedDoor, 2)).toBe('E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS')
+  })
+})
+
+describe('formatShiftDuration', () => {
+  const period = (plannedStartAt: string | null, plannedEndAt: string | null) => ({
+    plannedStartAt,
+    plannedEndAt,
+  })
+
+  test('reads whole hours, hours and minutes, and minutes alone', () => {
+    expect(
+      formatShiftDuration(period('2026-10-04T06:00:00.000Z', '2026-10-04T14:00:00.000Z')),
+    ).toBe('8 h')
+    expect(
+      formatShiftDuration(period('2026-10-04T14:30:00.000Z', '2026-10-04T22:00:00.000Z')),
+    ).toBe('7 h 30 min')
+    expect(
+      formatShiftDuration(period('2026-10-04T06:00:00.000Z', '2026-10-04T06:45:00.000Z')),
+    ).toBe('45 min')
+  })
+
+  test('measures a shift worked past midnight', () => {
+    expect(
+      formatShiftDuration(period('2026-10-04T22:30:00.000Z', '2026-10-05T06:00:00.000Z')),
+    ).toBe('7 h 30 min')
+  })
+
+  test('has nothing to say without a planned period', () => {
+    expect(formatShiftDuration(period(null, '2026-10-04T14:00:00.000Z'))).toBeNull()
+  })
+})
+
+describe('shiftResources', () => {
+  const ended = '2026-10-04T09:00:00.000Z'
+  const truck = (truckId: string, effectiveTo: string | null) => ({
+    id: `row-${truckId}-${effectiveTo ?? 'open'}`,
+    truckId,
+    registration: truckId.toUpperCase(),
+    truckStatus: 'AVAILABLE' as const,
+    effectiveFrom: '2026-10-04T06:00:00.000Z',
+    effectiveTo,
+  })
+  const shift = buildShift({
+    trucks: [truck('truck-a', null), truck('truck-b', ended), truck('truck-b', null)],
+    warehouseDoors: [
+      buildDoorPeriod({ id: 'door-open', effectiveTo: null }),
+      buildDoorPeriod({ id: 'door-ended', effectiveTo: ended }),
+      buildDoorPeriod({
+        id: 'door-b-ended',
+        effectiveTo: ended,
+        warehouseDoor: { id: 'door-b2', name: 'Door B2', status: 'AVAILABLE' },
+        warehouse: { id: 'warehouse-b', name: 'Magasin B', status: 'AVAILABLE' },
+      }),
+    ],
+    weighingAreas: [
+      {
+        id: 'area-ended',
+        effectiveFrom: '2026-10-04T06:00:00.000Z',
+        effectiveTo: ended,
+        weighingArea: { id: 'area-1', name: 'Pont-bascule Nord', status: 'AVAILABLE' },
+      },
+    ],
+  })
+
+  test('lists the distinct resources in effect on a shift not yet finished', () => {
+    expect(shiftResources({ ...shift, status: 'PLANNED' })).toEqual({
+      truckIds: ['truck-a', 'truck-b'],
+      warehouseDoors: [{ name: 'Door A1', warehouse: 'Magasin A' }],
+      weighingAreas: [],
+    })
+  })
+
+  test('lists the distinct resources a finished shift used', () => {
+    expect(shiftResources({ ...shift, status: 'COMPLETED' })).toEqual({
+      truckIds: ['truck-a', 'truck-b'],
+      warehouseDoors: [
+        { name: 'Door A1', warehouse: 'Magasin A' },
+        { name: 'Door B2', warehouse: 'Magasin B' },
+      ],
+      weighingAreas: ['Pont-bascule Nord'],
+    })
   })
 })

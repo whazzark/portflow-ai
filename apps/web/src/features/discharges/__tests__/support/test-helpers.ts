@@ -18,9 +18,11 @@ import {
   API_BASE_URL,
   AVAILABLE_CUSTOMERS,
   AVAILABLE_DOCKS,
+  AVAILABLE_WEIGHING_AREAS,
   DISCHARGE_DETAILS,
   DISCHARGES,
   ELIGIBLE_RESPONSIBLES,
+  SHIFT_WAREHOUSES,
   TRUCK_CANDIDATES,
 } from './fixtures'
 
@@ -636,13 +638,22 @@ type MockTruckPlanningOptions = {
   respondToReserve?: (truckIds: string[]) => DischargeWriteAnswer
   /** Decide the answer to a withdrawal; by default it is applied and returned. */
   respondToWithdraw?: (truckIds: string[]) => DischargeWriteAnswer
-  /** Decide the answer to a shift selection; by default it is applied and returned. */
-  respondToShiftTrucks?: (shiftId: string, truckIds: string[]) => DischargeWriteAnswer
+  /** Decide the answer to a shift correction; by default it is applied and returned. */
+  respondToShift?: (shiftId: string, body: ShiftCorrectionBody) => DischargeWriteAnswer
+}
+
+export type ShiftCorrectionBody = {
+  plannedStartAt: string
+  plannedEndAt: string
+  responsibleUserId: string
+  truckIds: string[]
+  warehouseDoorIds: string[]
+  weighingAreaIds: string[]
 }
 
 /**
- * Serves one discharge's detail and truck candidates, and applies reservations, withdrawals, and
- * shift selections to that detail as the API would. A test can then tell a detail refreshed from a
+ * Serves one discharge's detail, its truck candidates, and the choices a shift correction offers, and
+ * applies reservations, withdrawals, and shift corrections to that detail as the API would. A test can then tell a detail refreshed from a
  * write's answer from one fetched again, and replace any answer to reach a refusal.
  */
 export function mockTruckPlanning({
@@ -652,17 +663,16 @@ export function mockTruckPlanning({
   respondToCandidates,
   respondToReserve,
   respondToWithdraw,
-  respondToShiftTrucks,
+  respondToShift,
 }: MockTruckPlanningOptions) {
   const state = {
     current: detail,
     detailRequests: 0,
     candidateRequests: 0,
-    requests: [] as Array<{
-      kind: 'reserve' | 'withdraw' | 'shiftTrucks'
-      shiftId?: string
-      truckIds: string[]
-    }>,
+    requests: [] as Array<
+      | { kind: 'reserve' | 'withdraw'; truckIds: string[] }
+      | { kind: 'shift'; shiftId: string; body: ShiftCorrectionBody }
+    >,
   }
 
   const answer = (outcome: DischargeWriteAnswer, apply: () => DischargeDetailDto) => {
@@ -689,6 +699,15 @@ export function mockTruckPlanning({
 
       return HttpResponse.json({ data: state.current })
     }),
+    http.get(`${API_BASE_URL}/api/v1/users/eligible-shift-responsibles`, () =>
+      HttpResponse.json({ data: ELIGIBLE_RESPONSIBLES }),
+    ),
+    http.get(`${API_BASE_URL}/api/v1/warehouses`, () =>
+      HttpResponse.json({ data: SHIFT_WAREHOUSES }),
+    ),
+    http.get(`${API_BASE_URL}/api/v1/weighing-areas/available`, () =>
+      HttpResponse.json({ data: AVAILABLE_WEIGHING_AREAS }),
+    ),
     http.get(`${API_BASE_URL}/api/v1/discharges/:id/truck-pool/candidates`, () => {
       state.candidateRequests += 1
 
@@ -754,35 +773,96 @@ export function mockTruckPlanning({
       },
     ),
     http.put(
-      `${API_BASE_URL}/api/v1/discharges/:id/shifts/:shiftId/trucks`,
+      `${API_BASE_URL}/api/v1/discharges/:id/shifts/:shiftId`,
       async ({ params, request }) => {
-        const { truckIds } = (await request.json()) as { truckIds: string[] }
+        const body = (await request.json()) as ShiftCorrectionBody
         const shiftId = String(params.shiftId)
-        state.requests.push({ kind: 'shiftTrucks', shiftId, truckIds })
+        state.requests.push({ kind: 'shift', shiftId, body })
 
-        return answer(respondToShiftTrucks?.(shiftId, truckIds), () => ({
+        const keep = <Row extends { effectiveTo: string | null }>(
+          rows: Row[],
+          ids: string[],
+          idOf: (row: Row) => string,
+        ) => rows.filter((row) => !isCurrent(row) || ids.includes(idOf(row)))
+        const addedIds = <Row extends { effectiveTo: string | null }>(
+          kept: Row[],
+          ids: string[],
+          idOf: (row: Row) => string,
+        ) => {
+          const keptIds = new Set(kept.filter(isCurrent).map(idOf))
+          return ids.filter((id) => !keptIds.has(id))
+        }
+        const selection = { effectiveFrom: '2026-09-15T08:00:00.000Z', effectiveTo: null }
+
+        return answer(respondToShift?.(shiftId, body), () => ({
           ...state.current,
           shifts: state.current.shifts.map((shift) => {
             if (shift.id !== shiftId) {
               return shift
             }
 
-            const kept = shift.trucks.filter(
-              (truck) => !isCurrent(truck) || truckIds.includes(truck.truckId),
+            const responsible =
+              ELIGIBLE_RESPONSIBLES.find((user) => user.id === body.responsibleUserId) ??
+              shift.responsible
+            const trucks = keep(shift.trucks, body.truckIds, (truck) => truck.truckId)
+            const doors = keep(
+              shift.warehouseDoors,
+              body.warehouseDoorIds,
+              (door) => door.warehouseDoor.id,
             )
-            const keptIds = new Set(kept.filter(isCurrent).map((truck) => truck.truckId))
-            const added = truckIds
-              .filter((truckId) => !keptIds.has(truckId))
-              .map((truckId) => ({
-                id: `selection-${shiftId}-${truckId}`,
-                truckId,
-                registration: registrationOf(truckId),
-                truckStatus: 'AVAILABLE' as const,
-                effectiveFrom: '2026-09-15T08:00:00.000Z',
-                effectiveTo: null,
-              }))
+            const areas = keep(
+              shift.weighingAreas,
+              body.weighingAreaIds,
+              (area) => area.weighingArea.id,
+            )
 
-            return { ...shift, trucks: [...kept, ...added] }
+            return {
+              ...shift,
+              plannedStartAt: body.plannedStartAt,
+              plannedEndAt: body.plannedEndAt,
+              responsible,
+              trucks: [
+                ...trucks,
+                ...addedIds(trucks, body.truckIds, (truck) => truck.truckId).map((truckId) => ({
+                  id: `selection-${shiftId}-${truckId}`,
+                  truckId,
+                  registration: registrationOf(truckId),
+                  truckStatus: 'AVAILABLE' as const,
+                  ...selection,
+                })),
+              ],
+              warehouseDoors: [
+                ...doors,
+                ...addedIds(doors, body.warehouseDoorIds, (door) => door.warehouseDoor.id).flatMap(
+                  (doorId) =>
+                    SHIFT_WAREHOUSES.flatMap((warehouse) =>
+                      warehouse.doors
+                        .filter((door) => door.id === doorId)
+                        .map((door) => ({
+                          id: `selection-${shiftId}-${doorId}`,
+                          warehouseDoor: door,
+                          warehouse: {
+                            id: warehouse.id,
+                            name: warehouse.name,
+                            status: warehouse.status,
+                          },
+                          ...selection,
+                        })),
+                    ),
+                ),
+              ],
+              weighingAreas: [
+                ...areas,
+                ...addedIds(areas, body.weighingAreaIds, (area) => area.weighingArea.id).flatMap(
+                  (areaId) =>
+                    AVAILABLE_WEIGHING_AREAS.filter((area) => area.id === areaId).map((area) => ({
+                      id: `selection-${shiftId}-${areaId}`,
+                      weighingArea: area,
+                      ...selection,
+                    })),
+                ),
+              ],
+            }
           }),
         }))
       },

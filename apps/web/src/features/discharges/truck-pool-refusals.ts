@@ -37,3 +37,31 @@ export function truckRefusals(
 
   return refusals
 }
+
+/**
+ * The reasons the refused resources of one submitted list carry, by identity, read the same way:
+ * `warehouseDoorIds.2` refuses the third door submitted. Details on any other field are left to the
+ * form that renders it.
+ */
+export function listRefusals(
+  error: ApiError,
+  list: string,
+  submittedIds: readonly string[],
+): Map<string, string> {
+  const reasons = new Map<string, string>()
+  if (error.code !== 'E_VALIDATION_ERROR') {
+    return reasons
+  }
+
+  const prefix = `${list}.`
+  for (const detail of error.details ?? []) {
+    const id = detail.field.startsWith(prefix)
+      ? submittedIds[Number(detail.field.slice(prefix.length))]
+      : undefined
+    if (id !== undefined) {
+      reasons.set(id, detail.message)
+    }
+  }
+
+  return reasons
+}

@@ -288,6 +288,12 @@ const routes = {
     tokens: [{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":0,"val":"shifts","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":1,"val":"shiftId","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":0,"val":"trucks","end":""}],
     types: placeholder as Registry['discharges.shift_trucks.update']['types'],
   },
+  'discharges.shifts.update': {
+    methods: ["PUT"],
+    pattern: '/api/v1/discharges/:dischargeId/shifts/:shiftId',
+    tokens: [{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":0,"val":"shifts","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":1,"val":"shiftId","end":""}],
+    types: placeholder as Registry['discharges.shifts.update']['types'],
+  },
   'users.eligible_shift_responsibles': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/users/eligible-shift-responsibles',

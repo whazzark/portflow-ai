@@ -138,6 +138,79 @@ export function formatShiftPeriod(shift: {
   return `${formatShiftDay(start)} ${formatShiftTime(plannedStartAt)} – ${sameDay ? endTime : `${formatShiftDay(end)} ${endTime}`}`
 }
 
+type Named = { id: string; name: string }
+
+type ShiftResources = {
+  status: 'PLANNED' | 'ACTIVE' | 'COMPLETED'
+  trucks: Array<{ truckId: string; effectiveTo: string | null }>
+  warehouseDoors: Array<{ warehouseDoor: Named; warehouse: Named; effectiveTo: string | null }>
+  weighingAreas: Array<{ weighingArea: Named; effectiveTo: string | null }>
+}
+
+/**
+ * The distinct trucks, warehouse doors, and weighing areas a shift counts: those in effect, or,
+ * once the shift is finished and every period has ended, those it used. Each keeps the order its
+ * first period comes in.
+ */
+export function shiftResources(shift: ShiftResources) {
+  const distinct = <T extends { effectiveTo: string | null }, R>(
+    periods: T[],
+    idOf: (period: T) => string,
+    pick: (period: T) => R,
+  ) => {
+    const byId = new Map<string, R>()
+    for (const period of periods) {
+      if (
+        (shift.status === 'COMPLETED' || period.effectiveTo === null) &&
+        !byId.has(idOf(period))
+      ) {
+        byId.set(idOf(period), pick(period))
+      }
+    }
+
+    return [...byId.values()]
+  }
+
+  return {
+    truckIds: distinct(
+      shift.trucks,
+      (truck) => truck.truckId,
+      (truck) => truck.truckId,
+    ),
+    warehouseDoors: distinct(
+      shift.warehouseDoors,
+      (membership) => membership.warehouseDoor.id,
+      (membership) => ({
+        name: membership.warehouseDoor.name,
+        warehouse: membership.warehouse.name,
+      }),
+    ),
+    weighingAreas: distinct(
+      shift.weighingAreas,
+      (membership) => membership.weighingArea.id,
+      (membership) => membership.weighingArea.name,
+    ),
+  }
+}
+
+/** How long a shift is planned to last, to the minute: `8 h`, `7 h 30 min`, `45 min`. */
+export function formatShiftDuration(shift: {
+  plannedStartAt: string | null
+  plannedEndAt: string | null
+}) {
+  if (!shift.plannedStartAt || !shift.plannedEndAt) {
+    return null
+  }
+
+  const minutes = Math.round(
+    (Date.parse(shift.plannedEndAt) - Date.parse(shift.plannedStartAt)) / 60_000,
+  )
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+
+  return [hours > 0 && `${hours} h`, rest > 0 && `${rest} min`].filter(Boolean).join(' ')
+}
+
 /**
  * The period a preparation's shifts cover while it is typed: from the earliest start to the latest
  * end among shifts whose period is valid, as instants, or `null` until one is.

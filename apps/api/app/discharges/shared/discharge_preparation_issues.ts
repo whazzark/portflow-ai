@@ -26,3 +26,11 @@ export function unavailableDockIssue(): PreparationIssue {
 export function unavailableCustomerIssue(field: string): PreparationIssue {
   return { field, rule: 'availableCustomer', message: 'This customer is no longer available' }
 }
+
+export function ineligibleShiftResponsibleIssue(field: string): PreparationIssue {
+  return {
+    field,
+    rule: 'eligibleShiftResponsible',
+    message: 'This user can no longer be responsible for a shift',
+  }
+}

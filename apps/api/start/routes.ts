@@ -125,6 +125,10 @@ router
                 'update',
               ])
               .as('shift_trucks.update')
+            // The router matches whole segments, so this never answers `/shifts/:shiftId/trucks`.
+            router
+              .put('/:dischargeId/shifts/:shiftId', [controllers.DischargeShifts, 'update'])
+              .as('shifts.update')
           })
           .prefix('/discharges')
           .as('discharges')

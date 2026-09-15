@@ -48,11 +48,11 @@ function refusal(rule: string, message: string) {
   }
 }
 
-test('keeps a truck withdrawn elsewhere on the shift sheet, refused, until it is unchecked', async () => {
+test('keeps a truck withdrawn elsewhere on the shift correction, refused, until it is unchecked', async () => {
   let refused = false
   const state = mockTruckPlanning({
     detail: PLANNED,
-    respondToShiftTrucks: (_shiftId, truckIds) => {
+    respondToShift: (_shiftId, { truckIds }) => {
       if (!refused && truckIds.includes('truck-x')) {
         refused = true
         state.current = withoutTruck(state.current, 'truck-x')
@@ -64,8 +64,10 @@ test('keeps a truck withdrawn elsewhere on the shift sheet, refused, until it is
   renderDischargeTab(PLANNED.id, 'shifts')
 
   const shifts = await screen.findByRole('region', { name: 'Shifts' })
-  fireEvent.click(within(shifts).getByRole('button', { name: `Edit trucks for shift ${PERIOD}` }))
-  const sheet = await screen.findByRole('dialog', { name: 'Shift trucks' })
+  fireEvent.click(within(shifts).getByRole('button', { name: `Shift ${PERIOD}` }))
+  const panel = await screen.findByRole('dialog', { name: `Shift ${PERIOD}` })
+  fireEvent.click(within(panel).getByRole('button', { name: 'Edit' }))
+  const sheet = await screen.findByRole('dialog', { name: 'Edit shift' })
   fireEvent.click(within(sheet).getByRole('checkbox', { name: 'Select XX-900-XX' }))
   fireEvent.click(within(sheet).getByRole('button', { name: 'Save' }))
 
@@ -82,11 +84,11 @@ test('keeps a truck withdrawn elsewhere on the shift sheet, refused, until it is
   fireEvent.click(within(sheet).getByRole('checkbox', { name: 'Select AA-100-AA' }))
   fireEvent.click(within(sheet).getByRole('button', { name: 'Save' }))
 
-  expect(await screen.findByText('Shift trucks updated')).toBeInTheDocument()
-  expect(state.requests.at(-1)).toEqual({
-    kind: 'shiftTrucks',
+  expect(await screen.findByText('Shift updated')).toBeInTheDocument()
+  expect(state.requests.at(-1)).toMatchObject({
+    kind: 'shift',
     shiftId: 'shift-1',
-    truckIds: ['truck-a'],
+    body: { truckIds: ['truck-a'] },
   })
 })
 

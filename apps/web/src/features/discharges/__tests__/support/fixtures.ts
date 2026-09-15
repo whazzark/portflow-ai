@@ -301,3 +301,28 @@ export const ELIGIBLE_RESPONSIBLES = [
   { id: 'responsible-lea', firstName: 'Léa', lastName: 'Martin' },
   { id: 'responsible-thomas', firstName: 'Thomas', lastName: 'Bernard' },
 ]
+
+/** The warehouses a shift's doors are chosen from, reduced to what that choice reads. */
+export const SHIFT_WAREHOUSES = [
+  {
+    id: 'warehouse-a',
+    name: 'Magasin A',
+    status: 'AVAILABLE' as const,
+    doors: [
+      { id: 'door-a1', name: 'Door A1', status: 'AVAILABLE' as const },
+      { id: 'door-a2', name: 'Door A2', status: 'AVAILABLE' as const },
+      { id: 'door-a3', name: 'Door A3', status: 'ARCHIVED' as const },
+    ],
+  },
+  {
+    id: 'warehouse-b',
+    name: 'Magasin B',
+    status: 'ARCHIVED' as const,
+    doors: [{ id: 'door-b1', name: 'Door B1', status: 'ARCHIVED' as const }],
+  },
+]
+
+export const AVAILABLE_WEIGHING_AREAS = [
+  { id: 'area-north', name: 'North scale', status: 'AVAILABLE' as const },
+  { id: 'area-south', name: 'South scale', status: 'AVAILABLE' as const },
+]

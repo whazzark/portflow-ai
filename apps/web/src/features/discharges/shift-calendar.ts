@@ -1,4 +1,4 @@
-import { formatShiftDay, formatShiftTime } from '@/features/discharges/discharge-detail-view'
+import { formatShiftDay } from '@/features/discharges/discharge-detail-view'
 
 type CalendarShift = {
   id: string
@@ -7,15 +7,37 @@ type CalendarShift = {
   plannedEndAt: string | null
 }
 
-const HOUR_MS = 3_600_000
-const DAY_MS = 24 * HOUR_MS
+const DAY_MS = 24 * 3_600_000
+
+/** A calendar always shows a week, however short the discharge. */
+const MIN_DAYS = 7
 
 /** Twelve marks a day keep an hour readable without crowding a column's gutter. */
 const HOUR_MARK_STEP = 2
 
+/** A shift card's measures: its border and padding, one line of content, and the gap between. */
+const BLOCK_CHROME_PX = 2 + 16
+const BLOCK_ROW_PX = 20
+const BLOCK_ROW_GAP_PX = 4
+/** Times, status, responsible, resource counts: every line a shift card has. */
+const BLOCK_ROWS = 4
+
 /**
- * The shift a viewer arrives on: the one under way, else the next to prepare, else the last one
- * worked. Shifts come in planned order, so the first match is the earliest.
+ * How many of a shift card's lines fit in its height, in order of importance. The times always
+ * show, even when they are cut.
+ */
+export function blockRowCount(heightPx: number) {
+  const fitting = Math.floor(
+    (heightPx - BLOCK_CHROME_PX + BLOCK_ROW_GAP_PX) / (BLOCK_ROW_PX + BLOCK_ROW_GAP_PX),
+  )
+
+  return Math.min(BLOCK_ROWS, Math.max(1, fitting))
+}
+
+/**
+ * The shift the calendar brings into view when none is open: the one under way, else the next to
+ * prepare, else the last one worked. Shifts come in planned order, so the first match is the
+ * earliest.
  */
 export function defaultShiftId(shifts: CalendarShift[]) {
   const shift =
@@ -26,26 +48,24 @@ export function defaultShiftId(shifts: CalendarShift[]) {
   return shift?.id ?? null
 }
 
-/** The shift an address opens, falling back to the default when it names none of these shifts. */
+/** The shift an address opens in the panel; none when it names none of these shifts. */
 export function openShift<S extends CalendarShift>(shifts: S[], shiftId: string | undefined) {
-  const id = shifts.some((shift) => shift.id === shiftId) ? shiftId : defaultShiftId(shifts)
-
-  return shifts.find((shift) => shift.id === id)
+  return shiftId === undefined ? undefined : shifts.find((shift) => shift.id === shiftId)
 }
 
-function floorToHour(instant: number) {
+function startOfDay(instant: number) {
   const date = new Date(instant)
-  date.setMinutes(0, 0, 0)
+  date.setHours(0, 0, 0, 0)
 
   return date.getTime()
 }
 
 /**
  * Where each part of the shift calendar sits, in the browser's zone like every other date on the
- * page. The calendar reads in columns of 24 hours, each opening at the hour the discharge is
- * expected to start, so a night shift stays one block on a discharge started in the morning. It
- * reaches back to an earlier shift's hour rather than hiding it. Positions are percentages of a
- * column's height. `null` when there is no shift to place.
+ * page. The calendar reads as a week at least, one column per day from midnight to midnight,
+ * opening on the day of the first shift or of the expected start when that comes first. A shift
+ * worked past midnight is cut at it, its first piece standing for the whole shift. Positions are
+ * percentages of a column's height. `null` when there is no shift to place.
  */
 export function shiftCalendar<S extends CalendarShift>(
   discharge: { expectedStartAt: string | null; shifts: S[] },
@@ -67,25 +87,34 @@ export function shiftCalendar<S extends CalendarShift>(
   const expectedStart = discharge.expectedStartAt
     ? Date.parse(discharge.expectedStartAt)
     : Number.NaN
-  const anchor = floorToHour(
+  const anchor = startOfDay(
     Number.isNaN(expectedStart) ? firstStart : Math.min(expectedStart, firstStart),
   )
 
-  const pctOfDay = (duration: number) => (duration / DAY_MS) * 100
-  const place = (instant: number) => {
-    const column = Math.floor((instant - anchor) / DAY_MS)
+  // Days are counted on the calendar rather than in 24 hours, so a change of clocks never moves
+  // a column off midnight; such a day is drawn at the same height, its hours a little tighter.
+  const dayStart = (column: number) => {
+    const date = new Date(anchor)
+    date.setDate(date.getDate() + column)
 
-    return { column, pct: pctOfDay(instant - anchor - column * DAY_MS) }
+    return date.getTime()
+  }
+  const place = (instant: number) => {
+    const column = Math.round((startOfDay(instant) - anchor) / DAY_MS)
+    const start = dayStart(column)
+    const length = dayStart(column + 1) - start
+
+    return { column, pct: ((instant - start) / length) * 100, dayEnd: start + length, length }
   }
 
-  // A period cut at every column edge it crosses, each piece measured within its own column.
+  // A period cut at every midnight it crosses, each piece measured within its own column.
   const pieces = (start: number, end: number) => {
     const result: Array<{ column: number; topPct: number; heightPct: number }> = []
     let from = start
     do {
-      const { column, pct } = place(from)
-      const to = Math.min(end, anchor + (column + 1) * DAY_MS)
-      result.push({ column, topPct: pct, heightPct: pctOfDay(to - from) })
+      const { column, pct, dayEnd, length } = place(from)
+      const to = Math.min(end, dayEnd)
+      result.push({ column, topPct: pct, heightPct: ((to - from) / length) * 100 })
       from = to
     } while (from < end)
 
@@ -93,21 +122,20 @@ export function shiftCalendar<S extends CalendarShift>(
   }
 
   const expectedStartPlace = Number.isNaN(expectedStart) ? null : place(expectedStart)
-  const columnCount = Math.max(
-    1,
-    Math.ceil((lastEnd - anchor) / DAY_MS),
+  const lastEndPlace = place(lastEnd)
+  // The days the discharge itself covers; a shift ending at midnight does not reach the next one.
+  const dischargeDays = Math.max(
+    lastEndPlace.column + (lastEndPlace.pct > 0 ? 1 : 0),
     (expectedStartPlace?.column ?? 0) + 1,
   )
+  const columnCount = Math.max(MIN_DAYS, dischargeDays)
 
-  const columns = Array.from({ length: columnCount }, (_, index) => {
-    const start = new Date(anchor + index * DAY_MS)
-
-    return {
-      index,
-      label: `Day ${index + 1}`,
-      startLabel: `${formatShiftDay(start)} ${formatShiftTime(start.toISOString())}`,
-    }
-  })
+  const columns = Array.from({ length: columnCount }, (_, index) => ({
+    index,
+    // Only the discharge's own days are numbered, not those filling out the week.
+    label: index < dischargeDays ? `Day ${index + 1}` : null,
+    startLabel: formatShiftDay(new Date(dayStart(index))),
+  }))
 
   const segments = periods.flatMap(({ shift, start, end }) => {
     const shiftPieces = pieces(start, end)
@@ -132,17 +160,13 @@ export function shiftCalendar<S extends CalendarShift>(
     latestEnd = latestEnd === null ? period.end : Math.max(latestEnd, period.end)
   }
 
-  const hourMarks = Array.from({ length: 24 / HOUR_MARK_STEP }, (_, index) => {
-    const mark = new Date(anchor + index * HOUR_MARK_STEP * HOUR_MS)
+  const hourMarks = Array.from({ length: 24 / HOUR_MARK_STEP }, (_, index) => ({
+    pct: ((index * HOUR_MARK_STEP) / 24) * 100,
+    label: `${String(index * HOUR_MARK_STEP).padStart(2, '0')}:00`,
+  }))
 
-    return {
-      pct: pctOfDay(index * HOUR_MARK_STEP * HOUR_MS),
-      label: `${String(mark.getHours()).padStart(2, '0')}:00`,
-    }
-  })
-
-  const end = anchor + columnCount * DAY_MS
   const nowInstant = now?.getTime()
+  const nowPlace = nowInstant === undefined ? null : place(nowInstant)
 
   return {
     columns,
@@ -150,10 +174,13 @@ export function shiftCalendar<S extends CalendarShift>(
     breaks,
     hourMarks,
     // Only worth a line when the calendar does not already open on it.
-    expectedStart: expectedStartPlace && expectedStart !== anchor ? expectedStartPlace : null,
+    expectedStart:
+      expectedStartPlace && expectedStart !== anchor
+        ? { column: expectedStartPlace.column, pct: expectedStartPlace.pct }
+        : null,
     now:
-      nowInstant !== undefined && nowInstant >= anchor && nowInstant < end
-        ? place(nowInstant)
+      nowPlace && nowPlace.column >= 0 && nowPlace.column < columnCount
+        ? { column: nowPlace.column, pct: nowPlace.pct }
         : null,
   }
 }

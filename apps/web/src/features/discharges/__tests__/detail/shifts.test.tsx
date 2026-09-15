@@ -1,7 +1,7 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
-import { formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
+import { formatPlannedTime, formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import {
   ACTIVE_OBSERVER,
@@ -27,7 +27,9 @@ async function renderShifts(overrides: Partial<DischargeDetailDto>, search = '')
   })
   const { router } = renderDischargeTab(OCEAN_CEDAR.id, 'shifts', search)
 
-  return { region: await screen.findByRole('region', { name: 'Shifts' }), router }
+  // Found even behind a shift panel the address opens: the panel is modal and hides the page from
+  // assistive technology while it is open.
+  return { region: await screen.findByRole('region', { name: 'Shifts', hidden: true }), router }
 }
 
 const DAY_SHIFT = buildShift({
@@ -62,7 +64,17 @@ const NIGHT_SHIFT = buildShift({
 const shiftName = (shift: DischargeDetailDto['shifts'][number]) =>
   `Shift ${formatShiftPeriod(shift)}`
 
-test('lays the shifts out on the calendar in planned order, each with its status, responsible, and trucks', async () => {
+async function openPanel(region: HTMLElement, shift: DischargeDetailDto['shifts'][number]) {
+  await userEvent.click(within(region).getByRole('button', { name: shiftName(shift) }))
+
+  return screen.findByRole('dialog', { name: shiftName(shift) })
+}
+
+/** The value a detail field reads, by its label. */
+const field = (panel: HTMLElement, label: string) =>
+  within(panel).getByText(label, { selector: 'dt' }).nextElementSibling
+
+test('lays the shifts out on the calendar in planned order, each with its status, length, responsible, and resources', async () => {
   const { region } = await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT, NIGHT_SHIFT] })
 
   const calendar = within(region).getByRole('list', { name: 'Shift calendar' })
@@ -72,140 +84,231 @@ test('lays the shifts out on the calendar in planned order, each with its status
     shiftName(EVENING_SHIFT),
     shiftName(NIGHT_SHIFT),
   ])
-  expect(bars[0]).toHaveAccessibleDescription(/Completed.*Léa Martin.*1 truck$/)
-  expect(bars[1]).toHaveAccessibleDescription(/Active.*Hugo Bernard.*0 trucks$/)
+  expect(bars[0]).toHaveAccessibleDescription(
+    'Completed, 8 h, Léa Martin, 1 truck, 0 warehouse doors, 0 weighing areas',
+  )
+  expect(bars[1]).toHaveAccessibleDescription(
+    'Active, 7 h 30 min, Hugo Bernard, 0 trucks, 0 warehouse doors, 0 weighing areas',
+  )
+})
+
+test('counts the warehouse doors and weighing areas a shift uses on its card', async () => {
+  const equipped = buildShift({
+    id: 'equipped',
+    status: 'ACTIVE',
+    warehouseDoors: [buildDoorPeriod()],
+    weighingAreas: [
+      {
+        id: 'weighing-open',
+        effectiveFrom: '2026-10-04T06:00:00.000Z',
+        effectiveTo: null,
+        weighingArea: { id: 'area-1', name: 'Pont-bascule Nord', status: 'AVAILABLE' },
+      },
+    ],
+  })
+  const { region } = await renderShifts({ shifts: [equipped] })
+
+  const card = within(region).getByRole('button', { name: shiftName(equipped) })
+  expect(card).toHaveAccessibleDescription(/, 1 warehouse door, 1 weighing area$/)
 })
 
 test('keeps one control for a shift cut across two columns of the calendar', async () => {
-  // The calendar's first column runs from 06:00 to 06:00, which this shift works through.
-  const dawnShift = buildShift({
-    id: 'dawn',
-    plannedStartAt: '2026-10-05T04:00:00.000Z',
-    plannedEndAt: '2026-10-05T08:00:00.000Z',
+  // Each column of the calendar ends at midnight, local to wherever the suite runs, which this
+  // shift works through.
+  const lateShift = buildShift({
+    id: 'late',
+    plannedStartAt: new Date(2026, 9, 4, 22).toISOString(),
+    plannedEndAt: new Date(2026, 9, 5, 4).toISOString(),
   })
-  const { region } = await renderShifts({ shifts: [DAY_SHIFT, dawnShift] })
+  const { region } = await renderShifts({ shifts: [DAY_SHIFT, lateShift] })
 
   const calendar = within(region).getByRole('list', { name: 'Shift calendar' })
   expect(within(calendar).getAllByRole('button')).toHaveLength(2)
-  expect(within(calendar).getAllByRole('button', { name: shiftName(dawnShift) })).toHaveLength(1)
+  expect(within(calendar).getAllByRole('button', { name: shiftName(lateShift) })).toHaveLength(1)
 })
 
 test('names a shift worked past midnight by both of its days', async () => {
   const { region } = await renderShifts({ shifts: [NIGHT_SHIFT] })
 
-  expect(within(region).getByRole('article')).toHaveAccessibleName(
-    `Shift ${formatShiftPeriod(NIGHT_SHIFT)}`,
-  )
+  expect(await openPanel(region, NIGHT_SHIFT)).toBeInTheDocument()
 })
 
 test('flags a planned shift with no truck selected yet', async () => {
   const { region } = await renderShifts({ shifts: [DAY_SHIFT, NIGHT_SHIFT] })
 
   const calendar = within(region).getByRole('list', { name: 'Shift calendar' })
-  expect(
-    within(calendar).getByRole('button', { name: shiftName(NIGHT_SHIFT) }),
-  ).toHaveAccessibleDescription(/No truck selected$/)
-  expect(
-    within(calendar).getByRole('button', { name: shiftName(DAY_SHIFT) }),
-  ).not.toHaveAccessibleDescription(/No truck selected/)
+  const night = within(calendar).getByRole('button', { name: shiftName(NIGHT_SHIFT) })
+  const day = within(calendar).getByRole('button', { name: shiftName(DAY_SHIFT) })
+  expect(night).toHaveAccessibleDescription(/No truck selected$/)
+  // Written on the card itself, not only announced.
+  expect(night).toHaveTextContent('No truck')
+  expect(day).not.toHaveAccessibleDescription(/No truck selected/)
+  expect(day).not.toHaveTextContent('No truck')
 })
 
-test('opens the shift under way, else the next planned one, and shows only its detail', async () => {
+test('opens no panel until a shift is chosen', async () => {
   const { region } = await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT, NIGHT_SHIFT] })
 
-  const shifts = region
-  expect(within(shifts).getByRole('button', { name: shiftName(EVENING_SHIFT) })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
-  expect(within(shifts).getByRole('article')).toHaveAccessibleName(shiftName(EVENING_SHIFT))
-  expect(within(shifts).getByRole('article')).toHaveTextContent('Hugo Bernard')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  for (const button of within(region).getAllByRole('button', { name: /^Shift / })) {
+    expect(button).toHaveAttribute('aria-pressed', 'false')
+  }
 })
 
-test('opens the chosen shift in the address, without adding a history entry', async () => {
-  const user = userEvent.setup()
+test('opens the chosen shift in a panel and the address, without adding a history entry', async () => {
   const { region, router } = await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT, NIGHT_SHIFT] })
-  const shifts = region
   const historyLength = router.history.length
 
-  await user.click(within(shifts).getByRole('button', { name: shiftName(DAY_SHIFT) }))
+  const panel = await openPanel(region, DAY_SHIFT)
 
-  expect(within(shifts).getByRole('article')).toHaveAccessibleName(shiftName(DAY_SHIFT))
-  expect(within(shifts).getByRole('button', { name: shiftName(DAY_SHIFT) })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  expect(panel).toHaveTextContent('Léa Martin')
+  expect(
+    within(region).getByRole('button', { name: shiftName(DAY_SHIFT), hidden: true }),
+  ).toHaveAttribute('aria-pressed', 'true')
   expect(router.state.location.search).toMatchObject({ tab: 'shifts', shiftId: 'day' })
   expect(router.history.length).toBe(historyLength)
 })
 
-test('opens the shift a shared address names', async () => {
-  const { region } = await renderShifts(
-    { shifts: [DAY_SHIFT, EVENING_SHIFT, NIGHT_SHIFT] },
-    '?shiftId=night',
-  )
+test('closes the panel on a click outside it, then opens another shift', async () => {
+  const { region, router } = await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT, NIGHT_SHIFT] })
+  await openPanel(region, DAY_SHIFT)
 
-  expect(within(region).getByRole('article')).toHaveAccessibleName(shiftName(NIGHT_SHIFT))
+  const overlay = document.querySelector('[data-slot="sheet-overlay"]')
+  expect(overlay).not.toBeNull()
+  await userEvent.click(overlay as HTMLElement)
+
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(router.state.location.search).not.toHaveProperty('shiftId')
+
+  const panel = await openPanel(region, EVENING_SHIFT)
+  expect(panel).toHaveTextContent('Hugo Bernard')
+  expect(router.state.location.search).toMatchObject({ shiftId: 'evening' })
 })
 
-test('falls back to the default shift when the address names a shift the discharge no longer has', async () => {
-  const { region } = await renderShifts(
+test('forgets the shift when its panel is closed', async () => {
+  const { region, router } = await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT] })
+  const panel = await openPanel(region, DAY_SHIFT)
+
+  await userEvent.click(within(panel).getByRole('button', { name: 'Close' }))
+
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(router.state.location.search).not.toHaveProperty('shiftId')
+  expect(within(region).getByRole('button', { name: shiftName(DAY_SHIFT) })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+})
+
+test('opens the shift a shared address names', async () => {
+  await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT, NIGHT_SHIFT] }, '?shiftId=night')
+
+  expect(await screen.findByRole('dialog', { name: shiftName(NIGHT_SHIFT) })).toBeInTheDocument()
+})
+
+test('opens no panel when the address names a shift the discharge no longer has', async () => {
+  await renderShifts(
     { shifts: [DAY_SHIFT, EVENING_SHIFT] },
     // biome-ignore lint/security/noSecrets: a shared consultation address, not a credential
     '?shiftId=removed',
   )
 
-  expect(within(region).getByRole('article')).toHaveAccessibleName(shiftName(EVENING_SHIFT))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
-test('forgets the open shift when leaving the shifts section', async () => {
+test('forgets the shift the address names when leaving the shifts section', async () => {
   const user = userEvent.setup()
-  const { router } = await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT] }, '?shiftId=day')
+  // A shift no longer on the discharge opens no panel, so the sections stay within reach.
+  const { router } = await renderShifts(
+    { shifts: [DAY_SHIFT, EVENING_SHIFT] },
+    // biome-ignore lint/security/noSecrets: a shared consultation address, not a credential
+    '?shiftId=removed',
+  )
 
   await user.click(screen.getByRole('tab', { name: /^Product lots/ }))
 
   await screen.findByRole('region', { name: 'Product lots' })
   expect(router.state.location.search).not.toHaveProperty('shiftId')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+
+test('shows when a shift is planned, who is responsible, and how many trucks it has', async () => {
+  await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT, NIGHT_SHIFT] }, '?shiftId=evening')
+
+  const panel = await screen.findByRole('dialog', { name: shiftName(EVENING_SHIFT) })
+  expect(panel).toHaveTextContent('Active')
+  expect(field(panel, 'Planned start')).toHaveTextContent(
+    formatPlannedTime('2026-10-04T14:30:00.000Z'),
+  )
+  expect(field(panel, 'Planned end')).toHaveTextContent(
+    formatPlannedTime('2026-10-04T22:00:00.000Z'),
+  )
+  expect(field(panel, 'Duration')).toHaveTextContent('7 h 30 min')
+  expect(field(panel, 'Responsible')).toHaveTextContent('Hugo Bernard')
+  expect(within(panel).getByRole('heading', { name: 'Trucks (0)' })).toBeInTheDocument()
+  expect(panel).not.toHaveTextContent('No truck selected')
+})
+
+test('counts the trucks a finished shift used', async () => {
+  await renderShifts({ shifts: [DAY_SHIFT] }, '?shiftId=day')
+
+  const panel = await screen.findByRole('dialog', { name: shiftName(DAY_SHIFT) })
+  expect(within(panel).getByRole('heading', { name: 'Trucks (1)' })).toBeInTheDocument()
+})
+
+test('flags a planned shift without any truck in its panel', async () => {
+  await renderShifts({ shifts: [NIGHT_SHIFT] }, '?shiftId=night')
+
+  const panel = await screen.findByRole('dialog', { name: shiftName(NIGHT_SHIFT) })
+  expect(panel).toHaveTextContent('No truck selected')
+  expect(within(panel).getByRole('heading', { name: 'Trucks (0)' })).toBeInTheDocument()
 })
 
 test('shows the trucks, doors, and weighing areas of a shift with their periods', async () => {
-  const { region } = await renderShifts({
-    shifts: [
-      buildShift({
-        trucks: [
-          {
-            id: 'truck-ended',
-            truckId: 'truck-2',
-            registration: 'EF-456-GH',
-            truckStatus: 'AVAILABLE',
-            effectiveFrom: '2026-10-04T06:00:00.000Z',
-            effectiveTo: '2026-10-04T09:00:00.000Z',
-          },
-          {
-            id: 'truck-open',
-            truckId: 'truck-1',
-            registration: 'AB-123-CD',
-            truckStatus: 'SUSPENDED',
-            effectiveFrom: '2026-10-04T06:00:00.000Z',
-            effectiveTo: null,
-          },
-        ],
-        warehouseDoors: [buildDoorPeriod()],
-        weighingAreas: [
-          {
-            id: 'weighing-open',
-            effectiveFrom: '2026-10-04T06:00:00.000Z',
-            effectiveTo: null,
-            weighingArea: { id: 'area-1', name: 'Pont-bascule Nord', status: 'ARCHIVED' },
-          },
-        ],
-      }),
-    ],
-  })
+  await renderShifts(
+    {
+      shifts: [
+        buildShift({
+          trucks: [
+            {
+              id: 'truck-ended',
+              truckId: 'truck-2',
+              registration: 'EF-456-GH',
+              truckStatus: 'AVAILABLE',
+              effectiveFrom: '2026-10-04T06:00:00.000Z',
+              effectiveTo: '2026-10-04T09:00:00.000Z',
+            },
+            {
+              id: 'truck-open',
+              truckId: 'truck-1',
+              registration: 'AB-123-CD',
+              truckStatus: 'SUSPENDED',
+              effectiveFrom: '2026-10-04T06:00:00.000Z',
+              effectiveTo: null,
+            },
+          ],
+          warehouseDoors: [buildDoorPeriod()],
+          weighingAreas: [
+            {
+              id: 'weighing-open',
+              effectiveFrom: '2026-10-04T06:00:00.000Z',
+              effectiveTo: null,
+              weighingArea: { id: 'area-1', name: 'Pont-bascule Nord', status: 'ARCHIVED' },
+            },
+          ],
+        }),
+      ],
+    },
+    '?shiftId=shift-1',
+  )
 
-  const trucks = within(region).getByRole('list', { name: 'Trucks' })
-  const doors = within(region).getByRole('list', { name: 'Warehouse doors' })
-  const areas = within(region).getByRole('list', { name: 'Weighing areas' })
+  const panel = await screen.findByRole('dialog')
+  // Each kind counts only what the planned shift still has in effect.
+  expect(within(panel).getByRole('heading', { name: 'Trucks (1)' })).toBeInTheDocument()
+  expect(within(panel).getByRole('heading', { name: 'Warehouse doors (1)' })).toBeInTheDocument()
+  expect(within(panel).getByRole('heading', { name: 'Weighing areas (1)' })).toBeInTheDocument()
+  const trucks = within(panel).getByRole('list', { name: 'Trucks' })
+  const doors = within(panel).getByRole('list', { name: 'Warehouse doors' })
+  const areas = within(panel).getByRole('list', { name: 'Weighing areas' })
   const truckItems = within(trucks).getAllByRole('listitem')
   // In effect first, then ended.
   expect(truckItems[0]).toHaveTextContent('AB-123-CD')
@@ -218,27 +321,33 @@ test('shows the trucks, doors, and weighing areas of a shift with their periods'
 })
 
 test('says which kinds of resource a shift has none of yet', async () => {
-  const { region } = await renderShifts({ shifts: [buildShift()] })
+  await renderShifts({ shifts: [buildShift()] }, '?shiftId=shift-1')
 
-  const shift = within(region).getByRole('article')
-  expect(within(shift).getAllByText('None selected')).toHaveLength(3)
-  expect(within(shift).queryByRole('list')).not.toBeInTheDocument()
+  const panel = await screen.findByRole('dialog')
+  expect(within(panel).getAllByText('None selected')).toHaveLength(3)
+  expect(within(panel).getByRole('heading', { name: 'Warehouse doors (0)' })).toBeInTheDocument()
+  expect(within(panel).getByRole('heading', { name: 'Weighing areas (0)' })).toBeInTheDocument()
+  expect(within(panel).queryByRole('list')).not.toBeInTheDocument()
 })
 
 test('says so when the discharge has no shift', async () => {
   const { region } = await renderShifts({ shifts: [] })
 
   expect(within(region).getByText('No shifts planned')).toBeInTheDocument()
-  expect(within(region).queryByRole('article')).not.toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 test("shows a closed discharge's shift resources left without an end as ended", async () => {
-  const { region } = await renderShifts({
-    status: 'CLOSED',
-    shifts: [buildShift({ status: 'COMPLETED', warehouseDoors: [buildDoorPeriod()] })],
-  })
+  await renderShifts(
+    {
+      status: 'CLOSED',
+      shifts: [buildShift({ status: 'COMPLETED', warehouseDoors: [buildDoorPeriod()] })],
+    },
+    '?shiftId=shift-1',
+  )
 
-  const door = within(within(region).getByRole('list', { name: 'Warehouse doors' })).getByRole(
+  const panel = await screen.findByRole('dialog')
+  const door = within(within(panel).getByRole('list', { name: 'Warehouse doors' })).getByRole(
     'listitem',
   )
   expect(door).toHaveTextContent('Ended')
@@ -252,10 +361,10 @@ test('offers no truck selection on the shifts of a closed discharge, even to a p
     user: ACTIVE_OPERATIONS_LEAD,
     details: [buildDischargeDetail(closed, { shifts: [buildShift({ status: 'COMPLETED' })] })],
   })
-  renderDischargeTab(closed.id, 'shifts')
+  renderDischargeTab(closed.id, 'shifts', '?shiftId=shift-1')
 
-  const region = await screen.findByRole('region', { name: 'Shifts' })
-  expect(within(region).queryByRole('button', { name: /^Edit trucks/ })).not.toBeInTheDocument()
+  const panel = await screen.findByRole('dialog')
+  expect(within(panel).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })
 
 test('points a preparer to the truck pool while the discharge holds no truck', async () => {

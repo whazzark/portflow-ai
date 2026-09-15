@@ -8,9 +8,14 @@ import Dock from '#models/dock'
 import ProductLot from '#models/product_lot'
 import Shift from '#models/shift'
 import ShiftTruck from '#models/shift_truck'
+import ShiftWarehouseDoor from '#models/shift_warehouse_door'
+import ShiftWeighingArea from '#models/shift_weighing_area'
 import Truck from '#models/truck'
 import User from '#models/user'
+import Warehouse from '#models/warehouse'
+import WarehouseDoor from '#models/warehouse_door'
 import WarehouseDoorProductLotAssignment from '#models/warehouse_door_product_lot_assignment'
+import WeighingArea from '#models/weighing_area'
 import isForeignKeyViolation from '#shared/database/is_foreign_key_violation'
 import isUuid from '#shared/database/is_uuid'
 
@@ -19,11 +24,14 @@ import DischargePreparationRepository, {
   type CreatePlannedDischargeResult,
   type DeleteProductLotResult,
   type LockedTruck,
+  type LockedWarehouseDoor,
+  type LockedWeighingArea,
   type ProductLotValues,
   type ProductLotWriteResult,
   type ShiftTruckSelectionWriteResult,
   type TruckReservationWriteResult,
   type UpdateDischargeIdentityCommand,
+  type WritePlannedShiftCorrectionCommand,
   type WriteShiftTruckSelectionCommand,
   type WriteTruckReservationsCommand,
 } from './discharge_preparation_repository.ts'
@@ -156,6 +164,54 @@ export default class LucidDischargePreparationRepository extends DischargePrepar
     return trucks
   }
 
+  async lockWarehouseDoors(ids: string[], client: TransactionClientContract) {
+    const lockable = lockableIds(ids)
+    const doors = new Map<string, LockedWarehouseDoor>()
+    if (lockable.length === 0) {
+      return doors
+    }
+
+    // A door never moves to another warehouse, so its warehouse can be read before either lock.
+    const containment = await WarehouseDoor.query({ client })
+      .whereIn('id', lockable)
+      .select('id', 'warehouseId')
+    const warehouseQuery = Warehouse.query({ client })
+      .whereIn('id', [...new Set(containment.map((door) => door.warehouseId))].sort())
+      .orderBy('id')
+    warehouseQuery.knexQuery.forShare()
+    const warehouses = byId(await warehouseQuery)
+
+    const doorQuery = WarehouseDoor.query({ client }).whereIn('id', lockable).orderBy('id')
+    doorQuery.knexQuery.forShare()
+
+    for (const door of await doorQuery) {
+      doors.set(door.id.toLowerCase(), {
+        id: door.id,
+        status: door.status,
+        warehouseStatus: warehouses.get(door.warehouseId.toLowerCase())?.status ?? 'ARCHIVED',
+      })
+    }
+
+    return doors
+  }
+
+  async lockWeighingAreas(ids: string[], client: TransactionClientContract) {
+    const lockable = lockableIds(ids)
+    const areas = new Map<string, LockedWeighingArea>()
+    if (lockable.length === 0) {
+      return areas
+    }
+
+    const query = WeighingArea.query({ client }).whereIn('id', lockable).orderBy('id')
+    query.knexQuery.forShare()
+
+    for (const area of await query) {
+      areas.set(area.id.toLowerCase(), { id: area.id, status: area.status })
+    }
+
+    return areas
+  }
+
   async listTruckPool(dischargeId: string, client: TransactionClientContract) {
     const rows = await DischargeTruckAssignment.query({ client })
       .where('dischargeId', dischargeId.toLowerCase())
@@ -175,6 +231,41 @@ export default class LucidDischargePreparationRepository extends DischargePrepar
       .orderBy('shift_trucks.id')
 
     return rows.map((row) => ({ id: row.id, shiftId: row.shiftId, truckId: row.truckId }))
+  }
+
+  async listShifts(dischargeId: string, client: TransactionClientContract) {
+    const shifts = await Shift.query({ client })
+      .where('dischargeId', dischargeId.toLowerCase())
+      .orderBy('sequence')
+
+    return shifts.map((shift) => ({
+      id: shift.id,
+      sequence: shift.sequence,
+      status: shift.status,
+      plannedStartAt: shift.plannedStartAt,
+      plannedEndAt: shift.plannedEndAt,
+      responsibleUserId: shift.responsibleUserId,
+    }))
+  }
+
+  async listCurrentShiftWarehouseDoors(shiftId: string, client: TransactionClientContract) {
+    const rows = await ShiftWarehouseDoor.query({ client })
+      .where('shiftId', shiftId.toLowerCase())
+      .whereNull('effectiveTo')
+      .select('id', 'warehouseDoorId')
+      .orderBy('id')
+
+    return rows.map((row) => ({ id: row.id, resourceId: row.warehouseDoorId }))
+  }
+
+  async listCurrentShiftWeighingAreas(shiftId: string, client: TransactionClientContract) {
+    const rows = await ShiftWeighingArea.query({ client })
+      .where('shiftId', shiftId.toLowerCase())
+      .whereNull('effectiveTo')
+      .select('id', 'weighingAreaId')
+      .orderBy('id')
+
+    return rows.map((row) => ({ id: row.id, resourceId: row.weighingAreaId }))
   }
 
   async findShift(dischargeId: string, shiftId: string, client: TransactionClientContract) {
@@ -279,6 +370,70 @@ export default class LucidDischargePreparationRepository extends DischargePrepar
 
       throw error
     }
+  }
+
+  async writePlannedShiftCorrection(
+    command: WritePlannedShiftCorrectionCommand,
+    client: TransactionClientContract,
+  ) {
+    const dischargeId = command.dischargeId.toLowerCase()
+    const shiftId = command.shiftId.toLowerCase()
+    const now = DateTime.utc().toSQL({ includeOffset: false })
+
+    await this.renumberShifts(dischargeId, command.sequences, client)
+
+    const [affectedRows] = await Shift.query({ client })
+      .where('id', shiftId)
+      .where('dischargeId', dischargeId)
+      .where('status', 'PLANNED')
+      .update({
+        plannedStartAt: command.plannedStartAt.toUTC().toSQL({ includeOffset: false }),
+        plannedEndAt: command.plannedEndAt.toUTC().toSQL({ includeOffset: false }),
+        responsibleUserId: command.responsibleUserId.toLowerCase(),
+        updatedAt: now,
+      })
+
+    if (affectedRows !== 1) {
+      throw new Error(`Shift ${command.shiftId} changed while its discharge's lock was held`)
+    }
+
+    if (command.warehouseDoors.deleteIds.length > 0) {
+      await ShiftWarehouseDoor.query({ client })
+        .whereIn('id', command.warehouseDoors.deleteIds)
+        .where('shiftId', shiftId)
+        .whereNull('effectiveTo')
+        .delete()
+    }
+    if (command.warehouseDoors.inserts.length > 0) {
+      await ShiftWarehouseDoor.createMany(
+        command.warehouseDoors.inserts.map((selection) => ({
+          shiftId,
+          warehouseDoorId: selection.resourceId.toLowerCase(),
+          effectiveFrom: selection.effectiveFrom.toUTC(),
+          effectiveTo: null,
+        })),
+        { client },
+      )
+    }
+    if (command.weighingAreas.deleteIds.length > 0) {
+      await ShiftWeighingArea.query({ client })
+        .whereIn('id', command.weighingAreas.deleteIds)
+        .where('shiftId', shiftId)
+        .whereNull('effectiveTo')
+        .delete()
+    }
+    if (command.weighingAreas.inserts.length > 0) {
+      await ShiftWeighingArea.createMany(
+        command.weighingAreas.inserts.map((selection) => ({
+          shiftId,
+          weighingAreaId: selection.resourceId.toLowerCase(),
+          effectiveFrom: selection.effectiveFrom.toUTC(),
+          effectiveTo: null,
+        })),
+        { client },
+      )
+    }
+    await this.touchDischarge(dischargeId, client)
   }
 
   async deleteTruckWithdrawal(
@@ -471,11 +626,51 @@ export default class LucidDischargePreparationRepository extends DischargePrepar
     }
   }
 
-  /** A lot or truck plan change is a change of its discharge's preparation. */
+  /** A lot, truck plan, or shift change is a change of its discharge's preparation. */
   private async touchDischarge(dischargeId: string, client: TransactionClientContract) {
     await Discharge.query({ client })
       .where('id', dischargeId.toLowerCase())
       .update({ updatedAt: DateTime.utc().toSQL({ includeOffset: false }) })
+  }
+
+  /**
+   * Gives shifts their new sequences without ever holding two equal ones, which the unique index
+   * checks row by row. The renumbered shifts are first parked above the discharge's highest
+   * sequence, where no shift can be, and only then take their final numbers: those never exceed the
+   * number of shifts, so they cannot meet a parked one, nor a shift whose number did not change.
+   */
+  private async renumberShifts(
+    dischargeId: string,
+    sequences: WritePlannedShiftCorrectionCommand['sequences'],
+    client: TransactionClientContract,
+  ) {
+    if (sequences.length === 0) {
+      return
+    }
+
+    const shiftIds = sequences.map((change) => change.shiftId.toLowerCase())
+    const highest = await client
+      .from('shifts')
+      .where('discharge_id', dischargeId)
+      .max('sequence as sequence')
+      .first()
+    const parking = Number(highest?.sequence ?? 0)
+
+    await client
+      .from('shifts')
+      .where('discharge_id', dischargeId)
+      .whereIn('id', shiftIds)
+      .update({ sequence: client.raw('sequence + ?', [parking]) })
+    for (const change of sequences) {
+      await client
+        .from('shifts')
+        .where('discharge_id', dischargeId)
+        .where('id', change.shiftId.toLowerCase())
+        .update({
+          sequence: change.sequence,
+          updated_at: DateTime.utc().toSQL({ includeOffset: false }),
+        })
+    }
   }
 
   /** Runs a lot write in a savepoint, so a lot identity clash leaves the transaction usable. */

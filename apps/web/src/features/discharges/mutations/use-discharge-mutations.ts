@@ -107,13 +107,14 @@ export function useDischargeMutations() {
     }),
   )
 
-  const selectShiftTrucks = useMutation(
-    tuyauQuery.discharges.shiftTrucks.update.mutationOptions({
+  const correctShift = useMutation(
+    tuyauQuery.discharges.shifts.update.mutationOptions({
       onSuccess: (response) => applyDetail(response),
       onError: async (error, variables) => {
         const dischargeId = String(variables.params.dischargeId)
         await refreshAfterStaleRefusal(error, dischargeId)
-        // A refused truck left the pool or was suspended meanwhile: the detail on screen is stale.
+        // A refused truck left the pool or was suspended meanwhile, or another shift was replanned
+        // over this one: the detail on screen is stale.
         if (parseApiError(error).code === 'E_VALIDATION_ERROR') {
           await queryClient.invalidateQueries({
             queryKey: dischargeQueries.detail(dischargeId).queryKey,
@@ -131,6 +132,6 @@ export function useDischargeMutations() {
     removeLot,
     reserveTrucks,
     withdrawTrucks,
-    selectShiftTrucks,
+    correctShift,
   }
 }

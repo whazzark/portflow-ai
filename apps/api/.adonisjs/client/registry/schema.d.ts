@@ -571,6 +571,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_shift_trucks_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'discharges.shifts.update': {
+    methods: ["PUT"]
+    pattern: '/api/v1/discharges/:dischargeId/shifts/:shiftId'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#discharges/shifts/planned_shift_validator').plannedShiftCorrectionValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { dischargeId: ParamValue; shiftId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#discharges/shifts/planned_shift_validator').plannedShiftCorrectionValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_shifts_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_shifts_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'users.eligible_shift_responsibles': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/users/eligible-shift-responsibles'

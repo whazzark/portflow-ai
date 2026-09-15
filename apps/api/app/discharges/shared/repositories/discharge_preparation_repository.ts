@@ -1,6 +1,7 @@
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { Decimal } from 'decimal.js'
 import type { DateTime } from 'luxon'
+import type { ShiftResourceSelectionPlan } from '#discharges/shared/planned_shift_rules'
 import type { ReservationPlan, ShiftSelectionPlan } from '#discharges/shared/truck_pool_rules'
 import type Customer from '#models/customer'
 import type Discharge from '#models/discharge'
@@ -8,6 +9,9 @@ import type Dock from '#models/dock'
 import type { ShiftStatus } from '#models/shift'
 import type { TruckStatus } from '#models/truck'
 import type User from '#models/user'
+import type { WarehouseStatus } from '#models/warehouse'
+import type { WarehouseDoorStatus } from '#models/warehouse_door'
+import type { WeighingAreaStatus } from '#models/weighing_area'
 
 export type CreatePlannedDischargeCommand = {
   id: string
@@ -65,6 +69,29 @@ export type TruckPoolRow = { id: string; truckId: string; releasedAt: DateTime |
 /** A truck currently selected for a planned shift: a membership that has not ended. */
 export type ShiftTruckSelectionRow = { id: string; shiftId: string; truckId: string }
 
+/** A warehouse door read under its share lock, with the status of the warehouse holding it. */
+export type LockedWarehouseDoor = {
+  id: string
+  status: WarehouseDoorStatus
+  warehouseStatus: WarehouseStatus
+}
+
+/** A weighing area read under its share lock. */
+export type LockedWeighingArea = { id: string; status: WeighingAreaStatus }
+
+/** One shift of a discharge as its period rules and its numbering read it. */
+export type ShiftPlanRow = {
+  id: string
+  sequence: number
+  status: ShiftStatus
+  plannedStartAt: DateTime
+  plannedEndAt: DateTime
+  responsibleUserId: string
+}
+
+/** A warehouse door or weighing area currently selected for a shift: a membership not ended. */
+export type ShiftResourceSelectionRow = { id: string; resourceId: string }
+
 export type WriteTruckReservationsCommand = {
   dischargeId: string
 } & Omit<Extract<ReservationPlan, { kind: 'PLAN' }>, 'kind'>
@@ -73,6 +100,27 @@ export type WriteShiftTruckSelectionCommand = {
   dischargeId: string
   shiftId: string
 } & Omit<Extract<ShiftSelectionPlan, { kind: 'PLAN' }>, 'kind'>
+
+type ShiftResourceSelectionChange = Omit<
+  Extract<ShiftResourceSelectionPlan, { kind: 'PLAN' }>,
+  'kind'
+>
+
+/**
+ * A planned shift's correction apart from its trucks, which `writeShiftTruckSelection` writes: its
+ * new period and responsible, the sequences `planShiftSequences` changed, and its door and weighing
+ * area selection changes.
+ */
+export type WritePlannedShiftCorrectionCommand = {
+  dischargeId: string
+  shiftId: string
+  plannedStartAt: DateTime
+  plannedEndAt: DateTime
+  responsibleUserId: string
+  sequences: Array<{ shiftId: string; sequence: number }>
+  warehouseDoors: ShiftResourceSelectionChange
+  weighingAreas: ShiftResourceSelectionChange
+}
 
 export type ShiftTruckSelectionWriteResult = { kind: 'WRITTEN' } | { kind: 'ALREADY_SELECTED' }
 
@@ -89,8 +137,9 @@ export type CreatePlannedDischargeResult =
  * that same transaction holds.
  *
  * Locks are always taken in one order — the discharge, then docks, then customers, then users, then
- * trucks — so two preparation writes can never deadlock each other. The pool, the shifts, and their
- * truck selections take no lock of their own: every writer of those rows locks the discharge first.
+ * trucks, then warehouses and their doors, then weighing areas — so two preparation writes can never
+ * deadlock each other. The pool, the shifts, and their resource selections take no lock of their
+ * own: every writer of those rows locks the discharge first.
  *
  * - The discharge is locked `FOR UPDATE`: corrections of one discharge queue behind each other, and
  *   behind every other writer of its pool, shifts, and memberships, which must take the same lock
@@ -128,6 +177,27 @@ export default abstract class DischargePreparationRepository {
     client: TransactionClientContract,
   ): Promise<Map<string, LockedTruck>>
 
+  /**
+   * The warehouse doors among `ids` that exist, locked `FOR SHARE` with their warehouses and keyed by
+   * lower-case identity. The warehouses are locked first: a door or warehouse archive locks the
+   * warehouse before the door, so this write takes them in the same order and either waits for the
+   * archive and reads the new status, or makes the archive wait for its commit.
+   */
+  abstract lockWarehouseDoors(
+    ids: string[],
+    client: TransactionClientContract,
+  ): Promise<Map<string, LockedWarehouseDoor>>
+
+  /**
+   * The weighing areas among `ids` that exist, locked `FOR SHARE` and keyed by lower-case identity.
+   * A weighing area archive locks the same row `FOR UPDATE`, so it either waits for this write and
+   * then sees the selection as a usage, or commits first and this write reads the archived status.
+   */
+  abstract lockWeighingAreas(
+    ids: string[],
+    client: TransactionClientContract,
+  ): Promise<Map<string, LockedWeighingArea>>
+
   /** Every pool row of a discharge, held or released, read under the discharge's lock. */
   abstract listTruckPool(
     dischargeId: string,
@@ -139,6 +209,24 @@ export default abstract class DischargePreparationRepository {
     dischargeId: string,
     client: TransactionClientContract,
   ): Promise<ShiftTruckSelectionRow[]>
+
+  /** Every shift of a discharge in sequence order, whatever its status, read under its lock. */
+  abstract listShifts(
+    dischargeId: string,
+    client: TransactionClientContract,
+  ): Promise<ShiftPlanRow[]>
+
+  /** The warehouse doors currently selected for a shift; ended memberships are history. */
+  abstract listCurrentShiftWarehouseDoors(
+    shiftId: string,
+    client: TransactionClientContract,
+  ): Promise<ShiftResourceSelectionRow[]>
+
+  /** The weighing areas currently selected for a shift; ended memberships are history. */
+  abstract listCurrentShiftWeighingAreas(
+    shiftId: string,
+    client: TransactionClientContract,
+  ): Promise<ShiftResourceSelectionRow[]>
 
   /** A shift of this discharge, or `null` for an unknown, malformed, or foreign identity. */
   abstract findShift(
@@ -166,6 +254,17 @@ export default abstract class DischargePreparationRepository {
     command: WriteShiftTruckSelectionCommand,
     client: TransactionClientContract,
   ): Promise<ShiftTruckSelectionWriteResult>
+
+  /**
+   * Writes a planned shift's correction: the sequences it changed, its period and responsible, and
+   * its door and weighing area selections, whose removed resources lose their current row while
+   * added ones get one from `effectiveFrom`. The caller holds the discharge's lock and has checked
+   * the shift is planned, so the write cannot miss.
+   */
+  abstract writePlannedShiftCorrection(
+    command: WritePlannedShiftCorrectionCommand,
+    client: TransactionClientContract,
+  ): Promise<void>
 
   /**
    * Deletes a withdrawal: the current selections first, then the held reservations, so no

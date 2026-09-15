@@ -12,11 +12,12 @@ and GH-53's `ui-state.md` for its corrections. Terms:
 | Parameter | Route | Values | Default | Invalid value |
 |---|---|---|---|---|
 | `tab` | `/discharges/$dischargeId` | `overview`, `product-lots`, `truck-pool`, `shifts` | `overview`, never written to the URL | Treated as `overview`; no not-found |
-| `shiftId` | `/discharges/$dischargeId` | the id of one of the discharge's shifts | the first `ACTIVE` shift, else the first `PLANNED` one, else the last shift; never written to the URL | Treated as absent; no not-found |
+| `shiftId` | `/discharges/$dischargeId` | the id of one of the discharge's shifts, open in the shift panel | none: the panel is closed | Treated as absent, so no panel opens; no not-found |
 
 - Choosing a section pushes a history entry, as the list's status tabs do.
-- Choosing a shift on the timeline replaces the history entry rather than pushing one, and keeps
-  the scroll position.
+- Choosing a shift on the calendar opens its panel, or changes the open one, and closing the panel
+  drops `shiftId`. Both replace the history entry rather than pushing one, and keep the scroll
+  position.
 - Choosing a section, by its tab or by a cross-section link, drops `shiftId`.
 - The detail keeps the list's `status` and `search`. The list route drops `tab` and `shiftId` from
   every address it receives, so the back link, the breadcrumb, and the next discharge opened from
@@ -71,7 +72,7 @@ never says whether the discharge can start.
 | Where | Condition | Content |
 |---|---|---|
 | `Shifts` card, above the shifts | can plan trucks, no held truck, at least one `PLANNED` shift | `No truck is reserved for this discharge yet.` and the link `Go to truck pool` |
-| `Shift trucks` sheet, `No trucks reserved` empty state | always | Outline link `Go to truck pool`; it closes the sheet, then opens the section |
+| Shift panel's truck choice, `No trucks reserved` empty state | always | Outline link `Go to truck pool`; it returns to the details, then opens the section, which closes the panel |
 
 Both links keep the list's `status` and `search`.
 
@@ -161,48 +162,78 @@ A region named `Shifts`. With no shift, it shows `Empty` `No shifts planned`, de
 
 Wherever a shift is named, it reads as its planned period in the browser's zone, to the minute:
 `Sun 4 Oct 06:00 – 14:00`, or `Sun 4 Oct 22:00 – Mon 5 Oct 06:00` when it ends on another day. This
-covers the timeline, the shift detail, the `Shift trucks` sheet description, and the
+covers the calendar, the shift panel, its truck choice's description, and the
 `Withdraw trucks` confirmation.
 
-### Timeline
+### Calendar
 
-A list named `Shift timeline`, one button per shift, in planned order.
+A list named `Shift calendar`, one button per shift, in planned order.
 
-- **From `md`:** one continuous axis from the hour before the first shift starts to the hour after
-  the last one ends, 48px per hour. It scrolls sideways when wider than the card. The axis is
-  `aria-hidden` and draws:
-  - the day label at its start and at every local midnight, with a separator line;
-  - hour marks every two hours up to 48 hours, every six hours beyond;
+- **From `md`:** columns of 24 hours, each opening at the hour the discharge is expected to start
+  (`expectedStartAt`, to the hour), sharing the card's width at 176px each at least, 28px per hour. When a shift is planned before the
+  expected start, the calendar opens at that shift's hour instead, so no shift is hidden. It scrolls
+  sideways when wider than the card, with the hour gutter kept in view. The drawing is
+  `aria-hidden` and shows:
+  - above each column, the day and time the column opens, then `Day {n}`;
+  - hour marks every two hours, shared by every column;
   - the breaks between shifts, hatched;
-  - on an `ACTIVE` discharge, the current time as a line.
+  - the expected start as a dashed line when the calendar does not open on it exactly, beneath the
+    shifts so it never crosses one's text;
+  - on an `ACTIVE` discharge, the current time as a line, above the shifts.
 
-  Each shift is a bar placed at its planned period. A shift worked past midnight stays one bar.
-- **Below `md`:** no axis. The same buttons stack as a vertical list, each also showing its start
-  day.
+  Each shift is a block placed at its planned period. A shift worked past midnight stays one block
+  when it stays within its 24-hour column. A shift crossing a column's edge is cut there: its button
+  sits on the first piece, and the rest is drawn only.
+- **Below `md`:** no calendar. The same buttons stack as a vertical list, each also showing its
+  start day.
 - **Each button:**
   - accessible name `Shift {shift name}`, `aria-pressed` on the open shift;
-  - its content, which is also its accessible description: start and end times, the shift status
-    badge, the responsible's name, and a truck icon with the count of trucks without an end (for a
-    `COMPLETED` shift, of the distinct trucks it used);
-  - for a `PLANNED` shift with no truck without an end, a warning icon and the text
-    `No truck selected` (visually hidden) in place of the count's text.
-- When the page opens, the open shift's button is scrolled into view.
+  - its card, in six lines by importance:
+    1. start and end times, then the planned duration (`· 8 h`, `· 7 h 30 min`);
+    2. the shift status badge and, for a `PLANNED` shift with no truck without an end, a warning icon
+       and the visible text `No truck`; such a card also takes the warning border;
+    3. a person icon and the responsible's name, truncated;
+    4. a truck icon and the count of distinct trucks;
+    5. a door icon and the first warehouse door's name, truncated, then `+{n}` for the others, or
+       `None`;
+    6. a scale icon and the first weighing area's name, the same way.
 
-### Shift detail
+    The resources are those without an end, or, for a `COMPLETED` shift, those it used, each once.
+  - From `md`, a card shows only the lines its height holds, in that order and the times always:
+    about one per hour, all six from six hours. The stacked list below `md` shows every line.
+  - the drawn lines are `aria-hidden`; the accessible description always reads in full:
+    `{status}, {duration}, {first} {last}, {n} trucks, Warehouse doors: {warehouse} › {door} and …,
+    Weighing areas: {area} and …` (singular for one; `No warehouse door`, `No weighing area` for
+    none), followed by `, No truck selected` when the warning applies.
+- When the page opens, the open shift's button is scrolled into view; with no panel open, the
+  first `ACTIVE` shift's, else the first `PLANNED` one's, else the last shift's.
 
-Below the timeline, an `article` named `Shift {shift name}` for the open shift only.
+### Shift panel (`Sheet`, `size="lg"`)
 
-- The heading shows the shift name, its status badge, and `Responsible: {first} {last}`.
-- The Trucks, Warehouse doors, and Weighing areas groups are unchanged: in-effect then ended
-  periods, `None selected`, and the status markers.
-- When the viewer can plan trucks and the open shift is `PLANNED`, the Trucks group header has an
-  `Edit` ghost button named `Edit trucks for shift {shift name}`. It opens that shift's
-  `Shift trucks` sheet.
+Open while `shiftId` names one of the discharge's shifts; nothing sits below the calendar.
 
-## `Shift trucks` sheet (`Sheet`, `size="lg"`)
+- Unmodal, as the warehouses map's panel: no overlay, and a click outside dismisses nothing, so the
+  calendar stays usable and choosing another shift there changes the panel. It closes with its
+  close button or `Escape`. It is on the right from `md`, at the bottom of the screen below it.
+- It is a dialog named `Shift {shift name}`.
+- Header: the title `Shift {shift name}`; below it, the shift status badge and, for a `PLANNED`
+  shift with no truck without an end, a warning icon and the text `No truck selected`.
+- Body, as detail fields: `Planned start` and `Planned end` (to the minute), `Duration`
+  (`8 h`, `7 h 30 min`, `45 min`), `Responsible`, and `Trucks` (`{n} trucks` or `1 truck` without an
+  end; `{n} trucks used` for a `COMPLETED` shift, counting the distinct trucks it used). Then the
+  Trucks, Warehouse doors, and Weighing areas groups, unchanged: in-effect then ended periods,
+  `None selected`, and the status markers.
+- Footer, when the viewer can plan trucks and the shift is `PLANNED`: `Edit`. It turns the panel
+  to the shift's truck choice.
 
-- Title: `Shift trucks`
-- Description: `Choose the trucks shift {shift name} will use, from this discharge's pool.`
+## Shift panel: truck choice
+
+Not in the URL, as corrections are not (GH-53): choosing another shift, closing the panel, or a
+reload returns to the details.
+
+- Header, sticky: `Back to details`, which leaves the choice without saving; the title
+  `Shift trucks` (the dialog's name meanwhile); the description
+  `Choose the trucks shift {shift name} will use, from this discharge's pool.`
 - Body:
   1. `Select all` checkbox, over the offered rows that can be checked.
   2. One row per offered truck, ordered like the pool. It has a checkbox named
@@ -214,8 +245,8 @@ Below the timeline, an `article` named `Shift {shift name}` for the open shift o
        `Suspended trucks cannot be newly selected`, tied by `aria-describedby`.
   3. The selection count: `{n} selected`.
 - Initial selection: the shift's current trucks, meaning its rows without an end.
-- Footer: `Cancel` and `Save` (`Saving…`). `Save` is disabled when the selection equals the initial
-  one.
+- Footer: `Save` (`Saving…`), disabled when the selection equals the initial one. There is no
+  `Cancel`: an edit panel is left through `Back to details`.
 
 | Pool state | Body |
 |---|---|
@@ -224,14 +255,14 @@ Below the timeline, an `article` named `Shift {shift name}` for the open shift o
 
 | Outcome | Behavior |
 |---|---|
-| Success | Sheet closes; detail cache replaced; list invalidated; toast `Shift trucks updated` |
-| `422` | Sheet stays open. Each refused truck shows its reason under its row, and a destructive `Alert` says `Some trucks can no longer be selected`. The detail is refetched. A refused truck that is no longer held is shown at the end of the list, checked, with its reason, so the user can uncheck it |
-| `409 E_DISCHARGE_NOT_PLANNED`, `404 E_DISCHARGE_NOT_FOUND` | Sheet closes; detail refetched; toast `This discharge has started and can no longer be corrected` |
-| `404 E_SHIFT_NOT_FOUND`, `409 E_SHIFT_NOT_PLANNED` | Sheet closes; detail refetched; toast `This shift is no longer planned` |
-| Other failure | Sheet stays open; toast `Unable to update shift trucks` with the API message; selection kept |
+| Success | Back to the details; detail cache replaced; list invalidated; toast `Shift trucks updated` |
+| `422` | The choice stays. Each refused truck shows its reason under its row, and a destructive `Alert` says `Some trucks can no longer be selected`. The detail is refetched. A refused truck that is no longer held is shown at the end of the list, checked, with its reason, so the user can uncheck it |
+| `409 E_DISCHARGE_NOT_PLANNED`, `404 E_DISCHARGE_NOT_FOUND` | Back to the details; detail refetched; toast `This discharge has started and can no longer be corrected` |
+| `404 E_SHIFT_NOT_FOUND`, `409 E_SHIFT_NOT_PLANNED` | Back to the details; detail refetched; toast `This shift is no longer planned` |
+| Other failure | The choice stays; toast `Unable to update shift trucks` with the API message; selection kept |
 
-Closing a sheet with an unsaved selection discards it without confirmation, as the other
-application sheets do.
+Leaving the choice with an unsaved selection discards it without confirmation, as the application's
+sheets do.
 
 ## Observers and non-planned discharges
 
@@ -246,8 +277,9 @@ application sheets do.
 - Refusal reasons under a row are linked to that row's checkbox with `aria-describedby`.
 - After a `422`, focus moves to the summary `Alert`.
 - The confirmation's shift list is a real list (`ul`), so its length is announced.
-- The shift timeline is a list of toggle buttons (`aria-pressed`); the drawn axis is `aria-hidden`,
-  so a gap is never shown by position or colour alone.
+- The shift calendar is a list of toggle buttons (`aria-pressed` on the shift open in the panel);
+  its drawing is `aria-hidden`, so a gap is never shown by position or colour alone.
+- The shift panel is an unmodal dialog: focus is not trapped, and the calendar stays reachable.
 - The section tabs are Base UI tabs (`tablist`, `tab`, `tabpanel`); arrow keys move focus without
   opening a section. Each card keeps its region name inside its panel.
 - A preparation gap is written out beside its icon, never shown by colour alone.

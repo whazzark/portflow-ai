@@ -10,6 +10,8 @@ type ShiftResourceGroupProps<T extends Period> = {
   dischargeStatus: DischargeDetailDto['status']
   label: string
   periods: T[]
+  /** How many of these resources the shift has, shown beside the label when given. */
+  count?: number
   renderResource: (period: T) => ReactNode
   /** An action on this group of resources, placed beside its label. */
   action?: ReactNode
@@ -20,15 +22,22 @@ export function ShiftResourceGroup<T extends Period>({
   dischargeStatus,
   label,
   periods,
+  count,
   renderResource,
   action,
 }: ShiftResourceGroupProps<T>) {
   const { inEffect, ended } = splitPeriods(periods, dischargeStatus)
 
   return (
-    <div className="grid content-start gap-1">
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-muted-foreground">{label}</h4>
+    <div className="grid content-start gap-2">
+      {/* A section title rather than a field label, set apart from the muted labels above it. */}
+      <div className="flex items-center justify-between gap-2 border-b pb-1.5">
+        <h4 className="font-medium">
+          {label}{' '}
+          {count !== undefined && (
+            <span className="font-normal text-muted-foreground tabular-nums">({count})</span>
+          )}
+        </h4>
         {action}
       </div>
       {periods.length > 0 ? (

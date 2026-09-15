@@ -9,6 +9,7 @@ import {
 import {
   candidateMatchesSearch,
   heldPoolEntries,
+  missingTrucks,
   offeredShiftTrucks,
   shiftsSelectingTrucks,
 } from '@/features/discharges/truck-pool-selection'
@@ -130,5 +131,26 @@ describe('candidateMatchesSearch', () => {
     expect(candidateMatchesSearch(candidate, ' ab-123 ')).toBe(true)
     expect(candidateMatchesSearch(candidate, 'emeraude')).toBe(true)
     expect(candidateMatchesSearch(candidate, 'cargill')).toBe(false)
+  })
+})
+
+describe('a planned shift without trucks', () => {
+  const truck = (truckId: string, effectiveTo: string | null) => ({
+    id: `row-${truckId}-${effectiveTo ?? 'open'}`,
+    truckId,
+    registration: truckId.toUpperCase(),
+    truckStatus: 'AVAILABLE' as const,
+    effectiveFrom: '2026-10-04T06:00:00.000Z',
+    effectiveTo,
+  })
+
+  test('flags only a planned shift with no truck in effect', () => {
+    const ended = [truck('truck-a', '2026-10-04T09:00:00.000Z')]
+
+    expect(missingTrucks(buildShift({ status: 'PLANNED', trucks: ended }))).toBe(true)
+    expect(missingTrucks(buildShift({ status: 'PLANNED', trucks: [truck('truck-a', null)] }))).toBe(
+      false,
+    )
+    expect(missingTrucks(buildShift({ status: 'ACTIVE', trucks: [] }))).toBe(false)
   })
 })

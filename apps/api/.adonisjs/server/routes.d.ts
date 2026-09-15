@@ -51,6 +51,7 @@ export type ScannedRoutes = {
     'discharges.truck_pool.store': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'discharges.truck_pool.withdraw': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'discharges.shift_trucks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'shiftId': ParamValue} }
+    'discharges.shifts.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'shiftId': ParamValue} }
     'users.eligible_shift_responsibles': { paramsTuple?: []; params?: {} }
     'users.index': { paramsTuple?: []; params?: {} }
     'users.store': { paramsTuple?: []; params?: {} }
@@ -212,6 +213,7 @@ export type ScannedRoutes = {
   }
   PUT: {
     'discharges.shift_trucks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'shiftId': ParamValue} }
+    'discharges.shifts.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'shiftId': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {
