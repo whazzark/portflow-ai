@@ -6,17 +6,24 @@ import {
   DISCHARGES,
 } from '@/features/discharges/__tests__/support/fixtures'
 import {
+  addProductLotsCrossRulesSchema,
   createDischargeFieldsSchema,
   createDischargeFormDefaults,
   createDischargeSchema,
   creationFieldNames,
+  creationFieldOf,
   creationStepOf,
   dischargeIdentitySchema,
+  emptyLotGroup,
   emptyPlannedShift,
+  emptyProductLine,
   emptyProductLot,
+  flattenLotGroups,
   formatShiftDuration,
   identityFormValues,
   isStepComplete,
+  lotGroupFieldNames,
+  lotGroupFieldOf,
   nextPlannedShift,
   plannedShiftSchema,
   productLotFormValues,
@@ -25,6 +32,7 @@ import {
   toCreateDischargeBody,
   toIdentityBody,
   toProductLotBody,
+  toProductLotsBody,
 } from '@/features/discharges/discharge-preparation-schema'
 import { fromDateTimeLocalValue } from '@/helpers/dates'
 
@@ -187,16 +195,27 @@ test('requires a planned start, a planned end, and a responsible for a shift', (
   ])
 })
 
-test('starts a creation with one empty lot and one empty shift', () => {
+/** One customer block holding the given lines, each with `validLot`'s values but its product name. */
+const block = (customerId: string, ...productNames: string[]) => ({
+  customerId,
+  products: productNames.map((productName) => ({
+    productName,
+    expectedQuantityTonnes: validLot.expectedQuantityTonnes,
+    description: validLot.description,
+  })),
+})
+
+test('starts a creation with one empty customer block and one empty shift', () => {
   expect(createDischargeFormDefaults()).toEqual({
     vesselName: '',
     vesselImo: '',
     vesselComment: '',
     dockId: '',
     expectedStartAt: '',
-    productLots: [emptyProductLot()],
+    lotGroups: [emptyLotGroup()],
     shifts: [emptyPlannedShift()],
   })
+  expect(emptyLotGroup()).toEqual({ customerId: '', products: [emptyProductLine()] })
   expect(emptyPlannedShift()).toEqual({
     plannedStartAt: '',
     plannedEndAt: '',
@@ -204,17 +223,74 @@ test('starts a creation with one empty lot and one empty shift', () => {
   })
 })
 
-test('requires at least one lot and one shift', () => {
-  const values = { ...validIdentity, productLots: [validLot], shifts: [validShift] }
+test('requires a customer block with a customer and a product, and a shift', () => {
+  const values = {
+    ...validIdentity,
+    lotGroups: [block(validLot.customerId, validLot.productName)],
+    shifts: [validShift],
+  }
 
   expect(createDischargeSchema.safeParse(values).success).toBe(true)
-  expect(createDischargeSchema.safeParse({ ...values, productLots: [] }).success).toBe(false)
+  expect(createDischargeSchema.safeParse({ ...values, lotGroups: [] }).success).toBe(false)
+  expect(
+    createDischargeSchema.safeParse({ ...values, lotGroups: [block(validLot.customerId)] }).success,
+  ).toBe(false)
+  expect(
+    createDischargeSchema.safeParse({ ...values, lotGroups: [block('', validLot.productName)] })
+      .success,
+  ).toBe(false)
   expect(createDischargeSchema.safeParse({ ...values, shifts: [] }).success).toBe(false)
+})
+
+test('lists the lots of customer blocks block by block, each with where it was entered', () => {
+  const groups = [block('customer-1', 'Wheat', 'Barley'), block('customer-2', 'Corn')]
+
+  expect(
+    flattenLotGroups(groups).map((lot) => [
+      lot.customerId,
+      lot.productName,
+      lot.groupIndex,
+      lot.productIndex,
+    ]),
+  ).toEqual([
+    ['customer-1', 'Wheat', 0, 0],
+    ['customer-1', 'Barley', 0, 1],
+    ['customer-2', 'Corn', 1, 0],
+  ])
+  expect(toProductLotsBody(groups)).toEqual([
+    toProductLotBody({ ...validLot, customerId: 'customer-1', productName: 'Wheat' }),
+    toProductLotBody({ ...validLot, customerId: 'customer-1', productName: 'Barley' }),
+    toProductLotBody({ ...validLot, customerId: 'customer-2', productName: 'Corn' }),
+  ])
+})
+
+test('points a refusal of a listed lot at its customer block field', () => {
+  const groups = [block('customer-1', 'Wheat', 'Barley'), block('customer-2', 'Corn')]
+
+  expect(lotGroupFieldOf('productLots.2.customerId', groups)).toBe('lotGroups[1].customerId')
+  expect(lotGroupFieldOf('productLots.1.productName', groups)).toBe(
+    'lotGroups[0].products[1].productName',
+  )
+  expect(lotGroupFieldOf('productLots.2.expectedQuantityTonnes', groups)).toBe(
+    'lotGroups[1].products[0].expectedQuantityTonnes',
+  )
+  expect(lotGroupFieldOf('productLots.3.productName', groups)).toBeNull()
+  expect(lotGroupFieldOf('productLots', groups)).toBeNull()
+  expect(lotGroupFieldOf('productLots.0.unknown', groups)).toBeNull()
+
+  const values = { ...createDischargeFormDefaults(), lotGroups: groups }
+  expect(creationFieldOf('productLots.2.customerId', values)).toBe('lotGroups[1].customerId')
+  expect(creationFieldOf('shifts.0.responsibleUserId', values)).toBe('shifts[0].responsibleUserId')
+  expect(creationFieldOf('vesselName', values)).toBe('vesselName')
 })
 
 test('builds the creation body with its identity, lots, and shifts', () => {
   const body = toCreateDischargeBody(
-    { ...validIdentity, productLots: [validLot], shifts: [validShift] },
+    {
+      ...validIdentity,
+      lotGroups: [block(validLot.customerId, validLot.productName)],
+      shifts: [validShift],
+    },
     'creation-1',
   )
 
@@ -235,7 +311,11 @@ test('builds the creation body with its identity, lots, and shifts', () => {
 test('reports the rules across lots and shifts where the form shows them', () => {
   const result = createDischargeSchema.safeParse({
     ...validIdentity,
-    productLots: [validLot, { ...validLot, productName: ' WHEAT ' }],
+    lotGroups: [
+      block('customer-1', 'Wheat', 'Barley'),
+      block('customer-2', 'Wheat'),
+      block('customer-1', ' WHEAT '),
+    ],
     shifts: [
       validShift,
       { ...validShift, plannedStartAt: '2026-10-01T13:00', plannedEndAt: '2026-10-01T20:00' },
@@ -247,8 +327,15 @@ test('reports the rules across lots and shifts where the form shows them', () =>
   expect(
     (result.error?.issues ?? []).map((issue) => [issue.path.join('.'), issue.message]),
   ).toEqual([
-    ['productLots.0.productName', 'This customer already has a lot with this product name'],
-    ['productLots.1.productName', 'This customer already has a lot with this product name'],
+    ['lotGroups.2.customerId', 'This customer is already listed above'],
+    [
+      'lotGroups.0.products.0.productName',
+      'This customer already has a lot with this product name',
+    ],
+    [
+      'lotGroups.2.products.0.productName',
+      'This customer already has a lot with this product name',
+    ],
     ['shifts.2.plannedEndAt', 'The planned end must be after the planned start'],
     ['shifts.0.plannedStartAt', 'This shift overlaps another shift'],
     ['shifts.1.plannedStartAt', 'This shift overlaps another shift'],
@@ -258,13 +345,16 @@ test('reports the rules across lots and shifts where the form shows them', () =>
 test('accepts contiguous shifts and leaves cross rules out of the per-field schema', () => {
   const contiguous = {
     ...validIdentity,
-    productLots: [validLot],
+    lotGroups: [block(validLot.customerId, validLot.productName)],
     shifts: [
       validShift,
       { ...validShift, plannedStartAt: '2026-10-01T14:00', plannedEndAt: '2026-10-01T22:00' },
     ],
   }
-  const duplicated = { ...contiguous, productLots: [validLot, validLot] }
+  const duplicated = {
+    ...contiguous,
+    lotGroups: [block(validLot.customerId, validLot.productName, validLot.productName)],
+  }
 
   expect(createDischargeSchema.safeParse(contiguous).success).toBe(true)
   expect(createDischargeFieldsSchema.safeParse(duplicated).success).toBe(true)
@@ -274,7 +364,10 @@ test('lists every field path the creation form renders', () => {
   expect(
     creationFieldNames({
       ...createDischargeFormDefaults(),
-      productLots: [emptyProductLot(), emptyProductLot()],
+      lotGroups: [
+        { customerId: '', products: [emptyProductLine(), emptyProductLine()] },
+        emptyLotGroup(),
+      ],
     }),
   ).toEqual([
     'vesselName',
@@ -282,18 +375,45 @@ test('lists every field path the creation form renders', () => {
     'vesselComment',
     'dockId',
     'expectedStartAt',
-    'productLots[0].customerId',
-    'productLots[0].productName',
-    'productLots[0].expectedQuantityTonnes',
-    'productLots[0].description',
-    'productLots[1].customerId',
-    'productLots[1].productName',
-    'productLots[1].expectedQuantityTonnes',
-    'productLots[1].description',
+    'lotGroups[0].customerId',
+    'lotGroups[0].products[0].productName',
+    'lotGroups[0].products[0].expectedQuantityTonnes',
+    'lotGroups[0].products[0].description',
+    'lotGroups[0].products[1].productName',
+    'lotGroups[0].products[1].expectedQuantityTonnes',
+    'lotGroups[0].products[1].description',
+    'lotGroups[1].customerId',
+    'lotGroups[1].products[0].productName',
+    'lotGroups[1].products[0].expectedQuantityTonnes',
+    'lotGroups[1].products[0].description',
     'shifts[0].plannedStartAt',
     'shifts[0].plannedEndAt',
     'shifts[0].responsibleUserId',
   ])
+})
+
+test('lists the fields of customer blocks alone, for lots added to a discharge', () => {
+  expect(lotGroupFieldNames([emptyLotGroup()])).toEqual([
+    'lotGroups[0].customerId',
+    'lotGroups[0].products[0].productName',
+    'lotGroups[0].products[0].expectedQuantityTonnes',
+    'lotGroups[0].products[0].description',
+  ])
+})
+
+test("refuses added lots clashing with each other or with the discharge's existing lots", () => {
+  const rules = addProductLotsCrossRulesSchema([{ customerId: 'customer-1', productName: 'Wheat' }])
+
+  const result = rules.safeParse({
+    lotGroups: [block('customer-1', ' wheat ', 'Corn', 'corn'), block('customer-2', 'Wheat')],
+  })
+
+  expect((result.error?.issues ?? []).map((issue) => issue.path.join('.'))).toEqual([
+    'lotGroups.0.products.0.productName',
+    'lotGroups.0.products.1.productName',
+    'lotGroups.0.products.2.productName',
+  ])
+  expect(rules.safeParse({ lotGroups: [block('customer-2', 'Wheat')] }).success).toBe(true)
 })
 
 test('states how long a planned shift lasts', () => {
@@ -345,7 +465,8 @@ test('starts an empty shift after an incomplete or inverted one', () => {
 test('tells which step a field belongs to', () => {
   expect(creationStepOf('vesselName')).toBe('vessel')
   expect(creationStepOf('dockId')).toBe('vessel')
-  expect(creationStepOf('productLots[1].customerId')).toBe('lots')
+  expect(creationStepOf('lotGroups[1].customerId')).toBe('lots')
+  expect(creationStepOf('lotGroups[0].products[1].productName')).toBe('lots')
   expect(creationStepOf('productLots.1.customerId')).toBe('lots')
   expect(creationStepOf('shifts[0].plannedEndAt')).toBe('shifts')
 })
@@ -353,7 +474,7 @@ test('tells which step a field belongs to', () => {
 test('finds errors on the fields of one step only', () => {
   const fieldMeta = {
     vesselName: { errors: [] },
-    'productLots[0].productName': { errors: ['Product name is required.'] },
+    'lotGroups[0].products[0].productName': { errors: ['Product name is required.'] },
     'shifts[0].plannedStartAt': { errors: [undefined] },
   }
 
@@ -366,7 +487,7 @@ test('holds a step complete only once its own values are valid', () => {
   const values = {
     ...createDischargeFormDefaults(),
     ...validIdentity,
-    productLots: [validLot, { ...validLot, customerId: 'customer-2' }],
+    lotGroups: [block('customer-1', 'Wheat'), block('customer-2', 'Wheat')],
   }
 
   expect(isStepComplete('vessel', createDischargeFormDefaults())).toBe(false)
@@ -374,11 +495,21 @@ test('holds a step complete only once its own values are valid', () => {
   expect(isStepComplete('vessel', values)).toBe(true)
 
   expect(isStepComplete('lots', values)).toBe(true)
-  expect(isStepComplete('lots', { ...values, productLots: [validLot, validLot] })).toBe(false)
   expect(
     isStepComplete('lots', {
       ...values,
-      productLots: [{ ...validLot, expectedQuantityTonnes: '0' }],
+      lotGroups: [block('customer-1', 'Wheat'), block('customer-1', 'Barley')],
+    }),
+  ).toBe(false)
+  expect(
+    isStepComplete('lots', {
+      ...values,
+      lotGroups: [
+        {
+          customerId: 'customer-1',
+          products: [{ productName: 'Wheat', expectedQuantityTonnes: '0', description: '' }],
+        },
+      ],
     }),
   ).toBe(false)
 

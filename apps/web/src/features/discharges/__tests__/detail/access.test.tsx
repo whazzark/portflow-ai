@@ -1,8 +1,13 @@
 import { screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
+import { DISCHARGE_DETAIL_TABS } from '@/features/discharges/types'
 import { ACTIVE_OBSERVER, ACTIVE_ROLES, listedDischarge } from '../support/fixtures'
-import { mockDischargeDetail, renderDischargeDetail } from '../support/test-helpers'
+import {
+  mockDischargeDetail,
+  renderDischargeDetail,
+  renderDischargeTab,
+} from '../support/test-helpers'
 
 const OCEAN_CEDAR = listedDischarge('MV Ocean Cedar', 'ACTIVE')
 
@@ -16,10 +21,14 @@ test.each(
 )('shows an observer a read-only %s discharge', async (_status, listed) => {
   mockDischargeDetail({ user: ACTIVE_OBSERVER })
 
-  renderDischargeDetail(listed.id)
-  await screen.findByRole('heading', { level: 1, name: listed.vesselName })
+  // Every section, since each one renders only while its tab is open.
+  for (const tab of DISCHARGE_DETAIL_TABS) {
+    const view = renderDischargeTab(listed.id, tab)
+    await screen.findByRole('heading', { level: 1, name: listed.vesselName })
 
-  expect(screen.queryByRole('button', { name: ACTION_NAMES })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: ACTION_NAMES })).not.toBeInTheDocument()
+    view.unmount()
+  }
 })
 
 test.each(
@@ -33,11 +42,13 @@ test.each(
   unmount()
 
   for (const listed of [OCEAN_CEDAR, LOIRE_STAR]) {
-    const view = renderDischargeDetail(listed.id)
-    await screen.findByRole('heading', { level: 1, name: listed.vesselName })
+    for (const tab of DISCHARGE_DETAIL_TABS) {
+      const view = renderDischargeTab(listed.id, tab)
+      await screen.findByRole('heading', { level: 1, name: listed.vesselName })
 
-    expect(screen.queryByRole('button', { name: ACTION_NAMES })).not.toBeInTheDocument()
-    view.unmount()
+      expect(screen.queryByRole('button', { name: ACTION_NAMES })).not.toBeInTheDocument()
+      view.unmount()
+    }
   }
 })
 

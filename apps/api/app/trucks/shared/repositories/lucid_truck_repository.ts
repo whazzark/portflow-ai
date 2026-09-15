@@ -1,4 +1,5 @@
 import { inject } from '@adonisjs/core'
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import { Decimal } from 'decimal.js'
 import { DateTime } from 'luxon'
@@ -113,55 +114,38 @@ export default class LucidTruckRepository extends TruckRepository {
     return preloadLifecycleActors(Truck.query().where('id', id)).first()
   }
 
+  /**
+   * A reassignment locks the truck and checks its discharge usage in the same transaction. A
+   * reservation takes the truck's share lock before it writes, so it either waits for this
+   * reassignment and then reserves the truck with its new company, or commits first and is seen
+   * here: the company a planned or active discharge captured can never change under it.
+   */
   async updateAvailable(command: UpdateTruckCommand): Promise<TruckWriteResult> {
     try {
-      const [affectedRows] = await Truck.query()
-        .where('id', command.id)
-        .where('status', 'AVAILABLE')
-        // Pinning the write to the transport company the caller validated its reassignment
-        // decision against turns a concurrent reassignment into a reported conflict instead of a
-        // silent revert: without this, a stale "unchanged company" submission would overwrite a
-        // company another request just legitimately assigned, bypassing every check that only
-        // runs when a change is detected.
-        .where('transportCompanyId', command.expectedTransportCompanyId)
-        .update({
-          registration: command.registration,
-          vehicleModel: command.vehicleModel,
-          // The bulk query-builder `.update()` bypasses the model's `prepare` column hook, unlike
-          // `Truck.create()`, so the Decimal must be stringified explicitly for the sqlite/pg driver.
-          capacityTonnes: new Decimal(command.capacityTonnes).toString(),
-          transportCompanyId: command.transportCompanyId,
-          updatedAt: DateTime.now().toSQL({ includeOffset: false }),
-        })
-
-      if (affectedRows === 0) {
-        const truck = await Truck.find(command.id)
-
-        if (!truck) {
-          return { kind: 'NOT_FOUND' }
-        }
-        if (truck.status === 'SUSPENDED') {
-          return { kind: 'SUSPENDED' }
-        }
-        if (truck.status !== 'AVAILABLE') {
-          return { kind: 'ARCHIVED' }
-        }
-        if (truck.transportCompanyId !== command.expectedTransportCompanyId) {
-          return { kind: 'TRANSPORT_COMPANY_CHANGED' }
-        }
-
-        // The row is AVAILABLE now but the UPDATE above matched no rows: it was reactivated
-        // concurrently between the UPDATE and this refetch. Treat it like the caller's original
-        // read was stale rather than reporting a misleading success.
-        return { kind: 'NOT_FOUND' }
+      if (command.transportCompanyId === command.expectedTransportCompanyId) {
+        return await this.writeAvailable(command)
       }
 
-      const truck = await preloadLifecycleActors(Truck.query().where('id', command.id)).first()
-      if (!truck) {
-        return { kind: 'NOT_FOUND' }
-      }
+      return await Truck.transaction(async (trx) => {
+        const truck = await Truck.query({ client: trx }).where('id', command.id).forUpdate().first()
 
-      return { kind: 'UPDATED', truck }
+        if (
+          truck?.status === 'AVAILABLE' &&
+          truck.transportCompanyId === command.expectedTransportCompanyId
+        ) {
+          const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
+            referenceType: 'TRUCK',
+            referenceIds: [command.id],
+            client: trx,
+          })
+
+          if (usedIds.has(command.id)) {
+            return { kind: 'TRANSPORT_COMPANY_LOCKED' }
+          }
+        }
+
+        return this.writeAvailable(command, trx)
+      })
     } catch (error) {
       if (isRegistrationUniqueViolation(error)) {
         return { kind: 'DUPLICATE_REGISTRATION' }
@@ -169,6 +153,61 @@ export default class LucidTruckRepository extends TruckRepository {
 
       throw error
     }
+  }
+
+  private async writeAvailable(
+    command: UpdateTruckCommand,
+    client?: TransactionClientContract,
+  ): Promise<TruckWriteResult> {
+    const [affectedRows] = await Truck.query({ client })
+      .where('id', command.id)
+      .where('status', 'AVAILABLE')
+      // Pinning the write to the transport company the caller validated its reassignment
+      // decision against turns a concurrent reassignment into a reported conflict instead of a
+      // silent revert: without this, a stale "unchanged company" submission would overwrite a
+      // company another request just legitimately assigned, bypassing every check that only
+      // runs when a change is detected.
+      .where('transportCompanyId', command.expectedTransportCompanyId)
+      .update({
+        registration: command.registration,
+        vehicleModel: command.vehicleModel,
+        // The bulk query-builder `.update()` bypasses the model's `prepare` column hook, unlike
+        // `Truck.create()`, so the Decimal must be stringified explicitly for the sqlite/pg driver.
+        capacityTonnes: new Decimal(command.capacityTonnes).toString(),
+        transportCompanyId: command.transportCompanyId,
+        updatedAt: DateTime.now().toSQL({ includeOffset: false }),
+      })
+
+    if (affectedRows === 0) {
+      const truck = await Truck.find(command.id, { client })
+
+      if (!truck) {
+        return { kind: 'NOT_FOUND' }
+      }
+      if (truck.status === 'SUSPENDED') {
+        return { kind: 'SUSPENDED' }
+      }
+      if (truck.status !== 'AVAILABLE') {
+        return { kind: 'ARCHIVED' }
+      }
+      if (truck.transportCompanyId !== command.expectedTransportCompanyId) {
+        return { kind: 'TRANSPORT_COMPANY_CHANGED' }
+      }
+
+      // The row is AVAILABLE now but the UPDATE above matched no rows: it was reactivated
+      // concurrently between the UPDATE and this refetch. Treat it like the caller's original
+      // read was stale rather than reporting a misleading success.
+      return { kind: 'NOT_FOUND' }
+    }
+
+    const truck = await preloadLifecycleActors(
+      Truck.query({ client }).where('id', command.id),
+    ).first()
+    if (!truck) {
+      return { kind: 'NOT_FOUND' }
+    }
+
+    return { kind: 'UPDATED', truck }
   }
 
   list(): Promise<Truck[]> {

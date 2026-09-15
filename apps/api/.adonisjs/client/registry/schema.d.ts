@@ -491,10 +491,10 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/api/v1/discharges/:dischargeId/product-lots'
     types: {
-      body: ExtractBody<InferInput<(typeof import('#discharges/product_lots/product_lot_validator').productLotValidator)>>
+      body: ExtractBody<InferInput<(typeof import('#discharges/product_lots/product_lot_validator').addProductLotsValidator)>>
       paramsTuple: [ParamValue]
       params: { dischargeId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#discharges/product_lots/product_lot_validator').productLotValidator)>>
+      query: ExtractQuery<InferInput<(typeof import('#discharges/product_lots/product_lot_validator').addProductLotsValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['store']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
@@ -521,6 +521,54 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['destroy']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['destroy']>>>
+    }
+  }
+  'discharges.truck_pool.candidates': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/discharges/:dischargeId/truck-pool/candidates'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { dischargeId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_truck_pool_controller').default['candidates']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_truck_pool_controller').default['candidates']>>>
+    }
+  }
+  'discharges.truck_pool.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/discharges/:dischargeId/truck-pool'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#discharges/truck_pool/truck_pool_validators').truckIdsValidator)>>
+      paramsTuple: [ParamValue]
+      params: { dischargeId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#discharges/truck_pool/truck_pool_validators').truckIdsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_truck_pool_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_truck_pool_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'discharges.truck_pool.withdraw': {
+    methods: ["POST"]
+    pattern: '/api/v1/discharges/:dischargeId/truck-pool/withdrawals'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#discharges/truck_pool/truck_pool_validators').truckIdsValidator)>>
+      paramsTuple: [ParamValue]
+      params: { dischargeId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#discharges/truck_pool/truck_pool_validators').truckIdsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_truck_pool_controller').default['withdraw']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_truck_pool_controller').default['withdraw']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'discharges.shift_trucks.update': {
+    methods: ["PUT"]
+    pattern: '/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#discharges/truck_pool/truck_pool_validators').shiftTruckSelectionValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { dischargeId: ParamValue; shiftId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#discharges/truck_pool/truck_pool_validators').shiftTruckSelectionValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_shift_trucks_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_shift_trucks_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'users.eligible_shift_responsibles': {

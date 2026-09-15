@@ -4,6 +4,7 @@ import { DateTime } from 'luxon'
 
 import { throwPreparationIssues } from '#discharges/shared/discharge_preparation_issues'
 import {
+  findDuplicateLotIssues,
   findLotIdentityClash,
   findPreparationIssues,
   orderShifts,
@@ -112,6 +113,19 @@ test.group('Discharge preparation rules', () => {
     assert.deepEqual(fieldsAndRules(issues), [
       ['productLots.0.productName', 'productLotIdentityUnique'],
       ['productLots.1.productName', 'productLotIdentityUnique'],
+    ])
+  })
+
+  test('finds duplicate lots of a batch on their own, at each position', ({ assert }) => {
+    const issues = findDuplicateLotIssues([
+      lot('customer-a', 'Wheat'),
+      lot('customer-b', 'Wheat'),
+      lot('CUSTOMER-A', ' WHEAT'),
+    ])
+
+    assert.deepEqual(fieldsAndRules(issues), [
+      ['productLots.0.productName', 'productLotIdentityUnique'],
+      ['productLots.2.productName', 'productLotIdentityUnique'],
     ])
   })
 

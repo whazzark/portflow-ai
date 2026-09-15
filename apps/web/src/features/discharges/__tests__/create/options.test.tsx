@@ -37,7 +37,7 @@ test('offers a retry inside the field whose choices failed to load', async () =>
   await screen.findByRole('textbox', { name: 'Vessel name' })
   await fillVesselStep()
   await continueTo('Product lots')
-  const lot = await screen.findByRole('group', { name: 'Product lot 1' })
+  const lot = await screen.findByRole('group', { name: 'Customer 1' })
   const retry = await within(lot).findByRole('button', { name: 'Retry loading customer' })
   const customer = within(lot).getByRole('combobox', { name: 'Customer' })
   expect(customer).toHaveAttribute('placeholder', 'Unable to load')

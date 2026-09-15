@@ -32,6 +32,21 @@ export function duplicateLotIssue(field: string): PreparationIssue {
   return { field, rule: 'productLotIdentityUnique', message: DUPLICATE_LOT_MESSAGE }
 }
 
+/** Every lot sharing its identity with another lot of the same submission, at its position. */
+export function findDuplicateLotIssues(productLots: LotIdentity[]) {
+  const lotCounts = new Map<string, number>()
+  for (const lot of productLots) {
+    const key = lotIdentityKey(lot)
+    lotCounts.set(key, (lotCounts.get(key) ?? 0) + 1)
+  }
+
+  return productLots.flatMap((lot, index) =>
+    (lotCounts.get(lotIdentityKey(lot)) ?? 0) > 1
+      ? [duplicateLotIssue(`productLots.${index}.productName`)]
+      : [],
+  )
+}
+
 /**
  * The rules a preparation breaks across its lots and shifts, reported at the position each value
  * was entered in so the form can point at it. Checked before any lock is taken: they depend only
@@ -44,18 +59,7 @@ export function findPreparationIssues({
   productLots: LotIdentity[]
   shifts: PlannedPeriod[]
 }) {
-  const issues: PreparationIssue[] = []
-
-  const lotCounts = new Map<string, number>()
-  for (const lot of productLots) {
-    const key = lotIdentityKey(lot)
-    lotCounts.set(key, (lotCounts.get(key) ?? 0) + 1)
-  }
-  productLots.forEach((lot, index) => {
-    if ((lotCounts.get(lotIdentityKey(lot)) ?? 0) > 1) {
-      issues.push(duplicateLotIssue(`productLots.${index}.productName`))
-    }
-  })
+  const issues = findDuplicateLotIssues(productLots)
 
   shifts.forEach((shift, index) => {
     if (shift.plannedEndAt.toMillis() <= shift.plannedStartAt.toMillis()) {

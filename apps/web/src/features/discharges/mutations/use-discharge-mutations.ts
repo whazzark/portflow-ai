@@ -10,6 +10,8 @@ export const STALE_DETAIL_CODES = new Set([
   'E_DISCHARGE_NOT_FOUND',
   'E_PRODUCT_LOT_NOT_FOUND',
   'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS',
+  'E_SHIFT_NOT_FOUND',
+  'E_SHIFT_NOT_PLANNED',
 ])
 
 export function useDischargeMutations() {
@@ -50,7 +52,7 @@ export function useDischargeMutations() {
     }),
   )
 
-  const addLot = useMutation(
+  const addLots = useMutation(
     tuyauQuery.discharges.productLots.store.mutationOptions({
       onSuccess: (response) => applyDetail(response),
       onError: (error, variables) =>
@@ -72,5 +74,63 @@ export function useDischargeMutations() {
     }),
   )
 
-  return { create, correctIdentity, addLot, correctLot, removeLot }
+  /** Candidates depend on the pool: a reserved or withdrawn truck enters or leaves the offer. */
+  const refreshCandidates = (dischargeId: string) =>
+    queryClient.invalidateQueries({
+      queryKey: dischargeQueries.truckCandidates(dischargeId).queryKey,
+    })
+
+  const reserveTrucks = useMutation(
+    tuyauQuery.discharges.truckPool.store.mutationOptions({
+      onSuccess: async (response) => {
+        await applyDetail(response)
+        await refreshCandidates(response.data.id)
+      },
+      onError: async (error, variables) => {
+        const dischargeId = String(variables.params.dischargeId)
+        await refreshAfterStaleRefusal(error, dischargeId)
+        if (parseApiError(error).code === 'E_VALIDATION_ERROR') {
+          await refreshCandidates(dischargeId)
+        }
+      },
+    }),
+  )
+
+  const withdrawTrucks = useMutation(
+    tuyauQuery.discharges.truckPool.withdraw.mutationOptions({
+      onSuccess: async (response) => {
+        await applyDetail(response)
+        await refreshCandidates(response.data.id)
+      },
+      onError: (error, variables) =>
+        refreshAfterStaleRefusal(error, String(variables.params.dischargeId)),
+    }),
+  )
+
+  const selectShiftTrucks = useMutation(
+    tuyauQuery.discharges.shiftTrucks.update.mutationOptions({
+      onSuccess: (response) => applyDetail(response),
+      onError: async (error, variables) => {
+        const dischargeId = String(variables.params.dischargeId)
+        await refreshAfterStaleRefusal(error, dischargeId)
+        // A refused truck left the pool or was suspended meanwhile: the detail on screen is stale.
+        if (parseApiError(error).code === 'E_VALIDATION_ERROR') {
+          await queryClient.invalidateQueries({
+            queryKey: dischargeQueries.detail(dischargeId).queryKey,
+          })
+        }
+      },
+    }),
+  )
+
+  return {
+    create,
+    correctIdentity,
+    addLots,
+    correctLot,
+    removeLot,
+    reserveTrucks,
+    withdrawTrucks,
+    selectShiftTrucks,
+  }
 }

@@ -47,6 +47,10 @@ export type ScannedRoutes = {
     'discharges.product_lots.store': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'discharges.product_lots.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'id': ParamValue} }
     'discharges.product_lots.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'id': ParamValue} }
+    'discharges.truck_pool.candidates': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
+    'discharges.truck_pool.store': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
+    'discharges.truck_pool.withdraw': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
+    'discharges.shift_trucks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'shiftId': ParamValue} }
     'users.eligible_shift_responsibles': { paramsTuple?: []; params?: {} }
     'users.index': { paramsTuple?: []; params?: {} }
     'users.store': { paramsTuple?: []; params?: {} }
@@ -101,6 +105,7 @@ export type ScannedRoutes = {
     'trucks.suspended': { paramsTuple?: []; params?: {} }
     'discharges.index': { paramsTuple?: []; params?: {} }
     'discharges.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'discharges.truck_pool.candidates': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'users.eligible_shift_responsibles': { paramsTuple?: []; params?: {} }
     'users.index': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
@@ -122,6 +127,7 @@ export type ScannedRoutes = {
     'trucks.suspended': { paramsTuple?: []; params?: {} }
     'discharges.index': { paramsTuple?: []; params?: {} }
     'discharges.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'discharges.truck_pool.candidates': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'users.eligible_shift_responsibles': { paramsTuple?: []; params?: {} }
     'users.index': { paramsTuple?: []; params?: {} }
     'docks.index': { paramsTuple?: []; params?: {} }
@@ -156,6 +162,8 @@ export type ScannedRoutes = {
     'trucks.return_to_service': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'discharges.store': { paramsTuple?: []; params?: {} }
     'discharges.product_lots.store': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
+    'discharges.truck_pool.store': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
+    'discharges.truck_pool.withdraw': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'users.store': { paramsTuple?: []; params?: {} }
     'users.deactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -201,6 +209,9 @@ export type ScannedRoutes = {
   DELETE: {
     'discharges.product_lots.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'id': ParamValue} }
     'users.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+  }
+  PUT: {
+    'discharges.shift_trucks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'shiftId': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

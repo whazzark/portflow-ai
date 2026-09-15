@@ -3,9 +3,12 @@ import { DateTime } from 'luxon'
 
 import Customer from '#models/customer'
 import Discharge from '#models/discharge'
+import DischargeTruckAssignment from '#models/discharge_truck_assignment'
 import Dock from '#models/dock'
 import ProductLot from '#models/product_lot'
 import Shift from '#models/shift'
+import ShiftTruck from '#models/shift_truck'
+import Truck from '#models/truck'
 import User from '#models/user'
 import WarehouseDoorProductLotAssignment from '#models/warehouse_door_product_lot_assignment'
 import isForeignKeyViolation from '#shared/database/is_foreign_key_violation'
@@ -15,9 +18,14 @@ import DischargePreparationRepository, {
   type CreatePlannedDischargeCommand,
   type CreatePlannedDischargeResult,
   type DeleteProductLotResult,
+  type LockedTruck,
   type ProductLotValues,
   type ProductLotWriteResult,
+  type ShiftTruckSelectionWriteResult,
+  type TruckReservationWriteResult,
   type UpdateDischargeIdentityCommand,
+  type WriteShiftTruckSelectionCommand,
+  type WriteTruckReservationsCommand,
 } from './discharge_preparation_repository.ts'
 
 /** Distinct, well-formed, lower-case identities, in the order every lock is taken: by identity. */
@@ -44,6 +52,30 @@ function isDuplicateLotIdentity(error: unknown) {
     (candidate.code === '23505' && candidate.constraint === 'product_lots_identity_unique') ||
     (candidate.code === 'SQLITE_CONSTRAINT_UNIQUE' &&
       (candidate.message ?? '').includes('product_lots_identity_unique'))
+  )
+}
+
+/** A second pool row for one truck of one discharge, which the table's unique index forbids. */
+function isDuplicatePoolTruck(error: unknown) {
+  const candidate = (error ?? {}) as DatabaseError
+
+  return (
+    (candidate.code === '23505' &&
+      candidate.constraint === 'discharge_truck_assignments_discharge_id_truck_id_unique') ||
+    (candidate.code === 'SQLITE_CONSTRAINT_UNIQUE' &&
+      (candidate.message ?? '').includes('discharge_truck_assignments.truck_id'))
+  )
+}
+
+/** A second row for one truck of one shift from the same instant, which a replay would write. */
+function isDuplicateShiftTruck(error: unknown) {
+  const candidate = (error ?? {}) as DatabaseError
+
+  return (
+    (candidate.code === '23505' &&
+      candidate.constraint === 'shift_trucks_shift_id_truck_id_effective_from_unique') ||
+    (candidate.code === 'SQLITE_CONSTRAINT_UNIQUE' &&
+      (candidate.message ?? '').includes('shift_trucks.truck_id'))
   )
 }
 
@@ -94,6 +126,179 @@ export default class LucidDischargePreparationRepository extends DischargePrepar
     query.knexQuery.forShare()
 
     return byId(await query)
+  }
+
+  async lockTrucks(ids: string[], client: TransactionClientContract) {
+    const lockable = lockableIds(ids)
+    const trucks = new Map<string, LockedTruck>()
+    if (lockable.length === 0) {
+      return trucks
+    }
+
+    const query = Truck.query({ client })
+      .whereIn('id', lockable)
+      .preload('transportCompany')
+      .orderBy('id')
+    query.knexQuery.forShare()
+
+    for (const truck of await query) {
+      trucks.set(truck.id.toLowerCase(), {
+        id: truck.id,
+        status: truck.status,
+        registration: truck.registration,
+        transportCompanyId: truck.transportCompanyId,
+        // Every truck has a company today; the label keeps a reservation readable if one ever
+        // does not, as the persisted scenarios already name it.
+        transportCompanyName: truck.transportCompany?.name ?? 'Transport non référencé',
+      })
+    }
+
+    return trucks
+  }
+
+  async listTruckPool(dischargeId: string, client: TransactionClientContract) {
+    const rows = await DischargeTruckAssignment.query({ client })
+      .where('dischargeId', dischargeId.toLowerCase())
+      .select('id', 'truckId', 'releasedAt')
+      .orderBy('id')
+
+    return rows.map((row) => ({ id: row.id, truckId: row.truckId, releasedAt: row.releasedAt }))
+  }
+
+  async listCurrentShiftTruckSelections(dischargeId: string, client: TransactionClientContract) {
+    const rows = await ShiftTruck.query({ client })
+      .join('shifts', 'shifts.id', 'shift_trucks.shift_id')
+      .where('shifts.discharge_id', dischargeId.toLowerCase())
+      .where('shifts.status', 'PLANNED')
+      .whereNull('shift_trucks.effective_to')
+      .select('shift_trucks.id', 'shift_trucks.shift_id', 'shift_trucks.truck_id')
+      .orderBy('shift_trucks.id')
+
+    return rows.map((row) => ({ id: row.id, shiftId: row.shiftId, truckId: row.truckId }))
+  }
+
+  async findShift(dischargeId: string, shiftId: string, client: TransactionClientContract) {
+    if (!isUuid(shiftId)) {
+      return null
+    }
+
+    const shift = await Shift.query({ client })
+      .where('id', shiftId.toLowerCase())
+      .where('dischargeId', dischargeId.toLowerCase())
+      .select('id', 'status')
+      .first()
+
+    return shift ? { id: shift.id, status: shift.status } : null
+  }
+
+  /** In a savepoint, so a replay racing this write leaves the caller's transaction usable. */
+  async writeTruckReservations(
+    command: WriteTruckReservationsCommand,
+    client: TransactionClientContract,
+  ): Promise<TruckReservationWriteResult> {
+    const savepoint = await client.transaction()
+
+    try {
+      if (command.inserts.length > 0) {
+        await DischargeTruckAssignment.createMany(
+          command.inserts.map((reservation) => ({
+            dischargeId: command.dischargeId.toLowerCase(),
+            truckId: reservation.truckId.toLowerCase(),
+            registrationSnapshot: reservation.registrationSnapshot,
+            transportCompanyId: reservation.transportCompanyId,
+            transportCompanyNameSnapshot: reservation.transportCompanyNameSnapshot,
+            reservedAt: reservation.reservedAt.toUTC(),
+            releasedAt: null,
+          })),
+          { client: savepoint },
+        )
+      }
+      for (const reservation of command.reactivations) {
+        await DischargeTruckAssignment.query({ client: savepoint })
+          .where('id', reservation.assignmentId)
+          .where('dischargeId', command.dischargeId.toLowerCase())
+          .update({
+            registrationSnapshot: reservation.registrationSnapshot,
+            transportCompanyId: reservation.transportCompanyId,
+            transportCompanyNameSnapshot: reservation.transportCompanyNameSnapshot,
+            reservedAt: reservation.reservedAt.toUTC().toSQL({ includeOffset: false }),
+            releasedAt: null,
+            updatedAt: DateTime.utc().toSQL({ includeOffset: false }),
+          })
+      }
+      await this.touchDischarge(command.dischargeId, savepoint)
+      await savepoint.commit()
+
+      return { kind: 'WRITTEN' }
+    } catch (error) {
+      await savepoint.rollback()
+
+      if (isDuplicatePoolTruck(error)) {
+        return { kind: 'ALREADY_HELD' }
+      }
+
+      throw error
+    }
+  }
+
+  async writeShiftTruckSelection(
+    command: WriteShiftTruckSelectionCommand,
+    client: TransactionClientContract,
+  ): Promise<ShiftTruckSelectionWriteResult> {
+    const savepoint = await client.transaction()
+
+    try {
+      if (command.deleteIds.length > 0) {
+        await ShiftTruck.query({ client: savepoint })
+          .whereIn('id', command.deleteIds)
+          .where('shiftId', command.shiftId.toLowerCase())
+          .whereNull('effectiveTo')
+          .delete()
+      }
+      if (command.inserts.length > 0) {
+        await ShiftTruck.createMany(
+          command.inserts.map((selection) => ({
+            shiftId: command.shiftId.toLowerCase(),
+            truckId: selection.truckId.toLowerCase(),
+            effectiveFrom: selection.effectiveFrom.toUTC(),
+            effectiveTo: null,
+          })),
+          { client: savepoint },
+        )
+      }
+      await this.touchDischarge(command.dischargeId, savepoint)
+      await savepoint.commit()
+
+      return { kind: 'WRITTEN' }
+    } catch (error) {
+      await savepoint.rollback()
+
+      if (isDuplicateShiftTruck(error)) {
+        return { kind: 'ALREADY_SELECTED' }
+      }
+
+      throw error
+    }
+  }
+
+  async deleteTruckWithdrawal(
+    command: { dischargeId: string; assignmentIds: string[]; selectionIds: string[] },
+    client: TransactionClientContract,
+  ) {
+    if (command.selectionIds.length > 0) {
+      await ShiftTruck.query({ client })
+        .whereIn('id', command.selectionIds)
+        .whereNull('effectiveTo')
+        .delete()
+    }
+    if (command.assignmentIds.length > 0) {
+      await DischargeTruckAssignment.query({ client })
+        .whereIn('id', command.assignmentIds)
+        .where('dischargeId', command.dischargeId.toLowerCase())
+        .whereNull('releasedAt')
+        .delete()
+    }
+    await this.touchDischarge(command.dischargeId, client)
   }
 
   async findDischargeIdentity(id: string, client: TransactionClientContract) {
@@ -202,19 +407,19 @@ export default class LucidDischargePreparationRepository extends DischargePrepar
     return assignment !== null
   }
 
-  insertProductLot(
-    command: ProductLotValues & { dischargeId: string },
+  insertProductLots(
+    command: { dischargeId: string; productLots: ProductLotValues[] },
     client: TransactionClientContract,
   ) {
     return this.writeProductLot(client, async (savepoint) => {
-      await ProductLot.create(
-        {
+      await ProductLot.createMany(
+        command.productLots.map((productLot) => ({
           dischargeId: command.dischargeId.toLowerCase(),
-          customerId: command.customerId.toLowerCase(),
-          productName: command.productName,
-          expectedQuantityTonnes: command.expectedQuantityTonnes,
-          description: command.description,
-        },
+          customerId: productLot.customerId.toLowerCase(),
+          productName: productLot.productName,
+          expectedQuantityTonnes: productLot.expectedQuantityTonnes,
+          description: productLot.description,
+        })),
         { client: savepoint },
       )
       await this.touchDischarge(command.dischargeId, savepoint)
@@ -266,7 +471,7 @@ export default class LucidDischargePreparationRepository extends DischargePrepar
     }
   }
 
-  /** A lot change is a change of its discharge's preparation. */
+  /** A lot or truck plan change is a change of its discharge's preparation. */
   private async touchDischarge(dischargeId: string, client: TransactionClientContract) {
     await Discharge.query({ client })
       .where('id', dischargeId.toLowerCase())

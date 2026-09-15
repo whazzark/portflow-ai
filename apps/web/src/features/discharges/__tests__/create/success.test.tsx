@@ -87,14 +87,23 @@ test('keeps at least one lot and one shift', async () => {
   await fillVesselStep()
   await continueTo('Product lots')
 
-  expect(screen.getByRole('button', { name: 'Remove product lot 1' })).toBeDisabled()
-  fireEvent.click(screen.getByRole('button', { name: 'Add product lot' }))
-  expect(await screen.findByRole('group', { name: 'Product lot 2' })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Remove product lot 2' }))
+  expect(screen.getByRole('button', { name: 'Remove customer 1' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Remove product 1' })).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: 'Add customer' }))
+  expect(await screen.findByRole('group', { name: 'Customer 2' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Remove customer 2' }))
   await waitFor(() =>
-    expect(screen.queryByRole('group', { name: 'Product lot 2' })).not.toBeInTheDocument(),
+    expect(screen.queryByRole('group', { name: 'Customer 2' })).not.toBeInTheDocument(),
   )
-  expect(screen.getByRole('button', { name: 'Remove product lot 1' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Remove customer 1' })).toBeDisabled()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Add product' }))
+  expect(await screen.findByRole('group', { name: 'Product 2' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Remove product 2' }))
+  await waitFor(() =>
+    expect(screen.queryByRole('group', { name: 'Product 2' })).not.toBeInTheDocument(),
+  )
+  expect(screen.getByRole('button', { name: 'Remove product 1' })).toBeDisabled()
 
   await fillLotsStep()
   await continueTo('Planned shifts')

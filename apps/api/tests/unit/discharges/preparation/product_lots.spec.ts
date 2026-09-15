@@ -2,7 +2,7 @@ import app from '@adonisjs/core/services/app'
 import { test } from '@japa/runner'
 import { errors } from '@vinejs/vine'
 
-import AddProductLotUseCase from '#discharges/product_lots/add_product_lot_use_case'
+import AddProductLotsUseCase from '#discharges/product_lots/add_product_lots_use_case'
 import CorrectProductLotUseCase from '#discharges/product_lots/correct_product_lot_use_case'
 import RemoveProductLotUseCase from '#discharges/product_lots/remove_product_lot_use_case'
 import {
@@ -26,6 +26,8 @@ const NEW_CUSTOMER_ID = '77777777-7777-4777-8777-777777777777'
 type StubOptions = {
   status?: Discharge['status'] | null
   lots?: Array<{ id: string; customerId: string; productName: string }>
+  unavailableCustomerIds?: string[]
+  insertOutcome?: 'WRITTEN' | 'DUPLICATE_LOT_IDENTITY'
   hasDoorAssignments?: boolean
   deleteOutcome?: 'DELETED' | 'HAS_DOOR_ASSIGNMENTS'
 }
@@ -36,6 +38,8 @@ function stubRepositories({
     { id: WHEAT_ID, customerId: CARGILL_ID, productName: 'Blé tendre' },
     { id: BARLEY_ID, customerId: SOUFFLET_ID, productName: 'Orge' },
   ],
+  unavailableCustomerIds = [],
+  insertOutcome = 'WRITTEN',
   hasDoorAssignments = false,
   deleteOutcome = 'DELETED',
 }: StubOptions = {}) {
@@ -55,11 +59,18 @@ function stubRepositories({
         },
         lockCustomers: (ids: string[]) => {
           calls.push(`lockCustomers:${ids.join(',')}`)
-          return Promise.resolve(new Map(ids.map((id) => [id, { id, status: 'AVAILABLE' }])))
+          return Promise.resolve(
+            new Map(
+              ids.map((id) => [
+                id,
+                { id, status: unavailableCustomerIds.includes(id) ? 'ARCHIVED' : 'AVAILABLE' },
+              ]),
+            ),
+          )
         },
-        insertProductLot: () => {
-          calls.push('insertProductLot')
-          return Promise.resolve({ kind: 'WRITTEN' })
+        insertProductLots: (command: { productLots: unknown[] }) => {
+          calls.push(`insertProductLots:${command.productLots.length}`)
+          return Promise.resolve({ kind: insertOutcome })
         },
         updateProductLot: () => {
           calls.push('updateProductLot')
@@ -125,12 +136,13 @@ test.group('Product lot use cases', (group) => {
       ['CLOSED', DischargeNotPlannedException],
     ] as const) {
       const { calls } = stubRepositories({ status })
-      const add = await app.container.make(AddProductLotUseCase)
+      const add = await app.container.make(AddProductLotsUseCase)
       const correct = await app.container.make(CorrectProductLotUseCase)
       const remove = await app.container.make(RemoveProductLotUseCase)
 
       await assert.rejects(
-        () => add.handle({ dischargeId: DISCHARGE_ID, ...lotValues(CARGILL_ID, 'Maïs') }),
+        () =>
+          add.handle({ dischargeId: DISCHARGE_ID, productLots: [lotValues(CARGILL_ID, 'Maïs')] }),
         exception,
       )
       await assert.rejects(
@@ -153,30 +165,76 @@ test.group('Product lot use cases', (group) => {
     }
   })
 
-  test('adds a lot with a new customer after locking that customer', async ({ assert }) => {
+  test('adds several lots in one write after locking each customer once', async ({ assert }) => {
     const { calls } = stubRepositories()
-    const add = await app.container.make(AddProductLotUseCase)
+    const add = await app.container.make(AddProductLotsUseCase)
 
-    await add.handle({ dischargeId: DISCHARGE_ID, ...lotValues(NEW_CUSTOMER_ID, 'Maïs') })
+    await add.handle({
+      dischargeId: DISCHARGE_ID,
+      productLots: [
+        lotValues(NEW_CUSTOMER_ID, 'Maïs'),
+        lotValues(CARGILL_ID, 'Colza'),
+        lotValues(NEW_CUSTOMER_ID, 'Orge'),
+      ],
+    })
 
     assert.deepEqual(calls, [
       'lockDischarge',
       'listProductLots',
-      `lockCustomers:${NEW_CUSTOMER_ID}`,
-      'insertProductLot',
+      `lockCustomers:${NEW_CUSTOMER_ID},${CARGILL_ID}`,
+      'insertProductLots:3',
     ])
   })
 
-  test('rejects an added lot sharing an existing identity', async ({ assert }) => {
+  test('rejects lots sharing an identity within the batch before any lock', async ({ assert }) => {
     const { calls } = stubRepositories()
-    const add = await app.container.make(AddProductLotUseCase)
+    const add = await app.container.make(AddProductLotsUseCase)
 
     const issues = await issuesOf(
-      add.handle({ dischargeId: DISCHARGE_ID, ...lotValues(CARGILL_ID, ' BLÉ TENDRE ') }),
+      add.handle({
+        dischargeId: DISCHARGE_ID,
+        productLots: [lotValues(NEW_CUSTOMER_ID, 'Maïs'), lotValues(NEW_CUSTOMER_ID, ' MAÏS ')],
+      }),
     )
 
-    assert.deepEqual(issues, [['productName', 'productLotIdentityUnique']])
-    assert.notInclude(calls, 'insertProductLot')
+    assert.deepEqual(issues, [
+      ['productLots.0.productName', 'productLotIdentityUnique'],
+      ['productLots.1.productName', 'productLotIdentityUnique'],
+    ])
+    assert.deepEqual(calls, [])
+  })
+
+  test('reports every refused lot at its position and writes none', async ({ assert }) => {
+    const { calls } = stubRepositories({ unavailableCustomerIds: [NEW_CUSTOMER_ID] })
+    const add = await app.container.make(AddProductLotsUseCase)
+
+    const issues = await issuesOf(
+      add.handle({
+        dischargeId: DISCHARGE_ID,
+        productLots: [
+          lotValues(SOUFFLET_ID, 'Colza'),
+          lotValues(CARGILL_ID, ' BLÉ TENDRE '),
+          lotValues(NEW_CUSTOMER_ID, 'Maïs'),
+        ],
+      }),
+    )
+
+    assert.deepEqual(issues, [
+      ['productLots.1.productName', 'productLotIdentityUnique'],
+      ['productLots.2.customerId', 'availableCustomer'],
+    ])
+    assert.notInclude(calls, 'insertProductLots:3')
+  })
+
+  test('reports an identity the database refuses on the first lot', async ({ assert }) => {
+    stubRepositories({ insertOutcome: 'DUPLICATE_LOT_IDENTITY' })
+    const add = await app.container.make(AddProductLotsUseCase)
+
+    const issues = await issuesOf(
+      add.handle({ dischargeId: DISCHARGE_ID, productLots: [lotValues(CARGILL_ID, 'Maïs')] }),
+    )
+
+    assert.deepEqual(issues, [['productLots.0.productName', 'productLotIdentityUnique']])
   })
 
   test('corrects a lot without locking its unchanged customer, ignoring its own identity', async ({

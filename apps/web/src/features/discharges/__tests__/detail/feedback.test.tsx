@@ -19,7 +19,8 @@ test('shows a loading state, never an empty detail, while the discharge is obtai
   expect(
     await screen.findByRole('status', { name: 'Loading discharge' }, { timeout: 5000 }),
   ).toBeInTheDocument()
-  expect(screen.queryByRole('region', { name: 'Product lots' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+  expect(screen.queryByRole('region', { name: 'Overview' })).not.toBeInTheDocument()
   expect(
     await screen.findByRole('heading', { level: 1, name: 'MV Ocean Cedar' }, { timeout: 8000 }),
   ).toBeInTheDocument()
@@ -48,21 +49,23 @@ test('offers a retry after a failed retrieval and recovers the discharge', async
 })
 
 test('tells each empty section apart while the rest of the discharge still shows', async () => {
+  const user = userEvent.setup()
   mockDischargeDetail({ details: [buildDischargeDetail(OCEAN_CEDAR)] })
 
   renderDischargeDetail(OCEAN_CEDAR.id)
 
   const overview = await screen.findByRole('region', { name: 'Overview' })
   expect(within(overview).getByText('Quai Est')).toBeInTheDocument()
-  expect(
-    within(screen.getByRole('region', { name: 'Product lots' })).getByText('No product lots'),
-  ).toBeInTheDocument()
-  expect(
-    within(screen.getByRole('region', { name: 'Shifts' })).getByText('No shifts planned'),
-  ).toBeInTheDocument()
-  expect(
-    within(screen.getByRole('region', { name: 'Truck pool' })).getByText('No trucks reserved'),
-  ).toBeInTheDocument()
+
+  for (const [tab, region, empty] of [
+    [/^Product lots/, 'Product lots', 'No product lots'],
+    [/^Truck pool/, 'Truck pool', 'No trucks reserved'],
+    [/^Shifts/, 'Shifts', 'No shifts planned'],
+  ] as const) {
+    await user.click(screen.getByRole('tab', { name: tab }))
+    const section = await screen.findByRole('region', { name: region })
+    expect(within(section).getByText(empty)).toBeInTheDocument()
+  }
 })
 
 test('replaces a stale copy with the current discharge on every visit', {

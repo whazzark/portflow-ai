@@ -1,11 +1,17 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
-import { buildDischargeDetail, buildLot, listedDischarge } from '../support/fixtures'
+import {
+  buildDischargeDetail,
+  buildDoorPeriod,
+  buildLot,
+  listedDischarge,
+} from '../support/fixtures'
 import {
   allowFormJourneyTime,
   mockDischargeCorrections,
-  renderDischargeDetail,
+  openLotMenu,
+  renderDischargeTab,
 } from '../support/test-helpers'
 
 allowFormJourneyTime()
@@ -23,8 +29,8 @@ const PLANNED = buildDischargeDetail(listedDischarge('MV Atlantic Dawn', 'PLANNE
 })
 
 async function openRemoval() {
-  const lots = await screen.findByRole('region', { name: 'Product lots' })
-  fireEvent.click(within(lots).getByRole('button', { name: 'Remove Soufflet Négoce · Orge' }))
+  const menu = await openLotMenu('Soufflet Négoce · Orge')
+  fireEvent.click(within(menu).getByRole('menuitem', { name: 'Remove' }))
 
   return screen.findByRole('alertdialog', { name: 'Remove product lot?' })
 }
@@ -32,7 +38,7 @@ async function openRemoval() {
 test('removes a product lot after confirmation', async () => {
   const state = mockDischargeCorrections({ detail: PLANNED })
 
-  renderDischargeDetail(PLANNED.id)
+  renderDischargeTab(PLANNED.id, 'product-lots')
   const dialog = await openRemoval()
 
   expect(dialog).toHaveTextContent('Soufflet Négoce · Orge')
@@ -40,11 +46,11 @@ test('removes a product lot after confirmation', async () => {
 
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   expect(await screen.findByText('Product lot removed')).toBeInTheDocument()
-  expect(screen.queryByRole('article', { name: 'Soufflet Négoce · Orge' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('rowgroup', { name: 'Soufflet Négoce' })).not.toBeInTheDocument()
   expect(state.lotRequests).toEqual([{ method: 'DELETE', lotId: 'lot-barley' }])
 })
 
-test('keeps the dialog open when the lot has warehouse door assignments', async () => {
+test('keeps the dialog open when the server finds warehouse door assignments', async () => {
   mockDischargeCorrections({
     detail: PLANNED,
     respondToLot: () => ({
@@ -58,7 +64,7 @@ test('keeps the dialog open when the lot has warehouse door assignments', async 
     }),
   })
 
-  renderDischargeDetail(PLANNED.id)
+  renderDischargeTab(PLANNED.id, 'product-lots')
   const dialog = await openRemoval()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Remove' }))
 
@@ -73,18 +79,49 @@ test('keeps the only lot from being removed', async () => {
     detail: { ...PLANNED, productLots: [WHEAT], expectedTonnage: '1000.000' },
   })
 
-  renderDischargeDetail(PLANNED.id)
-  const lots = await screen.findByRole('region', { name: 'Product lots' })
-  const remove = within(lots).getByRole('button', { name: 'Remove Cargill France · Blé tendre' })
+  renderDischargeTab(PLANNED.id, 'product-lots')
+  const menu = await openLotMenu('Cargill France · Blé tendre')
+  const remove = within(menu).getByRole('menuitem', { name: 'Remove' })
 
-  expect(remove).toBeDisabled()
+  expect(remove).toHaveAttribute('aria-disabled', 'true')
   expect(remove).toHaveAccessibleDescription('A discharge needs at least one product lot')
+})
+
+test('keeps a lot that ever had a warehouse door from being removed', async () => {
+  const reason = 'This product lot has warehouse door assignments'
+  const state = mockDischargeCorrections({
+    detail: {
+      ...PLANNED,
+      productLots: [
+        WHEAT,
+        {
+          ...BARLEY,
+          doorAssignments: [buildDoorPeriod({ effectiveTo: '2026-09-09T05:00:00.000Z' })],
+        },
+      ],
+    },
+  })
+
+  renderDischargeTab(PLANNED.id, 'product-lots')
+  const menu = await openLotMenu('Soufflet Négoce · Orge')
+  const remove = within(menu).getByRole('menuitem', { name: 'Remove' })
+
+  expect(remove).toHaveAttribute('aria-disabled', 'true')
+  expect(remove).toHaveAccessibleDescription(reason)
+  // The reason is shown in a tooltip, only once the item is reached.
+  const tooltip = { selector: '[data-slot="tooltip-content"]' }
+  expect(screen.queryByText(reason, tooltip)).not.toBeInTheDocument()
+  fireEvent.focus(remove)
+  expect(await screen.findByText(reason, tooltip)).toBeInTheDocument()
+  fireEvent.click(remove)
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  expect(state.lotRequests).toEqual([])
 })
 
 test('offers no lot action on an active discharge', async () => {
   mockDischargeCorrections({ detail: { ...PLANNED, status: 'ACTIVE' } })
 
-  renderDischargeDetail(PLANNED.id)
+  renderDischargeTab(PLANNED.id, 'product-lots')
   const lots = await screen.findByRole('region', { name: 'Product lots' })
 
   expect(within(lots).queryByRole('button')).not.toBeInTheDocument()

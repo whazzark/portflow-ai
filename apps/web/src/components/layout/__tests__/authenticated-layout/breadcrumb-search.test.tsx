@@ -28,6 +28,19 @@ test("links a nested page's parent crumb back with the search it carries", async
   expect(parent).toHaveAttribute('href', expect.stringContaining('search=Cargill'))
 })
 
+test("never carries the discharge's open section into the parent crumb", async () => {
+  mockDischargeDetail()
+
+  // biome-ignore lint/security/noSecrets: a shared consultation address, not a credential
+  renderDischargeDetail(OCEAN_CEDAR.id, '?status=closed&search=Cargill&tab=shifts')
+  await screen.findByRole('heading', { level: 1, name: 'MV Ocean Cedar' })
+  const breadcrumb = screen.getByRole('navigation', { name: 'breadcrumb' })
+
+  const parent = within(breadcrumb).getByText('Discharges').closest('a')
+  expect(parent).toHaveAttribute('href', expect.stringContaining('status=closed'))
+  expect(parent).not.toHaveAttribute('href', expect.stringContaining('tab='))
+})
+
 test('names the open discharge by its vessel in the breadcrumb', async () => {
   mockDischargeDetail()
 

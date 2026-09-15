@@ -1,13 +1,13 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
-import { ACTIVE_OPERATIONS_LEAD, AVAILABLE_CUSTOMERS } from '../support/fixtures'
+import { ACTIVE_OPERATIONS_LEAD } from '../support/fixtures'
 import {
   allowFormJourneyTime,
   change,
-  chooseOption,
   continueTo,
   fillLotsStep,
+  fillProduct,
   fillValidPreparation,
   fillVesselStep,
   goToStep,
@@ -15,6 +15,7 @@ import {
   mockDischarges,
   mockPreparationOptions,
   openCreationFromList,
+  productRow,
 } from '../support/test-helpers'
 
 allowFormJourneyTime()
@@ -78,7 +79,7 @@ test('explains an invalid quantity, keeping the entered values', async () => {
   await openCreationFromList()
   await fillValidPreparation()
   await goToStep('Product lots')
-  const lot = screen.getByRole('group', { name: 'Product lot 1' })
+  const lot = screen.getByRole('group', { name: 'Customer 1' })
 
   const nextToShifts = screen.getByRole('button', { name: 'Next: Planned shifts' })
 
@@ -97,21 +98,23 @@ test('explains an invalid quantity, keeping the entered values', async () => {
   expect(sent).toHaveLength(0)
 })
 
-test('keeps the lots step closed while two lots share an identity', async () => {
+test('keeps the lots step closed while a customer has a product twice', async () => {
   const { sent } = arrange()
   await openCreationFromList()
   await fillVesselStep()
   await continueTo('Product lots')
   await fillLotsStep()
-  const firstLot = screen.getByRole('group', { name: 'Product lot 1' })
-  const secondLot = screen.getByRole('group', { name: 'Product lot 2' })
-  await chooseOption(secondLot, 'Customer', AVAILABLE_CUSTOMERS[0].companyName)
-  change(within(secondLot).getByRole('textbox', { name: 'Product name' }), ' BLÉ TENDRE ')
+  fireEvent.click(
+    within(screen.getByRole('group', { name: 'Customer 1' })).getByRole('button', {
+      name: 'Add product',
+    }),
+  )
+  fillProduct(productRow(1, 2), ' BLÉ TENDRE ', '10')
 
   const duplicate = 'This customer already has a lot with this product name'
 
-  expect(await within(firstLot).findByText(duplicate)).toBeInTheDocument()
-  expect(within(secondLot).getByText(duplicate)).toBeInTheDocument()
+  expect(await within(productRow(1, 1)).findByText(duplicate)).toBeInTheDocument()
+  expect(within(productRow(1, 2)).getByText(duplicate)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Next: Planned shifts' })).toBeDisabled()
   expect(sent).toHaveLength(0)
 })

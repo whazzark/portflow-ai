@@ -1,7 +1,11 @@
 import type { SessionUser } from '@/features/auth/context/session-context'
 import { CUSTOMERS } from '@/features/customers/__tests__/support/fixtures'
 import type { CustomerDto } from '@/features/customers/types'
-import type { DischargeDetailDto, DischargeDto } from '@/features/discharges/types'
+import type {
+  DischargeDetailDto,
+  DischargeDto,
+  TruckCandidateDto,
+} from '@/features/discharges/types'
 import { DOCKS } from '@/features/docks/__tests__/support/fixtures'
 import type { DockDto } from '@/features/docks/types'
 
@@ -187,9 +191,47 @@ export function buildPoolEntry(overrides: Partial<DetailPoolEntry> = {}): Detail
     transportCompany: { id: 'company-1', name: 'Transports du Port', status: 'AVAILABLE' },
     reservedAt: '2026-09-07T08:00:00.000Z',
     releasedAt: null,
+    otherHoldings: [],
     ...overrides,
   }
 }
+
+export function buildTruckCandidate(overrides: Partial<TruckCandidateDto> = {}): TruckCandidateDto {
+  return {
+    id: 'candidate-1',
+    registration: 'EF-456-GH',
+    transportCompany: { id: 'company-1', name: 'Transports du Port' },
+    otherHoldings: [],
+    ...overrides,
+  }
+}
+
+/** The trucks a planned discharge may reserve, one of them already held by an active discharge. */
+export const TRUCK_CANDIDATES: TruckCandidateDto[] = [
+  buildTruckCandidate({
+    id: 'candidate-cedar',
+    registration: 'CE-101-DR',
+    transportCompany: { id: 'company-atlantic', name: 'Atlantique Transports' },
+    otherHoldings: [
+      { dischargeId: 'discharge-cedar', vesselName: 'MV Ocean Cedar', status: 'ACTIVE' },
+    ],
+  }),
+  buildTruckCandidate({
+    id: 'candidate-loire',
+    registration: 'LO-202-RE',
+    transportCompany: { id: 'company-loire', name: 'Loire Logistique' },
+  }),
+  buildTruckCandidate({
+    id: 'candidate-port',
+    registration: 'PO-303-RT',
+    transportCompany: { id: 'company-1', name: 'Transports du Port' },
+  }),
+  buildTruckCandidate({
+    id: 'candidate-rade',
+    registration: 'RA-404-DE',
+    transportCompany: { id: 'company-1', name: 'Transports du Port' },
+  }),
+]
 
 type DetailShift = DischargeDetailDto['shifts'][number]
 

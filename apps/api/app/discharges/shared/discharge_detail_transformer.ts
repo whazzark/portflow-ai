@@ -1,7 +1,7 @@
 import { BaseTransformer } from '@adonisjs/core/transformers'
 import { Decimal } from 'decimal.js'
 
-import type Discharge from '#models/discharge'
+import type { DischargeDetailRead } from '#discharges/shared/discharge_detail_read'
 
 type Reference<Status extends string> = { id: string; name: string; status: Status }
 
@@ -15,7 +15,7 @@ function toTonnes(value: Decimal) {
   return value.toFixed(3)
 }
 
-export default class DischargeDetailTransformer extends BaseTransformer<Discharge> {
+export default class DischargeDetailTransformer extends BaseTransformer<DischargeDetailRead> {
   /**
    * One discharge as its detail page reads it, for every role alike. Each site reference carries
    * its own label and current status rather than only its identity: an observer cannot list
@@ -23,7 +23,8 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
    * go blank exactly where it was archived.
    */
   toObject() {
-    const discharge = this.pick(this.resource, [
+    const { discharge: resource, otherHoldings } = this.resource
+    const discharge = this.pick(resource, [
       'id',
       'status',
       'vesselName',
@@ -31,14 +32,14 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
       'vesselComment',
       'expectedStartAt',
     ])
-    const expectedTonnage = this.resource.productLots.reduce(
+    const expectedTonnage = resource.productLots.reduce(
       (total, productLot) => total.plus(productLot.expectedQuantityTonnes),
       new Decimal(0),
     )
     // A shift membership stores only the truck; the registration it is known by in this discharge
     // is the one its pool entry captured at reservation.
     const capturedRegistrations = new Map(
-      this.resource.truckAssignments.map((assignment) => [
+      resource.truckAssignments.map((assignment) => [
         assignment.truckId,
         assignment.registrationSnapshot,
       ]),
@@ -49,8 +50,8 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
       // Summed here rather than in the browser: the lots are decimals, and the web has no decimal
       // arithmetic to add them without drifting.
       expectedTonnage: toTonnes(expectedTonnage),
-      dock: toReference(this.resource.dock),
-      productLots: this.resource.productLots.map((productLot) => ({
+      dock: toReference(resource.dock),
+      productLots: resource.productLots.map((productLot) => ({
         id: productLot.id,
         productName: productLot.productName,
         description: productLot.description,
@@ -71,8 +72,9 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
         })),
       })),
       // Every truck ever reserved, held or released. The registration and company are the ones
-      // captured at reservation; only the statuses are current, to mark what has changed since.
-      truckPool: this.resource.truckAssignments.map((assignment) => ({
+      // captured at reservation; only the statuses and the other holdings are current, to mark what
+      // has changed since and which plans compete for the truck.
+      truckPool: resource.truckAssignments.map((assignment) => ({
         id: assignment.id,
         truckId: assignment.truckId,
         registration: assignment.registrationSnapshot,
@@ -84,8 +86,12 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
         },
         reservedAt: assignment.reservedAt,
         releasedAt: assignment.releasedAt,
+        otherHoldings:
+          assignment.releasedAt === null && resource.status !== 'CLOSED'
+            ? (otherHoldings.get(assignment.truckId.toLowerCase()) ?? [])
+            : [],
       })),
-      shifts: this.resource.shifts.map((shift) => ({
+      shifts: resource.shifts.map((shift) => ({
         id: shift.id,
         status: shift.status,
         plannedStartAt: shift.plannedStartAt,

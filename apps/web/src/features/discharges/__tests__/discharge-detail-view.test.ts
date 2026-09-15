@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'vitest'
-
+import { buildDoorPeriod, buildLot } from '@/features/discharges/__tests__/support/fixtures'
 import {
   formatPeriod,
+  formatShiftPeriod,
   formatTonnes,
+  groupLotsByCustomer,
   isInEffect,
   lotDoorNotice,
+  lotRemovalBlock,
   plannedCoverage,
   splitPeriods,
   sumTonnes,
@@ -93,6 +96,22 @@ describe('formatPeriod', () => {
   })
 })
 
+describe('formatShiftPeriod', () => {
+  const local = (day: number, hours: number) => new Date(2026, 9, day, hours).toISOString()
+
+  test('names the day once for a shift within one day', () => {
+    expect(formatShiftPeriod({ plannedStartAt: local(4, 6), plannedEndAt: local(4, 14) })).toBe(
+      'Sun 4 Oct 06:00 – 14:00',
+    )
+  })
+
+  test('names both days for a shift worked past midnight', () => {
+    expect(formatShiftPeriod({ plannedStartAt: local(4, 22), plannedEndAt: local(5, 6) })).toBe(
+      'Sun 4 Oct 22:00 – Mon 5 Oct 06:00',
+    )
+  })
+})
+
 describe('sumTonnes', () => {
   test('adds tonnages exactly, keeping three decimals', () => {
     expect(sumTonnes(['1200.5', '800', '0.001'])).toBe('2000.501')
@@ -126,5 +145,41 @@ describe('plannedCoverage', () => {
   test('has no coverage until one shift has a valid period', () => {
     expect(plannedCoverage([])).toBeNull()
     expect(plannedCoverage([{ plannedStartAt: '2026-10-01T06:00', plannedEndAt: '' }])).toBeNull()
+  })
+})
+
+describe('product lots by customer', () => {
+  const cargill = { id: 'customer-cargill', name: 'Cargill France', status: 'AVAILABLE' as const }
+  const soufflet = { id: 'customer-soufflet', name: 'Soufflet', status: 'AVAILABLE' as const }
+
+  test('keeps the listed order and sums each customer exactly', () => {
+    const groups = groupLotsByCustomer([
+      buildLot({ id: 'a', customer: cargill, expectedQuantityTonnes: '0.100' }),
+      buildLot({
+        id: 'b',
+        customer: cargill,
+        productName: 'Orge',
+        expectedQuantityTonnes: '0.200',
+      }),
+      buildLot({ id: 'c', customer: soufflet, expectedQuantityTonnes: '800.000' }),
+    ])
+
+    expect(
+      groups.map((group) => [group.customer.name, group.lots.map((lot) => lot.id), group.subtotal]),
+    ).toEqual([
+      ['Cargill France', ['a', 'b'], '0.300'],
+      ['Soufflet', ['c'], '800.000'],
+    ])
+  })
+
+  test('says why a lot cannot be removed: the last lot first, then any door it ever had', () => {
+    const withEndedDoor = buildLot({
+      doorAssignments: [buildDoorPeriod({ effectiveTo: '2026-09-09T05:00:00.000Z' })],
+    })
+
+    expect(lotRemovalBlock(buildLot(), 2)).toBeNull()
+    expect(lotRemovalBlock(buildLot(), 1)).toBe('E_DISCHARGE_LAST_PRODUCT_LOT')
+    expect(lotRemovalBlock(withEndedDoor, 1)).toBe('E_DISCHARGE_LAST_PRODUCT_LOT')
+    expect(lotRemovalBlock(withEndedDoor, 2)).toBe('E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS')
   })
 })

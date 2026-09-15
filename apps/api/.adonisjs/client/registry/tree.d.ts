@@ -66,6 +66,14 @@ export interface ApiDefinition {
       update: typeof routes['discharges.product_lots.update']
       destroy: typeof routes['discharges.product_lots.destroy']
     }
+    truckPool: {
+      candidates: typeof routes['discharges.truck_pool.candidates']
+      store: typeof routes['discharges.truck_pool.store']
+      withdraw: typeof routes['discharges.truck_pool.withdraw']
+    }
+    shiftTrucks: {
+      update: typeof routes['discharges.shift_trucks.update']
+    }
   }
   users: {
     eligibleShiftResponsibles: typeof routes['users.eligible_shift_responsibles']

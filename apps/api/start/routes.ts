@@ -107,6 +107,24 @@ router
               })
               .prefix('/:dischargeId/product-lots')
               .as('product_lots')
+            router
+              .group(() => {
+                router
+                  .get('/candidates', [controllers.DischargeTruckPool, 'candidates'])
+                  .as('candidates')
+                router.post('/', [controllers.DischargeTruckPool, 'store']).as('store')
+                router
+                  .post('/withdrawals', [controllers.DischargeTruckPool, 'withdraw'])
+                  .as('withdraw')
+              })
+              .prefix('/:dischargeId/truck-pool')
+              .as('truck_pool')
+            router
+              .put('/:dischargeId/shifts/:shiftId/trucks', [
+                controllers.DischargeShiftTrucks,
+                'update',
+              ])
+              .as('shift_trucks.update')
           })
           .prefix('/discharges')
           .as('discharges')

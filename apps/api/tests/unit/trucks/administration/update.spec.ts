@@ -1,7 +1,9 @@
 import app from '@adonisjs/core/services/app'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { test } from '@japa/runner'
-
+import { DischargeFactory } from '#database/factories/discharge_factory'
+import { DischargeTruckAssignmentFactory } from '#database/factories/discharge_truck_assignment_factory'
+import { DockFactory } from '#database/factories/dock_factory'
 import { TransportCompanyFactory } from '#database/factories/transport_company_factory'
 import { TruckFactory } from '#database/factories/truck_factory'
 import Truck from '#models/truck'
@@ -471,5 +473,52 @@ test.group('UpdateTruckUseCase transport company concurrency', (group) => {
     assert.isTrue(raceInjected)
     assert.equal(updated.transportCompanyId, companyA.id)
     assert.equal(updated.registration, 'RACE-REASSIGN-01')
+  })
+
+  test('refuses the company change when a reservation lands between the usage check and the write', async ({
+    assert,
+  }) => {
+    const companyA = await TransportCompanyFactory.create()
+    const companyB = await TransportCompanyFactory.create()
+    const truck = await TruckFactory.merge({ transportCompanyId: companyA.id }).create()
+    const dock = await DockFactory.create()
+    const discharge = await DischargeFactory.merge({ dockId: dock.id, status: 'PLANNED' }).create()
+    const lucidRepository = await app.container.make(LucidTruckRepository)
+
+    app.container.swap(
+      TruckRepository,
+      () =>
+        ({
+          findById: (id: string) => lucidRepository.findById(id),
+          updateAvailable: async (...args: Parameters<TruckRepository['updateAvailable']>) => {
+            // A planned discharge reserves the truck after the use case found it unused, as a
+            // concurrent reservation would: only the repository's locked re-check can see it.
+            await DischargeTruckAssignmentFactory.merge({
+              dischargeId: discharge.id,
+              truckId: truck.id,
+              registrationSnapshot: truck.registration,
+              transportCompanyId: companyA.id,
+              transportCompanyNameSnapshot: companyA.name,
+            }).create()
+
+            return lucidRepository.updateAvailable(...args)
+          },
+        }) as unknown as TruckRepository,
+    )
+
+    const useCase = await app.container.make(UpdateTruckUseCase)
+
+    await assert.rejects(
+      () =>
+        useCase.handle({
+          id: truck.id,
+          registration: truck.registration,
+          vehicleModel: truck.vehicleModel,
+          capacityTonnes: truck.capacityTonnes.toNumber(),
+          transportCompanyId: companyB.id,
+        }),
+      TruckTransportCompanyLockedException,
+    )
+    assert.equal((await Truck.findOrFail(truck.id)).transportCompanyId, companyA.id)
   })
 })

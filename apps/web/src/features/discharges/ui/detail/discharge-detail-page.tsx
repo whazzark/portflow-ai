@@ -2,19 +2,19 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
+import { tabSearch } from '@/features/discharges/discharge-detail-sections'
 import { canPrepareDischarges } from '@/features/discharges/discharge-permissions'
 import { dischargeQueries } from '@/features/discharges/queries/discharge-queries'
-import { BackToDischargesLink } from '@/features/discharges/ui/detail/back-to-discharges-link'
-import { DischargeIdentityCard } from '@/features/discharges/ui/detail/discharge-identity-card'
-import { DischargeProductLotsCard } from '@/features/discharges/ui/detail/discharge-product-lots-card'
-import { DischargeShiftsCard } from '@/features/discharges/ui/detail/discharge-shifts-card'
-import { DischargeStatusBadge } from '@/features/discharges/ui/detail/discharge-status-badge'
-import { DischargeTruckPoolCard } from '@/features/discharges/ui/detail/discharge-truck-pool-card'
+import type { DischargeDetailTab } from '@/features/discharges/types'
+import { DischargeDetailHeader } from '@/features/discharges/ui/detail/discharge-detail-header'
+import { DischargeDetailTabs } from '@/features/discharges/ui/detail/discharge-detail-tabs'
 
 const dischargeRoute = getRouteApi('/_authenticated/discharges/$dischargeId')
 
 export function DischargeDetailPage() {
   const { dischargeId } = dischargeRoute.useParams()
+  const { tab = 'overview' } = dischargeRoute.useSearch()
+  const navigate = dischargeRoute.useNavigate()
   const dischargeQuery = useQuery(dischargeQueries.detail(dischargeId))
   const discharge = dischargeQuery.data?.data
   const canPrepare = canPrepareDischarges(useAuthenticatedUser())
@@ -27,19 +27,20 @@ export function DischargeDetailPage() {
   // Corrections exist only before the discharge starts; after that, the detail is read-only.
   const canCorrect = canPrepare && discharge.status === 'PLANNED'
 
+  // Pushed, as the list's status tabs are: each section is a place the user can return to.
+  const openTab = (nextTab: DischargeDetailTab) => {
+    void navigate({ search: (previous) => ({ ...previous, ...tabSearch(nextTab) }) })
+  }
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <BackToDischargesLink />
-      {/* Visible, unlike the list's: the breadcrumb names the vessel, but only the heading carries
-          the discharge's status beside it. */}
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-semibold text-2xl">{discharge.vesselName}</h1>
-        <DischargeStatusBadge status={discharge.status} />
-      </div>
-      <DischargeIdentityCard canCorrect={canCorrect} discharge={discharge} />
-      <DischargeProductLotsCard canCorrect={canCorrect} discharge={discharge} />
-      <DischargeShiftsCard discharge={discharge} />
-      <DischargeTruckPoolCard discharge={discharge} />
+      <DischargeDetailHeader discharge={discharge} />
+      <DischargeDetailTabs
+        canCorrect={canCorrect}
+        discharge={discharge}
+        onTabChange={openTab}
+        tab={tab}
+      />
     </div>
   )
 }

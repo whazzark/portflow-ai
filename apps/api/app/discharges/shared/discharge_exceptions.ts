@@ -29,3 +29,15 @@ export class ProductLotHasDoorAssignmentsException extends Exception {
   static code = 'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS'
   static message = 'This product lot has warehouse door assignments'
 }
+
+export class ShiftNotFoundException extends Exception {
+  static status = 404
+  static code = 'E_SHIFT_NOT_FOUND'
+  static message = 'Shift not found'
+}
+
+export class ShiftNotPlannedException extends Exception {
+  static status = 409
+  static code = 'E_SHIFT_NOT_PLANNED'
+  static message = "Only a planned shift's trucks can be selected"
+}

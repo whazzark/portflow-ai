@@ -1,0 +1,308 @@
+openapi: 3.1.0
+info:
+  title: Portflow Discharge Truck Pool Contract
+  version: 1.0.0
+  description: >-
+    The contract introduced by issue 55. It covers reading the trucks a planned discharge may
+    reserve, reserving and withdrawing trucks, and replacing a planned shift's truck selection.
+    Every write answers with the DischargeDetail shape of issue 58 (discharges.show), extended
+    here by otherHoldings on each truck pool entry. Every route requires an ACTIVE operations
+    lead, operations admin, or organization admin (DischargePolicy.update). See research.md
+    Decisions 1 to 8.
+paths:
+  /api/v1/discharges/{dischargeId}/truck-pool/candidates:
+    get:
+      operationId: discharges.truck_pool.candidates
+      summary: List the trucks a planned discharge may reserve
+      description: >-
+        Every AVAILABLE truck of the site that the discharge does not currently hold, ordered by
+        lower-cased registration, then id. A truck held by other planned or active discharges is
+        included, with those discharges in otherHoldings. Archived and suspended trucks are
+        excluded. No pagination and no filter (research.md Decision 2).
+      parameters:
+        - $ref: "#/components/parameters/DischargeIdInCollection"
+      responses:
+        "200":
+          description: The candidates.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/TruckCandidate" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeNotFound" }
+        "409": { $ref: "#/components/responses/DischargeNotPlanned" }
+
+  /api/v1/discharges/{dischargeId}/truck-pool:
+    post:
+      operationId: discharges.truck_pool.store
+      summary: Reserve one or several trucks for a planned discharge
+      description: >-
+        Atomic: every listed truck is held afterwards, or nothing changes. A truck already held by
+        the discharge is left unchanged. A truck whose row for this discharge is released is held
+        again, with its registration, transport company, and reservedAt captured again. A truck
+        held by another planned or active discharge is reserved anyway; exclusivity is enforced
+        when a discharge starts (issue 56). No shift selection changes.
+      parameters:
+        - $ref: "#/components/parameters/DischargeIdInCollection"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TruckIdsBody" }
+      responses:
+        "200":
+          description: The discharge after the reservation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeNotFound" }
+        "409": { $ref: "#/components/responses/DischargeNotPlanned" }
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+          description: >-
+            Shape failures, or rule availableTruck at truckIds.N for a truck that is unknown,
+            ARCHIVED, or SUSPENDED when the reservation is written. Nothing is reserved.
+
+  /api/v1/discharges/{dischargeId}/truck-pool/withdrawals:
+    post:
+      operationId: discharges.truck_pool.withdraw
+      summary: Withdraw one or several trucks from a planned discharge's pool
+      description: >-
+        Atomic. For each listed truck the discharge holds, its reservation is deleted, not
+        released, and its current selection in every PLANNED shift of the discharge is deleted
+        in the same change. A listed truck the discharge does not hold is ignored, so a repeated
+        withdrawal succeeds and changes nothing. Released entries are never touched. Suspended
+        trucks are withdrawn like any other.
+      parameters:
+        - $ref: "#/components/parameters/DischargeIdInCollection"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TruckIdsBody" }
+      responses:
+        "200":
+          description: The discharge after the withdrawal.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeNotFound" }
+        "409": { $ref: "#/components/responses/DischargeNotPlanned" }
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+          description: Shape failures only. Nothing is withdrawn.
+
+  /api/v1/discharges/{dischargeId}/shifts/{shiftId}/trucks:
+    put:
+      operationId: discharges.shift_trucks.update
+      summary: Replace a planned shift's truck selection
+      description: >-
+        truckIds is the complete selection wanted for the shift. Trucks that stay selected keep
+        their selection; removed trucks lose it; added trucks are selected from now. An empty
+        array clears the selection. Other shifts are unchanged. Atomic.
+      parameters:
+        - $ref: "#/components/parameters/DischargeIdInCollection"
+        - $ref: "#/components/parameters/ShiftId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShiftTruckSelectionBody" }
+      responses:
+        "200":
+          description: The discharge after the selection.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: >-
+            E_DISCHARGE_NOT_FOUND for the discharge. E_SHIFT_NOT_FOUND when the shift is unknown,
+            malformed, removed, or belongs to another discharge.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+        "409":
+          description: >-
+            E_DISCHARGE_NOT_PLANNED when the discharge is ACTIVE or CLOSED. E_SHIFT_NOT_PLANNED
+            when the shift of a planned discharge is not PLANNED. Nothing is changed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+          description: >-
+            Shape failures, or at truckIds.N: rule heldTruck when the discharge does not hold
+            the truck (unknown, withdrawn, or only released); rule selectableTruck when the truck
+            is SUSPENDED and was not already selected for this shift. Nothing is changed.
+
+components:
+  parameters:
+    DischargeIdInCollection:
+      name: dischargeId
+      in: path
+      required: true
+      description: A value that is not a UUID gets the same 404 as an unknown UUID.
+      schema: { type: string }
+    ShiftId:
+      name: shiftId
+      in: path
+      required: true
+      description: >-
+        A value that is not a UUID, or a shift of another discharge, gets the same 404 as an
+        unknown UUID.
+      schema: { type: string }
+
+  schemas:
+    TruckIdsBody:
+      type: object
+      additionalProperties: false
+      required: [truckIds]
+      properties:
+        truckIds:
+          type: array
+          minItems: 1
+          maxItems: 500
+          uniqueItems: true
+          items: { type: string, format: uuid }
+
+    ShiftTruckSelectionBody:
+      type: object
+      additionalProperties: false
+      required: [truckIds]
+      properties:
+        truckIds:
+          type: array
+          minItems: 0
+          maxItems: 500
+          uniqueItems: true
+          items: { type: string, format: uuid }
+
+    TruckCandidate:
+      type: object
+      additionalProperties: false
+      required: [id, registration, transportCompany, otherHoldings]
+      properties:
+        id: { type: string, format: uuid }
+        registration:
+          type: string
+          description: The truck's current registration.
+        transportCompany:
+          type: object
+          additionalProperties: false
+          required: [id, name]
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+        otherHoldings:
+          type: array
+          items: { $ref: "#/components/schemas/OtherHolding" }
+
+    OtherHolding:
+      type: object
+      additionalProperties: false
+      required: [dischargeId, vesselName, status]
+      description: >-
+        Another planned or active discharge that currently holds the truck (its assignment has no
+        releasedAt). Lists are ordered ACTIVE first, then by vesselName, then dischargeId.
+      properties:
+        dischargeId: { type: string, format: uuid }
+        vesselName: { type: string }
+        status: { type: string, enum: [PLANNED, ACTIVE] }
+
+    TruckPoolEntryAddition:
+      description: >-
+        Addition to TruckPoolEntry of issue 58, which is otherwise unchanged. otherHoldings lists
+        the other discharges holding the truck while this entry is held on a planned or active
+        discharge; it is an empty array for a released entry and for every entry of a closed
+        discharge. Returned to every active role by discharges.show and by every discharge write.
+      type: object
+      required: [otherHoldings]
+      properties:
+        otherHoldings:
+          type: array
+          items: { $ref: "#/components/schemas/OtherHolding" }
+
+    DischargeDetailEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "../../consult-a-prepared-discharge-in-the-web-workbench/contracts/discharge-detail.openapi.yaml#/components/schemas/DischargeDetail"
+
+    ValidationIssue:
+      type: object
+      required: [field, message, rule]
+      properties:
+        field:
+          type: string
+          examples: ["truckIds", "truckIds.2"]
+        message: { type: string }
+        rule:
+          type: string
+          examples: ["availableTruck", "heldTruck", "selectableTruck", "distinct", "array.minLength"]
+
+    ApiErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+
+  responses:
+    Unauthenticated:
+      description: >-
+        No session, or a session whose user is not ACTIVE. Code E_UNAUTHORIZED_ACCESS. Nothing is
+        changed, and no truck, transport company, or discharge data is returned.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    Forbidden:
+      description: >-
+        An ACTIVE observer. Code E_AUTHORIZATION_FAILURE. Nothing is changed, and the request
+        body is not validated.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    DischargeNotFound:
+      description: No discharge has this identity, or it is malformed. Code E_DISCHARGE_NOT_FOUND.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    DischargeNotPlanned:
+      description: The discharge is ACTIVE or CLOSED. Code E_DISCHARGE_NOT_PLANNED. Nothing is changed.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    ValidationFailed:
+      description: Code E_VALIDATION_ERROR. Nothing is changed.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message, details]
+                properties:
+                  code: { const: E_VALIDATION_ERROR }
+                  message: { type: string }
+                  details:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationIssue" }

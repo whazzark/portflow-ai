@@ -189,7 +189,7 @@ A traceable change of the dock serving an active discharge. Previous rotations r
 _Avoid_: dock edit, shift dock change
 
 **Truck**:
-A vehicle registered for the site, provided by exactly one transport company at a time, and used for rotations during a shift. It is available, suspended, or archived; it leaves the suspended state only by being Returned to Service. A truck can be assigned to at most one planned or active discharge, can have at most one in-progress rotation across the site, and its transport company cannot change while the truck is used by a planned or active discharge.
+A vehicle registered for the site, provided by exactly one transport company at a time, and used for rotations during a shift. It is available, suspended, or archived; it leaves the suspended state only by being Returned to Service. A truck can be held by several planned discharges but by at most one active discharge, which the Discharge Start Confirmation enforces; it can have at most one in-progress rotation across the site, and its transport company cannot change while the truck is used by a planned or active discharge.
 _Avoid_: driver, vehicle
 
 **Suspended Truck**:
@@ -201,8 +201,12 @@ The end of a truck's suspension, restoring its availability for new discharges, 
 _Avoid_: reactivated truck, unsuspended truck, unarchived truck
 
 **Discharge Truck Assignment**:
-The reservation of a truck, its current registration, and its current transport company for one discharge. Each shift uses a subset of the assigned trucks; completing a shift does not release them, and later reference changes do not alter historical assignments.
+The reservation of a truck, its current registration, and its current transport company for one discharge. Each shift uses a subset of the assigned trucks; completing a shift does not release them, and later reference changes do not alter historical assignments. Before the discharge starts, removing a truck is a Truck Pool Withdrawal that deletes the assignment; once active, a release ends it and keeps its history.
 _Avoid_: shift truck ownership, truck availability
+
+**Truck Pool Withdrawal**:
+The removal of a truck from a planned discharge's pool, together with its current selections in the discharge's planned shifts, leaving no released assignment behind.
+_Avoid_: release, unassignment
 
 **Truck Registration**:
 The mandatory, editable business identifier displayed on a truck's registration plate and used by the site to distinguish it from every other available or archived truck. Historical discharge assignments retain the registration captured at reservation time. All trucks use the same registration country in the MVP.

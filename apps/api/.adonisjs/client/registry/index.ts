@@ -264,6 +264,30 @@ const routes = {
     tokens: [{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":0,"val":"product-lots","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['discharges.product_lots.destroy']['types'],
   },
+  'discharges.truck_pool.candidates': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/discharges/:dischargeId/truck-pool/candidates',
+    tokens: [{"old":"/api/v1/discharges/:dischargeId/truck-pool/candidates","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool/candidates","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool/candidates","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool/candidates","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool/candidates","type":0,"val":"truck-pool","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool/candidates","type":0,"val":"candidates","end":""}],
+    types: placeholder as Registry['discharges.truck_pool.candidates']['types'],
+  },
+  'discharges.truck_pool.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/discharges/:dischargeId/truck-pool',
+    tokens: [{"old":"/api/v1/discharges/:dischargeId/truck-pool","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool","type":0,"val":"truck-pool","end":""}],
+    types: placeholder as Registry['discharges.truck_pool.store']['types'],
+  },
+  'discharges.truck_pool.withdraw': {
+    methods: ["POST"],
+    pattern: '/api/v1/discharges/:dischargeId/truck-pool/withdrawals',
+    tokens: [{"old":"/api/v1/discharges/:dischargeId/truck-pool/withdrawals","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool/withdrawals","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool/withdrawals","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool/withdrawals","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool/withdrawals","type":0,"val":"truck-pool","end":""},{"old":"/api/v1/discharges/:dischargeId/truck-pool/withdrawals","type":0,"val":"withdrawals","end":""}],
+    types: placeholder as Registry['discharges.truck_pool.withdraw']['types'],
+  },
+  'discharges.shift_trucks.update': {
+    methods: ["PUT"],
+    pattern: '/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks',
+    tokens: [{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":0,"val":"shifts","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":1,"val":"shiftId","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId/trucks","type":0,"val":"trucks","end":""}],
+    types: placeholder as Registry['discharges.shift_trucks.update']['types'],
+  },
   'users.eligible_shift_responsibles': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/users/eligible-shift-responsibles',

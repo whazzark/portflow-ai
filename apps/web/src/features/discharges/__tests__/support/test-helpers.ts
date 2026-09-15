@@ -4,7 +4,12 @@ import { delay, HttpResponse, http } from 'msw'
 import { afterAll, beforeAll, expect, vi } from 'vitest'
 
 import type { SessionUser } from '@/features/auth/context/session-context'
-import type { DischargeDetailDto, DischargeDto } from '@/features/discharges/types'
+import type {
+  DischargeDetailDto,
+  DischargeDetailTab,
+  DischargeDto,
+  TruckCandidateDto,
+} from '@/features/discharges/types'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
 import {
@@ -16,6 +21,7 @@ import {
   DISCHARGE_DETAILS,
   DISCHARGES,
   ELIGIBLE_RESPONSIBLES,
+  TRUCK_CANDIDATES,
 } from './fixtures'
 
 type MockDischargesOptions = {
@@ -108,6 +114,14 @@ export function renderDischarges(path = '/discharges') {
 
 export function renderDischargeDetail(id: string, search = '') {
   return renderApp(`/discharges/${id}${search}`)
+}
+
+/** A discharge opened on one of its sections, as a shared address names it. */
+export function renderDischargeTab(id: string, tab: DischargeDetailTab, search = '') {
+  const params = new URLSearchParams(search.replace(/^\?/, ''))
+  params.set('tab', tab)
+
+  return renderApp(`/discharges/${id}?${params}`)
 }
 
 export function dischargeTab(name: RegExp | string) {
@@ -372,17 +386,36 @@ export async function fillVesselStep() {
   change(screen.getByLabelText(/^Expected start/), '2026-10-01T06:00')
 }
 
-export async function fillLotsStep() {
-  const firstLot = screen.getByRole('group', { name: 'Product lot 1' })
-  await chooseOption(firstLot, 'Customer', AVAILABLE_CUSTOMERS[0].companyName)
-  change(within(firstLot).getByRole('textbox', { name: 'Product name' }), 'Blé tendre')
-  change(within(firstLot).getByRole('textbox', { name: 'Expected quantity (t)' }), '1200.5')
+/** The product row of a customer block, as `Customer 1` › `Product 1`. */
+export function productRow(block: number, product: number) {
+  const customerBlock = screen.getByRole('group', { name: `Customer ${block}` })
 
-  fireEvent.click(screen.getByRole('button', { name: 'Add product lot' }))
-  const secondLot = await screen.findByRole('group', { name: 'Product lot 2' })
-  await chooseOption(secondLot, 'Customer', AVAILABLE_CUSTOMERS[1].companyName)
-  change(within(secondLot).getByRole('textbox', { name: 'Product name' }), 'Orge')
-  change(within(secondLot).getByRole('textbox', { name: 'Expected quantity (t)' }), '800')
+  return within(customerBlock).getByRole('group', { name: `Product ${product}` })
+}
+
+/** Types a product row's name and expected quantity. */
+export function fillProduct(row: HTMLElement, productName: string, quantity: string) {
+  change(within(row).getByRole('textbox', { name: 'Product name' }), productName)
+  change(within(row).getByRole('textbox', { name: 'Expected quantity (t)' }), quantity)
+}
+
+/** Fills a customer block whose customer and first product are still empty. */
+export async function fillCustomerBlock(
+  block: number,
+  customerName: string,
+  productName: string,
+  quantity: string,
+) {
+  const customerBlock = await screen.findByRole('group', { name: `Customer ${block}` })
+  await chooseOption(customerBlock, 'Customer', customerName)
+  fillProduct(productRow(block, 1), productName, quantity)
+}
+
+export async function fillLotsStep() {
+  await fillCustomerBlock(1, AVAILABLE_CUSTOMERS[0].companyName, 'Blé tendre', '1200.5')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Add customer' }))
+  await fillCustomerBlock(2, AVAILABLE_CUSTOMERS[1].companyName, 'Orge', '800')
 }
 
 export async function fillShiftsStep() {
@@ -407,7 +440,7 @@ export async function fillValidPreparation() {
   await fillShiftsStep()
 }
 
-type DischargeWriteAnswer = { status: number; body: unknown } | 'network-error' | undefined
+export type DischargeWriteAnswer = { status: number; body: unknown } | 'network-error' | undefined
 
 type MockDischargeCorrectionsOptions = {
   user?: SessionUser
@@ -520,8 +553,9 @@ export function mockDischargeCorrections({
       return HttpResponse.json({ data: state.current })
     }),
     http.post(`${API_BASE_URL}/api/v1/discharges/:id/product-lots`, async ({ request }) => {
-      const body = (await request.json()) as Record<string, unknown>
+      const body = (await request.json()) as { productLots: Record<string, unknown>[] }
       state.lotRequests.push({ method: 'POST', body })
+      const requestNumber = state.lotRequests.length
 
       return answer(
         respondToLot?.({ method: 'POST', body }),
@@ -529,7 +563,9 @@ export function mockDischargeCorrections({
           ...state.current,
           productLots: [
             ...state.current.productLots,
-            lotFromBody(`added-lot-${state.lotRequests.length}`, body),
+            ...body.productLots.map((lot, index) =>
+              lotFromBody(`added-lot-${requestNumber}-${index + 1}`, lot),
+            ),
           ],
         }),
         201,
@@ -588,4 +624,181 @@ export function allowFormJourneyTime() {
     vi.resetConfig()
     configure({ asyncUtilTimeout: 3_000 })
   })
+}
+
+type MockTruckPlanningOptions = {
+  user?: SessionUser
+  detail: DischargeDetailDto
+  candidates?: TruckCandidateDto[]
+  /** Decide the answer to the candidates read; by default the candidates are listed. */
+  respondToCandidates?: () => DischargeWriteAnswer
+  /** Decide the answer to a reservation; by default it is applied and returned. */
+  respondToReserve?: (truckIds: string[]) => DischargeWriteAnswer
+  /** Decide the answer to a withdrawal; by default it is applied and returned. */
+  respondToWithdraw?: (truckIds: string[]) => DischargeWriteAnswer
+  /** Decide the answer to a shift selection; by default it is applied and returned. */
+  respondToShiftTrucks?: (shiftId: string, truckIds: string[]) => DischargeWriteAnswer
+}
+
+/**
+ * Serves one discharge's detail and truck candidates, and applies reservations, withdrawals, and
+ * shift selections to that detail as the API would. A test can then tell a detail refreshed from a
+ * write's answer from one fetched again, and replace any answer to reach a refusal.
+ */
+export function mockTruckPlanning({
+  user = ACTIVE_OPERATIONS_LEAD,
+  detail,
+  candidates = TRUCK_CANDIDATES,
+  respondToCandidates,
+  respondToReserve,
+  respondToWithdraw,
+  respondToShiftTrucks,
+}: MockTruckPlanningOptions) {
+  const state = {
+    current: detail,
+    detailRequests: 0,
+    candidateRequests: 0,
+    requests: [] as Array<{
+      kind: 'reserve' | 'withdraw' | 'shiftTrucks'
+      shiftId?: string
+      truckIds: string[]
+    }>,
+  }
+
+  const answer = (outcome: DischargeWriteAnswer, apply: () => DischargeDetailDto) => {
+    if (outcome === 'network-error') {
+      return HttpResponse.error()
+    }
+    if (outcome) {
+      return HttpResponse.json(outcome.body as object, { status: outcome.status })
+    }
+
+    state.current = apply()
+
+    return HttpResponse.json({ data: state.current })
+  }
+
+  const isCurrent = (row: { effectiveTo: string | null }) => row.effectiveTo === null
+  const registrationOf = (truckId: string) =>
+    state.current.truckPool.find((entry) => entry.truckId === truckId)?.registration ?? truckId
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+      state.detailRequests += 1
+
+      return HttpResponse.json({ data: state.current })
+    }),
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id/truck-pool/candidates`, () => {
+      state.candidateRequests += 1
+
+      const outcome = respondToCandidates?.()
+      if (outcome === 'network-error') {
+        return HttpResponse.error()
+      }
+      if (outcome) {
+        return HttpResponse.json(outcome.body as object, { status: outcome.status })
+      }
+
+      const held = new Set(
+        state.current.truckPool
+          .filter((entry) => entry.releasedAt === null)
+          .map((entry) => entry.truckId),
+      )
+
+      return HttpResponse.json({ data: candidates.filter((candidate) => !held.has(candidate.id)) })
+    }),
+    http.post(`${API_BASE_URL}/api/v1/discharges/:id/truck-pool`, async ({ request }) => {
+      const { truckIds } = (await request.json()) as { truckIds: string[] }
+      state.requests.push({ kind: 'reserve', truckIds })
+
+      return answer(respondToReserve?.(truckIds), () => {
+        const reserved = candidates
+          .filter((candidate) => truckIds.includes(candidate.id))
+          .map((candidate) => ({
+            id: `pool-${candidate.id}`,
+            truckId: candidate.id,
+            registration: candidate.registration,
+            truckStatus: 'AVAILABLE' as const,
+            transportCompany: { ...candidate.transportCompany, status: 'AVAILABLE' as const },
+            reservedAt: '2026-09-15T08:00:00.000Z',
+            releasedAt: null,
+            otherHoldings: candidate.otherHoldings,
+          }))
+
+        return { ...state.current, truckPool: [...state.current.truckPool, ...reserved] }
+      })
+    }),
+    http.post(
+      `${API_BASE_URL}/api/v1/discharges/:id/truck-pool/withdrawals`,
+      async ({ request }) => {
+        const { truckIds } = (await request.json()) as { truckIds: string[] }
+        state.requests.push({ kind: 'withdraw', truckIds })
+
+        return answer(respondToWithdraw?.(truckIds), () => ({
+          ...state.current,
+          truckPool: state.current.truckPool.filter(
+            (entry) => entry.releasedAt !== null || !truckIds.includes(entry.truckId),
+          ),
+          shifts: state.current.shifts.map((shift) =>
+            shift.status === 'PLANNED'
+              ? {
+                  ...shift,
+                  trucks: shift.trucks.filter(
+                    (truck) => !isCurrent(truck) || !truckIds.includes(truck.truckId),
+                  ),
+                }
+              : shift,
+          ),
+        }))
+      },
+    ),
+    http.put(
+      `${API_BASE_URL}/api/v1/discharges/:id/shifts/:shiftId/trucks`,
+      async ({ params, request }) => {
+        const { truckIds } = (await request.json()) as { truckIds: string[] }
+        const shiftId = String(params.shiftId)
+        state.requests.push({ kind: 'shiftTrucks', shiftId, truckIds })
+
+        return answer(respondToShiftTrucks?.(shiftId, truckIds), () => ({
+          ...state.current,
+          shifts: state.current.shifts.map((shift) => {
+            if (shift.id !== shiftId) {
+              return shift
+            }
+
+            const kept = shift.trucks.filter(
+              (truck) => !isCurrent(truck) || truckIds.includes(truck.truckId),
+            )
+            const keptIds = new Set(kept.filter(isCurrent).map((truck) => truck.truckId))
+            const added = truckIds
+              .filter((truckId) => !keptIds.has(truckId))
+              .map((truckId) => ({
+                id: `selection-${shiftId}-${truckId}`,
+                truckId,
+                registration: registrationOf(truckId),
+                truckStatus: 'AVAILABLE' as const,
+                effectiveFrom: '2026-09-15T08:00:00.000Z',
+                effectiveTo: null,
+              }))
+
+            return { ...shift, trucks: [...kept, ...added] }
+          }),
+        }))
+      },
+    ),
+  )
+
+  return state
+}
+
+/**
+ * Opens a product lot's menu, named `Customer · Product`, and returns its items. The menu is
+ * portaled out of the table, so its items are queried from `screen`.
+ */
+export async function openLotMenu(lotName: string) {
+  const lots = await screen.findByRole('region', { name: 'Product lots' })
+  fireEvent.click(within(lots).getByRole('button', { name: `Actions for ${lotName}` }))
+
+  return screen.findByRole('menu')
 }
