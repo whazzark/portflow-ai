@@ -6,7 +6,8 @@ import {
   allowFormJourneyTime,
   change,
   mockDischargeCorrections,
-  renderDischargeDetail,
+  openLotMenu,
+  renderDischargeTab,
 } from '../support/test-helpers'
 
 // The lot's customer is not among the available customers the sheet lists.
@@ -26,8 +27,8 @@ const PLANNED = buildDischargeDetail(listedDischarge('MV Atlantic Dawn', 'PLANNE
 })
 
 async function openEdit() {
-  const lots = await screen.findByRole('region', { name: 'Product lots' })
-  fireEvent.click(within(lots).getByRole('button', { name: 'Edit Cargill France · Blé tendre' }))
+  const menu = await openLotMenu('Cargill France · Blé tendre')
+  fireEvent.click(within(menu).getByRole('menuitem', { name: 'Edit' }))
 
   return screen.findByRole('dialog', { name: 'Edit product lot' })
 }
@@ -35,7 +36,7 @@ async function openEdit() {
 test('corrects a product lot, keeping its current customer offered', async () => {
   const state = mockDischargeCorrections({ detail: PLANNED })
 
-  renderDischargeDetail(PLANNED.id)
+  renderDischargeTab(PLANNED.id, 'product-lots')
   const sheet = await openEdit()
 
   expect(within(sheet).getByRole('combobox', { name: 'Customer' })).toHaveValue('Cargill France')
@@ -85,7 +86,7 @@ test('keeps the sheet open on a refused product name', async () => {
     }),
   })
 
-  renderDischargeDetail(PLANNED.id)
+  renderDischargeTab(PLANNED.id, 'product-lots')
   const sheet = await openEdit()
   fireEvent.click(within(sheet).getByRole('button', { name: 'Save' }))
 
@@ -107,7 +108,7 @@ test('closes and refreshes when the lot no longer exists', async () => {
     },
   })
 
-  renderDischargeDetail(PLANNED.id)
+  renderDischargeTab(PLANNED.id, 'product-lots')
   const sheet = await openEdit()
   fireEvent.click(within(sheet).getByRole('button', { name: 'Save' }))
 
@@ -116,8 +117,20 @@ test('closes and refreshes when the lot no longer exists', async () => {
     expect(screen.queryByRole('dialog', { name: 'Edit product lot' })).not.toBeInTheDocument(),
   )
   await waitFor(() =>
-    expect(
-      screen.queryByRole('article', { name: 'Cargill France · Blé tendre' }),
-    ).not.toBeInTheDocument(),
+    expect(screen.queryByRole('rowgroup', { name: 'Cargill France' })).not.toBeInTheDocument(),
   )
+})
+
+test('leaves the lot untouched when the sheet is cancelled', async () => {
+  const state = mockDischargeCorrections({ detail: PLANNED })
+
+  renderDischargeTab(PLANNED.id, 'product-lots')
+  const sheet = await openEdit()
+  change(within(sheet).getByRole('textbox', { name: 'Expected quantity (t)' }), '900')
+  fireEvent.click(within(sheet).getByRole('button', { name: 'Cancel' }))
+
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: 'Edit product lot' })).not.toBeInTheDocument(),
+  )
+  expect(state.lotRequests).toEqual([])
 })

@@ -17,7 +17,7 @@ async function customerField() {
   await screen.findByRole('textbox', { name: 'Vessel name' })
   await fillVesselStep()
   await continueTo('Product lots')
-  const lot = await screen.findByRole('group', { name: 'Product lot 1' })
+  const lot = await screen.findByRole('group', { name: 'Customer 1' })
 
   return within(lot).getByRole('combobox', { name: 'Customer' })
 }
@@ -50,7 +50,7 @@ test('lists every customer from the open button without typing', async () => {
   mockPreparationOptions({ user: ACTIVE_OPERATIONS_LEAD })
   renderCreateDischarge()
   await customerField()
-  const lot = screen.getByRole('group', { name: 'Product lot 1' })
+  const lot = screen.getByRole('group', { name: 'Customer 1' })
 
   fireEvent.click(await within(lot).findByRole('button', { name: 'Show customer options' }))
 

@@ -80,6 +80,7 @@ export const TRANSPORT_COMPANY_FIXTURE_IDS = {
   atlantic: TRANSPORT_COMPANY_FIXTURES[0].id,
   armor: TRANSPORT_COMPANY_FIXTURES[1].id,
   estuaire: TRANSPORT_COMPANY_FIXTURES[2].id,
+  grandOuest: TRANSPORT_COMPANY_FIXTURES[3].id,
   loire: TRANSPORT_COMPANY_FIXTURES[4].id,
   // Registered before this feature: no contact details recorded. Archived.
   noroit: TRANSPORT_COMPANY_FIXTURES[5].id,

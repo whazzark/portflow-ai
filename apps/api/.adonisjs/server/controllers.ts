@@ -5,7 +5,11 @@
 
 export const controllers = {
   Customers: () => import('#controllers/customers_controller'),
+  DischargeCustomerProductLots: () => import('#controllers/discharge_customer_product_lots_controller'),
   DischargeProductLots: () => import('#controllers/discharge_product_lots_controller'),
+  DischargeShiftTrucks: () => import('#controllers/discharge_shift_trucks_controller'),
+  DischargeShifts: () => import('#controllers/discharge_shifts_controller'),
+  DischargeTruckPool: () => import('#controllers/discharge_truck_pool_controller'),
   Discharges: () => import('#controllers/discharges_controller'),
   Docks: () => import('#controllers/docks_controller'),
   Health: () => import('#controllers/health_controller'),

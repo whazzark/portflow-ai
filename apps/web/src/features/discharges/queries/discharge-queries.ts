@@ -9,4 +9,10 @@ export const dischargeQueries = {
   // Refetched on every visit to the creation page: an operations lead's access may have changed.
   eligibleResponsibles: () =>
     tuyauQuery.users.eligibleShiftResponsibles.queryOptions({}, { staleTime: 0 }),
+  // Refetched on every opening: trucks are reserved, suspended, and released by others meanwhile.
+  truckCandidates: (dischargeId: string) =>
+    tuyauQuery.discharges.truckPool.candidates.queryOptions(
+      { params: { dischargeId } },
+      { staleTime: 0 },
+    ),
 }

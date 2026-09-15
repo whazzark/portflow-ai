@@ -107,6 +107,34 @@ router
               })
               .prefix('/:dischargeId/product-lots')
               .as('product_lots')
+            router
+              .group(() => {
+                router
+                  .get('/candidates', [controllers.DischargeTruckPool, 'candidates'])
+                  .as('candidates')
+                router.post('/', [controllers.DischargeTruckPool, 'store']).as('store')
+                router
+                  .post('/withdrawals', [controllers.DischargeTruckPool, 'withdraw'])
+                  .as('withdraw')
+              })
+              .prefix('/:dischargeId/truck-pool')
+              .as('truck_pool')
+            router
+              .put('/:dischargeId/shifts/:shiftId/trucks', [
+                controllers.DischargeShiftTrucks,
+                'update',
+              ])
+              .as('shift_trucks.update')
+            // The router matches whole segments, so this never answers `/shifts/:shiftId/trucks`.
+            router
+              .put('/:dischargeId/shifts/:shiftId', [controllers.DischargeShifts, 'update'])
+              .as('shifts.update')
+            router
+              .patch('/:dischargeId/customers/:customerId/product-lots', [
+                controllers.DischargeCustomerProductLots,
+                'update',
+              ])
+              .as('customer_product_lots.update')
           })
           .prefix('/discharges')
           .as('discharges')

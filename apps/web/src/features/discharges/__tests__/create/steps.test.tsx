@@ -64,7 +64,7 @@ test('keeps every value when moving back and forth', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Back' }))
   await screen.findByRole('heading', { level: 2, name: 'Product lots' })
   expect(
-    within(screen.getByRole('group', { name: 'Product lot 2' })).getByRole('textbox', {
+    within(screen.getByRole('group', { name: 'Customer 2' })).getByRole('textbox', {
       name: 'Product name',
     }),
   ).toHaveValue('Orge')
@@ -112,7 +112,7 @@ test('returns to the step holding a value the API refused', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Create discharge' }))
 
   expect(await screen.findByRole('heading', { level: 2, name: 'Product lots' })).toBeInTheDocument()
-  const secondLot = screen.getByRole('group', { name: 'Product lot 2' })
+  const secondLot = screen.getByRole('group', { name: 'Customer 2' })
   expect(
     await within(secondLot).findByText('This customer is no longer available'),
   ).toBeInTheDocument()

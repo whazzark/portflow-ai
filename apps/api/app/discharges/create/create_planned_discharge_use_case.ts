@@ -5,6 +5,7 @@ import { Decimal } from 'decimal.js'
 import type { DateTime } from 'luxon'
 
 import {
+  ineligibleShiftResponsibleIssue,
   type PreparationIssue,
   throwPreparationIssues,
   unavailableCustomerIssue,
@@ -146,11 +147,7 @@ export default class CreatePlannedDischargeUseCase {
     input.shifts.forEach((shift, index) => {
       const responsible = users.get(shift.responsibleUserId.toLowerCase())
       if (!responsible || !isEligibleShiftResponsible(responsible)) {
-        issues.push({
-          field: `shifts.${index}.responsibleUserId`,
-          rule: 'eligibleShiftResponsible',
-          message: 'This user can no longer be responsible for a shift',
-        })
+        issues.push(ineligibleShiftResponsibleIssue(`shifts.${index}.responsibleUserId`))
       }
     })
 

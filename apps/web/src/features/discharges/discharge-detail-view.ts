@@ -99,6 +99,118 @@ export function formatPlannedTime(iso: string) {
   return PLANNED_TIME.format(new Date(iso))
 }
 
+const SHIFT_DAY = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+})
+const SHIFT_TIME = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+
+/** A local day as the shift calendar and shift names read it: `Sun 4 Oct`. */
+export function formatShiftDay(date: Date) {
+  return SHIFT_DAY.format(date)
+}
+
+/** A shift's time of day, to the minute its planned period is entered with: `06:00`. */
+export function formatShiftTime(iso: string | null) {
+  return iso ? SHIFT_TIME.format(new Date(iso)) : '—'
+}
+
+/**
+ * How a shift is named to users, everywhere it is named: its planned period, with the day once
+ * when the shift starts and ends on the same local day, and on both ends when it runs past midnight.
+ */
+export function formatShiftPeriod(shift: {
+  plannedStartAt: string | null
+  plannedEndAt: string | null
+}) {
+  const { plannedStartAt, plannedEndAt } = shift
+  // The transport types both as nullable, although a planned period always has them.
+  if (!plannedStartAt || !plannedEndAt) {
+    return `${formatDateTime(plannedStartAt)} – ${formatDateTime(plannedEndAt)}`
+  }
+
+  const start = new Date(plannedStartAt)
+  const end = new Date(plannedEndAt)
+  const endTime = formatShiftTime(plannedEndAt)
+  const sameDay = start.toDateString() === end.toDateString()
+
+  return `${formatShiftDay(start)} ${formatShiftTime(plannedStartAt)} – ${sameDay ? endTime : `${formatShiftDay(end)} ${endTime}`}`
+}
+
+type Named = { id: string; name: string }
+
+type ShiftResources = {
+  status: 'PLANNED' | 'ACTIVE' | 'COMPLETED'
+  trucks: Array<{ truckId: string; effectiveTo: string | null }>
+  warehouseDoors: Array<{ warehouseDoor: Named; warehouse: Named; effectiveTo: string | null }>
+  weighingAreas: Array<{ weighingArea: Named; effectiveTo: string | null }>
+}
+
+/**
+ * The distinct trucks, warehouse doors, and weighing areas a shift counts: those in effect, or,
+ * once the shift is finished and every period has ended, those it used. Each keeps the order its
+ * first period comes in.
+ */
+export function shiftResources(shift: ShiftResources) {
+  const distinct = <T extends { effectiveTo: string | null }, R>(
+    periods: T[],
+    idOf: (period: T) => string,
+    pick: (period: T) => R,
+  ) => {
+    const byId = new Map<string, R>()
+    for (const period of periods) {
+      if (
+        (shift.status === 'COMPLETED' || period.effectiveTo === null) &&
+        !byId.has(idOf(period))
+      ) {
+        byId.set(idOf(period), pick(period))
+      }
+    }
+
+    return [...byId.values()]
+  }
+
+  return {
+    truckIds: distinct(
+      shift.trucks,
+      (truck) => truck.truckId,
+      (truck) => truck.truckId,
+    ),
+    warehouseDoors: distinct(
+      shift.warehouseDoors,
+      (membership) => membership.warehouseDoor.id,
+      (membership) => ({
+        name: membership.warehouseDoor.name,
+        warehouse: membership.warehouse.name,
+      }),
+    ),
+    weighingAreas: distinct(
+      shift.weighingAreas,
+      (membership) => membership.weighingArea.id,
+      (membership) => membership.weighingArea.name,
+    ),
+  }
+}
+
+/** How long a shift is planned to last, to the minute: `8 h`, `7 h 30 min`, `45 min`. */
+export function formatShiftDuration(shift: {
+  plannedStartAt: string | null
+  plannedEndAt: string | null
+}) {
+  if (!shift.plannedStartAt || !shift.plannedEndAt) {
+    return null
+  }
+
+  const minutes = Math.round(
+    (Date.parse(shift.plannedEndAt) - Date.parse(shift.plannedStartAt)) / 60_000,
+  )
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+
+  return [hours > 0 && `${hours} h`, rest > 0 && `${rest} min`].filter(Boolean).join(' ')
+}
+
 /**
  * The period a preparation's shifts cover while it is typed: from the earliest start to the latest
  * end among shifts whose period is valid, as instants, or `null` until one is.
@@ -135,4 +247,46 @@ export function formatPeriod(period: Period, dischargeStatus: DischargeStatus) {
   const end = period.effectiveTo === null ? 'end not recorded' : formatDateTime(period.effectiveTo)
 
   return `${formatDateTime(period.effectiveFrom)} – ${end}`
+}
+
+type LotOfCustomer = {
+  customer: { id: string }
+  expectedQuantityTonnes: string
+  doorAssignments: unknown[]
+}
+
+/**
+ * A discharge's lots under each of their customers, in the order the API lists them (customer, then
+ * product), with the exact expected quantity of each customer.
+ */
+export function groupLotsByCustomer<Lot extends LotOfCustomer>(lots: Lot[]) {
+  const groups = new Map<string, { customer: Lot['customer']; lots: Lot[] }>()
+
+  for (const lot of lots) {
+    const group = groups.get(lot.customer.id)
+    if (group) {
+      group.lots.push(lot)
+    } else {
+      groups.set(lot.customer.id, { customer: lot.customer, lots: [lot] })
+    }
+  }
+
+  return [...groups.values()].map((group) => ({
+    ...group,
+    subtotal: sumTonnes(group.lots.map((lot) => lot.expectedQuantityTonnes)) ?? '0.000',
+  }))
+}
+
+export type LotRemovalBlock = 'E_DISCHARGE_LAST_PRODUCT_LOT' | 'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS'
+
+/**
+ * Why a lot cannot be removed, known before asking, in the API's own refusal codes: a discharge
+ * keeps at least one lot, and a lot that ever had a warehouse door keeps its history.
+ */
+export function lotRemovalBlock(lot: LotOfCustomer, lotCount: number): LotRemovalBlock | null {
+  if (lotCount <= 1) {
+    return 'E_DISCHARGE_LAST_PRODUCT_LOT'
+  }
+
+  return lot.doorAssignments.length > 0 ? 'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS' : null
 }

@@ -1,6 +1,6 @@
 import { revalidateLogic } from '@tanstack/react-form'
 import { Link } from '@tanstack/react-router'
-import { PlusIcon, Trash2Icon } from 'lucide-react'
+import { PlusIcon } from 'lucide-react'
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -27,8 +27,9 @@ import {
   createDischargeFormDefaults,
   creationCrossRulesSchema,
   creationFieldNames,
+  creationFieldOf,
   creationStepOf,
-  emptyProductLot,
+  flattenLotGroups,
   isStepComplete,
   nextPlannedShift,
   stepHasErrors,
@@ -43,10 +44,12 @@ import {
   PlannedShiftFields,
 } from '@/features/discharges/ui/preparation/planned-shift-fields'
 import type { PreparationOptions } from '@/features/discharges/ui/preparation/preparation-options'
+import { ProductLotGroupsEditor } from '@/features/discharges/ui/preparation/product-lot-groups-editor'
 import {
-  PRODUCT_LOT_ROW_COLUMNS,
-  ProductLotFields,
-} from '@/features/discharges/ui/preparation/product-lot-fields'
+  ColumnHeaders,
+  RemoveRowButton,
+  RepeatedRow,
+} from '@/features/discharges/ui/preparation/repeated-rows'
 import { resourceFailureTitle, WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
@@ -104,60 +107,6 @@ function SectionCard({
   )
 }
 
-/** Column titles above a list of rows; each field keeps its own label for assistive technologies. */
-function ColumnHeaders({ columns, titles }: { columns: string; titles: string[] }) {
-  return (
-    <div
-      aria-hidden="true"
-      className={`hidden gap-x-3 font-medium text-muted-foreground text-xs md:grid ${columns}`}
-    >
-      {titles.map((title) => (
-        <span key={title}>{title}</span>
-      ))}
-    </div>
-  )
-}
-
-/**
- * One row of an array field. A legend names its fieldset only as its first child, so it stays for
- * assistive technologies; the visible title only appears where rows stack, on narrow screens, where
- * the row's trailing action is lifted beside it rather than left alone on a line of its own.
- */
-function RepeatedRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <fieldset className="relative flex flex-col gap-2 py-3 md:last:pb-0 md:first:pt-0">
-      <legend className="sr-only">{label}</legend>
-      <p aria-hidden="true" className="font-medium text-sm md:hidden">
-        {label}
-      </p>
-      {children}
-    </fieldset>
-  )
-}
-
-function RemoveRowButton({
-  label,
-  canRemove,
-  onRemove,
-}: {
-  label: string
-  canRemove: boolean
-  onRemove: () => void
-}) {
-  return (
-    <Button
-      aria-label={`Remove ${label.toLowerCase()}`}
-      disabled={!canRemove}
-      onClick={onRemove}
-      size="icon"
-      type="button"
-      variant="ghost"
-    >
-      <Trash2Icon aria-hidden="true" />
-    </Button>
-  )
-}
-
 export function CreateDischargeForm({
   docks,
   customers,
@@ -181,7 +130,9 @@ export function CreateDischargeForm({
   // The last refusal, until the next submission attempt. TanStack Form keeps a field's errors only
   // while the field is mounted, so each step applies it again when it opens, and a refused value on
   // a step not on screen is shown as soon as the user reaches it.
-  const lastRefusalRef = useRef<unknown>(null)
+  // The values it refused are kept with it: a lot's position in the refusal is only meaningful
+  // against the customer blocks as they were submitted.
+  const lastRefusalRef = useRef<{ error: unknown; values: CreateDischargeFormValues } | null>(null)
 
   const indexOf = (target: CreationStep) => CREATION_STEPS.findIndex((item) => item.id === target)
   const lastStep = CREATION_STEPS[CREATION_STEPS.length - 1].id
@@ -244,13 +195,13 @@ export function CreateDischargeForm({
           // form level wherever the user is.
           const renderedFields = new Set(creationFieldNames(value))
           const refusedSteps = (refusal.details ?? [])
-            .map((detail) => detail.field.replace(/\.(\d+)(?=\.|$)/g, '[$1]'))
-            .filter((field) => renderedFields.has(field))
+            .map((detail) => creationFieldOf(detail.field, value))
+            .filter((field): field is string => field !== null && renderedFields.has(field))
             .map((field) => indexOf(creationStepOf(field)))
           const target =
             refusedSteps.length > 0 ? CREATION_STEPS[Math.min(...refusedSteps)].id : stepRef.current
 
-          lastRefusalRef.current = error
+          lastRefusalRef.current = { error, values: value }
           if (target === stepRef.current) {
             focusFirstInvalid()
           } else {
@@ -291,7 +242,12 @@ export function CreateDischargeForm({
     // One tick later: the fields of a step just opened validate as they mount, which would wipe a
     // refusal applied in the same commit.
     const timer = setTimeout(() => {
-      applyValidationError(form, lastRefusalRef.current, creationFieldNames(form.state.values))
+      const refusal = lastRefusalRef.current
+      if (refusal) {
+        applyValidationError(form, refusal.error, creationFieldNames(form.state.values), (field) =>
+          creationFieldOf(field, refusal.values),
+        )
+      }
       setTimeout(focus, 0)
     }, 0)
 
@@ -326,54 +282,22 @@ export function CreateDischargeForm({
           )}
 
           {step === 'lots' && (
-            <form.AppField mode="array" name="productLots">
-              {(lots) => (
+            <form.Subscribe selector={(state) => flattenLotGroups(state.values.lotGroups).length}>
+              {(lotCount) => (
                 <SectionCard
-                  count={plural(lots.state.value.length, 'lot')}
+                  count={plural(lotCount, 'lot')}
                   description="Each customer's material the vessel carries, with its expected quantity."
                   headingRef={headingRef}
                   title="Product lots"
                 >
-                  <ColumnHeaders
-                    columns={PRODUCT_LOT_ROW_COLUMNS}
-                    titles={['Customer', 'Product', 'Quantity (t)']}
+                  <ProductLotGroupsEditor
+                    customers={customers}
+                    fields={{ lotGroups: 'lotGroups' }}
+                    form={form}
                   />
-                  <div className="divide-y">
-                    {lots.state.value.map((_, index) => {
-                      const label = `Product lot ${index + 1}`
-
-                      return (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: array fields are addressed by index
-                        <RepeatedRow key={index} label={label}>
-                          <ProductLotFields
-                            customers={customers}
-                            fields={`productLots[${index}]`}
-                            form={form}
-                            layout="row"
-                            trailing={
-                              <RemoveRowButton
-                                canRemove={lots.state.value.length > 1}
-                                label={label}
-                                onRemove={() => lots.removeValue(index)}
-                              />
-                            }
-                          />
-                        </RepeatedRow>
-                      )
-                    })}
-                  </div>
-                  <Button
-                    className="self-start"
-                    onClick={() => lots.pushValue(emptyProductLot())}
-                    type="button"
-                    variant="outline"
-                  >
-                    <PlusIcon aria-hidden="true" />
-                    Add product lot
-                  </Button>
                 </SectionCard>
               )}
-            </form.AppField>
+            </form.Subscribe>
           )}
 
           {step === 'shifts' && (
@@ -386,7 +310,7 @@ export function CreateDischargeForm({
                   title="Planned shifts"
                 >
                   <ColumnHeaders
-                    columns={PLANNED_SHIFT_ROW_COLUMNS}
+                    columns={`md:grid ${PLANNED_SHIFT_ROW_COLUMNS}`}
                     titles={['Planned start', 'Planned end', 'Responsible', 'Duration']}
                   />
                   <div className="divide-y">
@@ -445,9 +369,9 @@ export function CreateDischargeForm({
           <div className="mx-auto flex h-full w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 md:px-6 md:py-0">
             <form.Subscribe
               selector={(state) => ({
-                lots: state.values.productLots.length,
+                lots: flattenLotGroups(state.values.lotGroups).length,
                 tonnage: sumTonnes(
-                  state.values.productLots.map((lot) => lot.expectedQuantityTonnes),
+                  flattenLotGroups(state.values.lotGroups).map((lot) => lot.expectedQuantityTonnes),
                 ),
                 shifts: state.values.shifts.length,
                 coverage: plannedCoverage(state.values.shifts),

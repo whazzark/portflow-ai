@@ -4,7 +4,7 @@ import db from '@adonisjs/lucid/services/db'
 import {
   normalizeProductLot,
   type ProductLotInput,
-} from '#discharges/product_lots/add_product_lot_use_case'
+} from '#discharges/product_lots/product_lot_input'
 import {
   DischargeNotFoundException,
   ProductLotNotFoundException,

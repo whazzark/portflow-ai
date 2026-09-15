@@ -10,6 +10,7 @@ import {
   mockDischarges,
   renderDischargeDetail,
   renderDischarges,
+  renderDischargeTab,
 } from '../support/test-helpers'
 
 const OCEAN_CEDAR = listedDischarge('MV Ocean Cedar', 'ACTIVE')
@@ -54,6 +55,28 @@ test('returns to the same collection through the breadcrumb', { timeout: 15000 }
   await screen.findByRole('table', { name: 'Discharges' }, { timeout: 3000 })
   expect(router.state.location.pathname).toBe('/discharges')
   expect(router.state.location.search).toMatchObject({ search: 'Cargill', status: 'closed' })
+})
+
+test('leaves the open section behind, so the next discharge opens on its overview', {
+  timeout: 15000,
+}, async () => {
+  const user = userEvent.setup()
+  mockDischarges()
+  mockDischargeDetail()
+
+  const { router } = renderDischargeTab(CARGILL_LOIRE_STAR?.id ?? '', 'shifts', '?status=closed')
+  await screen.findByRole('region', { name: 'Shifts' })
+  await user.click(screen.getByRole('link', { name: 'Back to discharges' }))
+
+  const table = await screen.findByRole('table', { name: 'Discharges' }, { timeout: 3000 })
+  expect(router.state.location.search).toMatchObject({ status: 'closed' })
+  expect(router.state.location.searchStr).not.toContain('tab=')
+
+  await user.click(within(table).getAllByRole('link', { name: /^View discharge/ })[0])
+  expect(
+    await screen.findByRole('region', { name: 'Overview' }, { timeout: 3000 }),
+  ).toBeInTheDocument()
+  expect(router.state.location.search).not.toHaveProperty('tab')
 })
 
 test('carries the open discharge in the address, so a reload shows it again', {

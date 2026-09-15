@@ -10,7 +10,7 @@ const DISCHARGE_STATUS_LABELS = {
   PLANNED: 'Planned',
 } as const satisfies Record<DischargeStatus, string>
 
-const SHIFT_STATUS_LABELS = {
+export const SHIFT_STATUS_LABELS = {
   ACTIVE: 'Active',
   COMPLETED: 'Completed',
   PLANNED: 'Planned',

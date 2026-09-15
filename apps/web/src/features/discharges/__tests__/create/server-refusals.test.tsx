@@ -10,6 +10,7 @@ import {
   mockDischarges,
   mockPreparationOptions,
   openCreationFromList,
+  productRow,
 } from '../support/test-helpers'
 
 allowFormJourneyTime()
@@ -45,8 +46,9 @@ test('shows the API refusal under the lot and shift it names, keeping every valu
   await fillValidPreparation()
   fireEvent.click(screen.getByRole('button', { name: 'Create discharge' }))
 
-  // The earliest step holding a refused value opens, with its error in place.
-  const secondLot = await screen.findByRole('group', { name: 'Product lot 2' })
+  // The earliest step holding a refused value opens, with its error in place: the second lot is
+  // the first product of the second customer block.
+  const secondLot = await screen.findByRole('group', { name: 'Customer 2' })
   expect(
     await within(secondLot).findByText('This customer is no longer available'),
   ).toBeInTheDocument()
@@ -98,4 +100,42 @@ test('keeps the values after a failure and resubmits the same creation', async (
   ).toBeInTheDocument()
   expect(sentIds).toHaveLength(2)
   expect(sentIds[1]).toBe(sentIds[0])
+})
+
+test('points a refusal at the product row of a customer holding several lots', async () => {
+  mockDischarges({ user: ACTIVE_OPERATIONS_LEAD })
+  mockPreparationOptions({ user: ACTIVE_OPERATIONS_LEAD })
+  mockCreateDischarge({
+    respond: () =>
+      validationRefusal([
+        {
+          field: 'productLots.2.expectedQuantityTonnes',
+          message: 'This quantity is refused',
+          rule: 'range',
+        },
+      ]),
+  })
+
+  await openCreationFromList()
+  await fillValidPreparation()
+  await goToStep('Product lots')
+  fireEvent.click(
+    within(screen.getByRole('group', { name: 'Customer 1' })).getByRole('button', {
+      name: 'Add product',
+    }),
+  )
+  const added = productRow(1, 2)
+  fireEvent.change(within(added).getByRole('textbox', { name: 'Product name' }), {
+    target: { value: 'Colza' },
+  })
+  fireEvent.change(within(added).getByRole('textbox', { name: 'Expected quantity (t)' }), {
+    target: { value: '10' },
+  })
+  await goToStep('Planned shifts')
+  fireEvent.click(screen.getByRole('button', { name: 'Create discharge' }))
+
+  // Lot 2 (zero-based) is Customer 2's first product, not Customer 1's second one.
+  const refused = await screen.findByText('This quantity is refused')
+  expect(within(productRow(2, 1)).getByText('This quantity is refused')).toBe(refused)
+  expect(within(productRow(1, 2)).queryByText('This quantity is refused')).not.toBeInTheDocument()
 })

@@ -30,10 +30,18 @@ import ShowDischargeUseCase from '#discharges/show/show_discharge_use_case'
 const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000'
 
 async function findDetail(id: string) {
-  return (await app.container.make(DischargeRepository)).findDetail(id)
+  const read = await (await app.container.make(DischargeRepository)).findDetail(id)
+
+  return read?.discharge ?? null
 }
 
 async function showDischarge(id: string) {
+  const { discharge } = await showDetail(id)
+
+  return discharge
+}
+
+async function showDetail(id: string) {
   return (await app.container.make(ShowDischargeUseCase)).handle({ id })
 }
 
@@ -180,7 +188,7 @@ test.group('Discharge detail serialization', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
 
   async function serialize(dischargeId: string) {
-    return new DischargeDetailTransformer(await showDischarge(dischargeId)).toObject()
+    return new DischargeDetailTransformer(await showDetail(dischargeId)).toObject()
   }
 
   test('serializes quantities with three decimals and sums the expected tonnage exactly', async ({
@@ -341,7 +349,7 @@ test.group('Discharge detail shifts', (group) => {
       { shiftId: shift.id, truckId: unpooled.id },
     ]).createMany(2)
 
-    const detail = new DischargeDetailTransformer(await showDischarge(discharge.id)).toObject()
+    const detail = new DischargeDetailTransformer(await showDetail(discharge.id)).toObject()
     const trucks = detail.shifts[0].trucks
 
     const byTruck = new Map(trucks.map((truck) => [truck.truckId, truck]))
@@ -367,7 +375,7 @@ test.group('Discharge detail shifts', (group) => {
       weighingAreaId: weighingArea.id,
     }).create()
 
-    const detail = new DischargeDetailTransformer(await showDischarge(discharge.id)).toObject()
+    const detail = new DischargeDetailTransformer(await showDetail(discharge.id)).toObject()
     const [serialized] = detail.shifts
 
     assert.equal(serialized.status, 'ACTIVE')
@@ -402,7 +410,7 @@ test.group('Discharge detail truck pool', (group) => {
       .merge({ dischargeId: discharge.id, registrationSnapshot: 'BB-200-BB', truckId: third.id })
       .create()
 
-    const detail = new DischargeDetailTransformer(await showDischarge(discharge.id)).toObject()
+    const detail = new DischargeDetailTransformer(await showDetail(discharge.id)).toObject()
 
     assert.deepEqual(
       detail.truckPool.map((entry) => entry.registration),
@@ -426,7 +434,7 @@ test.group('Discharge detail truck pool', (group) => {
       truckId: truck.id,
     }).create()
 
-    const detail = new DischargeDetailTransformer(await showDischarge(discharge.id)).toObject()
+    const detail = new DischargeDetailTransformer(await showDetail(discharge.id)).toObject()
     const [entry] = detail.truckPool
 
     assert.equal(entry.registration, 'OLD-PLATE')
@@ -450,7 +458,7 @@ test.group('Discharge detail truck pool', (group) => {
       truckId: truck.id,
     }).create()
 
-    const detail = new DischargeDetailTransformer(await showDischarge(discharge.id)).toObject()
+    const detail = new DischargeDetailTransformer(await showDetail(discharge.id)).toObject()
     const [entry] = detail.truckPool
 
     assert.equal(entry.truckStatus, 'SUSPENDED')
@@ -508,7 +516,7 @@ test.group('Discharge detail at scale', (group) => {
       shifts.map((shift) => ({ shiftId: shift.id, weighingAreaId: weighingArea.id })),
     ).createMany(40)
 
-    const detail = new DischargeDetailTransformer(await showDischarge(discharge.id)).toObject()
+    const detail = new DischargeDetailTransformer(await showDetail(discharge.id)).toObject()
 
     assert.sameMembers(
       detail.productLots.map((lot) => lot.id),
