@@ -27,6 +27,7 @@ import {
 } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { AddProductLotsSheet } from '@/features/discharges/ui/detail/add-product-lots-sheet'
+import { CustomerProductLotsSheet } from '@/features/discharges/ui/detail/customer-product-lots-sheet'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
 import { EffectivePeriod } from '@/features/discharges/ui/detail/effective-period'
 import { ProductLotRowActions } from '@/features/discharges/ui/detail/product-lot-row-actions'
@@ -96,6 +97,7 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<ProductLot | null>(null)
   const [removing, setRemoving] = useState<ProductLot | null>(null)
+  const [correctingCustomerId, setCorrectingCustomerId] = useState<string | null>(null)
   const tableId = useId()
   const groups = groupLotsByCustomer(discharge.productLots)
   const columnCount = canCorrect ? 4 : 3
@@ -149,7 +151,18 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
                     <TableCell className="text-right font-semibold tabular-nums">
                       {formatTonnes(group.subtotal)}
                     </TableCell>
-                    <TableCell colSpan={columnCount - 2} />
+                    <TableCell className="text-right" colSpan={columnCount - 2}>
+                      {canCorrect && (
+                        <Button
+                          aria-label={`Edit ${group.customer.name}`}
+                          onClick={() => setCorrectingCustomerId(group.customer.id)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          Edit
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                   {group.lots.map((lot) => {
                     const lotName = `${lot.customer.name} · ${lot.productName}`
@@ -222,6 +235,13 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
           lot={editing ?? undefined}
           onOpenChange={(open) => !open && setEditing(null)}
           open={editing !== null}
+        />
+      )}
+      {canCorrect && (
+        <CustomerProductLotsSheet
+          customerId={correctingCustomerId}
+          discharge={discharge}
+          onOpenChange={(open) => !open && setCorrectingCustomerId(null)}
         />
       )}
       {canCorrect && removing && (

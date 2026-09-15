@@ -583,6 +583,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_shifts_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'discharges.customer_product_lots.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/discharges/:dischargeId/customers/:customerId/product-lots'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#discharges/product_lots/product_lot_validator').customerProductLotsCorrectionValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { dischargeId: ParamValue; customerId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#discharges/product_lots/product_lot_validator').customerProductLotsCorrectionValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_customer_product_lots_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_customer_product_lots_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'users.eligible_shift_responsibles': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/users/eligible-shift-responsibles'

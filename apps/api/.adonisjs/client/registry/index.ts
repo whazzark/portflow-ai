@@ -294,6 +294,12 @@ const routes = {
     tokens: [{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":0,"val":"shifts","end":""},{"old":"/api/v1/discharges/:dischargeId/shifts/:shiftId","type":1,"val":"shiftId","end":""}],
     types: placeholder as Registry['discharges.shifts.update']['types'],
   },
+  'discharges.customer_product_lots.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/discharges/:dischargeId/customers/:customerId/product-lots',
+    tokens: [{"old":"/api/v1/discharges/:dischargeId/customers/:customerId/product-lots","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/customers/:customerId/product-lots","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/customers/:customerId/product-lots","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/customers/:customerId/product-lots","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/customers/:customerId/product-lots","type":0,"val":"customers","end":""},{"old":"/api/v1/discharges/:dischargeId/customers/:customerId/product-lots","type":1,"val":"customerId","end":""},{"old":"/api/v1/discharges/:dischargeId/customers/:customerId/product-lots","type":0,"val":"product-lots","end":""}],
+    types: placeholder as Registry['discharges.customer_product_lots.update']['types'],
+  },
   'users.eligible_shift_responsibles': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/users/eligible-shift-responsibles',

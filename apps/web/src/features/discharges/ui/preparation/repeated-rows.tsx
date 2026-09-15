@@ -1,7 +1,8 @@
 import { PlusIcon, Trash2Icon } from 'lucide-react'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { classnames } from '@/libraries/shadcn/helpers'
 
 /** Column titles above a list of rows; each field keeps its own label for assistive technologies. */
@@ -46,18 +47,54 @@ export function RepeatedRow({
   )
 }
 
+/**
+ * A row's remove button. A row that cannot be removed for a reason worth telling keeps the button,
+ * disabled but still focusable and pointable, so the reason shows in a tooltip and is heard with it.
+ */
 export function RemoveRowButton({
   label,
   canRemove,
   onRemove,
+  blockedReason,
 }: {
   label: string
   canRemove: boolean
   onRemove: () => void
+  /** Why the row cannot be removed, when that is worth telling. */
+  blockedReason?: string
 }) {
+  const reasonId = useId()
+  const ariaLabel = `Remove ${label.toLowerCase()}`
+
+  if (blockedReason) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-describedby={reasonId}
+              aria-disabled="true"
+              aria-label={ariaLabel}
+              className="opacity-50"
+              size="icon"
+              type="button"
+              variant="ghost"
+            />
+          }
+        >
+          <Trash2Icon aria-hidden="true" />
+          <span aria-hidden="true" className="sr-only" id={reasonId}>
+            {blockedReason}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="left">{blockedReason}</TooltipContent>
+      </Tooltip>
+    )
+  }
+
   return (
     <Button
-      aria-label={`Remove ${label.toLowerCase()}`}
+      aria-label={ariaLabel}
       disabled={!canRemove}
       onClick={onRemove}
       size="icon"

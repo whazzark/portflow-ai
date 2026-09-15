@@ -22,6 +22,7 @@ import isUuid from '#shared/database/is_uuid'
 import DischargePreparationRepository, {
   type CreatePlannedDischargeCommand,
   type CreatePlannedDischargeResult,
+  type CustomerProductLotsWriteResult,
   type DeleteProductLotResult,
   type LockedTruck,
   type LockedWarehouseDoor,
@@ -31,6 +32,7 @@ import DischargePreparationRepository, {
   type ShiftTruckSelectionWriteResult,
   type TruckReservationWriteResult,
   type UpdateDischargeIdentityCommand,
+  type WriteCustomerProductLotsCorrectionCommand,
   type WritePlannedShiftCorrectionCommand,
   type WriteShiftTruckSelectionCommand,
   type WriteTruckReservationsCommand,
@@ -618,6 +620,92 @@ export default class LucidDischargePreparationRepository extends DischargePrepar
     } catch (error) {
       await savepoint.rollback()
 
+      if (isForeignKeyViolation(error)) {
+        return { kind: 'HAS_DOOR_ASSIGNMENTS' }
+      }
+
+      throw error
+    }
+  }
+
+  async listLotIdsWithDoorAssignments(productLotIds: string[], client: TransactionClientContract) {
+    const ids = lockableIds(productLotIds)
+    if (ids.length === 0) {
+      return new Set<string>()
+    }
+
+    const assignments = await WarehouseDoorProductLotAssignment.query({ client })
+      .whereIn('productLotId', ids)
+      .select('productLotId')
+
+    return new Set(assignments.map((assignment) => assignment.productLotId.toLowerCase()))
+  }
+
+  async writeCustomerProductLotsCorrection(
+    command: WriteCustomerProductLotsCorrectionCommand,
+    client: TransactionClientContract,
+  ): Promise<CustomerProductLotsWriteResult> {
+    const dischargeId = command.dischargeId.toLowerCase()
+    const savepoint = await client.transaction()
+
+    try {
+      if (command.removals.length > 0) {
+        await ProductLot.query({ client: savepoint })
+          .whereIn(
+            'id',
+            command.removals.map((id) => id.toLowerCase()),
+          )
+          .where('dischargeId', dischargeId)
+          .delete()
+      }
+
+      // The identity index is checked row by row: a lot taking a name another lot of the change
+      // gives up must not meet it. Parked under its own id, no lot holds a name the change assigns.
+      for (const correction of command.corrections.filter((lot) => lot.identityChanges)) {
+        const productLotId = correction.productLotId.toLowerCase()
+
+        await ProductLot.query({ client: savepoint })
+          .where('id', productLotId)
+          .where('dischargeId', dischargeId)
+          .update({ productName: productLotId })
+      }
+
+      for (const correction of command.corrections) {
+        await ProductLot.query({ client: savepoint })
+          .where('id', correction.productLotId.toLowerCase())
+          .where('dischargeId', dischargeId)
+          .update({
+            customerId: correction.customerId.toLowerCase(),
+            productName: correction.productName,
+            expectedQuantityTonnes: correction.expectedQuantityTonnes.toString(),
+            description: correction.description,
+            updatedAt: DateTime.utc().toSQL({ includeOffset: false }),
+          })
+      }
+
+      if (command.insertions.length > 0) {
+        await ProductLot.createMany(
+          command.insertions.map((productLot) => ({
+            dischargeId,
+            customerId: productLot.customerId.toLowerCase(),
+            productName: productLot.productName,
+            expectedQuantityTonnes: productLot.expectedQuantityTonnes,
+            description: productLot.description,
+          })),
+          { client: savepoint },
+        )
+      }
+
+      await this.touchDischarge(dischargeId, savepoint)
+      await savepoint.commit()
+
+      return { kind: 'WRITTEN' }
+    } catch (error) {
+      await savepoint.rollback()
+
+      if (isDuplicateLotIdentity(error)) {
+        return { kind: 'DUPLICATE_LOT_IDENTITY' }
+      }
       if (isForeignKeyViolation(error)) {
         return { kind: 'HAS_DOOR_ASSIGNMENTS' }
       }

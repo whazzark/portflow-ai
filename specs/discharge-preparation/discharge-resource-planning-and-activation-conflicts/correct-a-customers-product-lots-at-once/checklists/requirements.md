@@ -38,5 +38,11 @@
 - The Assumptions section names the reuse of the existing customer-block editor: it is kept as a
   product-level assumption (same entry and feedback behavior as adding lots), not as an
   implementation choice.
+- Implemented on 2026-09-15. Deviations from `tasks.md`, recorded there: the new web adapters and
+  their tests live in their own files (`customer-lots-correction.ts`,
+  `customer-product-lots-schema.test.ts`), and the US2 web assertions sit in
+  `correct-customer-product-lots.test.tsx`, to stay clear of concurrent shift work on
+  `discharge-detail-view.ts` and its tests. A name clash is shown on each clashing row, as the API
+  reports it.
 - Delivered under GH-55 on its branch, by decision of 2026-09-15, rather than under an issue of its
   own.

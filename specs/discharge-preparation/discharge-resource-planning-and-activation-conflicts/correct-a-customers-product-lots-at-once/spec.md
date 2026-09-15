@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-15
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Correct all the product lots of one customer at once on a planned
 discharge. Today, on a planned discharge's Product lots tab, an operations lead or administrator

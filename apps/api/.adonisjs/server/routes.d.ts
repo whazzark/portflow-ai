@@ -52,6 +52,7 @@ export type ScannedRoutes = {
     'discharges.truck_pool.withdraw': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'discharges.shift_trucks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'shiftId': ParamValue} }
     'discharges.shifts.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'shiftId': ParamValue} }
+    'discharges.customer_product_lots.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'customerId': ParamValue} }
     'users.eligible_shift_responsibles': { paramsTuple?: []; params?: {} }
     'users.index': { paramsTuple?: []; params?: {} }
     'users.store': { paramsTuple?: []; params?: {} }
@@ -200,6 +201,7 @@ export type ScannedRoutes = {
     'trucks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'discharges.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'discharges.product_lots.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'id': ParamValue} }
+    'discharges.customer_product_lots.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'customerId': ParamValue} }
     'users.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.change_role': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'docks.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

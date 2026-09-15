@@ -10,6 +10,7 @@ export const STALE_DETAIL_CODES = new Set([
   'E_DISCHARGE_NOT_FOUND',
   'E_PRODUCT_LOT_NOT_FOUND',
   'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS',
+  'E_DISCHARGE_LAST_PRODUCT_LOT',
   'E_SHIFT_NOT_FOUND',
   'E_SHIFT_NOT_PLANNED',
 ])
@@ -74,6 +75,22 @@ export function useDischargeMutations() {
     }),
   )
 
+  const correctCustomerLots = useMutation(
+    tuyauQuery.discharges.customerProductLots.update.mutationOptions({
+      onSuccess: (response) => applyDetail(response),
+      onError: async (error, variables) => {
+        const dischargeId = String(variables.params.dischargeId)
+        await refreshAfterStaleRefusal(error, dischargeId)
+        // A removal refused for a door assigned meanwhile: the detail on screen is stale.
+        if (parseApiError(error).code === 'E_VALIDATION_ERROR') {
+          await queryClient.invalidateQueries({
+            queryKey: dischargeQueries.detail(dischargeId).queryKey,
+          })
+        }
+      },
+    }),
+  )
+
   /** Candidates depend on the pool: a reserved or withdrawn truck enters or leaves the offer. */
   const refreshCandidates = (dischargeId: string) =>
     queryClient.invalidateQueries({
@@ -130,6 +147,7 @@ export function useDischargeMutations() {
     addLots,
     correctLot,
     removeLot,
+    correctCustomerLots,
     reserveTrucks,
     withdrawTrucks,
     correctShift,

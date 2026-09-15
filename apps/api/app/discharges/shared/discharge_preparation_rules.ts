@@ -24,7 +24,7 @@ type PlannedPeriod = { plannedStartAt: DateTime; plannedEndAt: DateTime }
 const DUPLICATE_LOT_MESSAGE = 'This customer already has a lot with this product name'
 
 /** A lot is identified by its customer and its product name, whatever its case or spacing. */
-function lotIdentityKey(lot: LotIdentity) {
+export function lotIdentityKey(lot: LotIdentity) {
   return JSON.stringify([lot.customerId.toLowerCase(), lot.productName.trim().toLowerCase()])
 }
 

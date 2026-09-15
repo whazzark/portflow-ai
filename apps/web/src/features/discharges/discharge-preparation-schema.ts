@@ -480,6 +480,120 @@ export function productLotFormValues(lot: DetailLot): ProductLotFormValues {
   }
 }
 
+/**
+ * One row of a customer's correction: a product line, and the lot it corrects, or `null` for a lot
+ * the correction adds. The lot identity is carried, never rendered.
+ */
+export const correctionLineSchema = productLineSchema.extend({ lotId: z.string().nullable() })
+
+/** Each value of a customer's lots corrected at once, on its own. */
+export const customerProductLotsFieldsSchema = z.object({
+  customerId: requiredText('Customer is required.'),
+  products: z.array(correctionLineSchema),
+  removedProductLotIds: z.array(z.string()),
+})
+
+export type CorrectionLineFormValues = z.input<typeof correctionLineSchema>
+export type CustomerProductLotsFormValues = z.input<typeof customerProductLotsFieldsSchema>
+
+export function emptyCorrectionLine(): CorrectionLineFormValues {
+  return { ...emptyProductLine(), lotId: null }
+}
+
+/** A customer's correction as it opens: its lots in the order the detail lists them. */
+export function customerProductLotsFormValues(group: {
+  customer: { id: string }
+  lots: DetailLot[]
+}): CustomerProductLotsFormValues {
+  return {
+    customerId: group.customer.id,
+    products: group.lots.map((lot) => ({
+      lotId: lot.id,
+      productName: lot.productName,
+      expectedQuantityTonnes: lot.expectedQuantityTonnes,
+      description: lot.description ?? '',
+    })),
+    removedProductLotIds: [],
+  }
+}
+
+/** Rows keep their order, so `productLots.N` in a refusal is the form's row `N`. */
+export function toCustomerProductLotsBody(values: CustomerProductLotsFormValues) {
+  return {
+    customerId: values.customerId,
+    productLots: values.products.map(({ lotId, ...line }) => {
+      const { customerId: _customerId, ...lot } = toProductLotBody({ ...line, customerId: '' })
+
+      return lotId ? { id: lotId, ...lot } : lot
+    }),
+    removedProductLotIds: values.removedProductLotIds,
+  }
+}
+
+const CORRECTION_API_FIELD =
+  /^productLots\.(\d+)\.(productName|expectedQuantityTonnes|description)$/
+
+/**
+ * The correction field an API refusal points at, or `null` when it names none of them, such as a
+ * removed lot, so it is announced at form level rather than lost.
+ */
+export function customerProductLotsFieldOf(apiField: string) {
+  if (apiField === 'customerId') {
+    return 'customerId'
+  }
+
+  const match = CORRECTION_API_FIELD.exec(apiField)
+
+  return match ? `products[${match[1]}].${match[2]}` : null
+}
+
+/**
+ * The rules across a customer's corrected lots: no two rows, nor a row and one of `otherLots` (the
+ * discharge's lots outside the correction), share an identity under the chosen customer. Two rows
+ * swapping their names pass, as the API judges the lots as they are once corrected.
+ */
+export function customerProductLotsCrossRulesSchema(otherLots: LotIdentity[]) {
+  return z.custom<CustomerProductLotsFormValues>().superRefine((values, context) => {
+    if (values.products.length === 0 && otherLots.length === 0) {
+      context.addIssue({ code: 'custom', message: 'Add at least one product.', path: ['products'] })
+    }
+
+    const rows = values.products
+      .map((product, index) => ({
+        key: lotIdentityKey({ customerId: values.customerId, productName: product.productName }),
+        index,
+        named: values.customerId !== '' && product.productName.trim() !== '',
+      }))
+      .filter((row) => row.named)
+    const keyCounts = new Map<string, number>()
+    for (const key of [...rows.map((row) => row.key), ...otherLots.map(lotIdentityKey)]) {
+      keyCounts.set(key, (keyCounts.get(key) ?? 0) + 1)
+    }
+
+    for (const row of rows) {
+      if ((keyCounts.get(row.key) ?? 0) > 1) {
+        context.addIssue({
+          code: 'custom',
+          message: 'This customer already has a lot with this product name',
+          path: ['products', row.index, 'productName'],
+        })
+      }
+    }
+  })
+}
+
+/** Every field path a customer's correction renders for these values. */
+export function customerProductLotsFieldNames(values: CustomerProductLotsFormValues) {
+  return [
+    'customerId',
+    ...values.products.flatMap((_, index) =>
+      ['productName', 'expectedQuantityTonnes', 'description'].map(
+        (key) => `products[${index}].${key}`,
+      ),
+    ),
+  ]
+}
+
 /** A planned shift corrected at once: its period, its responsible, and the resources it uses. */
 export const shiftCorrectionFieldsSchema = plannedShiftSchema.extend({
   truckIds: z.array(z.string()),

@@ -457,6 +457,17 @@ type MockDischargeCorrectionsOptions = {
     lotId?: string
     body?: Record<string, unknown>
   }) => DischargeWriteAnswer
+  /** Decide the answer to a customer's lots corrected at once; by default it is applied. */
+  respondToCustomerLots?: (change: {
+    customerId: string
+    body: CustomerLotsBody
+  }) => DischargeWriteAnswer
+}
+
+type CustomerLotsBody = {
+  customerId: string
+  productLots: Array<Record<string, unknown> & { id?: string }>
+  removedProductLotIds: string[]
 }
 
 /**
@@ -469,12 +480,14 @@ export function mockDischargeCorrections({
   docksDelayMs = 0,
   respondToIdentity,
   respondToLot,
+  respondToCustomerLots,
 }: MockDischargeCorrectionsOptions) {
   const state = {
     current: detail,
     detailRequests: 0,
     identityRequests: [] as Record<string, unknown>[],
     lotRequests: [] as Array<{ method: string; lotId?: string; body?: Record<string, unknown> }>,
+    customerLotRequests: [] as Array<{ customerId: string; body: CustomerLotsBody }>,
   }
 
   const answer = (
@@ -573,6 +586,48 @@ export function mockDischargeCorrections({
         201,
       )
     }),
+    http.patch(
+      `${API_BASE_URL}/api/v1/discharges/:id/customers/:customerId/product-lots`,
+      async ({ params, request }) => {
+        const body = (await request.json()) as CustomerLotsBody
+        const customerId = String(params.customerId)
+        state.customerLotRequests.push({ customerId, body })
+        const requestNumber = state.customerLotRequests.length
+
+        return answer(respondToCustomerLots?.({ customerId, body }), () => {
+          const withCustomer = (lot: ReturnType<typeof lotFromBody>) => {
+            const current = state.current.productLots.find(
+              (candidate) => candidate.customer.id === body.customerId,
+            )
+
+            return current && !AVAILABLE_CUSTOMERS.some((known) => known.id === body.customerId)
+              ? { ...lot, customer: current.customer }
+              : lot
+          }
+          const corrected = state.current.productLots
+            .filter((lot) => !body.removedProductLotIds.includes(lot.id))
+            .map((lot) => {
+              const entry = body.productLots.find((candidate) => candidate.id === lot.id)
+
+              return entry
+                ? withCustomer(lotFromBody(lot.id, { ...entry, customerId: body.customerId }))
+                : lot
+            })
+          const added = body.productLots
+            .filter((entry) => entry.id === undefined)
+            .map((entry, index) =>
+              withCustomer(
+                lotFromBody(`lot-added-${requestNumber}-${index + 1}`, {
+                  ...entry,
+                  customerId: body.customerId,
+                }),
+              ),
+            )
+
+          return { ...state.current, productLots: [...corrected, ...added] }
+        })
+      },
+    ),
     http.patch(
       `${API_BASE_URL}/api/v1/discharges/:id/product-lots/:lotId`,
       async ({ params, request }) => {

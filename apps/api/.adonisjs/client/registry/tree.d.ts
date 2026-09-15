@@ -77,6 +77,9 @@ export interface ApiDefinition {
     shifts: {
       update: typeof routes['discharges.shifts.update']
     }
+    customerProductLots: {
+      update: typeof routes['discharges.customer_product_lots.update']
+    }
   }
   users: {
     eligibleShiftResponsibles: typeof routes['users.eligible_shift_responsibles']

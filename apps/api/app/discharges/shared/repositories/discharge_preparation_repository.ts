@@ -54,6 +54,19 @@ export type ProductLotWriteResult = { kind: 'WRITTEN' } | { kind: 'DUPLICATE_LOT
 
 export type DeleteProductLotResult = { kind: 'DELETED' } | { kind: 'HAS_DOOR_ASSIGNMENTS' }
 
+/** One customer's lots corrected at once, as `planCustomerProductLotsCorrection` decided them. */
+export type WriteCustomerProductLotsCorrectionCommand = {
+  dischargeId: string
+  removals: string[]
+  corrections: Array<ProductLotValues & { productLotId: string; identityChanges: boolean }>
+  insertions: ProductLotValues[]
+}
+
+export type CustomerProductLotsWriteResult =
+  | { kind: 'WRITTEN' }
+  | { kind: 'DUPLICATE_LOT_IDENTITY' }
+  | { kind: 'HAS_DOOR_ASSIGNMENTS' }
+
 /** A truck read under its share lock, with the company whose name a reservation captures. */
 export type LockedTruck = {
   id: string
@@ -331,4 +344,22 @@ export default abstract class DischargePreparationRepository {
     command: { dischargeId: string; productLotId: string },
     client: TransactionClientContract,
   ): Promise<DeleteProductLotResult>
+
+  /** The lots among `productLotIds` that have ever had a warehouse door, lower-cased. */
+  abstract listLotIdsWithDoorAssignments(
+    productLotIds: string[],
+    client: TransactionClientContract,
+  ): Promise<Set<string>>
+
+  /**
+   * Writes one customer's lot correction in one savepoint, in an order that lets the final state
+   * pass the identity index even though it is checked row by row: removed lots are deleted, lots
+   * whose identity changes are parked under their own id, every corrected lot gets its final
+   * values, and added lots are inserted. A duplicate identity or a door assignment the discharge's
+   * lock did not keep out comes back as an outcome, leaving the caller's transaction usable.
+   */
+  abstract writeCustomerProductLotsCorrection(
+    command: WriteCustomerProductLotsCorrectionCommand,
+    client: TransactionClientContract,
+  ): Promise<CustomerProductLotsWriteResult>
 }

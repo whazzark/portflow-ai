@@ -129,6 +129,12 @@ router
             router
               .put('/:dischargeId/shifts/:shiftId', [controllers.DischargeShifts, 'update'])
               .as('shifts.update')
+            router
+              .patch('/:dischargeId/customers/:customerId/product-lots', [
+                controllers.DischargeCustomerProductLots,
+                'update',
+              ])
+              .as('customer_product_lots.update')
           })
           .prefix('/discharges')
           .as('discharges')

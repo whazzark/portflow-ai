@@ -3,6 +3,7 @@ import { test } from '@japa/runner'
 import { errors } from '@vinejs/vine'
 
 import AddProductLotsUseCase from '#discharges/product_lots/add_product_lots_use_case'
+import CorrectCustomerProductLotsUseCase from '#discharges/product_lots/correct_customer_product_lots_use_case'
 import CorrectProductLotUseCase from '#discharges/product_lots/correct_product_lot_use_case'
 import RemoveProductLotUseCase from '#discharges/product_lots/remove_product_lot_use_case'
 import {
@@ -30,6 +31,8 @@ type StubOptions = {
   insertOutcome?: 'WRITTEN' | 'DUPLICATE_LOT_IDENTITY'
   hasDoorAssignments?: boolean
   deleteOutcome?: 'DELETED' | 'HAS_DOOR_ASSIGNMENTS'
+  lotIdsWithDoors?: string[]
+  customerWriteOutcome?: 'WRITTEN' | 'DUPLICATE_LOT_IDENTITY' | 'HAS_DOOR_ASSIGNMENTS'
 }
 
 function stubRepositories({
@@ -42,8 +45,11 @@ function stubRepositories({
   insertOutcome = 'WRITTEN',
   hasDoorAssignments = false,
   deleteOutcome = 'DELETED',
+  lotIdsWithDoors = [],
+  customerWriteOutcome = 'WRITTEN',
 }: StubOptions = {}) {
   const calls: string[] = []
+  const commands: unknown[] = []
 
   app.container.swap(
     DischargePreparationRepository,
@@ -84,6 +90,15 @@ function stubRepositories({
           calls.push('deleteProductLot')
           return Promise.resolve({ kind: deleteOutcome })
         },
+        listLotIdsWithDoorAssignments: (ids: string[]) => {
+          calls.push(`listLotIdsWithDoorAssignments:${ids.join(',')}`)
+          return Promise.resolve(new Set(lotIdsWithDoors.filter((id) => ids.includes(id))))
+        },
+        writeCustomerProductLotsCorrection: (command: unknown) => {
+          calls.push('writeCustomerProductLotsCorrection')
+          commands.push(command)
+          return Promise.resolve({ kind: customerWriteOutcome })
+        },
       }) as unknown as DischargePreparationRepository,
   )
   app.container.swap(
@@ -94,7 +109,7 @@ function stubRepositories({
       }) as unknown as DischargeRepository,
   )
 
-  return { calls }
+  return { calls, commands }
 }
 
 const lotValues = (customerId: string, productName: string) => ({
@@ -338,5 +353,256 @@ test.group('Product lot use cases', (group) => {
       'hasDoorAssignments',
       'deleteProductLot',
     ])
+  })
+})
+
+const correctionEntry = (productName: string, id?: string) => ({
+  ...(id ? { id } : {}),
+  productName,
+  expectedQuantityTonnes: '10',
+  description: null as string | null,
+})
+
+function correction(overrides: Record<string, unknown> = {}) {
+  return {
+    dischargeId: DISCHARGE_ID,
+    customerId: CARGILL_ID,
+    targetCustomerId: CARGILL_ID,
+    productLots: [correctionEntry('Blé tendre', WHEAT_ID)],
+    removedProductLotIds: [],
+    ...overrides,
+  }
+}
+
+test.group('CorrectCustomerProductLotsUseCase', (group) => {
+  group.each.teardown(() => {
+    app.container.restore(DischargePreparationRepository)
+    app.container.restore(DischargeRepository)
+  })
+
+  test("corrects a customer's lots in one write, locking nothing but the discharge", async ({
+    assert,
+  }) => {
+    const { calls, commands } = stubRepositories()
+    const useCase = await app.container.make(CorrectCustomerProductLotsUseCase)
+
+    const detail = await useCase.handle(
+      correction({
+        productLots: [
+          {
+            id: WHEAT_ID.toUpperCase(),
+            productName: '  Blé dur ',
+            expectedQuantityTonnes: '1250.5',
+            description: '   ',
+          },
+        ],
+      }),
+    )
+
+    assert.deepEqual(detail, { id: DISCHARGE_ID } as Discharge)
+    assert.deepEqual(calls, [
+      'lockDischarge',
+      'listProductLots',
+      'writeCustomerProductLotsCorrection',
+    ])
+    const [command] = commands as Array<{
+      dischargeId: string
+      corrections: Array<{
+        productLotId: string
+        productName: string
+        expectedQuantityTonnes: { toFixed: (digits: number) => string }
+        description: string | null
+        identityChanges: boolean
+      }>
+      insertions: unknown[]
+      removals: unknown[]
+    }>
+    assert.equal(command.dischargeId, DISCHARGE_ID)
+    assert.lengthOf(command.corrections, 1)
+    assert.equal(command.corrections[0].productLotId, WHEAT_ID)
+    assert.equal(command.corrections[0].productName, 'Blé dur')
+    assert.equal(command.corrections[0].expectedQuantityTonnes.toFixed(3), '1250.500')
+    assert.isNull(command.corrections[0].description)
+    assert.isTrue(command.corrections[0].identityChanges)
+    assert.deepEqual(command.insertions, [])
+    assert.deepEqual(command.removals, [])
+  })
+
+  test('refuses a correction on an unknown or no longer planned discharge', async ({ assert }) => {
+    for (const [status, exception] of [
+      [null, DischargeNotFoundException],
+      ['ACTIVE', DischargeNotPlannedException],
+    ] as const) {
+      const { calls } = stubRepositories({ status })
+      const useCase = await app.container.make(CorrectCustomerProductLotsUseCase)
+
+      await assert.rejects(() => useCase.handle(correction()), exception)
+      assert.deepEqual(calls, ['lockDischarge'])
+    }
+  })
+
+  test('refuses a lot of another customer as a lot that is not there', async ({ assert }) => {
+    const { calls } = stubRepositories()
+    const useCase = await app.container.make(CorrectCustomerProductLotsUseCase)
+
+    await assert.rejects(
+      () => useCase.handle(correction({ productLots: [correctionEntry('Orge', BARLEY_ID)] })),
+      ProductLotNotFoundException,
+    )
+    assert.notInclude(calls, 'writeCustomerProductLotsCorrection')
+  })
+
+  test('reports the rules a correction breaks, and writes nothing', async ({ assert }) => {
+    const { calls } = stubRepositories({
+      lots: [
+        { id: WHEAT_ID, customerId: CARGILL_ID, productName: 'Blé tendre' },
+        { id: BARLEY_ID, customerId: CARGILL_ID, productName: 'Orge' },
+      ],
+    })
+    const useCase = await app.container.make(CorrectCustomerProductLotsUseCase)
+
+    const issues = await issuesOf(
+      useCase.handle(correction({ productLots: [correctionEntry(' ORGE', WHEAT_ID)] })),
+    )
+
+    assert.deepEqual(issues, [['productLots.0.productName', 'productLotIdentityUnique']])
+    assert.notInclude(calls, 'writeCustomerProductLotsCorrection')
+  })
+
+  test('reports an identity the database refuses on the first lot', async ({ assert }) => {
+    stubRepositories({ customerWriteOutcome: 'DUPLICATE_LOT_IDENTITY' })
+    const useCase = await app.container.make(CorrectCustomerProductLotsUseCase)
+
+    assert.deepEqual(await issuesOf(useCase.handle(correction())), [
+      ['productLots.0.productName', 'productLotIdentityUnique'],
+    ])
+  })
+})
+
+test.group('CorrectCustomerProductLotsUseCase — removals and additions', (group) => {
+  group.each.teardown(() => {
+    app.container.restore(DischargePreparationRepository)
+    app.container.restore(DischargeRepository)
+  })
+
+  const CARGILL_LOTS = [
+    { id: WHEAT_ID, customerId: CARGILL_ID, productName: 'Blé tendre' },
+    { id: BARLEY_ID, customerId: CARGILL_ID, productName: 'Orge' },
+  ]
+
+  test('reads the door assignments of removed lots only, before writing', async ({ assert }) => {
+    const { calls, commands } = stubRepositories({ lots: CARGILL_LOTS })
+    const useCase = await app.container.make(CorrectCustomerProductLotsUseCase)
+
+    await useCase.handle(
+      correction({
+        productLots: [correctionEntry('Blé tendre', WHEAT_ID), correctionEntry('Colza')],
+        removedProductLotIds: [BARLEY_ID],
+      }),
+    )
+
+    assert.deepEqual(calls, [
+      'lockDischarge',
+      'listProductLots',
+      `listLotIdsWithDoorAssignments:${BARLEY_ID}`,
+      'writeCustomerProductLotsCorrection',
+    ])
+    assert.containSubset(commands[0], {
+      removals: [BARLEY_ID],
+      insertions: [{ customerId: CARGILL_ID, productName: 'Colza' }],
+    })
+  })
+
+  test('refuses to leave the discharge without any lot', async ({ assert }) => {
+    const { calls } = stubRepositories({ lots: CARGILL_LOTS })
+    const useCase = await app.container.make(CorrectCustomerProductLotsUseCase)
+
+    await assert.rejects(
+      () =>
+        useCase.handle(
+          correction({ productLots: [], removedProductLotIds: [WHEAT_ID, BARLEY_ID] }),
+        ),
+      LastProductLotException,
+    )
+    assert.notInclude(calls, 'writeCustomerProductLotsCorrection')
+  })
+
+  test('refuses a removal of a lot with door assignments, found by the rules or the write', async ({
+    assert,
+  }) => {
+    stubRepositories({ lots: CARGILL_LOTS, lotIdsWithDoors: [BARLEY_ID] })
+    const assigned = await app.container.make(CorrectCustomerProductLotsUseCase)
+    assert.deepEqual(
+      await issuesOf(assigned.handle(correction({ removedProductLotIds: [BARLEY_ID] }))),
+      [['removedProductLotIds.0', 'removableProductLot']],
+    )
+
+    stubRepositories({ lots: CARGILL_LOTS, customerWriteOutcome: 'HAS_DOOR_ASSIGNMENTS' })
+    const raced = await app.container.make(CorrectCustomerProductLotsUseCase)
+    await assert.rejects(
+      () => raced.handle(correction({ removedProductLotIds: [BARLEY_ID] })),
+      ProductLotHasDoorAssignmentsException,
+    )
+  })
+})
+
+test.group('CorrectCustomerProductLotsUseCase — moves', (group) => {
+  group.each.teardown(() => {
+    app.container.restore(DischargePreparationRepository)
+    app.container.restore(DischargeRepository)
+  })
+
+  test('locks the new customer after the lots, before reading doors and writing', async ({
+    assert,
+  }) => {
+    const { calls, commands } = stubRepositories({
+      lots: [
+        { id: WHEAT_ID, customerId: CARGILL_ID, productName: 'Blé tendre' },
+        { id: BARLEY_ID, customerId: CARGILL_ID, productName: 'Orge' },
+      ],
+    })
+    const useCase = await app.container.make(CorrectCustomerProductLotsUseCase)
+
+    await useCase.handle(
+      correction({
+        targetCustomerId: NEW_CUSTOMER_ID,
+        productLots: [correctionEntry('Blé tendre', WHEAT_ID)],
+        removedProductLotIds: [BARLEY_ID],
+      }),
+    )
+
+    assert.deepEqual(calls, [
+      'lockDischarge',
+      'listProductLots',
+      `lockCustomers:${NEW_CUSTOMER_ID}`,
+      `listLotIdsWithDoorAssignments:${BARLEY_ID}`,
+      'writeCustomerProductLotsCorrection',
+    ])
+    assert.containSubset(commands[0], { corrections: [{ customerId: NEW_CUSTOMER_ID }] })
+  })
+
+  test('locks no customer when the lots stay with theirs, whatever its case', async ({
+    assert,
+  }) => {
+    const { calls } = stubRepositories()
+    const useCase = await app.container.make(CorrectCustomerProductLotsUseCase)
+
+    await useCase.handle(correction({ targetCustomerId: CARGILL_ID.toUpperCase() }))
+
+    assert.notInclude(
+      calls.map((call) => call.split(':')[0]),
+      'lockCustomers',
+    )
+  })
+
+  test('refuses to move the lots to a customer no longer available', async ({ assert }) => {
+    const { calls } = stubRepositories({ unavailableCustomerIds: [NEW_CUSTOMER_ID] })
+    const useCase = await app.container.make(CorrectCustomerProductLotsUseCase)
+
+    assert.deepEqual(
+      await issuesOf(useCase.handle(correction({ targetCustomerId: NEW_CUSTOMER_ID }))),
+      [['customerId', 'availableCustomer']],
+    )
+    assert.notInclude(calls, 'writeCustomerProductLotsCorrection')
   })
 })
