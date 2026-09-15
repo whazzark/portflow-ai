@@ -1,0 +1,372 @@
+openapi: 3.1.0
+info:
+  title: Portflow Discharge Preparation Contract
+  version: 1.0.0
+  description: >-
+    The write contract introduced by issue 53. It covers creating a planned discharge with its
+    product lots and planned shifts, correcting a planned discharge's identity, and adding,
+    correcting, and removing its product lots. It also covers the eligible shift responsibles
+    query. Every discharge write answers with the DischargeDetail shape of issue 58
+    (discharges.show), which is referenced here and unchanged. See research.md Decisions 1 to 9.
+paths:
+  /api/v1/discharges:
+    post:
+      operationId: discharges.store
+      summary: Create a planned discharge with its product lots and planned shifts
+      description: >-
+        Requires an ACTIVE operations lead, operations admin, or organization admin. The discharge
+        and every lot and shift are created atomically in the PLANNED status. The client-supplied
+        id makes the creation idempotent: resubmitting an id that already names a discharge
+        creates nothing and answers 200 with that discharge (research.md Decision 2).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDischargeBody"
+      responses:
+        "201":
+          description: The discharge was created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "200":
+          description: A discharge with this id already exists; it is returned and nothing is created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+
+  /api/v1/discharges/{id}:
+    patch:
+      operationId: discharges.update
+      summary: Correct a planned discharge's vessel description, dock, and expected start
+      description: >-
+        Every field is required. The nullable fields must be sent, explicitly null when cleared.
+        The discharge's status, lots, shifts, truck pool, and door assignments are unchanged. A
+        dock is checked for availability only when it differs from the current one.
+      parameters:
+        - $ref: "#/components/parameters/DischargeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DischargeIdentityBody"
+      responses:
+        "200":
+          description: The corrected discharge.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeNotFound" }
+        "409": { $ref: "#/components/responses/DischargeNotPlanned" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+
+  /api/v1/discharges/{dischargeId}/product-lots:
+    post:
+      operationId: discharges.product_lots.store
+      summary: Add a product lot to a planned discharge
+      parameters:
+        - $ref: "#/components/parameters/DischargeIdInCollection"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductLotBody"
+      responses:
+        "201":
+          description: The discharge with its new lot.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeNotFound" }
+        "409": { $ref: "#/components/responses/DischargeNotPlanned" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+
+  /api/v1/discharges/{dischargeId}/product-lots/{id}:
+    patch:
+      operationId: discharges.product_lots.update
+      summary: Correct a product lot of a planned discharge
+      description: >-
+        The lot keeps its identity and its warehouse door assignments. A customer is checked for
+        availability only when it differs from the lot's current one.
+      parameters:
+        - $ref: "#/components/parameters/DischargeIdInCollection"
+        - $ref: "#/components/parameters/ProductLotId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductLotBody"
+      responses:
+        "200":
+          description: The discharge with its corrected lot.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeOrProductLotNotFound" }
+        "409": { $ref: "#/components/responses/DischargeNotPlanned" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+    delete:
+      operationId: discharges.product_lots.destroy
+      summary: Remove a product lot from a planned discharge
+      parameters:
+        - $ref: "#/components/parameters/DischargeIdInCollection"
+        - $ref: "#/components/parameters/ProductLotId"
+      responses:
+        "200":
+          description: The discharge without the removed lot.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeOrProductLotNotFound" }
+        "409":
+          description: >-
+            E_DISCHARGE_NOT_PLANNED when the discharge is active or closed.
+            E_DISCHARGE_LAST_PRODUCT_LOT when the lot is the discharge's only lot.
+            E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS when the lot has, or has had, a warehouse door
+            assignment. Checked in that order.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+
+  /api/v1/users/eligible-shift-responsibles:
+    get:
+      operationId: users.eligible_shift_responsibles
+      summary: List the users who may be designated shift responsible
+      description: >-
+        Requires an ACTIVE operations lead, operations admin, or organization admin. Returns every
+        ACTIVE user whose role is OPERATIONS_LEAD, OPERATIONS_ADMIN, or ORGANIZATION_ADMIN, ordered
+        by last name, first name, and id. No e-mail, role, or access history is disclosed.
+      responses:
+        "200":
+          description: The eligible users.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/UserSummary" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  parameters:
+    DischargeId:
+      name: id
+      in: path
+      required: true
+      description: A value that is not a UUID gets the same 404 as an unknown UUID.
+      schema: { type: string }
+    DischargeIdInCollection:
+      name: dischargeId
+      in: path
+      required: true
+      description: A value that is not a UUID gets the same 404 as an unknown UUID.
+      schema: { type: string }
+    ProductLotId:
+      name: id
+      in: path
+      required: true
+      description: >-
+        A value that is not a UUID, or a lot of another discharge, gets the same 404 as an unknown
+        UUID.
+      schema: { type: string }
+
+  schemas:
+    CreateDischargeBody:
+      type: object
+      additionalProperties: false
+      required: [id, vesselName, vesselImo, vesselComment, dockId, expectedStartAt, productLots, shifts]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Generated once by the creation page; the idempotency identity.
+        vesselName: { $ref: "#/components/schemas/VesselName" }
+        vesselImo: { $ref: "#/components/schemas/VesselImo" }
+        vesselComment: { $ref: "#/components/schemas/LongText" }
+        dockId: { type: string, format: uuid }
+        expectedStartAt: { $ref: "#/components/schemas/Instant" }
+        productLots:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { $ref: "#/components/schemas/ProductLotBody" }
+        shifts:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { $ref: "#/components/schemas/PlannedShiftBody" }
+
+    DischargeIdentityBody:
+      type: object
+      additionalProperties: false
+      required: [vesselName, vesselImo, vesselComment, dockId, expectedStartAt]
+      properties:
+        vesselName: { $ref: "#/components/schemas/VesselName" }
+        vesselImo: { $ref: "#/components/schemas/VesselImo" }
+        vesselComment: { $ref: "#/components/schemas/LongText" }
+        dockId: { type: string, format: uuid }
+        expectedStartAt: { $ref: "#/components/schemas/Instant" }
+
+    ProductLotBody:
+      type: object
+      additionalProperties: false
+      required: [customerId, productName, expectedQuantityTonnes, description]
+      properties:
+        customerId: { type: string, format: uuid }
+        productName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Trimmed; must not be blank.
+        expectedQuantityTonnes:
+          type: string
+          pattern: '^\d{1,9}(\.\d{1,3})?$'
+          description: Strictly positive tonnes with at most three decimals, sent as a string.
+          examples: ["1250", "1250.5", "0.001"]
+        description: { $ref: "#/components/schemas/LongText" }
+
+    PlannedShiftBody:
+      type: object
+      additionalProperties: false
+      required: [plannedStartAt, plannedEndAt, responsibleUserId]
+      properties:
+        plannedStartAt: { $ref: "#/components/schemas/Instant" }
+        plannedEndAt: { $ref: "#/components/schemas/Instant" }
+        responsibleUserId: { type: string, format: uuid }
+
+    VesselName:
+      type: string
+      minLength: 1
+      maxLength: 255
+      description: Trimmed; must not be blank.
+    VesselImo:
+      type: [string, "null"]
+      pattern: '^\d{7}$'
+      description: Seven digits, or null. An empty or blank string is stored as null.
+    LongText:
+      type: [string, "null"]
+      maxLength: 2000
+      description: Trimmed; an empty or blank string is stored as null.
+    Instant:
+      type: string
+      format: date-time
+      description: ISO 8601 with an explicit offset, such as 2026-09-20T06:00:00.000+02:00.
+
+    UserSummary:
+      type: object
+      additionalProperties: false
+      required: [id, firstName, lastName]
+      properties:
+        id: { type: string, format: uuid }
+        firstName: { type: string }
+        lastName: { type: string }
+
+    DischargeDetailEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "../../consult-a-prepared-discharge-in-the-web-workbench/contracts/discharge-detail.openapi.yaml#/components/schemas/DischargeDetail"
+
+    ValidationIssue:
+      type: object
+      required: [field, message, rule]
+      properties:
+        field:
+          type: string
+          description: >-
+            Dotted path into the request body, such as vesselImo, productLots.1.productName, or
+            shifts.0.responsibleUserId.
+        message: { type: string }
+        rule:
+          type: string
+          description: >-
+            A VineJS rule name for shape failures, or one of this slice's rules:
+            productLotIdentityUnique, shiftPeriodOrder, shiftOverlap, availableDock,
+            availableCustomer, or eligibleShiftResponsible.
+        index: { type: integer }
+        meta: { type: object }
+
+    ApiErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+
+  responses:
+    Unauthenticated:
+      description: >-
+        No session, or a session whose user is not ACTIVE. Code E_UNAUTHORIZED_ACCESS. Nothing is
+        created or changed.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    Forbidden:
+      description: >-
+        An ACTIVE observer. Code E_AUTHORIZATION_FAILURE. Nothing is created or changed, and the
+        request body is not validated.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    DischargeNotFound:
+      description: No discharge has this identity, or it is malformed. Code E_DISCHARGE_NOT_FOUND.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    DischargeOrProductLotNotFound:
+      description: >-
+        E_DISCHARGE_NOT_FOUND for the discharge. E_PRODUCT_LOT_NOT_FOUND when the lot is unknown,
+        malformed, already removed, or belongs to another discharge.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    DischargeNotPlanned:
+      description: The discharge is ACTIVE or CLOSED. Code E_DISCHARGE_NOT_PLANNED. Nothing is changed.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    ValidationFailed:
+      description: >-
+        Code E_VALIDATION_ERROR. It covers three kinds of refusal: a shape failure, a rule broken
+        across items (duplicate lot identity, shift end not after start, overlapping shifts), and
+        a dock, customer, or responsible that is missing, no longer available, or not eligible at
+        the moment of writing. Nothing is created or changed.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message, details]
+                properties:
+                  code: { const: E_VALIDATION_ERROR }
+                  message: { type: string }
+                  details:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationIssue" }
