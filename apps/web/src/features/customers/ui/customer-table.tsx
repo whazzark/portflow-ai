@@ -37,11 +37,22 @@ function lifecycleUserCell(user: LifecycleUser | null) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       <UserAvatar aria-hidden={true} size="sm" user={user} />
-      <span>{formatFullName(user)}</span>
+      <span className="truncate">{formatFullName(user)}</span>
     </div>
   )
+}
+
+// A fixed table layout sized by these widths, so the columns hold still as the tab or the search changes what the rows
+// contain. The lifecycle comment takes whatever width remains.
+const COLUMN_WIDTHS: Record<string, string> = {
+  selection: 'w-10 min-w-10 max-w-10 p-0',
+  code: 'w-44',
+  companyName: 'w-72',
+  archivedBy: 'w-56',
+  reactivatedBy: 'w-56',
+  actions: 'w-12',
 }
 
 declare module '@tanstack/react-table' {
@@ -114,14 +125,17 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
       cell: ({ row, table }) => (
         <Button
           aria-label={`View customer ${row.original.code}`}
-          className="h-auto px-0 font-medium font-mono hover:bg-transparent"
+          className="h-auto max-w-full px-0 font-medium font-mono hover:bg-transparent"
           onClick={() => table.options.meta?.onSelect?.(row.original.id)}
+          title={row.original.code}
           variant="ghost"
         >
-          <HighlightedText
-            search={table.getState().globalFilter as string}
-            value={row.original.code}
-          />
+          <span className="truncate">
+            <HighlightedText
+              search={table.getState().globalFilter as string}
+              value={row.original.code}
+            />
+          </span>
         </Button>
       ),
     },
@@ -130,10 +144,12 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
       header: 'Company name',
       sortingFn: 'text',
       cell: ({ row, table }) => (
-        <HighlightedText
-          search={table.getState().globalFilter as string}
-          value={row.original.companyName}
-        />
+        <span title={row.original.companyName}>
+          <HighlightedText
+            search={table.getState().globalFilter as string}
+            value={row.original.companyName}
+          />
+        </span>
       ),
     },
     ...(isArchived
@@ -143,10 +159,12 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
             header: 'Archive comment',
             sortingFn: 'text' as const,
             cell: ({ row, table }: CellContext<CustomerDto, unknown>) => (
-              <HighlightedText
-                search={table.getState().globalFilter as string}
-                value={row.original.archiveComment ?? '—'}
-              />
+              <span title={row.original.archiveComment ?? undefined}>
+                <HighlightedText
+                  search={table.getState().globalFilter as string}
+                  value={row.original.archiveComment ?? '—'}
+                />
+              </span>
             ),
           } satisfies ColumnDef<CustomerDto>,
           {
@@ -164,10 +182,12 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
             header: 'Reactivation comment',
             sortingFn: 'text' as const,
             cell: ({ row, table }: CellContext<CustomerDto, unknown>) => (
-              <HighlightedText
-                search={table.getState().globalFilter as string}
-                value={row.original.reactivationComment ?? '—'}
-              />
+              <span title={row.original.reactivationComment ?? undefined}>
+                <HighlightedText
+                  search={table.getState().globalFilter as string}
+                  value={row.original.reactivationComment ?? '—'}
+                />
+              </span>
             ),
           } satisfies ColumnDef<CustomerDto>,
           {
@@ -249,7 +269,10 @@ export function CustomerTable({
 
   return (
     <div className="overflow-hidden rounded-lg border md:flex md:max-h-full md:min-h-0 md:flex-col md:[&_[data-slot=table-container]]:min-h-0 md:[&_[data-slot=table-container]]:overflow-auto">
-      <Table aria-label={isArchived ? 'Archived customers' : 'Available customers'}>
+      <Table
+        aria-label={isArchived ? 'Archived customers' : 'Available customers'}
+        className="min-w-4xl table-fixed"
+      >
         <TableHeader className="md:sticky md:top-0 md:z-10 md:bg-background">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -265,9 +288,7 @@ export function CustomerTable({
                           ? 'descending'
                           : 'none'
                     }
-                    className={
-                      header.column.id === 'selection' ? 'w-10 min-w-10 max-w-10 p-0' : undefined
-                    }
+                    className={COLUMN_WIDTHS[header.column.id]}
                     key={header.id}
                   >
                     {header.column.getCanSort() ? (
@@ -306,13 +327,13 @@ export function CustomerTable({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
-                      className={
-                        cell.column.id === 'selection'
-                          ? 'relative w-10 min-w-10 max-w-10 p-0'
-                          : cell.column.id === 'actions'
-                            ? 'w-10 min-w-10 max-w-10'
-                            : undefined
-                      }
+                      className={classnames(
+                        COLUMN_WIDTHS[cell.column.id],
+                        cell.column.id === 'selection' && 'relative',
+                        cell.column.id !== 'selection' &&
+                          cell.column.id !== 'actions' &&
+                          'truncate',
+                      )}
                       // The row itself opens the detail pane; the selection checkbox and the
                       // actions menu are their own affordances and must not trigger it too —
                       // opening the pane underneath would tear the menu down as it renders.
