@@ -15,6 +15,7 @@ import {
   DockNotFoundException,
   DuplicateDockNameException,
 } from '#docks/shared/dock_exceptions'
+import DockRepository from '#docks/shared/repositories/dock_repository'
 import UpdateDockUseCase from '#docks/update/update_dock_use_case'
 import ClosedDischargeUsageChecker from '#site_references/shared/closed_discharge_usage_checker'
 import {
@@ -194,6 +195,34 @@ test.group('Dock use cases', (group) => {
           ),
       DockInUseException,
     )
+  })
+
+  test('refuses archival when the repository finds the dock in use under its lock', async ({
+    assert,
+  }) => {
+    const dock = await DockFactory.create()
+    // The usage the use case might read before the repository's transaction says the dock is free;
+    // only the repository's own locked check is authoritative, and it finds a planned discharge.
+    app.container.swap(SiteReferenceUsageChecker, () => app.container.make(UnusedChecker))
+    app.container.swap(
+      DockRepository,
+      () =>
+        ({
+          findById: () => Promise.resolve(dock),
+          archiveAvailable: () => Promise.resolve({ kind: 'IN_USE' }),
+        }) as unknown as DockRepository,
+    )
+
+    await assert.rejects(
+      () =>
+        app.container
+          .make(ArchiveDockUseCase)
+          .then((useCase) =>
+            useCase.handle({ id: dock.id, archivedByUserId: dock.id, archivedAt: DateTime.now() }),
+          ),
+      DockInUseException,
+    )
+    app.container.restore(DockRepository)
   })
 
   test('enforces normalized uniqueness across available and archived docks', async ({ assert }) => {

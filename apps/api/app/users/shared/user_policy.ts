@@ -2,6 +2,7 @@ import { BasePolicy } from '@adonisjs/bouncer'
 import type { AuthorizerResponse } from '@adonisjs/bouncer/types'
 
 import type User from '#models/user'
+import { isEligibleShiftResponsible } from '#users/shared/shift_responsible_eligibility'
 
 export default class UserPolicy extends BasePolicy {
   /**
@@ -13,6 +14,15 @@ export default class UserPolicy extends BasePolicy {
       user.accessStatus === 'ACTIVE' &&
       (user.role === 'ORGANIZATION_ADMIN' || user.role === 'OPERATIONS_ADMIN')
     )
+  }
+
+  /**
+   * Whether the viewer may list the users eligible to be designated shift responsible. It is open to
+   * the roles that prepare discharges, who pick a responsible for each shift, and discloses only
+   * names — unlike `list`, which is administration context.
+   */
+  listEligibleShiftResponsibles(user: User): AuthorizerResponse {
+    return isEligibleShiftResponsible(user)
   }
 
   /**

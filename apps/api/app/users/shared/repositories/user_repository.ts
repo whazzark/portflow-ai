@@ -302,6 +302,12 @@ export default abstract class UserRepository {
    */
   abstract listActive(): Promise<User[]>
 
+  /**
+   * The users who may be designated shift responsible — active, and holding one of
+   * `SHIFT_RESPONSIBLE_ROLES` — ordered by last name, first name, then identity.
+   */
+  abstract listEligibleShiftResponsibles(): Promise<User[]>
+
   abstract renewPassword(command: RenewPasswordCommand): Promise<RenewPasswordResult>
 
   /**

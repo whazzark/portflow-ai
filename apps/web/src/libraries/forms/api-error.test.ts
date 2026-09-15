@@ -39,3 +39,50 @@ test('does not apply a non-validation error to the form', () => {
   expect(applyValidationError({ setErrorMap }, error)).toBe(false)
   expect(setErrorMap).not.toHaveBeenCalled()
 })
+
+function validationError(details: { field: string; message: string }[]) {
+  return new TuyauHTTPError(
+    // biome-ignore lint/suspicious/noExplicitAny: constructing a minimal fake ky HTTPError for the test
+    {} as any,
+    { error: { code: 'E_VALIDATION_ERROR', details, message: 'Validation failure' } },
+  )
+}
+
+test('maps indexed API paths onto array field names', () => {
+  const setErrorMap = vi.fn()
+  const error = validationError([
+    { field: 'productLots.1.productName', message: 'Duplicate lot.' },
+    { field: 'shifts.0.responsibleUserId', message: 'Not eligible.' },
+    { field: 'vesselName', message: 'Required.' },
+  ])
+
+  applyValidationError({ setErrorMap }, error)
+
+  expect(setErrorMap).toHaveBeenCalledWith({
+    onSubmit: {
+      fields: {
+        'productLots[1].productName': 'Duplicate lot.',
+        'shifts[0].responsibleUserId': 'Not eligible.',
+        vesselName: 'Required.',
+      },
+      form: 'Validation failure',
+    },
+  })
+})
+
+test('announces a detail on no known field in the form-level error', () => {
+  const setErrorMap = vi.fn()
+  const error = validationError([
+    { field: 'productLots.0.productName', message: 'Duplicate lot.' },
+    { field: 'productLots', message: 'At least one lot is required.' },
+  ])
+
+  applyValidationError({ setErrorMap }, error, ['productLots[0].productName', 'vesselName'])
+
+  expect(setErrorMap).toHaveBeenCalledWith({
+    onSubmit: {
+      fields: { 'productLots[0].productName': 'Duplicate lot.' },
+      form: 'Validation failure At least one lot is required.',
+    },
+  })
+})

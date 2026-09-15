@@ -92,31 +92,46 @@ export default class LucidDockRepository extends DockRepository {
     }
   }
 
-  async archiveAvailable(command: ArchiveDockCommand): Promise<ArchiveDockResult> {
-    const [affectedRows] = await Dock.query()
-      .where('id', command.id)
-      .where('status', 'AVAILABLE')
-      .update({
-        status: 'ARCHIVED',
-        archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
-        archivedByUserId: command.archivedByUserId,
-        archiveComment: command.archiveComment,
-        updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
-      })
-
-    if (affectedRows === 0) {
-      const dock = await Dock.find(command.id)
+  /**
+   * The dock is locked and its usage read in the same transaction. A usage read before the lock
+   * could be overtaken by a discharge preparation committing in between, which locks the dock
+   * `FOR SHARE` before writing: holding `FOR UPDATE` here makes the two queue behind each other.
+   */
+  archiveAvailable(command: ArchiveDockCommand): Promise<ArchiveDockResult> {
+    return Dock.transaction(async (trx) => {
+      const dock = await Dock.query({ client: trx }).where('id', command.id).forUpdate().first()
 
       if (!dock) {
         return { kind: 'NOT_FOUND' }
       }
+      if (dock.status === 'ARCHIVED') {
+        return { kind: 'ALREADY_ARCHIVED' }
+      }
 
-      return dock.status === 'ARCHIVED' ? { kind: 'ALREADY_ARCHIVED' } : { kind: 'NOT_FOUND' }
-    }
+      const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
+        referenceType: 'DOCK',
+        referenceIds: [command.id],
+        client: trx,
+      })
+      if (usedIds.has(command.id)) {
+        return { kind: 'IN_USE' }
+      }
 
-    const dock = await Dock.find(command.id)
+      await Dock.query({ client: trx })
+        .where('id', command.id)
+        .where('status', 'AVAILABLE')
+        .update({
+          status: 'ARCHIVED',
+          archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
+          archivedByUserId: command.archivedByUserId,
+          archiveComment: command.archiveComment,
+          updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
+        })
 
-    return dock ? { kind: 'ARCHIVED', dock } : { kind: 'NOT_FOUND' }
+      const archived = await Dock.query({ client: trx }).where('id', command.id).firstOrFail()
+
+      return { kind: 'ARCHIVED', dock: archived }
+    })
   }
 
   async reactivateArchived(command: ReactivateDockCommand): Promise<ReactivateDockResult> {

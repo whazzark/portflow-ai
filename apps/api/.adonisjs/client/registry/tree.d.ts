@@ -58,9 +58,17 @@ export interface ApiDefinition {
   }
   discharges: {
     index: typeof routes['discharges.index']
+    store: typeof routes['discharges.store']
     show: typeof routes['discharges.show']
+    update: typeof routes['discharges.update']
+    productLots: {
+      store: typeof routes['discharges.product_lots.store']
+      update: typeof routes['discharges.product_lots.update']
+      destroy: typeof routes['discharges.product_lots.destroy']
+    }
   }
   users: {
+    eligibleShiftResponsibles: typeof routes['users.eligible_shift_responsibles']
     index: typeof routes['users.index']
     store: typeof routes['users.store']
     update: typeof routes['users.update']

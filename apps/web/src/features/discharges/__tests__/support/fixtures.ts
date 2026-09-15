@@ -1,5 +1,9 @@
 import type { SessionUser } from '@/features/auth/context/session-context'
+import { CUSTOMERS } from '@/features/customers/__tests__/support/fixtures'
+import type { CustomerDto } from '@/features/customers/types'
 import type { DischargeDetailDto, DischargeDto } from '@/features/discharges/types'
+import { DOCKS } from '@/features/docks/__tests__/support/fixtures'
+import type { DockDto } from '@/features/docks/types'
 
 export const API_BASE_URL = 'http://localhost:3333'
 
@@ -244,3 +248,14 @@ export function listedDischarge(vesselName: string, status: DischargeDto['status
 
   return found
 }
+
+export const AVAILABLE_DOCKS: DockDto[] = DOCKS.filter((dock) => dock.status === 'AVAILABLE')
+
+export const AVAILABLE_CUSTOMERS: CustomerDto[] = CUSTOMERS.filter(
+  (customer) => customer.status === 'AVAILABLE',
+)
+
+export const ELIGIBLE_RESPONSIBLES = [
+  { id: 'responsible-lea', firstName: 'Léa', lastName: 'Martin' },
+  { id: 'responsible-thomas', firstName: 'Thomas', lastName: 'Bernard' },
+]

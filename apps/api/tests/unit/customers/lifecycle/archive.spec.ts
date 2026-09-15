@@ -5,8 +5,10 @@ import { DateTime } from 'luxon'
 import ArchiveCustomerUseCase from '#customers/archive/archive_customer_use_case'
 import {
   CustomerAlreadyArchivedException,
+  CustomerInUseException,
   CustomerNotFoundException,
 } from '#customers/shared/customer_exceptions'
+import CustomerRepository from '#customers/shared/repositories/customer_repository'
 import { CustomerFactory } from '#database/factories/customer_factory'
 import { UserFactory } from '#database/factories/user_factory'
 import ClosedDischargeUsageChecker from '#site_references/shared/closed_discharge_usage_checker'
@@ -34,6 +36,36 @@ test.group('ArchiveCustomerUseCase', (group) => {
     assert.equal(archived.archiveComment, 'No longer active')
     assert.equal(archived.archivedByUserId, actor.id)
     assert.equal(archived.archivedAt?.toISO(), archivedAt.toISO())
+  })
+
+  test('refuses archival when the repository finds the customer in use under its lock', async ({
+    assert,
+  }) => {
+    const customer = await CustomerFactory.create()
+    // A usage read before the repository's transaction would say the customer is free; only the
+    // repository's own locked check is authoritative, and it finds a planned discharge.
+    app.container.swap(SiteReferenceUsageChecker, () => app.container.make(UnusedChecker))
+    app.container.swap(
+      CustomerRepository,
+      () =>
+        ({
+          findById: () => Promise.resolve(customer),
+          archiveAvailable: () => Promise.resolve({ kind: 'IN_USE' }),
+        }) as unknown as CustomerRepository,
+    )
+
+    await assert.rejects(
+      () =>
+        app.container.make(ArchiveCustomerUseCase).then((useCase) =>
+          useCase.handle({
+            id: customer.id,
+            archivedByUserId: customer.id,
+            archivedAt: DateTime.now(),
+          }),
+        ),
+      CustomerInUseException,
+    )
+    app.container.restore(CustomerRepository)
   })
 
   test('blocks planned or active usage and repeated archival', async ({ assert }) => {

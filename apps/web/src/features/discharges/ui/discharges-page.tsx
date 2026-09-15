@@ -1,10 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
+import { PlusIcon } from 'lucide-react'
 import { useMemo } from 'react'
 
+import { buttonVariants } from '@/components/ui/button'
 import { InputSearch } from '@/components/ui/input-search'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { groupByStatus, orderForStatus } from '@/features/discharges/discharge-collections'
+import { canPrepareDischarges } from '@/features/discharges/discharge-permissions'
 import { dischargeMatchesSearch } from '@/features/discharges/discharge-search'
 import { dischargeQueries } from '@/features/discharges/queries/discharge-queries'
 import { DISCHARGE_STATUS_FILTERS, type DischargeStatusFilter } from '@/features/discharges/types'
@@ -18,9 +22,8 @@ const TAB_LABELS = {
   planned: 'Planned',
 } as const satisfies Record<DischargeStatusFilter, string>
 
-// Planned before active before closed: the order the site's work moves through, not the order the
-// tabs were built in.
-const TAB_ORDER: DischargeStatusFilter[] = ['planned', 'active', 'closed']
+// Active first, the tab the screen opens on, then planned and closed.
+const TAB_ORDER: DischargeStatusFilter[] = ['active', 'planned', 'closed']
 
 function isDischargeStatusFilter(value: string): value is DischargeStatusFilter {
   return DISCHARGE_STATUS_FILTERS.includes(value as DischargeStatusFilter)
@@ -29,6 +32,7 @@ function isDischargeStatusFilter(value: string): value is DischargeStatusFilter 
 export function DischargesPage() {
   const { search, status } = dischargesRoute.useSearch()
   const navigate = dischargesRoute.useNavigate()
+  const canPrepare = canPrepareDischarges(useAuthenticatedUser())
 
   const dischargesQuery = useQuery(dischargeQueries.all())
   const discharges = useMemo(() => dischargesQuery.data?.data ?? [], [dischargesQuery.data])
@@ -72,6 +76,7 @@ export function DischargesPage() {
           placeholder="Search by vessel, IMO, dock, customer, or product"
           value={search}
         />
+        {canPrepare && <CreateDischargeLink />}
       </div>
 
       <Tabs className="min-h-0 flex-1" onValueChange={updateStatus} value={status}>
@@ -89,11 +94,31 @@ export function DischargesPage() {
         {TAB_ORDER.map((filter) => (
           <TabsContent className="min-h-0 md:overflow-hidden" key={filter} value={filter}>
             {status === filter && (
-              <DischargeList discharges={visible} isNoMatch={isNoMatch} status={filter} />
+              <DischargeList
+                createAction={canPrepare ? <CreateDischargeLink /> : undefined}
+                discharges={visible}
+                isNoMatch={isNoMatch}
+                status={filter}
+              />
             )}
           </TabsContent>
         ))}
       </Tabs>
     </div>
+  )
+}
+
+/** Creation keeps the list's status and search, so cancelling it lands back on the same collection. */
+function CreateDischargeLink() {
+  return (
+    <Link
+      className={buttonVariants()}
+      from="/discharges"
+      search={(previous) => previous}
+      to="/discharges/new"
+    >
+      <PlusIcon aria-hidden="true" />
+      Create discharge
+    </Link>
   )
 }

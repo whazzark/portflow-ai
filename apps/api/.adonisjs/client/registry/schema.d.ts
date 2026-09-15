@@ -451,6 +451,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['index']>>>
     }
   }
+  'discharges.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/discharges'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#discharges/create/create_planned_discharge_validator').createPlannedDischargeValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#discharges/create/create_planned_discharge_validator').createPlannedDischargeValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'discharges.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/discharges/:id'
@@ -461,6 +473,66 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['show']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['show']>>>
+    }
+  }
+  'discharges.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/discharges/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#discharges/update/discharge_identity_validator').correctDischargeIdentityValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#discharges/update/discharge_identity_validator').correctDischargeIdentityValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'discharges.product_lots.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/discharges/:dischargeId/product-lots'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#discharges/product_lots/product_lot_validator').productLotValidator)>>
+      paramsTuple: [ParamValue]
+      params: { dischargeId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#discharges/product_lots/product_lot_validator').productLotValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'discharges.product_lots.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/discharges/:dischargeId/product-lots/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#discharges/product_lots/product_lot_validator').productLotValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { dischargeId: ParamValue; id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#discharges/product_lots/product_lot_validator').productLotValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
+  'discharges.product_lots.destroy': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/discharges/:dischargeId/product-lots/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { dischargeId: ParamValue; id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['destroy']>>>
+    }
+  }
+  'users.eligible_shift_responsibles': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/users/eligible-shift-responsibles'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/users_controller').default['eligibleShiftResponsibles']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['eligibleShiftResponsibles']>>>
     }
   }
   'users.index': {

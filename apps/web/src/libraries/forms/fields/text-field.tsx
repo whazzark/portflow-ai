@@ -15,10 +15,13 @@ export function TextField({
   description,
   id,
   label,
+  labelClassName,
   required,
   ...props
-}: FieldPresentationProps &
-  Omit<React.ComponentProps<typeof Input>, 'id' | 'name' | 'onBlur' | 'onChange' | 'value'> & {
+}: FieldPresentationProps & {
+  /** Hides the label visually where a column header names the field, as in a row of fields. */
+  labelClassName?: string
+} & Omit<React.ComponentProps<typeof Input>, 'id' | 'name' | 'onBlur' | 'onChange' | 'value'> & {
     id?: string
   }) {
   const field = useFieldContext<string>()
@@ -28,7 +31,7 @@ export function TextField({
 
   return (
     <Field data-invalid={isInvalid}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel className={labelClassName} htmlFor={inputId}>
         <FieldLabelContent label={label} required={required} />
       </FieldLabel>
       {description && <FieldDescription>{description}</FieldDescription>}

@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 
+import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
+import { canPrepareDischarges } from '@/features/discharges/discharge-permissions'
 import { dischargeQueries } from '@/features/discharges/queries/discharge-queries'
 import { BackToDischargesLink } from '@/features/discharges/ui/detail/back-to-discharges-link'
 import { DischargeIdentityCard } from '@/features/discharges/ui/detail/discharge-identity-card'
@@ -15,11 +17,15 @@ export function DischargeDetailPage() {
   const { dischargeId } = dischargeRoute.useParams()
   const dischargeQuery = useQuery(dischargeQueries.detail(dischargeId))
   const discharge = dischargeQuery.data?.data
+  const canPrepare = canPrepareDischarges(useAuthenticatedUser())
 
   // The loader has already resolved the detail, so this only guards the type.
   if (!discharge) {
     return null
   }
+
+  // Corrections exist only before the discharge starts; after that, the detail is read-only.
+  const canCorrect = canPrepare && discharge.status === 'PLANNED'
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -30,8 +36,8 @@ export function DischargeDetailPage() {
         <h1 className="font-semibold text-2xl">{discharge.vesselName}</h1>
         <DischargeStatusBadge status={discharge.status} />
       </div>
-      <DischargeIdentityCard discharge={discharge} />
-      <DischargeProductLotsCard discharge={discharge} />
+      <DischargeIdentityCard canCorrect={canCorrect} discharge={discharge} />
+      <DischargeProductLotsCard canCorrect={canCorrect} discharge={discharge} />
       <DischargeShiftsCard discharge={discharge} />
       <DischargeTruckPoolCard discharge={discharge} />
     </div>

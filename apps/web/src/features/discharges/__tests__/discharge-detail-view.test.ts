@@ -5,7 +5,9 @@ import {
   formatTonnes,
   isInEffect,
   lotDoorNotice,
+  plannedCoverage,
   splitPeriods,
+  sumTonnes,
 } from '@/features/discharges/discharge-detail-view'
 import { formatDateTime } from '@/helpers/dates'
 
@@ -88,5 +90,41 @@ describe('formatPeriod', () => {
     expect(formatPeriod(OPEN, 'CLOSED')).toBe(
       `${formatDateTime(OPEN.effectiveFrom)} – end not recorded`,
     )
+  })
+})
+
+describe('sumTonnes', () => {
+  test('adds tonnages exactly, keeping three decimals', () => {
+    expect(sumTonnes(['1200.5', '800', '0.001'])).toBe('2000.501')
+    expect(sumTonnes(['0.1', '0.2'])).toBe('0.300')
+  })
+
+  test('ignores values that are not valid tonnages yet', () => {
+    expect(sumTonnes(['12', '', 'abc', '1.2345'])).toBe('12.000')
+  })
+
+  test('has no total when no value is a valid tonnage', () => {
+    expect(sumTonnes([])).toBeNull()
+    expect(sumTonnes(['', '-1'])).toBeNull()
+  })
+})
+
+describe('plannedCoverage', () => {
+  test('spans from the earliest valid start to the latest valid end', () => {
+    const coverage = plannedCoverage([
+      { plannedStartAt: '2026-10-01T14:00', plannedEndAt: '2026-10-01T22:00' },
+      { plannedStartAt: '2026-10-01T06:00', plannedEndAt: '2026-10-01T14:00' },
+      { plannedStartAt: '', plannedEndAt: '2026-10-03T00:00' },
+    ])
+
+    expect(coverage).toEqual({
+      start: new Date(2026, 9, 1, 6, 0).toISOString(),
+      end: new Date(2026, 9, 1, 22, 0).toISOString(),
+    })
+  })
+
+  test('has no coverage until one shift has a valid period', () => {
+    expect(plannedCoverage([])).toBeNull()
+    expect(plannedCoverage([{ plannedStartAt: '2026-10-01T06:00', plannedEndAt: '' }])).toBeNull()
   })
 })

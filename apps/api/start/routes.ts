@@ -96,13 +96,27 @@ router
         router
           .group(() => {
             router.get('/', [controllers.Discharges, 'index']).as('index')
+            router.post('/', [controllers.Discharges, 'store']).as('store')
             router.get('/:id', [controllers.Discharges, 'show']).as('show')
+            router.patch('/:id', [controllers.Discharges, 'update']).as('update')
+            router
+              .group(() => {
+                router.post('/', [controllers.DischargeProductLots, 'store']).as('store')
+                router.patch('/:id', [controllers.DischargeProductLots, 'update']).as('update')
+                router.delete('/:id', [controllers.DischargeProductLots, 'destroy']).as('destroy')
+              })
+              .prefix('/:dischargeId/product-lots')
+              .as('product_lots')
           })
           .prefix('/discharges')
           .as('discharges')
 
         router
           .group(() => {
+            // Declared before every `/:id` route, which would otherwise read the segment as an id.
+            router
+              .get('/eligible-shift-responsibles', [controllers.Users, 'eligibleShiftResponsibles'])
+              .as('eligible_shift_responsibles')
             router.get('/', [controllers.Users, 'index']).as('index')
             router.post('/', [controllers.Users, 'store']).as('store')
             router.patch('/:id', [controllers.Users, 'update']).as('update')

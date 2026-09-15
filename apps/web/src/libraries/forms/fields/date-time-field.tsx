@@ -1,0 +1,62 @@
+import type * as React from 'react'
+
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+
+import { useFieldContext, useFormContext } from '../contexts'
+import {
+  FieldLabelContent,
+  type FieldPresentationProps,
+  getFieldPresentation,
+  normalizeFieldErrors,
+} from './field-presentation'
+
+/**
+ * A date and time to the minute, held as the `YYYY-MM-DDTHH:mm` value a native `datetime-local`
+ * input produces, in the browser's zone. Converting it to an instant is the submitting form's job
+ * (`fromDateTimeLocalValue`).
+ */
+export function DateTimeField({
+  description,
+  id,
+  label,
+  labelClassName,
+  required,
+  ...props
+}: FieldPresentationProps & {
+  /** Hides the label visually where a column header names the field, as in a row of fields. */
+  labelClassName?: string
+} & Omit<
+    React.ComponentProps<typeof Input>,
+    'id' | 'name' | 'onBlur' | 'onChange' | 'step' | 'type' | 'value'
+  > & {
+    id?: string
+  }) {
+  const field = useFieldContext<string>()
+  const form = useFormContext()
+  const inputId = id ?? field.name
+  const { errorId, errors, isInvalid } = getFieldPresentation(inputId, field, form)
+
+  return (
+    <Field data-invalid={isInvalid}>
+      <FieldLabel className={labelClassName} htmlFor={inputId}>
+        <FieldLabelContent label={label} required={required} />
+      </FieldLabel>
+      {description && <FieldDescription>{description}</FieldDescription>}
+      <Input
+        {...props}
+        id={inputId}
+        name={field.name}
+        step={60}
+        type="datetime-local"
+        value={field.state.value ?? ''}
+        aria-describedby={isInvalid ? errorId : undefined}
+        aria-invalid={isInvalid}
+        aria-required={required}
+        onBlur={field.handleBlur}
+        onChange={(event) => field.handleChange(event.target.value)}
+      />
+      {isInvalid && <FieldError id={errorId} errors={normalizeFieldErrors(errors)} />}
+    </Field>
+  )
+}

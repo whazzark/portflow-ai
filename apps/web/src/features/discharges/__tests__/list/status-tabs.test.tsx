@@ -17,17 +17,16 @@ test('opens on the active discharges and shows every status count at once', asyn
   expect(within(table).queryByText('MV Atlantic Dawn')).not.toBeInTheDocument()
 })
 
-// The tabs read in the order the site's work moves through, which is not the order the screen
-// opens on: a consultation starts on what is happening now, one tab in.
-test('reads the tabs planned before active before closed', async () => {
+// The first tab is the one the screen opens on: a consultation starts on what is happening now.
+test('reads the tabs active before planned before closed', async () => {
   mockDischarges()
 
   renderDischarges()
   await screen.findByRole('table', { name: 'Discharges' })
 
   expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
-    'Planned (2)',
     'Active (1)',
+    'Planned (2)',
     'Closed (2)',
   ])
 })

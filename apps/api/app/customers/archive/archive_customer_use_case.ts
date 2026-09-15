@@ -7,7 +7,6 @@ import {
   CustomerNotFoundException,
 } from '#customers/shared/customer_exceptions'
 import CustomerRepository from '#customers/shared/repositories/customer_repository'
-import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 
 export type ArchiveCustomerInput = {
   id: string
@@ -18,10 +17,7 @@ export type ArchiveCustomerInput = {
 
 @inject()
 export default class ArchiveCustomerUseCase {
-  constructor(
-    private customerRepository: CustomerRepository,
-    private usageChecker: SiteReferenceUsageChecker,
-  ) {}
+  constructor(private customerRepository: CustomerRepository) {}
 
   async handle(input: ArchiveCustomerInput) {
     const customer = await this.customerRepository.findById(input.id)
@@ -31,15 +27,6 @@ export default class ArchiveCustomerUseCase {
     }
     if (customer.status === 'ARCHIVED') {
       throw new CustomerAlreadyArchivedException()
-    }
-
-    const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
-      referenceType: 'CUSTOMER',
-      referenceIds: [input.id],
-    })
-
-    if (usedIds.has(input.id)) {
-      throw new CustomerInUseException()
     }
 
     const result = await this.customerRepository.archiveAvailable({
@@ -55,6 +42,11 @@ export default class ArchiveCustomerUseCase {
     if (result.kind === 'ALREADY_ARCHIVED') {
       throw new CustomerAlreadyArchivedException()
     }
+    // Decided by the repository under the customer's lock, never from a usage read beforehand.
+    if (result.kind === 'IN_USE') {
+      throw new CustomerInUseException()
+    }
+
     return result.customer
   }
 }
