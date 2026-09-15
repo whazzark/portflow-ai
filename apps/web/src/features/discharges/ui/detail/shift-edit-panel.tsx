@@ -8,7 +8,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
 import {
-  formatShiftDuration,
+  formatLocalShiftDuration,
   SHIFT_CORRECTION_FIELDS,
   type ShiftCorrectionFormValues,
   shiftCorrectionFieldOf,
@@ -167,7 +167,7 @@ function ShiftEditForm({
       try {
         await correctShift.mutateAsync({
           params: { dischargeId: discharge.id, shiftId: shift.id },
-          body: toShiftCorrectionBody(value),
+          body: toShiftCorrectionBody(value, shift),
         })
         toast.success('Shift updated')
         onDone()
@@ -266,7 +266,7 @@ function ShiftEditForm({
           </div>
           <form.Subscribe
             selector={(state) =>
-              formatShiftDuration(state.values.plannedStartAt, state.values.plannedEndAt)
+              formatLocalShiftDuration(state.values.plannedStartAt, state.values.plannedEndAt)
             }
           >
             {(length) => (

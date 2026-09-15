@@ -53,6 +53,18 @@ export function openShift<S extends CalendarShift>(shifts: S[], shiftId: string 
   return shiftId === undefined ? undefined : shifts.find((shift) => shift.id === shiftId)
 }
 
+/** How far into its day an instant's clock reads, as a percentage, as the hour gutter reads it. */
+function clockPct(instant: number) {
+  const date = new Date(instant)
+  const minutes =
+    date.getHours() * 60 +
+    date.getMinutes() +
+    date.getSeconds() / 60 +
+    date.getMilliseconds() / 60_000
+
+  return (minutes / (24 * 60)) * 100
+}
+
 function startOfDay(instant: number) {
   const date = new Date(instant)
   date.setHours(0, 0, 0, 0)
@@ -92,7 +104,8 @@ export function shiftCalendar<S extends CalendarShift>(
   )
 
   // Days are counted on the calendar rather than in 24 hours, so a change of clocks never moves
-  // a column off midnight; such a day is drawn at the same height, its hours a little tighter.
+  // a column off midnight. Instants are placed by the clock, as the hour gutter beside them reads:
+  // on such a day the hour the clocks skip stays empty, and the hour they repeat is drawn once.
   const dayStart = (column: number) => {
     const date = new Date(anchor)
     date.setDate(date.getDate() + column)
@@ -101,10 +114,8 @@ export function shiftCalendar<S extends CalendarShift>(
   }
   const place = (instant: number) => {
     const column = Math.round((startOfDay(instant) - anchor) / DAY_MS)
-    const start = dayStart(column)
-    const length = dayStart(column + 1) - start
 
-    return { column, pct: ((instant - start) / length) * 100, dayEnd: start + length, length }
+    return { column, pct: clockPct(instant), dayEnd: dayStart(column + 1) }
   }
 
   // A period cut at every midnight it crosses, each piece measured within its own column.
@@ -112,9 +123,11 @@ export function shiftCalendar<S extends CalendarShift>(
     const result: Array<{ column: number; topPct: number; heightPct: number }> = []
     let from = start
     do {
-      const { column, pct, dayEnd, length } = place(from)
+      const { column, pct, dayEnd } = place(from)
       const to = Math.min(end, dayEnd)
-      result.push({ column, topPct: pct, heightPct: ((to - from) / length) * 100 })
+      const toPct = to === dayEnd ? 100 : clockPct(to)
+      // A piece within the hour the clocks repeat may read backwards; it keeps no height.
+      result.push({ column, topPct: pct, heightPct: Math.max(0, toPct - pct) })
       from = to
     } while (from < end)
 

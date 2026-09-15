@@ -19,9 +19,9 @@ import {
   planShiftWarehouseDoorSelection,
   planShiftWeighingAreaSelection,
 } from '#discharges/shared/planned_shift_rules'
+import { planShiftTruckSelection } from '#discharges/shared/planned_shift_trucks'
 import DischargePreparationRepository from '#discharges/shared/repositories/discharge_preparation_repository'
 import DischargeRepository from '#discharges/shared/repositories/discharge_repository'
-import { planShiftSelection } from '#discharges/shared/truck_pool_rules'
 import { isEligibleShiftResponsible } from '#users/shared/shift_responsible_eligibility'
 
 export type CorrectPlannedShiftInput = {
@@ -58,9 +58,10 @@ export default class CorrectPlannedShiftUseCase {
    * its trucks, warehouse doors, and weighing areas.
    *
    * The shifts, the pool, and the current selections are read under the discharge's lock, which
-   * every writer of them takes first. The responsible is locked, then only the trucks, doors, and
-   * weighing areas being added, in the order every preparation write takes them: a resource that
-   * stays selected needs no check, and may stay even if it has been archived or suspended since.
+   * every writer of them takes first. Only a new responsible is locked, then only the trucks, doors,
+   * and weighing areas being added, in the order every preparation write takes them: a responsible
+   * or a resource that stays needs no check, and may stay even if it has lost its eligibility, been
+   * archived, or been suspended since, so the rest of the shift can still be corrected.
    * Every refusal is collected before one is thrown, so the form learns them all at once.
    *
    * The selections are not dated again when the period moves: a planned membership records when the
@@ -92,14 +93,22 @@ export default class CorrectPlannedShiftUseCase {
         shifts.filter((row) => row.id !== shift.id),
       )
 
-      const users = await this.preparationRepository.lockUsers([input.responsibleUserId], client)
-      const responsible = users.get(input.responsibleUserId.toLowerCase())
-      if (!responsible || !isEligibleShiftResponsible(responsible)) {
-        issues.push(ineligibleShiftResponsibleIssue('responsibleUserId'))
+      const responsibleChanges =
+        current.responsibleUserId.toLowerCase() !== input.responsibleUserId.toLowerCase()
+      if (responsibleChanges) {
+        const users = await this.preparationRepository.lockUsers([input.responsibleUserId], client)
+        const responsible = users.get(input.responsibleUserId.toLowerCase())
+        if (!responsible || !isEligibleShiftResponsible(responsible)) {
+          issues.push(ineligibleShiftResponsibleIssue('responsibleUserId'))
+        }
       }
 
       const now = DateTime.utc()
-      const trucks = await this.planTrucks(discharge.id, shift.id, input.truckIds, now, client)
+      const trucks = await planShiftTruckSelection(
+        this.preparationRepository,
+        { dischargeId: discharge.id, shiftId: shift.id, truckIds: input.truckIds, now },
+        client,
+      )
       const warehouseDoors = await this.planWarehouseDoors(
         shift.id,
         input.warehouseDoorIds,
@@ -132,7 +141,7 @@ export default class CorrectPlannedShiftUseCase {
       const plannedUnchanged =
         current.plannedStartAt.toMillis() === input.plannedStartAt.toMillis() &&
         current.plannedEndAt.toMillis() === input.plannedEndAt.toMillis() &&
-        current.responsibleUserId.toLowerCase() === input.responsibleUserId.toLowerCase()
+        !responsibleChanges
       if (
         plannedUnchanged &&
         isUnchanged(trucks) &&
@@ -177,38 +186,6 @@ export default class CorrectPlannedShiftUseCase {
     }
 
     return read
-  }
-
-  /**
-   * The shift's truck selection, decided as the shift trucks command decides it: on the discharge's
-   * pool, locking only the held trucks it adds.
-   */
-  private async planTrucks(
-    dischargeId: string,
-    shiftId: string,
-    truckIds: string[],
-    now: DateTime,
-    client: TransactionClientContract,
-  ) {
-    const pool = await this.preparationRepository.listTruckPool(dischargeId, client)
-    const heldTruckIds = new Set(
-      pool.filter((row) => row.releasedAt === null).map((row) => row.truckId.toLowerCase()),
-    )
-    const selections = await this.preparationRepository.listCurrentShiftTruckSelections(
-      dischargeId,
-      client,
-    )
-    const currentSelection = selections.filter((row) => row.shiftId === shiftId)
-    const selectedIds = new Set(currentSelection.map((row) => row.truckId.toLowerCase()))
-    const addedIds = truckIds.filter(
-      (id) => heldTruckIds.has(id.toLowerCase()) && !selectedIds.has(id.toLowerCase()),
-    )
-    const addedTrucks =
-      addedIds.length > 0
-        ? await this.preparationRepository.lockTrucks(addedIds, client)
-        : new Map()
-
-    return planShiftSelection(truckIds, heldTruckIds, currentSelection, addedTrucks, now)
   }
 
   private async planWarehouseDoors(

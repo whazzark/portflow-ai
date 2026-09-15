@@ -9,9 +9,9 @@ import {
 } from '#discharges/shared/discharge_exceptions'
 import { throwPreparationIssues } from '#discharges/shared/discharge_preparation_issues'
 import { lockPlannedDischarge } from '#discharges/shared/planned_discharge_guard'
+import { planShiftTruckSelection } from '#discharges/shared/planned_shift_trucks'
 import DischargePreparationRepository from '#discharges/shared/repositories/discharge_preparation_repository'
 import DischargeRepository from '#discharges/shared/repositories/discharge_repository'
-import { planShiftSelection } from '#discharges/shared/truck_pool_rules'
 
 export type SelectShiftTrucksInput = {
   dischargeId: string
@@ -28,8 +28,7 @@ export default class SelectShiftTrucksUseCase {
 
   /**
    * The pool and the shift are read under the discharge's lock, which every writer of them takes
-   * first. Only the trucks being added are locked: a truck that stays selected needs no check, and
-   * a suspension of an added one either waits for this write or is seen by it.
+   * first; `planShiftTruckSelection` then locks only the trucks being added.
    */
   async handle(input: SelectShiftTrucksInput) {
     await db.transaction(async (client) => {
@@ -47,29 +46,15 @@ export default class SelectShiftTrucksUseCase {
         throw new ShiftNotPlannedException()
       }
 
-      const pool = await this.preparationRepository.listTruckPool(discharge.id, client)
-      const heldTruckIds = new Set(
-        pool.filter((row) => row.releasedAt === null).map((row) => row.truckId.toLowerCase()),
-      )
-      const selections = await this.preparationRepository.listCurrentShiftTruckSelections(
-        discharge.id,
+      const plan = await planShiftTruckSelection(
+        this.preparationRepository,
+        {
+          dischargeId: discharge.id,
+          shiftId: shift.id,
+          truckIds: input.truckIds,
+          now: DateTime.utc(),
+        },
         client,
-      )
-      const currentSelection = selections.filter((row) => row.shiftId === shift.id)
-      const selectedIds = new Set(currentSelection.map((row) => row.truckId.toLowerCase()))
-      const addedIds = input.truckIds.filter(
-        (id) => heldTruckIds.has(id.toLowerCase()) && !selectedIds.has(id.toLowerCase()),
-      )
-      const addedTrucks =
-        addedIds.length > 0
-          ? await this.preparationRepository.lockTrucks(addedIds, client)
-          : new Map()
-      const plan = planShiftSelection(
-        input.truckIds,
-        heldTruckIds,
-        currentSelection,
-        addedTrucks,
-        DateTime.utc(),
       )
 
       if (plan.kind === 'ISSUES') {

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { formatShiftDuration } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/helpers/dates'
 import { toFormFieldName } from '@/libraries/forms/api-error'
@@ -361,8 +362,6 @@ export function emptyPlannedShift(): PlannedShiftFormValues {
   return { plannedStartAt: '', plannedEndAt: '', responsibleUserId: '' }
 }
 
-const MINUTE = 60_000
-
 function localPeriodMillis(startLocal: string, endLocal: string) {
   const start = Date.parse(fromDateTimeLocalValue(startLocal) ?? '')
   const end = Date.parse(fromDateTimeLocalValue(endLocal) ?? '')
@@ -370,22 +369,19 @@ function localPeriodMillis(startLocal: string, endLocal: string) {
   return Number.isNaN(start) || Number.isNaN(end) || end <= start ? null : { start, end }
 }
 
-/** How long a planned shift lasts, as `8 h`, `7 h 30`, or `45 min`; `—` until its period is valid. */
-export function formatShiftDuration(startLocal: string, endLocal: string) {
+/** How long a shift being entered lasts, read as the detail reads it; `—` until its period is valid. */
+export function formatLocalShiftDuration(startLocal: string, endLocal: string) {
   const period = localPeriodMillis(startLocal, endLocal)
   if (!period) {
     return '—'
   }
 
-  const minutes = Math.round((period.end - period.start) / MINUTE)
-  const hours = Math.floor(minutes / 60)
-  const rest = minutes % 60
-
-  if (hours === 0) {
-    return `${rest} min`
-  }
-
-  return rest === 0 ? `${hours} h` : `${hours} h ${String(rest).padStart(2, '0')}`
+  return (
+    formatShiftDuration({
+      plannedStartAt: new Date(period.start).toISOString(),
+      plannedEndAt: new Date(period.end).toISOString(),
+    }) ?? '—'
+  )
 }
 
 /**
@@ -507,13 +503,18 @@ export function customerProductLotsFormValues(group: {
 }): CustomerProductLotsFormValues {
   return {
     customerId: group.customer.id,
-    products: group.lots.map((lot) => ({
-      lotId: lot.id,
-      productName: lot.productName,
-      expectedQuantityTonnes: lot.expectedQuantityTonnes,
-      description: lot.description ?? '',
-    })),
+    products: group.lots.map(correctionLineOf),
     removedProductLotIds: [],
+  }
+}
+
+/** The row correcting a lot, holding the lot's values as the detail reads them. */
+export function correctionLineOf(lot: DetailLot): CorrectionLineFormValues {
+  return {
+    lotId: lot.id,
+    productName: lot.productName,
+    expectedQuantityTonnes: lot.expectedQuantityTonnes,
+    description: lot.description ?? '',
   }
 }
 
@@ -662,10 +663,17 @@ export function shiftCorrectionFormValues(shift: CorrectedShift): ShiftCorrectio
   }
 }
 
-export function toShiftCorrectionBody(values: ShiftCorrectionFormValues) {
+/**
+ * The correction's body. A bound the form shows unchanged is sent as the shift holds it, since the
+ * form reads it only to the minute: resending it rounded would move a period nobody touched.
+ */
+export function toShiftCorrectionBody(values: ShiftCorrectionFormValues, shift: CorrectedShift) {
+  const instantOf = (local: string, held: string | null) =>
+    held && local === toDateTimeLocalValue(held) ? held : (fromDateTimeLocalValue(local) as string)
+
   return {
-    plannedStartAt: fromDateTimeLocalValue(values.plannedStartAt) as string,
-    plannedEndAt: fromDateTimeLocalValue(values.plannedEndAt) as string,
+    plannedStartAt: instantOf(values.plannedStartAt, shift.plannedStartAt),
+    plannedEndAt: instantOf(values.plannedEndAt, shift.plannedEndAt),
     responsibleUserId: values.responsibleUserId,
     truckIds: values.truckIds,
     warehouseDoorIds: values.warehouseDoorIds,

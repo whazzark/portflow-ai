@@ -14,6 +14,7 @@ import Discharge from '#models/discharge'
 import Shift from '#models/shift'
 import ShiftWarehouseDoor from '#models/shift_warehouse_door'
 import ShiftWeighingArea from '#models/shift_weighing_area'
+import User from '#models/user'
 
 import {
   createPreparedDischarge,
@@ -442,6 +443,28 @@ test.group('Planned shift correction HTTP contract', (group) => {
       ])
     }
     assert.equal((await storedShift(shift.id)).responsibleUserId, prepared.responsible.id)
+  })
+
+  test('keeps a responsible who has lost eligibility while the rest of the shift is corrected', async ({
+    assert,
+    client,
+  }) => {
+    const prepared = await plannedShift()
+    const { discharge, shift } = prepared
+    await User.query()
+      .where('id', prepared.responsible.id)
+      .update({ accessStatus: 'DEACTIVATED', deactivatedAt: DateTime.utc().toSQL() })
+
+    const response = await client
+      .put(url(discharge.id, shift.id))
+      .json(body(prepared, { plannedStartAt: at(7).toISO() }))
+      .loginAs(await preparer())
+
+    response.assertStatus(200)
+    assert.containsSubset(await storedShift(shift.id), {
+      plannedStartAt: at(7).toISO(),
+      responsibleUserId: prepared.responsible.id,
+    })
   })
 
   test('refuses trucks, doors, and weighing areas that cannot be newly selected, all at once', async ({

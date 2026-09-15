@@ -64,6 +64,18 @@ test.group('planCustomerProductLotsCorrection — ownership and partition', () =
     }
   })
 
+  test('refuses a customer without lots on the discharge, even for lots only added', ({
+    assert,
+  }) => {
+    for (const customerId of [UNKNOWN_ID, 'not-a-uuid']) {
+      assert.deepEqual(
+        plan({ customerId, targetCustomerId: customerId, productLots: [entry('Blé')] }),
+        { kind: 'LOT_NOT_FOUND' },
+        customerId,
+      )
+    }
+  })
+
   test('compares lot identities without regard to case', ({ assert }) => {
     const result = plan({ productLots: [entry('Blé tendre', WHEAT_ID.toUpperCase())] })
 

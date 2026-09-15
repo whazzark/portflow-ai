@@ -142,7 +142,11 @@ describe('shiftCalendar', () => {
     // Clocks go back in much of Europe during the night of 25 October 2026.
     const calendar = shiftCalendar({
       expectedStartAt: at(24, 6),
-      shifts: [shift('night', at(25, 22), at(26, 0)), shift('morning', at(26, 0), at(26, 8))],
+      shifts: [
+        shift('day', at(25, 6), at(25, 14)),
+        shift('night', at(25, 22), at(26, 0)),
+        shift('morning', at(26, 0), at(26, 8)),
+      ],
     })
 
     expect(calendar?.columns.slice(0, 3).map((column) => column.startLabel)).toEqual([
@@ -150,7 +154,12 @@ describe('shiftCalendar', () => {
       'Sun 25 Oct',
       'Mon 26 Oct',
     ])
-    expect(pieces(calendar)?.at(-1)).toMatchObject({ id: 'morning', column: 2, top: 0 })
+    // Placed by the clock, so a shift of that day lines up with the hours beside it.
+    expect(pieces(calendar)).toEqual([
+      { id: 'day', column: 1, top: 25, height: 33.33, primary: true },
+      { id: 'night', column: 1, top: 91.67, height: 8.33, primary: true },
+      { id: 'morning', column: 2, top: 0, height: 33.33, primary: true },
+    ])
   })
 
   test('marks the breaks between shifts in their columns, and none where shifts touch or overlap', () => {

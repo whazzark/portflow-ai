@@ -294,6 +294,27 @@ test.group('Customer product lots correction guards', (group) => {
     assert.deepEqual(await lotsOf(prepared), before)
   })
 
+  test('refuses to add lots through a customer without lots on this discharge', async ({
+    assert,
+    client,
+  }) => {
+    const prepared = await prepareCargillLots()
+    const archived = await CustomerFactory.apply('archived').create()
+    const before = await lotsOf(prepared)
+    const lead = await preparer()
+
+    for (const customerId of [archived.id, '00000000-0000-4000-8000-000000000000']) {
+      const response = await client
+        .patch(urlOf(prepared, customerId))
+        .loginAs(lead)
+        .json(correctionBody(prepared, { customerId, productLots: [lotEntry('Maïs')] }))
+
+      response.assertStatus(404)
+      assert.equal(response.body().error.code, 'E_PRODUCT_LOT_NOT_FOUND')
+    }
+    assert.deepEqual(await lotsOf(prepared), before)
+  })
+
   test('refuses a lot listed twice', async ({ assert, client }) => {
     const prepared = await prepareCargillLots()
 

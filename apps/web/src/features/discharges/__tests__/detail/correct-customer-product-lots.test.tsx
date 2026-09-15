@@ -364,31 +364,61 @@ test("removes every lot of the customer while another customer's lots remain", a
   )
 })
 
-test('refreshes the lots when a removal is refused, keeping the sheet open', async () => {
-  const state = mockDischargeCorrections({
-    detail: PLANNED,
-    respondToCustomerLots: () =>
-      refusal(422, 'E_VALIDATION_ERROR', [
-        {
-          field: 'removedProductLotIds.0',
-          rule: 'removableProductLot',
-          message: 'This product lot has warehouse door assignments',
-        },
-      ]),
-  })
+test.each([
+  {
+    refused: 'at its position',
+    answer: refusal(422, 'E_VALIDATION_ERROR', [
+      {
+        field: 'removedProductLotIds.0',
+        rule: 'removableProductLot',
+        message: 'This product lot has warehouse door assignments',
+      },
+    ]),
+  },
+  { refused: 'as a conflict', answer: refusal(409, 'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS') },
+])(
+  'brings back a lot whose removal is refused $refused, so the rest can be saved',
+  async ({ answer }) => {
+    let answered = false
+    const state = mockDischargeCorrections({
+      detail: PLANNED,
+      respondToCustomerLots: () => {
+        if (answered) {
+          return undefined
+        }
+        answered = true
 
-  renderDischargeTab(PLANNED.id, 'product-lots')
-  const sheet = await openCargillCorrection()
-  const requestsBefore = state.detailRequests
-  fireEvent.click(within(sheet).getByRole('button', { name: 'Remove product 3' }))
-  fireEvent.click(within(sheet).getByRole('button', { name: 'Save' }))
+        return answer
+      },
+    })
 
-  expect(
-    await within(sheet).findByText(/This product lot has warehouse door assignments/),
-  ).toBeInTheDocument()
-  expect(screen.getByRole('dialog', DIALOG)).toBeInTheDocument()
-  await waitFor(() => expect(state.detailRequests).toBeGreaterThan(requestsBefore))
-})
+    renderDischargeTab(PLANNED.id, 'product-lots')
+    const sheet = await openCargillCorrection()
+    const requestsBefore = state.detailRequests
+    change(quantityOf(sheet, 1), '900')
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Remove product 3' }))
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Save' }))
+
+    expect(
+      await screen.findByText('This product lot has warehouse door assignments'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('dialog', DIALOG)).toBeInTheDocument()
+    await waitFor(() => expect(state.detailRequests).toBeGreaterThan(requestsBefore))
+    expect(nameOf(sheet, 3)).toHaveValue('Colza')
+    expect(quantityOf(sheet, 1)).toHaveValue('900')
+
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Save' }))
+    await waitForClosed()
+    expect(state.customerLotRequests[1].body).toMatchObject({
+      productLots: [
+        { id: 'lot-wheat', expectedQuantityTonnes: '900' },
+        { id: 'lot-barley' },
+        { id: 'lot-rapeseed', productName: 'Colza' },
+      ],
+      removedProductLotIds: [],
+    })
+  },
+)
 
 test('keeps the sheet open when the discharge would be left without any lot', async () => {
   mockDischargeCorrections({

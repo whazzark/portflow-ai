@@ -16,6 +16,7 @@ const DISCHARGE_ID = '44444444-4444-4444-8444-444444444444'
 const SHIFT_ID = '88888888-8888-4888-8888-888888888888'
 const NEXT_SHIFT_ID = '99999999-9999-4999-8999-999999999999'
 const RESPONSIBLE = '11111111-1111-4111-8111-111111111111'
+const NEW_RESPONSIBLE = '22222222-2222-4222-8222-222222222222'
 const KEPT = '55555555-5555-4555-8555-555555555555'
 const ADDED = '66666666-6666-4666-8666-666666666666'
 const UNKNOWN = '77777777-7777-4777-8777-777777777777'
@@ -135,19 +136,19 @@ test.group('Correct planned shift use case', (group) => {
     app.container.restore(DischargeRepository)
   })
 
-  test('locks the discharge first, then the responsible, then only the added trucks, doors, and areas', async ({
+  test('locks the discharge first, then the new responsible, then only the added trucks, doors, and areas', async ({
     assert,
   }) => {
     const { calls } = stubRepositories()
     const useCase = await app.container.make(CorrectPlannedShiftUseCase)
 
-    await useCase.handle(correction())
+    await useCase.handle(correction({ responsibleUserId: NEW_RESPONSIBLE }))
 
     assert.deepEqual(calls, [
       'lockDischarge',
       'findShift',
       'listShifts',
-      `lockUsers:${RESPONSIBLE}`,
+      `lockUsers:${NEW_RESPONSIBLE}`,
       'listTruckPool',
       'listCurrentShiftTruckSelections',
       `lockTrucks:${ADDED}`,
@@ -158,6 +159,16 @@ test.group('Correct planned shift use case', (group) => {
       'writeShiftTruckSelection',
       'writePlannedShiftCorrection',
     ])
+  })
+
+  test('neither locks nor checks a responsible who stays', async ({ assert }) => {
+    const { calls } = stubRepositories()
+    const useCase = await app.container.make(CorrectPlannedShiftUseCase)
+
+    await useCase.handle(correction())
+
+    assert.isFalse(calls.some((call) => call.startsWith('lockUsers')))
+    assert.include(calls, 'writePlannedShiftCorrection')
   })
 
   test('writes the new period, the renumbered shifts, and each selection change', async ({

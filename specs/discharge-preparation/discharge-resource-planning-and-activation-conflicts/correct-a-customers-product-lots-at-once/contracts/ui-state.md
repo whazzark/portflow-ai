@@ -69,7 +69,8 @@ A swap of two rows' names raises nothing.
 |---|---|---|---|
 | 200 | Closes | Toast `Product lots updated` | Response written to the cache; the list is invalidated |
 | 422 on `productLots.N.*` or `customerId` | Stays open, values kept | Error on row N's field or on `Customer` | Refetched (door assignments may have changed) |
-| 422 on `removedProductLotIds.N` or `productLots.N.id` | Stays open, values kept | API messages at form level | Refetched; removal blocks update |
+| 422 on `removedProductLotIds.N` only, or 409 `E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS` | Stays open, other values kept; each refused lot's row comes back as it opened (every removed lot's row for the 409) | Toast `This product lot has warehouse door assignments` | Refetched; removal blocks update |
+| 422 on `productLots.N.id`, or on `removedProductLotIds.N` alongside other fields | Stays open, values kept; refused removals come back as above | API messages at form level | Refetched; removal blocks update |
 | 409 `E_DISCHARGE_LAST_PRODUCT_LOT` | Stays open | Form error `A discharge needs at least one product lot` | Refetched |
 | 404 `E_PRODUCT_LOT_NOT_FOUND` | Closes | Toast `This customer's product lots changed` | Refetched |
 | 409 `E_DISCHARGE_NOT_PLANNED`, 404 `E_DISCHARGE_NOT_FOUND` | Closes | Toast `This discharge has started and can no longer be corrected` | Refetched |

@@ -66,8 +66,10 @@ function removableLotIssue(field: string): PreparationIssue {
 /**
  * Decides a correction of one customer's lots. Precedence, first refusal wins:
  *
- * 1. Every listed or removed lot must be a current lot of the discharge belonging to the corrected
- *    customer; anything else is a lot that is not there (`LOT_NOT_FOUND`).
+ * 1. The corrected customer has lots on the discharge, and every listed or removed lot is one of
+ *    them; anything else is a lot that is not there (`LOT_NOT_FOUND`). A customer without lots has
+ *    no group to correct, so lots can only be added through it to a customer the discharge already
+ *    uses, which cannot have been archived.
  * 2. A lot is listed once across both lists.
  * 3. Every rule on the values is reported at once: lots moving to another customer move to an
  *    available one (the current customer is in use, so it cannot have been archived), a removed
@@ -98,7 +100,7 @@ export function planCustomerProductLotsCorrection(
   }))
   const referenced = [...listedIds, ...removedIds]
 
-  if (referenced.some(({ id }) => !ownLots.has(id))) {
+  if (ownLots.size === 0 || referenced.some(({ id }) => !ownLots.has(id))) {
     return { kind: 'LOT_NOT_FOUND' }
   }
 

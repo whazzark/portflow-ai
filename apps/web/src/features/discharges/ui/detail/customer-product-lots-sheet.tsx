@@ -18,6 +18,7 @@ import {
 } from '@/features/discharges/discharge-detail-view'
 import {
   type CorrectionLineFormValues,
+  correctionLineOf,
   customerProductLotsCrossRulesSchema,
   customerProductLotsFieldNames,
   customerProductLotsFieldOf,
@@ -27,6 +28,7 @@ import {
   toCustomerProductLotsBody,
 } from '@/features/discharges/discharge-preparation-schema'
 import { useDischargeMutations } from '@/features/discharges/mutations/use-discharge-mutations'
+import { listRefusals } from '@/features/discharges/truck-pool-refusals'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { STARTED_REFUSAL_MESSAGE } from '@/features/discharges/ui/detail/edit-discharge-identity-sheet'
 import { LOT_REMOVAL_REASONS } from '@/features/discharges/ui/detail/remove-product-lot-dialog'
@@ -86,6 +88,25 @@ export function CustomerProductLotsSheet({
 
 const plural = (count: number) => `${count} lot${count === 1 ? '' : 's'}`
 
+/**
+ * The removed lots a refusal keeps: those refused at their position, or every removed lot when a
+ * door was assigned to one of them too late for the refusal to say which. `only` tells whether the
+ * refusal says nothing else.
+ */
+function refusedRemovals(error: unknown, removedProductLotIds: readonly string[]) {
+  const apiError = parseApiError(error)
+  if (apiError.code === 'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS') {
+    return { ids: new Set(removedProductLotIds), only: true }
+  }
+
+  const ids = new Set(listRefusals(apiError, 'removedProductLotIds', removedProductLotIds).keys())
+  const only = (apiError.details ?? []).every((detail) =>
+    detail.field.startsWith('removedProductLotIds.'),
+  )
+
+  return { ids, only: ids.size > 0 && only }
+}
+
 /** What choosing another customer does to the lots: they join the lots it already has here. */
 function joinDescription(
   discharge: DischargeDetailDto,
@@ -140,6 +161,26 @@ function CustomerProductLotsForm({
         toast.success('Product lots updated')
         onDone()
       } catch (error) {
+        // A lot that cannot be removed any more comes back as it opened, so the rest of the change
+        // can still be saved; the refreshed detail then says why its row cannot be removed.
+        const refused = refusedRemovals(error, value.removedProductLotIds)
+        if (refused.ids.size > 0) {
+          for (const lot of group.lots.filter((candidate) => refused.ids.has(candidate.id))) {
+            formApi.pushFieldValue('products', correctionLineOf(lot))
+          }
+          formApi.setFieldValue(
+            'removedProductLotIds',
+            value.removedProductLotIds.filter((id) => !refused.ids.has(id)),
+          )
+        }
+        // With nothing left to fix, the reason is told once rather than held on the form, which
+        // would refuse the next save until something else changed.
+        if (refused.only) {
+          toast.error(LOT_REMOVAL_REASONS.E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS)
+
+          return
+        }
+
         if (
           applyValidationError(
             formApi,

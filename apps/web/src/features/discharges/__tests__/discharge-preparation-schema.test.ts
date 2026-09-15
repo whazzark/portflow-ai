@@ -3,6 +3,7 @@ import { expect, test } from 'vitest'
 import {
   buildDischargeDetail,
   buildLot,
+  buildShift,
   DISCHARGES,
 } from '@/features/discharges/__tests__/support/fixtures'
 import {
@@ -19,7 +20,7 @@ import {
   emptyProductLine,
   emptyProductLot,
   flattenLotGroups,
-  formatShiftDuration,
+  formatLocalShiftDuration,
   identityFormValues,
   isStepComplete,
   lotGroupFieldNames,
@@ -28,11 +29,13 @@ import {
   plannedShiftSchema,
   productLotFormValues,
   productLotSchema,
+  shiftCorrectionFormValues,
   stepHasErrors,
   toCreateDischargeBody,
   toIdentityBody,
   toProductLotBody,
   toProductLotsBody,
+  toShiftCorrectionBody,
 } from '@/features/discharges/discharge-preparation-schema'
 import { fromDateTimeLocalValue } from '@/helpers/dates'
 
@@ -417,17 +420,17 @@ test("refuses added lots clashing with each other or with the discharge's existi
 })
 
 test('states how long a planned shift lasts', () => {
-  expect(formatShiftDuration('2026-10-01T06:00', '2026-10-01T14:00')).toBe('8 h')
-  expect(formatShiftDuration('2026-10-01T06:00', '2026-10-01T13:30')).toBe('7 h 30')
-  expect(formatShiftDuration('2026-10-01T22:00', '2026-10-02T06:15')).toBe('8 h 15')
-  expect(formatShiftDuration('2026-10-01T06:00', '2026-10-01T06:45')).toBe('45 min')
+  expect(formatLocalShiftDuration('2026-10-01T06:00', '2026-10-01T14:00')).toBe('8 h')
+  expect(formatLocalShiftDuration('2026-10-01T06:00', '2026-10-01T13:30')).toBe('7 h 30 min')
+  expect(formatLocalShiftDuration('2026-10-01T22:00', '2026-10-02T06:15')).toBe('8 h 15 min')
+  expect(formatLocalShiftDuration('2026-10-01T06:00', '2026-10-01T06:45')).toBe('45 min')
 })
 
 test('has no length for a missing, empty, or inverted period', () => {
-  expect(formatShiftDuration('', '2026-10-01T14:00')).toBe('—')
-  expect(formatShiftDuration('2026-10-01T06:00', '')).toBe('—')
-  expect(formatShiftDuration('2026-10-01T06:00', '2026-10-01T06:00')).toBe('—')
-  expect(formatShiftDuration('2026-10-01T14:00', '2026-10-01T06:00')).toBe('—')
+  expect(formatLocalShiftDuration('', '2026-10-01T14:00')).toBe('—')
+  expect(formatLocalShiftDuration('2026-10-01T06:00', '')).toBe('—')
+  expect(formatLocalShiftDuration('2026-10-01T06:00', '2026-10-01T06:00')).toBe('—')
+  expect(formatLocalShiftDuration('2026-10-01T14:00', '2026-10-01T06:00')).toBe('—')
 })
 
 test('starts the next shift when the last one ends, for as long', () => {
@@ -516,4 +519,21 @@ test('holds a step complete only once its own values are valid', () => {
   // The shifts of a vessel step being checked do not matter, and are still empty here.
   expect(isStepComplete('shifts', values)).toBe(false)
   expect(isStepComplete('shifts', { ...values, shifts: [validShift] })).toBe(true)
+})
+
+test('sends a period bound left unchanged as the shift holds it, to the second', () => {
+  const shift = buildShift({
+    plannedStartAt: '2026-10-04T06:00:30.000Z',
+    plannedEndAt: '2026-10-04T14:00:30.000Z',
+  })
+  const values = shiftCorrectionFormValues(shift)
+
+  expect(toShiftCorrectionBody(values, shift)).toMatchObject({
+    plannedStartAt: '2026-10-04T06:00:30.000Z',
+    plannedEndAt: '2026-10-04T14:00:30.000Z',
+  })
+
+  const moved = toShiftCorrectionBody({ ...values, plannedEndAt: '2026-10-05T01:15' }, shift)
+  expect(moved.plannedStartAt).toBe('2026-10-04T06:00:30.000Z')
+  expect(moved.plannedEndAt).toBe(fromDateTimeLocalValue('2026-10-05T01:15'))
 })
