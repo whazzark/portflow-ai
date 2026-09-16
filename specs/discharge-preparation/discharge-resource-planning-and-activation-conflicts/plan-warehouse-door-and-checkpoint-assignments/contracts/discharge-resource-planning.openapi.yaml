@@ -1,0 +1,321 @@
+openapi: 3.1.0
+info:
+  title: Portflow Discharge Door and Checkpoint Planning Contract
+  version: 1.0.0
+  description: >-
+    The contract introduced by issue 54. It covers assigning and withdrawing a planned discharge's
+    warehouse doors per product lot, adding and removing a planned shift's warehouse doors and
+    weighing areas, and the options query those choices are made from. Both commands answer with
+    the DischargeDetail shape of issue 58 (discharges.show), which is referenced here and
+    unchanged. Every endpoint requires an ACTIVE operations lead, operations admin, or
+    organization admin (DischargePolicy.update). See research.md Decisions 1 to 8.
+paths:
+  /api/v1/discharges/{id}/planning-options:
+    get:
+      operationId: discharges.planning_options
+      summary: Doors and weighing areas a preparer may choose for this discharge
+      description: >-
+        Lists available doors of available warehouses, each with the planned or active discharges
+        other than this one where the door currently has an assignment, and available weighing
+        areas. The discharge's status is not checked. Assignments current in this discharge are
+        read from its detail, not repeated here (research.md Decision 8).
+      parameters:
+        - $ref: "#/components/parameters/DischargeId"
+      responses:
+        "200":
+          description: The planning options.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanningOptionsEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeNotFound" }
+
+  /api/v1/discharges/{dischargeId}/product-lots/{id}/warehouse-doors:
+    patch:
+      operationId: discharges.product_lots.warehouse_doors
+      summary: Assign and withdraw warehouse doors of a planned discharge's product lot
+      description: >-
+        Applies a change set to the lot's current door assignments, atomically, under the
+        discharge's lock (research.md Decision 2). A door already current on this lot is left as is
+        when assigned. A door not current on this lot is left as is when withdrawn. A door current
+        on another lot of the discharge is moved: that assignment ends and this lot's starts at the
+        same instant (Decision 3). A door current in another planned or active discharge is
+        assigned without changing that discharge. Rows are ended, never deleted. An empty change
+        set answers 200 and changes nothing.
+      parameters:
+        - $ref: "#/components/parameters/DischargeIdInCollection"
+        - $ref: "#/components/parameters/ProductLotId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LotWarehouseDoorsBody" }
+            examples:
+              assignTwoWithdrawOne:
+                value:
+                  assign:
+                    - 0b7e3f2a-6c1d-4f8e-9a2b-3c4d5e6f7a8b
+                    - 1c8f4a3b-7d2e-4a9f-8b3c-4d5e6f7a8b9c
+                  withdraw:
+                    - 2d9a5b4c-8e3f-4b1a-9c4d-5e6f7a8b9c0d
+      responses:
+        "200":
+          description: The discharge after the change.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeOrProductLotNotFound" }
+        "409": { $ref: "#/components/responses/PlanningStateConflict" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+
+  /api/v1/discharges/{dischargeId}/shifts/{id}/checkpoints:
+    patch:
+      operationId: discharges.shifts.checkpoints
+      summary: Add and remove a planned shift's warehouse doors and weighing areas
+      description: >-
+        Applies a change set to the shift's current door and weighing area selections, both kinds
+        in one transaction, under the discharge's lock. A door may only be added when it currently
+        has an assignment to a lot of the same discharge. Nothing is inherited from, or changed on,
+        another shift. Rows are ended, never deleted. An empty change set answers 200 and changes
+        nothing.
+      parameters:
+        - $ref: "#/components/parameters/DischargeIdInCollection"
+        - $ref: "#/components/parameters/ShiftId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShiftCheckpointsBody" }
+            examples:
+              addDoorAndArea:
+                value:
+                  warehouseDoors:
+                    add: [0b7e3f2a-6c1d-4f8e-9a2b-3c4d5e6f7a8b]
+                    remove: []
+                  weighingAreas:
+                    add: [3e0b6c5d-9f4a-4c2b-8d5e-6f7a8b9c0d1e]
+                    remove: []
+      responses:
+        "200":
+          description: The discharge after the change.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeOrShiftNotFound" }
+        "409": { $ref: "#/components/responses/PlanningStateConflict" }
+        "422": { $ref: "#/components/responses/ValidationFailed" }
+
+components:
+  parameters:
+    DischargeId:
+      name: id
+      in: path
+      required: true
+      description: A malformed identity is answered 404, not 422.
+      schema: { type: string }
+    DischargeIdInCollection:
+      name: dischargeId
+      in: path
+      required: true
+      description: A malformed identity is answered 404, not 422.
+      schema: { type: string }
+    ProductLotId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    ShiftId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+
+  schemas:
+    IdList:
+      type: array
+      maxItems: 200
+      uniqueItems: true
+      items: { type: string, format: uuid }
+
+    LotWarehouseDoorsBody:
+      type: object
+      additionalProperties: false
+      required: [assign, withdraw]
+      description: No identity may appear in both lists (rule notInBothLists, reported on withdraw.N).
+      properties:
+        assign: { $ref: "#/components/schemas/IdList" }
+        withdraw: { $ref: "#/components/schemas/IdList" }
+
+    ChangePair:
+      type: object
+      additionalProperties: false
+      required: [add, remove]
+      description: No identity may appear in both lists (rule notInBothLists, reported on remove.N).
+      properties:
+        add: { $ref: "#/components/schemas/IdList" }
+        remove: { $ref: "#/components/schemas/IdList" }
+
+    ShiftCheckpointsBody:
+      type: object
+      additionalProperties: false
+      required: [warehouseDoors, weighingAreas]
+      properties:
+        warehouseDoors: { $ref: "#/components/schemas/ChangePair" }
+        weighingAreas: { $ref: "#/components/schemas/ChangePair" }
+
+    NamedReference:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+
+    OtherDischargeAssignment:
+      type: object
+      required: [discharge]
+      properties:
+        discharge:
+          type: object
+          required: [id, vesselName, status, expectedStartAt]
+          properties:
+            id: { type: string, format: uuid }
+            vesselName: { type: string }
+            status: { enum: [PLANNED, ACTIVE] }
+            expectedStartAt: { type: string, format: date-time }
+
+    PlanningWarehouseDoor:
+      type: object
+      required: [id, name, warehouse, otherDischargeAssignments]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        warehouse: { $ref: "#/components/schemas/NamedReference" }
+        otherDischargeAssignments:
+          type: array
+          description: One entry per other discharge, ordered by expected start.
+          items: { $ref: "#/components/schemas/OtherDischargeAssignment" }
+
+    PlanningOptionsEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [warehouseDoors, weighingAreas]
+          properties:
+            warehouseDoors:
+              type: array
+              description: Ordered by warehouse name, door name, then id.
+              items: { $ref: "#/components/schemas/PlanningWarehouseDoor" }
+            weighingAreas:
+              type: array
+              description: Ordered by name, then id.
+              items: { $ref: "#/components/schemas/NamedReference" }
+
+    DischargeDetailEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "../../consult-a-prepared-discharge-in-the-web-workbench/contracts/discharge-detail.openapi.yaml#/components/schemas/DischargeDetail"
+
+    ValidationIssue:
+      type: object
+      required: [field, message, rule]
+      properties:
+        field:
+          type: string
+          description: >-
+            Dotted path into the request body, such as assign.0, withdraw.2,
+            warehouseDoors.add.1, or weighingAreas.add.0.
+        message: { type: string }
+        rule:
+          type: string
+          description: >-
+            A VineJS rule name for shape failures (including distinct), or one of this slice's
+            rules: notInBothLists, availableWarehouseDoor, selectedByPlannedShift,
+            assignedWarehouseDoor, or availableWeighingArea.
+        index: { type: integer }
+        meta: { type: object }
+
+    ApiErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+
+  responses:
+    Unauthenticated:
+      description: >-
+        No session, or a session whose user is not ACTIVE. Code E_UNAUTHORIZED_ACCESS. Nothing is
+        changed.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    Forbidden:
+      description: >-
+        An ACTIVE observer. Code E_AUTHORIZATION_FAILURE. Nothing is changed, and the request body
+        is not validated.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    DischargeNotFound:
+      description: No discharge has this identity, or it is malformed. Code E_DISCHARGE_NOT_FOUND.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    DischargeOrProductLotNotFound:
+      description: >-
+        E_DISCHARGE_NOT_FOUND for the discharge. E_PRODUCT_LOT_NOT_FOUND when the lot is unknown,
+        malformed, removed, or belongs to another discharge.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    DischargeOrShiftNotFound:
+      description: >-
+        E_DISCHARGE_NOT_FOUND for the discharge. E_SHIFT_NOT_FOUND when the shift is unknown,
+        malformed, removed, or belongs to another discharge.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    PlanningStateConflict:
+      description: >-
+        Nothing is changed. E_DISCHARGE_NOT_PLANNED when the discharge is ACTIVE or CLOSED.
+        E_SHIFT_NOT_PLANNED when the shift is ACTIVE or COMPLETED (shift command only).
+        E_DISCHARGE_PLANNING_CONFLICT when a concurrent write was caught by a current-row unique
+        index; retrying against the refreshed detail is safe.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    ValidationFailed:
+      description: >-
+        Code E_VALIDATION_ERROR. It covers a shape failure (a malformed or repeated identity, an
+        identity in both lists of a pair, a list over 200 items) and a chosen resource refused at
+        the moment of writing: a door or warehouse no longer available, a door still selected by a
+        planned shift, a door not assigned to a lot of the discharge, or a weighing area no longer
+        available. Every issue is reported at once. Nothing is changed.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message, details]
+                properties:
+                  code: { const: E_VALIDATION_ERROR }
+                  message: { type: string }
+                  details:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationIssue" }

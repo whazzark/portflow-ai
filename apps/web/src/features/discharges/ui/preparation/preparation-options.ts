@@ -3,7 +3,6 @@ import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { customerQueries } from '@/features/customers/queries/customer-queries'
 import { dischargeQueries } from '@/features/discharges/queries/discharge-queries'
 import { dockQueries } from '@/features/docks/queries/dock-queries'
-import { warehouseQueries } from '@/features/warehouses/queries/warehouse-queries'
 import { weighingAreaQueries } from '@/features/weighing-areas/queries/weighing-area-queries'
 
 type Reference = { id: string; name: string }
@@ -19,7 +18,7 @@ export type PreparationOptions<Option> = {
   onRetry?: () => void
 }
 
-function optionsState<Data, Option>(
+export function optionsState<Data, Option>(
   query: UseQueryResult<Data>,
   toOptions: (data: Data) => Option[],
 ): PreparationOptions<Option> {
@@ -68,38 +67,6 @@ export function useResponsibleOptions() {
   const query = useQuery(dischargeQueries.eligibleResponsibles())
 
   return optionsState(query, (response) => response.data)
-}
-
-type Status = 'AVAILABLE' | 'ARCHIVED'
-
-export type WarehouseDoorOption = {
-  id: string
-  name: string
-  status: Status
-  warehouse: { id: string; name: string; status: Status }
-}
-
-/**
- * The doors a shift may use: those that can be chosen, with their warehouse, as the API judges a
- * door available — the door and its warehouse both available.
- */
-export function useWarehouseDoorOptions() {
-  const query = useQuery(warehouseQueries.list())
-
-  return optionsState(query, (response) =>
-    response.data.flatMap((warehouse) =>
-      warehouse.status === 'AVAILABLE'
-        ? (warehouse.doors ?? [])
-            .filter((door) => door.status === 'AVAILABLE')
-            .map((door) => ({
-              id: door.id,
-              name: door.name,
-              status: door.status,
-              warehouse: { id: warehouse.id, name: warehouse.name, status: warehouse.status },
-            }))
-        : [],
-    ),
-  )
 }
 
 export function useWeighingAreaOptions() {

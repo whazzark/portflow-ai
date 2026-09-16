@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
 import type { DischargeDetailDto } from '@/features/discharges/types'
@@ -67,7 +67,7 @@ test('lists the lots under each customer, with its subtotal and the expected tot
   expect(total.closest('tr')).toHaveTextContent('13,500.750 t')
 })
 
-test('lists each door with its warehouse and period, the ones in effect first', async () => {
+test('shows the doors a lot holds as chips, and its ended ones a click away', async () => {
   const region = await renderLots({
     productLots: [
       buildLot({
@@ -84,14 +84,47 @@ test('lists each door with its warehouse and period, the ones in effect first', 
     ],
   })
 
-  const doors = within(region).getAllByRole('listitem')
-  expect(doors.map((door) => door.textContent)).toEqual([
-    expect.stringContaining('Magasin A › Door A1'),
-    expect.stringContaining('Magasin B › Door B2'),
-  ])
-  expect(doors[0]).toHaveTextContent('Since')
-  expect(doors[0]).not.toHaveTextContent('Ended')
-  expect(doors[1]).toHaveTextContent('Ended')
+  // A door still assigned carries no period: the cell already means "assigned now".
+  const doors = within(within(region).getByRole('list', { name: 'Warehouse doors' })).getAllByRole(
+    'listitem',
+  )
+  expect(doors.map((door) => door.textContent)).toEqual(['Magasin A › Door A1'])
+
+  fireEvent.click(within(region).getByRole('button', { name: '1 ended' }))
+
+  const history = await screen.findByRole('dialog', { name: 'Ended assignments' })
+  expect(within(history).getByRole('listitem')).toHaveTextContent('Magasin B › Door B2')
+  expect(within(history).getByRole('listitem')).toHaveTextContent('Ended')
+})
+
+test('keeps a lot with many doors on one line, the rest behind +N', async () => {
+  const region = await renderLots({
+    productLots: [
+      buildLot({
+        doorAssignments: ['1', '2', '3', '4', '5'].map((index) =>
+          buildDoorPeriod({
+            id: `open-${index}`,
+            warehouseDoor: { id: `door-a${index}`, name: `Door A${index}`, status: 'AVAILABLE' },
+          }),
+        ),
+      }),
+    ],
+  })
+
+  const list = within(region).getByRole('list', { name: 'Warehouse doors' })
+  expect(within(list).getAllByRole('listitem')).toHaveLength(3)
+  expect(list).toHaveTextContent('Door A1')
+  expect(list).toHaveTextContent('Door A2')
+  expect(list).not.toHaveTextContent('Door A3')
+
+  fireEvent.click(within(list).getByRole('button', { name: 'Show 3 more warehouse doors' }))
+
+  const all = await screen.findByRole('dialog', { name: 'Warehouse doors' })
+  expect(
+    within(all)
+      .getAllByRole('listitem')
+      .map((item) => item.textContent),
+  ).toEqual(['1', '2', '3', '4', '5'].map((index) => `Magasin A › Door A${index}`))
 })
 
 test('says so when a lot has never had a door', async () => {
@@ -115,7 +148,9 @@ test('does not say a closed discharge lacks a door: it holds none any more', asy
   })
 
   expect(within(region).queryByText('No warehouse door currently assigned')).not.toBeInTheDocument()
-  expect(within(region).getByRole('listitem')).toHaveTextContent('Magasin A › Door A1')
+  expect(within(region).getByRole('list', { name: 'Warehouse doors' })).toHaveTextContent(
+    'Magasin A › Door A1',
+  )
 })
 
 test('keeps archived customers, warehouses, and doors readable and marks them', async () => {
@@ -135,9 +170,8 @@ test('keeps archived customers, warehouses, and doors readable and marks them', 
 
   const lot = within(region).getByRole('rowgroup', { name: /Négoce Retiré/ })
   const [door] = within(lot).getAllByRole('listitem')
-  expect(within(lot).getAllByText('Archived').length).toBeGreaterThanOrEqual(3)
-  expect(door).toHaveTextContent('Magasin Retiré')
-  expect(door).toHaveTextContent('Porte Retirée')
+  expect(within(lot).getAllByText('Archived').length).toBeGreaterThanOrEqual(1)
+  expect(door).toHaveTextContent('Magasin Retiré › Porte Retirée (Archived)')
 })
 
 test("shows a closed discharge's door left without an end as ended, not as held", async () => {
@@ -146,7 +180,10 @@ test("shows a closed discharge's door left without an end as ended, not as held"
     productLots: [buildLot({ doorAssignments: [buildDoorPeriod()] })],
   })
 
-  const door = within(region).getByRole('listitem')
+  fireEvent.click(within(region).getByRole('button', { name: 'History' }))
+
+  const history = await screen.findByRole('dialog', { name: 'Door history' })
+  const door = within(history).getByRole('listitem')
   expect(door).toHaveTextContent('Ended')
   expect(door).toHaveTextContent('end not recorded')
   expect(door).not.toHaveTextContent('Since')

@@ -135,10 +135,9 @@ export function DischargeTruckPoolCard({
                     </TableCell>
                   )}
                   <TableCell className="font-medium">
-                    <span className="inline-flex items-center gap-1.5">
-                      <ReferenceLabel name={entry.registration} status={entry.truckStatus} />
+                    <ReferenceLabel name={entry.registration} status={entry.truckStatus}>
                       {isHeld(entry) && <TruckHoldings holdings={entry.otherHoldings} />}
-                    </span>
+                    </ReferenceLabel>
                   </TableCell>
                   <TableCell>
                     <ReferenceLabel

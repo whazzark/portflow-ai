@@ -246,6 +246,12 @@ const routes = {
     tokens: [{"old":"/api/v1/discharges/:id","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:id","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['discharges.update']['types'],
   },
+  'discharges.planning_options': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/discharges/:id/planning-options',
+    tokens: [{"old":"/api/v1/discharges/:id/planning-options","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:id/planning-options","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:id/planning-options","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:id/planning-options","type":1,"val":"id","end":""},{"old":"/api/v1/discharges/:id/planning-options","type":0,"val":"planning-options","end":""}],
+    types: placeholder as Registry['discharges.planning_options']['types'],
+  },
   'discharges.product_lots.store': {
     methods: ["POST"],
     pattern: '/api/v1/discharges/:dischargeId/product-lots',
@@ -263,6 +269,12 @@ const routes = {
     pattern: '/api/v1/discharges/:dischargeId/product-lots/:id',
     tokens: [{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":0,"val":"product-lots","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['discharges.product_lots.destroy']['types'],
+  },
+  'discharges.product_lots.warehouse_doors': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/discharges/:dischargeId/product-lots/:id/warehouse-doors',
+    tokens: [{"old":"/api/v1/discharges/:dischargeId/product-lots/:id/warehouse-doors","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id/warehouse-doors","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id/warehouse-doors","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id/warehouse-doors","type":1,"val":"dischargeId","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id/warehouse-doors","type":0,"val":"product-lots","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id/warehouse-doors","type":1,"val":"id","end":""},{"old":"/api/v1/discharges/:dischargeId/product-lots/:id/warehouse-doors","type":0,"val":"warehouse-doors","end":""}],
+    types: placeholder as Registry['discharges.product_lots.warehouse_doors']['types'],
   },
   'discharges.truck_pool.candidates': {
     methods: ["GET","HEAD"],

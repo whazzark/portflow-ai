@@ -9,7 +9,7 @@ export class DischargeNotFoundException extends Exception {
 export class DischargeNotPlannedException extends Exception {
   static status = 409
   static code = 'E_DISCHARGE_NOT_PLANNED'
-  static message = 'Only a planned discharge can be corrected'
+  static message = 'Only a planned discharge can be changed'
 }
 
 export class ProductLotNotFoundException extends Exception {
@@ -40,4 +40,15 @@ export class ShiftNotPlannedException extends Exception {
   static status = 409
   static code = 'E_SHIFT_NOT_PLANNED'
   static message = 'Only a planned shift can be corrected'
+}
+
+/**
+ * A write refused by a current-row unique index: a concurrent change reached the same door or
+ * weighing area first. Only reachable where row locks are not honored; retrying against the
+ * refreshed detail is safe.
+ */
+export class DischargePlanningConflictException extends Exception {
+  static status = 409
+  static code = 'E_DISCHARGE_PLANNING_CONFLICT'
+  static message = 'This discharge changed meanwhile'
 }

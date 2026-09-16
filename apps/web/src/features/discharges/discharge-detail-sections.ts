@@ -20,6 +20,11 @@ export function tabSearch(tab: DischargeDetailTab) {
   return { tab: tab === 'overview' ? undefined : tab, shiftId: undefined }
 }
 
+/** The search that opens one shift's panel, over the shifts section. */
+export function shiftSearch(shiftId: string) {
+  return { tab: 'shifts' as const, shiftId }
+}
+
 /**
  * The count beside each section's tab. The truck pool counts the trucks still held, not its
  * history; a closed discharge holds none, so its pool gets no count rather than a misleading zero

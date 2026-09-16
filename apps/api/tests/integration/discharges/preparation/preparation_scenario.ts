@@ -14,6 +14,7 @@ import { UserFactory } from '#database/factories/user_factory'
 import { WarehouseDoorFactory } from '#database/factories/warehouse_door_factory'
 import { WarehouseDoorProductLotAssignmentFactory } from '#database/factories/warehouse_door_product_lot_assignment_factory'
 import { WarehouseFactory } from '#database/factories/warehouse_factory'
+import { WeighingAreaFactory } from '#database/factories/weighing_area_factory'
 import type Discharge from '#models/discharge'
 import type { DischargeStatus } from '#models/discharge'
 import DischargeTruckAssignment from '#models/discharge_truck_assignment'
@@ -180,4 +181,45 @@ export async function shiftTruckRows(shiftId: string) {
     effectiveFrom: row.effectiveFrom.toISO(),
     effectiveTo: row.effectiveTo?.toISO() ?? null,
   }))
+}
+
+/** Two available warehouses with two available doors each, and two available weighing areas. */
+export async function createPlanningReferences() {
+  const magasinA = await WarehouseFactory.create()
+  const magasinB = await WarehouseFactory.create()
+  const doorA1 = await WarehouseDoorFactory.merge({ warehouseId: magasinA.id }).create()
+  const doorA2 = await WarehouseDoorFactory.merge({ warehouseId: magasinA.id }).create()
+  const doorB1 = await WarehouseDoorFactory.merge({ warehouseId: magasinB.id }).create()
+  const doorB2 = await WarehouseDoorFactory.merge({ warehouseId: magasinB.id }).create()
+  const north = await WeighingAreaFactory.create()
+  const south = await WeighingAreaFactory.create()
+
+  return { magasinA, magasinB, doorA1, doorA2, doorB1, doorB2, north, south }
+}
+
+/** Assigns a door to a lot through the factory, as current, so a shift may select it. */
+export function assignDoorToLot(
+  prepared: Awaited<ReturnType<typeof createPreparedDischarge>>,
+  lotId: string,
+  doorId: string,
+) {
+  return WarehouseDoorProductLotAssignmentFactory.merge({
+    dischargeId: prepared.discharge.id,
+    effectiveFrom: DateTime.utc(2026, 8, 1, 6),
+    effectiveTo: null,
+    productLotId: lotId,
+    warehouseDoorId: doorId,
+  }).create()
+}
+
+/** A second planned shift of the discharge, after the first one. */
+export function addPlannedShift(prepared: Awaited<ReturnType<typeof createPreparedDischarge>>) {
+  return ShiftFactory.merge({
+    dischargeId: prepared.discharge.id,
+    responsibleUserId: prepared.responsible.id,
+    sequence: 2,
+    status: 'PLANNED',
+    plannedStartAt: prepared.shift.plannedEndAt,
+    plannedEndAt: prepared.shift.plannedEndAt.plus({ hours: 8 }),
+  }).create()
 }

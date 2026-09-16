@@ -87,6 +87,35 @@ test.group('planShiftWarehouseDoorSelection', () => {
     [ARCHIVED, { status: 'ARCHIVED' as const, warehouseStatus: 'AVAILABLE' as const }],
     [IN_ARCHIVED_WAREHOUSE, { status: 'AVAILABLE' as const, warehouseStatus: 'ARCHIVED' as const }],
   ])
+  /** Every door a test selects is held by a lot, unless the test is about that rule. */
+  const ASSIGNED_DOOR_IDS = [AVAILABLE, ARCHIVED, IN_ARCHIVED_WAREHOUSE, KEPT]
+
+  test('refuses an available door no product lot of the discharge holds', ({ assert }) => {
+    const plan = planShiftWarehouseDoorSelection([AVAILABLE], [], doors, [], NOW)
+
+    assert.deepEqual(plan, {
+      kind: 'ISSUES',
+      issues: [
+        {
+          field: 'warehouseDoorIds.0',
+          rule: 'assignedWarehouseDoor',
+          message: 'This warehouse door is not assigned to a product lot of this discharge',
+        },
+      ],
+    })
+  })
+
+  test('keeps a door already selected even once its assignment was withdrawn', ({ assert }) => {
+    const plan = planShiftWarehouseDoorSelection(
+      [KEPT],
+      [{ id: 'row-kept', resourceId: KEPT }],
+      doors,
+      [],
+      NOW,
+    )
+
+    assert.deepEqual(plan, { kind: 'PLAN', deleteIds: [], inserts: [] })
+  })
 
   test('refuses an unknown or archived door, or one of an archived warehouse, at its position', ({
     assert,
@@ -95,6 +124,7 @@ test.group('planShiftWarehouseDoorSelection', () => {
       [AVAILABLE, UNKNOWN, ARCHIVED, IN_ARCHIVED_WAREHOUSE],
       [],
       doors,
+      ASSIGNED_DOOR_IDS,
       NOW,
     )
 
@@ -118,6 +148,7 @@ test.group('planShiftWarehouseDoorSelection', () => {
         { id: 'row-removed', resourceId: ARCHIVED },
       ],
       doors,
+      ASSIGNED_DOOR_IDS,
       NOW,
     )
 

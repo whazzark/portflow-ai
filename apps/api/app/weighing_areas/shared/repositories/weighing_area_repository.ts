@@ -40,6 +40,7 @@ export type ArchiveWeighingAreaResult =
   | { kind: 'ARCHIVED'; weighingArea: WeighingArea }
   | { kind: 'NOT_FOUND' }
   | { kind: 'ALREADY_ARCHIVED' }
+  | { kind: 'IN_USE' }
 
 export type ReactivateWeighingAreaResult =
   | { kind: 'REACTIVATED'; weighingArea: WeighingArea }

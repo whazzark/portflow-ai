@@ -27,6 +27,38 @@ export function splitPeriods<T extends Pick<Period, 'effectiveTo'>>(
   }
 }
 
+/**
+ * A lot's doors as its table cell shows them. The doors it holds are chips, all of them up to
+ * `limit`, else one fewer and a `+N` for the rest, so a row stays one line high. Ended assignments
+ * are history, reached apart. A closed discharge holds nothing, so its chips are the doors it used,
+ * once each, and all its periods are its history.
+ */
+export function lotDoorCell<Assignment extends Period & { warehouseDoor: { id: string } }>(
+  assignments: Assignment[],
+  dischargeStatus: DischargeStatus,
+  limit = 3,
+) {
+  const { inEffect, ended } = splitPeriods(assignments, dischargeStatus)
+  const closed = dischargeStatus === 'CLOSED'
+  const doors = closed
+    ? assignments.filter(
+        (assignment, index) =>
+          assignments.findIndex(
+            (candidate) => candidate.warehouseDoor.id === assignment.warehouseDoor.id,
+          ) === index,
+      )
+    : inEffect
+  const shown = doors.length <= limit ? doors : doors.slice(0, limit - 1)
+
+  return {
+    doors,
+    shown,
+    hidden: doors.slice(shown.length),
+    history: ended,
+    historyLabel: closed ? ('history' as const) : ('ended' as const),
+  }
+}
+
 export type LotDoorNotice = 'NONE_ASSIGNED' | 'NONE_CURRENTLY_ASSIGNED'
 
 /**
@@ -90,13 +122,6 @@ export function sumTonnes(values: string[]) {
   }
 
   return `${thousandths / 1000n}.${String(thousandths % 1000n).padStart(3, '0')}`
-}
-
-/** Planned times are entered to the minute, so the summary shows them to the minute. */
-const PLANNED_TIME = new Intl.DateTimeFormat('en-GB', { dateStyle: 'short', timeStyle: 'short' })
-
-export function formatPlannedTime(iso: string) {
-  return PLANNED_TIME.format(new Date(iso))
 }
 
 const SHIFT_DAY = new Intl.DateTimeFormat('en-GB', {

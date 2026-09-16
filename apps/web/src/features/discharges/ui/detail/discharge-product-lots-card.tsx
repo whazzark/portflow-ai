@@ -21,15 +21,13 @@ import {
 import {
   formatTonnes,
   groupLotsByCustomer,
-  lotDoorNotice,
   lotRemovalBlock,
-  splitPeriods,
 } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { AddProductLotsSheet } from '@/features/discharges/ui/detail/add-product-lots-sheet'
 import { CustomerProductLotsSheet } from '@/features/discharges/ui/detail/customer-product-lots-sheet'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
-import { EffectivePeriod } from '@/features/discharges/ui/detail/effective-period'
+import { LotDoorChips } from '@/features/discharges/ui/detail/lot-door-chips'
 import { ProductLotRowActions } from '@/features/discharges/ui/detail/product-lot-row-actions'
 import { ProductLotSheet } from '@/features/discharges/ui/detail/product-lot-sheet'
 import { ReferenceLabel } from '@/features/discharges/ui/detail/reference-label'
@@ -37,55 +35,9 @@ import {
   LOT_REMOVAL_REASONS,
   RemoveProductLotDialog,
 } from '@/features/discharges/ui/detail/remove-product-lot-dialog'
+import { LotWarehouseDoorsDialog } from '@/features/discharges/ui/planning/lot-warehouse-doors-dialog'
 
 type ProductLot = DischargeDetailDto['productLots'][number]
-
-function LotDoors({
-  lot,
-  dischargeStatus,
-}: {
-  lot: ProductLot
-  dischargeStatus: DischargeDetailDto['status']
-}) {
-  const { inEffect, ended } = splitPeriods(lot.doorAssignments, dischargeStatus)
-
-  // No door yet is the usual state of a lot being prepared: a quiet dash, said in words to
-  // assistive technologies.
-  if (lot.doorAssignments.length === 0) {
-    return (
-      <span className="text-muted-foreground">
-        <span aria-hidden="true">—</span>
-        <span className="sr-only">No warehouse door assigned</span>
-      </span>
-    )
-  }
-
-  return (
-    <div className="grid gap-1">
-      <ul aria-label="Warehouse doors" className="grid gap-1">
-        {[...inEffect, ...ended].map((assignment) => (
-          <li className="grid gap-0.5" key={assignment.id}>
-            <span className="inline-flex flex-wrap items-center gap-1">
-              <ReferenceLabel
-                name={assignment.warehouse.name}
-                status={assignment.warehouse.status}
-              />
-              {' › '}
-              <ReferenceLabel
-                name={assignment.warehouseDoor.name}
-                status={assignment.warehouseDoor.status}
-              />
-            </span>
-            <EffectivePeriod dischargeStatus={dischargeStatus} period={assignment} />
-          </li>
-        ))}
-      </ul>
-      {lotDoorNotice(lot, dischargeStatus) === 'NONE_CURRENTLY_ASSIGNED' && (
-        <p className="text-muted-foreground text-xs">No warehouse door currently assigned</p>
-      )}
-    </div>
-  )
-}
 
 type DischargeProductLotsCardProps = {
   discharge: DischargeDetailDto
@@ -98,6 +50,7 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
   const [editing, setEditing] = useState<ProductLot | null>(null)
   const [removing, setRemoving] = useState<ProductLot | null>(null)
   const [correctingCustomerId, setCorrectingCustomerId] = useState<string | null>(null)
+  const [planningDoors, setPlanningDoors] = useState<ProductLot | null>(null)
   const tableId = useId()
   const groups = groupLotsByCustomer(discharge.productLots)
   const columnCount = canCorrect ? 4 : 3
@@ -184,12 +137,13 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
                           {formatTonnes(lot.expectedQuantityTonnes)}
                         </TableCell>
                         <TableCell className="whitespace-normal align-top">
-                          <LotDoors dischargeStatus={discharge.status} lot={lot} />
+                          <LotDoorChips dischargeStatus={discharge.status} lot={lot} />
                         </TableCell>
                         {canCorrect && (
                           <TableCell className="text-right align-top">
                             <ProductLotRowActions
                               name={lotName}
+                              onDoors={() => setPlanningDoors(lot)}
                               onEdit={() => setEditing(lot)}
                               onRemove={() => setRemoving(lot)}
                               removalBlocked={block ? LOT_REMOVAL_REASONS[block] : null}
@@ -242,6 +196,13 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
           customerId={correctingCustomerId}
           discharge={discharge}
           onOpenChange={(open) => !open && setCorrectingCustomerId(null)}
+        />
+      )}
+      {canCorrect && (
+        <LotWarehouseDoorsDialog
+          discharge={discharge}
+          lot={planningDoors}
+          onOpenChange={(open) => !open && setPlanningDoors(null)}
         />
       )}
       {canCorrect && removing && (

@@ -437,16 +437,18 @@ function buildFixture(scenario: Scenario, ordinal: number) {
     }
   })
 
-  // While a discharge is prepared, one lot in four still waits for its warehouse door.
+  // While a discharge is prepared, one lot in four still waits for its warehouse door. Each lot
+  // takes a door of its own: a door is held by at most one lot of a discharge at a time, so the
+  // lots past the last door wait as well.
   const doorAssignments = productLots.flatMap((lot, index) =>
-    scenario.doorIds.length === 0 || (scenario.status === 'PLANNED' && index % 4 === 3)
+    index >= scenario.doorIds.length || (scenario.status === 'PLANNED' && index % 4 === 3)
       ? []
       : [
           {
             id: childId(23630004, index + 1),
             attributes: {
               dischargeId,
-              warehouseDoorId: scenario.doorIds[index % scenario.doorIds.length],
+              warehouseDoorId: scenario.doorIds[index],
               productLotId: lot.id,
               effectiveFrom: reservedAt,
               effectiveTo: closedAt,

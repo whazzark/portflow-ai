@@ -97,31 +97,51 @@ export default class LucidWeighingAreaRepository extends WeighingAreaRepository 
     }
   }
 
-  async archiveAvailable(command: ArchiveWeighingAreaCommand): Promise<ArchiveWeighingAreaResult> {
-    const [affectedRows] = await WeighingArea.query()
-      .where('id', command.id)
-      .where('status', 'AVAILABLE')
-      .update({
-        status: 'ARCHIVED',
-        archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
-        archivedByUserId: command.archivedByUserId,
-        archiveComment: command.archiveComment,
-        updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
-      })
-
-    if (affectedRows === 0) {
-      const area = await WeighingArea.find(command.id)
+  /**
+   * The area is locked and its usage read in the same transaction. A usage read before the lock
+   * could be overtaken by a shift selection committing in between, which locks the area
+   * `FOR SHARE` before writing: holding `FOR UPDATE` here makes the two queue behind each other.
+   */
+  archiveAvailable(command: ArchiveWeighingAreaCommand): Promise<ArchiveWeighingAreaResult> {
+    return WeighingArea.transaction(async (trx) => {
+      const area = await WeighingArea.query({ client: trx })
+        .where('id', command.id)
+        .forUpdate()
+        .first()
 
       if (!area) {
         return { kind: 'NOT_FOUND' }
       }
+      if (area.status === 'ARCHIVED') {
+        return { kind: 'ALREADY_ARCHIVED' }
+      }
 
-      return area.status === 'ARCHIVED' ? { kind: 'ALREADY_ARCHIVED' } : { kind: 'NOT_FOUND' }
-    }
+      const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({
+        referenceType: 'WEIGHING_AREA',
+        referenceIds: [command.id],
+        client: trx,
+      })
+      if (usedIds.has(command.id)) {
+        return { kind: 'IN_USE' }
+      }
 
-    const area = await WeighingArea.find(command.id)
+      await WeighingArea.query({ client: trx })
+        .where('id', command.id)
+        .where('status', 'AVAILABLE')
+        .update({
+          status: 'ARCHIVED',
+          archivedAt: command.archivedAt.toSQL({ includeOffset: false }),
+          archivedByUserId: command.archivedByUserId,
+          archiveComment: command.archiveComment,
+          updatedAt: command.archivedAt.toSQL({ includeOffset: false }),
+        })
 
-    return area ? { kind: 'ARCHIVED', weighingArea: area } : { kind: 'NOT_FOUND' }
+      const archived = await WeighingArea.query({ client: trx })
+        .where('id', command.id)
+        .firstOrFail()
+
+      return { kind: 'ARCHIVED', weighingArea: archived }
+    })
   }
 
   async reactivateArchived(

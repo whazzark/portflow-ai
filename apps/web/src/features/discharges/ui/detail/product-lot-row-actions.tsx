@@ -16,6 +16,7 @@ type ProductLotRowActionsProps = {
   /** Why the lot cannot be removed, when it cannot. */
   removalBlocked: string | null
   onEdit: () => void
+  onDoors: () => void
   onRemove: () => void
 }
 
@@ -27,6 +28,7 @@ export function ProductLotRowActions({
   name,
   removalBlocked,
   onEdit,
+  onDoors,
   onRemove,
 }: ProductLotRowActionsProps) {
   const reasonId = useId()
@@ -42,6 +44,9 @@ export function ProductLotRowActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>
+        {/* The only item naming its object: `Edit` and `Remove` act on the lot the menu is named
+            after, while this one opens the doors assigned to it. */}
+        <DropdownMenuItem onClick={onDoors}>Assign doors</DropdownMenuItem>
         {removalBlocked ? (
           <Tooltip>
             <TooltipTrigger

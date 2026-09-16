@@ -34,3 +34,35 @@ export function ineligibleShiftResponsibleIssue(field: string): PreparationIssue
     message: 'This user can no longer be responsible for a shift',
   }
 }
+
+export function unavailableWarehouseDoorIssue(field: string): PreparationIssue {
+  return {
+    field,
+    rule: 'availableWarehouseDoor',
+    message: 'This warehouse door is no longer available',
+  }
+}
+
+export function doorSelectedByPlannedShiftIssue(field: string): PreparationIssue {
+  return {
+    field,
+    rule: 'selectedByPlannedShift',
+    message: 'This warehouse door is still selected for a planned shift',
+  }
+}
+
+export function unassignedWarehouseDoorIssue(field: string): PreparationIssue {
+  return {
+    field,
+    rule: 'assignedWarehouseDoor',
+    message: 'This warehouse door is not assigned to a product lot of this discharge',
+  }
+}
+
+export function unavailableWeighingAreaIssue(field: string): PreparationIssue {
+  return {
+    field,
+    rule: 'availableWeighingArea',
+    message: 'This weighing area is no longer available',
+  }
+}

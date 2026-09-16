@@ -4,6 +4,7 @@ import type { CustomerDto } from '@/features/customers/types'
 import type {
   DischargeDetailDto,
   DischargeDto,
+  PlanningDoorDto,
   TruckCandidateDto,
 } from '@/features/discharges/types'
 import { DOCKS } from '@/features/docks/__tests__/support/fixtures'
@@ -325,4 +326,68 @@ export const SHIFT_WAREHOUSES = [
 export const AVAILABLE_WEIGHING_AREAS = [
   { id: 'area-north', name: 'North scale', status: 'AVAILABLE' as const },
   { id: 'area-south', name: 'South scale', status: 'AVAILABLE' as const },
+]
+
+type DetailDoorSelection = DetailShift['warehouseDoors'][number]
+type DetailAreaSelection = DetailShift['weighingAreas'][number]
+
+export function buildDoorSelection(
+  overrides: Partial<DetailDoorSelection> = {},
+): DetailDoorSelection {
+  return {
+    id: 'door-selection-1',
+    effectiveFrom: '2026-09-08T05:00:00.000Z',
+    effectiveTo: null,
+    warehouseDoor: { id: 'door-a1', name: 'Door A1', status: 'AVAILABLE' },
+    warehouse: { id: 'warehouse-a', name: 'Magasin A', status: 'AVAILABLE' },
+    ...overrides,
+  }
+}
+
+export function buildAreaSelection(
+  overrides: Partial<DetailAreaSelection> = {},
+): DetailAreaSelection {
+  return {
+    id: 'area-selection-1',
+    effectiveFrom: '2026-09-08T05:00:00.000Z',
+    effectiveTo: null,
+    weighingArea: { id: 'area-north', name: 'Pont Nord', status: 'AVAILABLE' },
+    ...overrides,
+  }
+}
+
+/** Two warehouses, three doors; Door A2 is also held by an active discharge. */
+export const PLANNING_DOORS: PlanningDoorDto[] = [
+  {
+    id: 'door-a1',
+    name: 'Door A1',
+    warehouse: { id: 'warehouse-a', name: 'Magasin A' },
+    otherDischargeAssignments: [],
+  },
+  {
+    id: 'door-a2',
+    name: 'Door A2',
+    warehouse: { id: 'warehouse-a', name: 'Magasin A' },
+    otherDischargeAssignments: [
+      {
+        discharge: {
+          id: 'discharge-ocean-cedar',
+          vesselName: 'MV Ocean Cedar',
+          status: 'ACTIVE',
+          expectedStartAt: '2026-09-10T06:00:00.000Z',
+        },
+      },
+    ],
+  },
+  {
+    id: 'door-b1',
+    name: 'Door B1',
+    warehouse: { id: 'warehouse-b', name: 'Magasin B' },
+    otherDischargeAssignments: [],
+  },
+]
+
+export const PLANNING_WEIGHING_AREAS = [
+  { id: 'area-north', name: 'Pont Nord' },
+  { id: 'area-south', name: 'Pont Sud' },
 ]

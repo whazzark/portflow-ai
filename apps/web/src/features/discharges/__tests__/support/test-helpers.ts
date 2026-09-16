@@ -22,6 +22,8 @@ import {
   DISCHARGE_DETAILS,
   DISCHARGES,
   ELIGIBLE_RESPONSIBLES,
+  PLANNING_DOORS,
+  PLANNING_WEIGHING_AREAS,
   SHIFT_WAREHOUSES,
   TRUCK_CANDIDATES,
 } from './fixtures'
@@ -936,4 +938,168 @@ export async function openLotMenu(lotName: string) {
   fireEvent.click(within(lots).getByRole('button', { name: `Actions for ${lotName}` }))
 
   return screen.findByRole('menu')
+}
+
+type MockPlanningOptionsOptions = {
+  doors?: typeof PLANNING_DOORS
+  weighingAreas?: typeof PLANNING_WEIGHING_AREAS
+  /** `pending` never answers; `error` fails every time until `recover` is called. */
+  status?: 'ok' | 'pending' | 'error'
+  onRequest?: () => void
+}
+
+/** The planning options of any discharge. */
+export function mockPlanningOptions({
+  doors = PLANNING_DOORS,
+  weighingAreas = PLANNING_WEIGHING_AREAS,
+  status = 'ok',
+  onRequest,
+}: MockPlanningOptionsOptions = {}) {
+  const state = { status, requests: 0 }
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id/planning-options`, async () => {
+      state.requests += 1
+      onRequest?.()
+
+      if (state.status === 'pending') {
+        await delay('infinite')
+      }
+      if (state.status === 'error') {
+        return new HttpResponse(null, { status: 500 })
+      }
+
+      return HttpResponse.json({ data: { warehouseDoors: doors, weighingAreas } })
+    }),
+  )
+
+  return {
+    state,
+    recover: () => {
+      state.status = 'ok'
+    },
+  }
+}
+
+type PlanningAnswer = { status: number; body: unknown } | 'network-error' | undefined
+
+type MockDischargePlanningOptions = {
+  user?: SessionUser
+  detail: DischargeDetailDto
+  doors?: typeof PLANNING_DOORS
+  weighingAreas?: typeof PLANNING_WEIGHING_AREAS
+  respondToLotDoors?: (request: { lotId: string; body: LotDoorsBody }) => PlanningAnswer
+}
+
+type LotDoorsBody = { assign: string[]; withdraw: string[] }
+
+/**
+ * Serves one planned discharge with its planning options and applies door change sets to it the
+ * way the API does: a door moved between lots ends and starts at one instant, and rows are ended,
+ * never removed.
+ */
+export function mockDischargePlanning({
+  user = ACTIVE_OPERATIONS_LEAD,
+  detail,
+  doors = PLANNING_DOORS,
+  weighingAreas = PLANNING_WEIGHING_AREAS,
+  respondToLotDoors,
+}: MockDischargePlanningOptions) {
+  const state = {
+    current: detail,
+    detailRequests: 0,
+    optionsRequests: 0,
+    lotDoorRequests: [] as Array<{ lotId: string; body: LotDoorsBody }>,
+    tick: 0,
+  }
+  const doorOf = (id: string) => {
+    const door = doors.find((candidate) => candidate.id === id)
+
+    return {
+      warehouseDoor: { id, name: door?.name ?? id, status: 'AVAILABLE' as const },
+      warehouse: {
+        id: door?.warehouse.id ?? 'warehouse-unknown',
+        name: door?.warehouse.name ?? 'Unknown',
+        status: 'AVAILABLE' as const,
+      },
+    }
+  }
+  const nextInstant = () => {
+    state.tick += 1
+
+    return new Date(Date.UTC(2026, 8, 15, 8, 0, state.tick)).toISOString()
+  }
+  const reply = (answer: PlanningAnswer) => {
+    if (answer === 'network-error') {
+      return HttpResponse.error()
+    }
+
+    return HttpResponse.json(answer?.body as object, { status: answer?.status })
+  }
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id/planning-options`, () => {
+      state.optionsRequests += 1
+
+      return HttpResponse.json({ data: { warehouseDoors: doors, weighingAreas } })
+    }),
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+      state.detailRequests += 1
+
+      return HttpResponse.json({ data: state.current })
+    }),
+    http.patch(
+      `${API_BASE_URL}/api/v1/discharges/:id/product-lots/:lotId/warehouse-doors`,
+      async ({ params, request }) => {
+        const lotId = String(params.lotId)
+        const body = (await request.json()) as LotDoorsBody
+        state.lotDoorRequests.push({ lotId, body })
+
+        const answer = respondToLotDoors?.({ lotId, body })
+        if (answer) {
+          return reply(answer)
+        }
+
+        const instant = nextInstant()
+        state.current = {
+          ...state.current,
+          productLots: state.current.productLots.map((lot) => ({
+            ...lot,
+            doorAssignments: [
+              ...lot.doorAssignments.map((period) => {
+                const doorId = period.warehouseDoor.id
+                const endsHere =
+                  period.effectiveTo === null &&
+                  ((lot.id !== lotId && body.assign.includes(doorId)) ||
+                    (lot.id === lotId && body.withdraw.includes(doorId)))
+
+                return endsHere ? { ...period, effectiveTo: instant } : period
+              }),
+              ...(lot.id === lotId
+                ? body.assign
+                    .filter(
+                      (doorId) =>
+                        !lot.doorAssignments.some(
+                          (period) =>
+                            period.effectiveTo === null && period.warehouseDoor.id === doorId,
+                        ),
+                    )
+                    .map((doorId) => ({
+                      id: `assignment-${doorId}-${state.tick}`,
+                      effectiveFrom: instant,
+                      effectiveTo: null,
+                      ...doorOf(doorId),
+                    }))
+                : []),
+            ],
+          })),
+        }
+
+        return HttpResponse.json({ data: state.current })
+      },
+    ),
+  )
+
+  return state
 }

@@ -14,7 +14,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import {
-  formatPlannedTime,
   formatTonnes,
   plannedCoverage,
   sumTonnes,
@@ -50,6 +49,7 @@ import {
   RemoveRowButton,
   RepeatedRow,
 } from '@/features/discharges/ui/preparation/repeated-rows'
+import { formatDateTime } from '@/helpers/dates'
 import { resourceFailureTitle, WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
@@ -389,7 +389,7 @@ export function CreateDischargeForm({
                   {' · '}
                   <span className="text-muted-foreground">
                     {coverage
-                      ? `${formatPlannedTime(coverage.start)} → ${formatPlannedTime(coverage.end)}`
+                      ? `${formatDateTime(coverage.start)} → ${formatDateTime(coverage.end)}`
                       : 'No planned period yet'}
                   </span>
                 </p>

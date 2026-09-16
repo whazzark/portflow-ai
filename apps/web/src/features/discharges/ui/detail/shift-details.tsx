@@ -4,7 +4,6 @@ import { ResourceDetailBody, ResourceDetailField } from '@/components/resource/r
 import { Button } from '@/components/ui/button'
 import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
-  formatPlannedTime,
   formatShiftDuration,
   formatShiftPeriod,
   shiftResources,
@@ -14,6 +13,7 @@ import type { DischargeDetailDto } from '@/features/discharges/types'
 import { ShiftStatusBadge } from '@/features/discharges/ui/detail/discharge-status-badge'
 import { ReferenceLabel } from '@/features/discharges/ui/detail/reference-label'
 import { ShiftResourceGroup } from '@/features/discharges/ui/detail/shift-resource-group'
+import { formatDateTime } from '@/helpers/dates'
 
 type Shift = DischargeDetailDto['shifts'][number]
 
@@ -55,11 +55,11 @@ export function ShiftDetails({ canCorrect, discharge, onEdit, shift }: ShiftDeta
           <ResourceDetailField label="Duration" value={formatShiftDuration(shift)} />
           <ResourceDetailField
             label="Planned start"
-            value={shift.plannedStartAt && formatPlannedTime(shift.plannedStartAt)}
+            value={shift.plannedStartAt && formatDateTime(shift.plannedStartAt)}
           />
           <ResourceDetailField
             label="Planned end"
-            value={shift.plannedEndAt && formatPlannedTime(shift.plannedEndAt)}
+            value={shift.plannedEndAt && formatDateTime(shift.plannedEndAt)}
           />
         </dl>
         <div className="mt-8 grid gap-6">

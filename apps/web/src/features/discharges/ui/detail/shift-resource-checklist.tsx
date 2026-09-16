@@ -8,6 +8,8 @@ export type ChecklistRow = {
   /** How the row is named to assistive technology: `Select {name}`. */
   name: string
   label: ReactNode
+  /** A fact read with the row, under its label: the lot holding a door. */
+  description?: string
   /** False for a resource that may stay selected but not be newly chosen, such as a suspended one. */
   canCheck: boolean
 }
@@ -115,7 +117,12 @@ export function ShiftResourceChecklist({
             {rows.map((row) => {
               const reason = reasons?.get(row.id)
               const reasonId = `${noteId}-${row.id}-reason`
-              const describedBy = [reason ? reasonId : null, row.canCheck ? null : noteId]
+              const descriptionId = `${noteId}-${row.id}-description`
+              const describedBy = [
+                row.description ? descriptionId : null,
+                reason ? reasonId : null,
+                row.canCheck ? null : noteId,
+              ]
                 .filter(Boolean)
                 .join(' ')
 
@@ -131,6 +138,11 @@ export function ShiftResourceChecklist({
                   />
                   <div className="grid min-w-0 gap-0.5 text-sm">
                     {row.label}
+                    {row.description && (
+                      <span className="text-muted-foreground" id={descriptionId}>
+                        {row.description}
+                      </span>
+                    )}
                     {reason && (
                       <span className="text-destructive" id={reasonId}>
                         {reason}

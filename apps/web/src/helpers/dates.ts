@@ -1,5 +1,8 @@
+const DATE_TIME = new Intl.DateTimeFormat('en-GB', { dateStyle: 'short', timeStyle: 'short' })
+
+/** A date and time to the minute, the precision users enter and read times at: `14/09/2026, 06:00`. */
 export function formatDateTime(value: string | null) {
-  return value ? new Date(value).toLocaleString('en-GB') : '—'
+  return value ? DATE_TIME.format(new Date(value)) : '—'
 }
 
 const pad = (value: number) => String(value).padStart(2, '0')

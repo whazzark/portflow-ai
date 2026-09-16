@@ -1,6 +1,9 @@
 import type { DateTime } from 'luxon'
 
-import type { PreparationIssue } from '#discharges/shared/discharge_preparation_issues'
+import {
+  type PreparationIssue,
+  unassignedWarehouseDoorIssue,
+} from '#discharges/shared/discharge_preparation_issues'
 import {
   isOrderedPeriod,
   orderShifts,
@@ -100,14 +103,14 @@ function planShiftResourceSelection(
   requested: readonly string[],
   currentSelection: readonly ShiftResourceSelectionRow[],
   isSelectable: (resourceId: string) => boolean,
-  issue: (index: number) => PreparationIssue,
+  issue: (index: number, resourceId: string) => PreparationIssue,
   now: DateTime,
 ): ShiftResourceSelectionPlan {
   const selected = new Set(currentSelection.map((row) => row.resourceId.toLowerCase()))
   const wanted = requested.map((id) => id.toLowerCase())
 
   const issues = wanted.flatMap((resourceId, index) =>
-    selected.has(resourceId) || isSelectable(resourceId) ? [] : [issue(index)],
+    selected.has(resourceId) || isSelectable(resourceId) ? [] : [issue(index, resourceId)],
   )
   if (issues.length > 0) {
     return { kind: 'ISSUES', issues }
@@ -127,27 +130,42 @@ function planShiftResourceSelection(
 }
 
 /**
- * A door is newly selectable only while both it and its warehouse are available: the doors of an
- * archived warehouse are offered nowhere, as the available door listing already decides.
+ * A door is newly selectable only while both it and its warehouse are available — the doors of an
+ * archived warehouse are offered nowhere, as the available door listing already decides — and only
+ * while a product lot of this discharge currently holds it: a shift unloads into the doors its
+ * cargo was assigned to, so a door no lot holds is refused rather than silently selected.
+ *
+ * A door already selected keeps its row either way, so withdrawing an assignment never invalidates
+ * a selection made while it stood.
  */
 export function planShiftWarehouseDoorSelection(
   requested: readonly string[],
   currentSelection: readonly ShiftResourceSelectionRow[],
   addedDoors: ReadonlyMap<string, Pick<LockedWarehouseDoor, 'status' | 'warehouseStatus'>>,
+  assignedDoorIds: readonly string[],
   now: DateTime,
 ) {
+  const assigned = new Set(assignedDoorIds.map((id) => id.toLowerCase()))
+  const isAvailable = (doorId: string) => {
+    const door = addedDoors.get(doorId)
+
+    return door?.status === 'AVAILABLE' && door.warehouseStatus === 'AVAILABLE'
+  }
+
   return planShiftResourceSelection(
     requested,
     currentSelection,
-    (doorId) => {
-      const door = addedDoors.get(doorId)
-      return door?.status === 'AVAILABLE' && door.warehouseStatus === 'AVAILABLE'
-    },
-    (index) => ({
-      field: `warehouseDoorIds.${index}`,
-      rule: 'availableWarehouseDoor',
-      message: SHIFT_RESOURCE_ISSUE_MESSAGES.availableWarehouseDoor,
-    }),
+    (doorId) => isAvailable(doorId) && assigned.has(doorId),
+    // An available door no lot holds is a different refusal from an archived one, and the form
+    // shows the reason at the door the user checked.
+    (index, doorId) =>
+      isAvailable(doorId)
+        ? unassignedWarehouseDoorIssue(`warehouseDoorIds.${index}`)
+        : {
+            field: `warehouseDoorIds.${index}`,
+            rule: 'availableWarehouseDoor',
+            message: SHIFT_RESOURCE_ISSUE_MESSAGES.availableWarehouseDoor,
+          },
     now,
   )
 }

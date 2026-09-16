@@ -4,7 +4,7 @@ import type { DischargeDetailDto } from '@/features/discharges/types'
 type DischargeStatus = DischargeDetailDto['status']
 type ShiftStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED'
 
-const DISCHARGE_STATUS_LABELS = {
+export const DISCHARGE_STATUS_LABELS = {
   ACTIVE: 'Active',
   CLOSED: 'Closed',
   PLANNED: 'Planned',

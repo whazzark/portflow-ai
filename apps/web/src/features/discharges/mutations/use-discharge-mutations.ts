@@ -13,6 +13,7 @@ export const STALE_DETAIL_CODES = new Set([
   'E_DISCHARGE_LAST_PRODUCT_LOT',
   'E_SHIFT_NOT_FOUND',
   'E_SHIFT_NOT_PLANNED',
+  'E_DISCHARGE_PLANNING_CONFLICT',
 ])
 
 export function useDischargeMutations() {
@@ -124,6 +125,14 @@ export function useDischargeMutations() {
     }),
   )
 
+  const changeLotDoors = useMutation(
+    tuyauQuery.discharges.productLots.warehouseDoors.mutationOptions({
+      onSuccess: (response) => applyDetail(response),
+      onError: (error, variables) =>
+        refreshAfterStaleRefusal(error, String(variables.params.dischargeId)),
+    }),
+  )
+
   const correctShift = useMutation(
     tuyauQuery.discharges.shifts.update.mutationOptions({
       onSuccess: (response) => applyDetail(response),
@@ -148,6 +157,7 @@ export function useDischargeMutations() {
     correctLot,
     removeLot,
     correctCustomerLots,
+    changeLotDoors,
     reserveTrucks,
     withdrawTrucks,
     correctShift,

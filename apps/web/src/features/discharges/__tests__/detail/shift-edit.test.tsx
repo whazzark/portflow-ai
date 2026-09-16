@@ -6,6 +6,8 @@ import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/helpers/dates'
 import {
   ACTIVE_OBSERVER,
   buildDischargeDetail,
+  buildDoorPeriod,
+  buildLot,
   buildPoolEntry,
   buildShift,
   listedDischarge,
@@ -55,7 +57,25 @@ const POOL = [
   }),
 ]
 
+/** A shift only uses doors a lot of its discharge holds; Door B1 is held by none. */
+const WHEAT = buildLot({
+  id: 'lot-wheat',
+  productName: 'Blé tendre',
+  doorAssignments: [
+    buildDoorPeriod({ id: 'wheat-a1' }),
+    buildDoorPeriod({
+      id: 'wheat-a2',
+      warehouseDoor: { id: 'door-a2', name: 'Door A2', status: 'AVAILABLE' },
+    }),
+    buildDoorPeriod({
+      id: 'wheat-a3',
+      warehouseDoor: { id: 'door-a3', name: 'Door A3', status: 'ARCHIVED' },
+    }),
+  ],
+})
+
 const PLANNED = buildDischargeDetail(listedDischarge('MV Atlantic Dawn', 'PLANNED'), {
+  productLots: [WHEAT],
   truckPool: POOL,
   shifts: [
     buildShift({
@@ -243,7 +263,98 @@ test('lets a suspended truck or an archived door already selected go, but not be
   fireEvent.click(archived)
   expect(archived).not.toBeChecked()
   expect(archived).toHaveAttribute('aria-disabled', 'true')
-  expect(within(sheet).getByText('Archived doors cannot be newly selected')).toBeInTheDocument()
+  expect(
+    within(sheet).getByText('Archived doors and doors no lot holds cannot be newly selected'),
+  ).toBeInTheDocument()
+})
+
+test('offers only the doors a lot of the discharge holds, each with its lot', async () => {
+  mockTruckPlanning({ detail: PLANNED })
+  renderDischargeTab(PLANNED.id, 'shifts')
+  const sheet = await openShiftEdit()
+
+  expect(
+    within(sheet).getByRole('checkbox', { name: 'Select Magasin A › Door A2' }),
+  ).toHaveAccessibleDescription('Cargill France · Blé tendre')
+  expect(
+    within(sheet).queryByRole('checkbox', { name: 'Select Magasin B › Door B1' }),
+  ).not.toBeInTheDocument()
+})
+
+test('lets a selected door no lot holds any more go, but not be chosen again', async () => {
+  const released = {
+    ...PLANNED,
+    productLots: [
+      {
+        ...WHEAT,
+        doorAssignments: WHEAT.doorAssignments.filter((row) => row.id !== 'wheat-a1'),
+      },
+    ],
+  }
+  mockTruckPlanning({ detail: released })
+  renderDischargeTab(released.id, 'shifts')
+  const sheet = await openShiftEdit()
+
+  const doorA1 = within(sheet).getByRole('checkbox', { name: 'Select Magasin A › Door A1' })
+  expect(doorA1).toBeChecked()
+  expect(doorA1).toHaveAccessibleDescription(/^No lot holds this door/)
+  fireEvent.click(doorA1)
+  expect(doorA1).not.toBeChecked()
+  expect(doorA1).toHaveAttribute('aria-disabled', 'true')
+})
+
+test('points to the product lots when no lot holds a door', async () => {
+  const noDoors = {
+    ...PLANNED,
+    productLots: [{ ...WHEAT, doorAssignments: [] }],
+    shifts: [buildShift({ id: 'shift-1', plannedStartAt: START, plannedEndAt: END })],
+  }
+  mockTruckPlanning({ detail: noDoors })
+  renderDischargeTab(noDoors.id, 'shifts')
+  const panel = await openShiftPanel()
+  fireEvent.click(within(panel).getByRole('button', { name: 'Edit' }))
+  const sheet = await screen.findByRole('dialog', { name: 'Edit shift' })
+
+  expect(await within(sheet).findByText('No door is assigned to a product lot')).toBeInTheDocument()
+  fireEvent.click(within(sheet).getByRole('link', { name: 'Go to product lots' }))
+
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(await screen.findByRole('region', { name: 'Product lots' })).toBeInTheDocument()
+})
+
+test('shows a door refused as held by no lot on its row', async () => {
+  mockTruckPlanning({
+    detail: PLANNED,
+    respondToShift: (_shiftId, body) => ({
+      status: 422,
+      body: {
+        error: {
+          code: 'E_VALIDATION_ERROR',
+          message: 'Validation failure',
+          details: [
+            {
+              field: `warehouseDoorIds.${body.warehouseDoorIds.indexOf('door-a2')}`,
+              rule: 'assignedWarehouseDoor',
+              message: 'This warehouse door is not assigned to a product lot of this discharge',
+            },
+          ],
+        },
+      },
+    }),
+  })
+  renderDischargeTab(PLANNED.id, 'shifts')
+  const sheet = await openShiftEdit()
+
+  fireEvent.click(within(sheet).getByRole('checkbox', { name: 'Select Magasin A › Door A2' }))
+  save(sheet)
+
+  await waitFor(() =>
+    expect(
+      within(sheet).getByRole('checkbox', { name: 'Select Magasin A › Door A2' }),
+    ).toHaveAccessibleDescription(
+      'Cargill France · Blé tendre This warehouse door is not assigned to a product lot of this discharge',
+    ),
+  )
 })
 
 test('selects every truck it can at once', async () => {
@@ -325,7 +436,7 @@ test('shows each refusal on the value it concerns', async () => {
   expect(within(sheet).getByRole('checkbox', { name: 'Select Magasin A › Door A2' })).toBeChecked()
   expect(
     within(sheet).getByRole('checkbox', { name: 'Select Magasin A › Door A2' }),
-  ).toHaveAccessibleDescription('This door is no longer available')
+  ).toHaveAccessibleDescription('Cargill France · Blé tendre This door is no longer available')
   expect(
     within(sheet).getByText('This user can no longer be responsible for a shift'),
   ).toBeInTheDocument()

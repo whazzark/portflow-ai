@@ -15,8 +15,10 @@ import Shift from '#models/shift'
 import ShiftWarehouseDoor from '#models/shift_warehouse_door'
 import ShiftWeighingArea from '#models/shift_weighing_area'
 import User from '#models/user'
+import WarehouseDoorProductLotAssignment from '#models/warehouse_door_product_lot_assignment'
 
 import {
+  assignDoorToLot,
   createPreparedDischarge,
   createTruck,
   PREPARING_ROLES,
@@ -56,6 +58,20 @@ async function createDoor({
   const builder = WarehouseDoorFactory.merge({ warehouseId: warehouse.id })
 
   return (archived || warehouseArchived ? builder.apply('archived') : builder).create()
+}
+
+/**
+ * A door a lot of the discharge holds, which is what a shift may newly select: the assignment is
+ * what the selection rule reads, so every door a test selects legitimately carries one.
+ */
+async function createAssignedDoor(
+  prepared: Awaited<ReturnType<typeof plannedShift>>,
+  options: Parameters<typeof createDoor>[0] = {},
+) {
+  const door = await createDoor(options)
+  await assignDoorToLot(prepared, prepared.wheat.id, door.id)
+
+  return door
 }
 
 function createArea({ archived = false }: { archived?: boolean } = {}) {
@@ -157,9 +173,9 @@ test.group('Planned shift correction HTTP contract', (group) => {
       }
       const keptTruckRow = await selectShiftTruck(shift, keptTruck)
       await selectShiftTruck(shift, removedTruck)
-      const keptDoor = await createDoor()
-      const removedDoor = await createDoor()
-      const addedDoor = await createDoor()
+      const keptDoor = await createAssignedDoor(prepared)
+      const removedDoor = await createAssignedDoor(prepared)
+      const addedDoor = await createAssignedDoor(prepared)
       const keptDoorRow = await selectShiftDoor(shift, keptDoor.id)
       await selectShiftDoor(shift, removedDoor.id)
       const removedArea = await createArea()
@@ -467,6 +483,55 @@ test.group('Planned shift correction HTTP contract', (group) => {
     })
   })
 
+  test('refuses an available door no product lot of the discharge holds', async ({
+    assert,
+    client,
+  }) => {
+    const prepared = await plannedShift()
+    const { discharge, shift } = prepared
+    // Available, and belonging to no lot of this discharge: a shift unloads into the doors its
+    // cargo was assigned to, so it is refused at the position the form holds it in.
+    const unassignedDoor = await createDoor()
+    const lead = await preparer()
+
+    const response = await client
+      .put(url(discharge.id, shift.id))
+      .json(body(prepared, { warehouseDoorIds: [unassignedDoor.id] }))
+      .loginAs(lead)
+
+    response.assertStatus(422)
+    assert.deepEqual(issuesOf(response), [['warehouseDoorIds.0', 'assignedWarehouseDoor']])
+    assert.isEmpty(await ShiftWarehouseDoor.query().where('shiftId', shift.id))
+  })
+
+  test('keeps a door already selected once its assignment was withdrawn', async ({
+    assert,
+    client,
+  }) => {
+    const prepared = await plannedShift()
+    const { discharge, shift } = prepared
+    // Assigned when the selection was made, withdrawn since: taking the selection away is the
+    // planner's decision, not this write's.
+    const door = await createAssignedDoor(prepared)
+    await selectShiftDoor(shift, door.id)
+    await WarehouseDoorProductLotAssignment.query()
+      .where('warehouseDoorId', door.id)
+      .update({ effectiveTo: at(1).toSQL({ includeOffset: false }) })
+    const lead = await preparer()
+
+    const response = await client
+      .put(url(discharge.id, shift.id))
+      .json(body(prepared, { warehouseDoorIds: [door.id] }))
+      .loginAs(lead)
+
+    response.assertStatus(200)
+    const rows = await ShiftWarehouseDoor.query().where('shiftId', shift.id)
+    assert.deepEqual(
+      rows.map((row) => row.warehouseDoorId),
+      [door.id],
+    )
+  })
+
   test('refuses trucks, doors, and weighing areas that cannot be newly selected, all at once', async ({
     assert,
     client,
@@ -478,7 +543,7 @@ test.group('Planned shift correction HTTP contract', (group) => {
     await reserveTruck(discharge, suspended)
     const archivedDoor = await createDoor({ archived: true })
     const doorOfArchivedWarehouse = await createDoor({ warehouseArchived: true })
-    const availableDoor = await createDoor()
+    const availableDoor = await createAssignedDoor(prepared)
     const archivedArea = await createArea({ archived: true })
     const lead = await preparer()
     const unknown = '00000000-0000-4000-8000-000000000000'

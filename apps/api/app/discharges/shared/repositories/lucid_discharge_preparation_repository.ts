@@ -27,6 +27,8 @@ import DischargePreparationRepository, {
   type LockedTruck,
   type LockedWarehouseDoor,
   type LockedWeighingArea,
+  type PlanningRowTable,
+  type PlanningWriteResult,
   type ProductLotValues,
   type ProductLotWriteResult,
   type ShiftTruckSelectionWriteResult,
@@ -87,6 +89,59 @@ function isDuplicateShiftTruck(error: unknown) {
     (candidate.code === 'SQLITE_CONSTRAINT_UNIQUE' &&
       (candidate.message ?? '').includes('shift_trucks.truck_id'))
   )
+}
+
+/**
+ * The current-row indexes a planning write can trip. Postgres names the index; SQLite names only
+ * the columns, which no other unique index on these tables shares exactly.
+ */
+const CURRENT_ROW_INDEXES = [
+  {
+    name: 'warehouse_door_product_lot_assignments_current_door_unique',
+    columns:
+      'warehouse_door_product_lot_assignments.discharge_id, warehouse_door_product_lot_assignments.warehouse_door_id',
+  },
+  {
+    name: 'shift_warehouse_doors_current_unique',
+    columns: 'shift_warehouse_doors.shift_id, shift_warehouse_doors.warehouse_door_id',
+  },
+  {
+    name: 'shift_weighing_areas_current_unique',
+    columns: 'shift_weighing_areas.shift_id, shift_weighing_areas.weighing_area_id',
+  },
+] as const
+
+export function isCurrentRowConflict(error: unknown) {
+  const candidate = (error ?? {}) as DatabaseError
+
+  if (candidate.code === '23505') {
+    return CURRENT_ROW_INDEXES.some((index) => index.name === candidate.constraint)
+  }
+
+  return (
+    candidate.code === 'SQLITE_CONSTRAINT_UNIQUE' &&
+    CURRENT_ROW_INDEXES.some((index) =>
+      (candidate.message ?? '').endsWith(`UNIQUE constraint failed: ${index.columns}`),
+    )
+  )
+}
+
+const PLANNING_ROW_MODELS = {
+  DOOR_ASSIGNMENT: WarehouseDoorProductLotAssignment,
+  SHIFT_DOOR: ShiftWarehouseDoor,
+  SHIFT_AREA: ShiftWeighingArea,
+} as const
+
+/** The later of two optional times. */
+function latest(left: DateTime | null | undefined, right: DateTime | null | undefined) {
+  if (!left) {
+    return right ?? null
+  }
+  if (!right) {
+    return left
+  }
+
+  return left.toMillis() >= right.toMillis() ? left : right
 }
 
 function byId<Row extends { id: string }>(rows: Row[]) {
@@ -708,6 +763,187 @@ export default class LucidDischargePreparationRepository extends DischargePrepar
       }
       if (isForeignKeyViolation(error)) {
         return { kind: 'HAS_DOOR_ASSIGNMENTS' }
+      }
+
+      throw error
+    }
+  }
+
+  async listCurrentDoorAssignments(dischargeId: string, client: TransactionClientContract) {
+    const assignments = await WarehouseDoorProductLotAssignment.query({ client })
+      .where('dischargeId', dischargeId.toLowerCase())
+      .whereNull('effectiveTo')
+      .orderBy('id')
+
+    return assignments.map((assignment) => ({
+      id: assignment.id,
+      productLotId: assignment.productLotId,
+      warehouseDoorId: assignment.warehouseDoorId,
+    }))
+  }
+
+  async listCurrentShiftSelections(dischargeId: string, client: TransactionClientContract) {
+    const shiftIds = Shift.query({ client })
+      .where('dischargeId', dischargeId.toLowerCase())
+      .select('id')
+    const [doors, areas] = await Promise.all([
+      ShiftWarehouseDoor.query({ client })
+        .whereIn('shiftId', shiftIds)
+        .whereNull('effectiveTo')
+        .orderBy('id'),
+      ShiftWeighingArea.query({ client })
+        .whereIn('shiftId', shiftIds.clone())
+        .whereNull('effectiveTo')
+        .orderBy('id'),
+    ])
+
+    return {
+      warehouseDoors: doors.map((door) => ({
+        id: door.id,
+        shiftId: door.shiftId,
+        warehouseDoorId: door.warehouseDoorId,
+      })),
+      weighingAreas: areas.map((area) => ({
+        id: area.id,
+        shiftId: area.shiftId,
+        weighingAreaId: area.weighingAreaId,
+      })),
+    }
+  }
+
+  async latestDoorAssignmentTime(dischargeId: string, client: TransactionClientContract) {
+    const rows = () =>
+      WarehouseDoorProductLotAssignment.query({ client }).where(
+        'dischargeId',
+        dischargeId.toLowerCase(),
+      )
+    const [lastStarted, lastEnded] = await Promise.all([
+      rows().orderBy('effectiveFrom', 'desc').first(),
+      rows().whereNotNull('effectiveTo').orderBy('effectiveTo', 'desc').first(),
+    ])
+
+    return latest(lastStarted?.effectiveFrom, lastEnded?.effectiveTo)
+  }
+
+  async latestShiftSelectionTime(shiftId: string, client: TransactionClientContract) {
+    const times = await Promise.all(
+      [ShiftWarehouseDoor, ShiftWeighingArea].flatMap((model) => [
+        model
+          .query({ client })
+          .where('shiftId', shiftId.toLowerCase())
+          .orderBy('effectiveFrom', 'desc')
+          .first()
+          .then((row) => row?.effectiveFrom),
+        model
+          .query({ client })
+          .where('shiftId', shiftId.toLowerCase())
+          .whereNotNull('effectiveTo')
+          .orderBy('effectiveTo', 'desc')
+          .first()
+          .then((row) => row?.effectiveTo),
+      ]),
+    )
+
+    return times.reduce<DateTime | null>((current, time) => latest(current, time), null)
+  }
+
+  async endRows(
+    table: PlanningRowTable,
+    ids: string[],
+    instant: DateTime,
+    client: TransactionClientContract,
+  ) {
+    if (ids.length === 0) {
+      return
+    }
+
+    await PLANNING_ROW_MODELS[table]
+      .query({ client })
+      .whereIn('id', ids)
+      .whereNull('effectiveTo')
+      .update({
+        effectiveTo: instant.toUTC().toSQL({ includeOffset: false }),
+        updatedAt: instant.toUTC().toSQL({ includeOffset: false }),
+      })
+  }
+
+  startDoorAssignments(
+    rows: Array<{ dischargeId: string; productLotId: string; warehouseDoorId: string }>,
+    instant: DateTime,
+    client: TransactionClientContract,
+  ) {
+    return this.writePlanningRows(client, rows.length, (savepoint) =>
+      WarehouseDoorProductLotAssignment.createMany(
+        rows.map((row) => ({
+          dischargeId: row.dischargeId.toLowerCase(),
+          productLotId: row.productLotId.toLowerCase(),
+          warehouseDoorId: row.warehouseDoorId.toLowerCase(),
+          effectiveFrom: instant.toUTC(),
+          effectiveTo: null,
+        })),
+        { client: savepoint },
+      ),
+    )
+  }
+
+  startShiftDoors(
+    rows: Array<{ shiftId: string; warehouseDoorId: string }>,
+    instant: DateTime,
+    client: TransactionClientContract,
+  ) {
+    return this.writePlanningRows(client, rows.length, (savepoint) =>
+      ShiftWarehouseDoor.createMany(
+        rows.map((row) => ({
+          shiftId: row.shiftId.toLowerCase(),
+          warehouseDoorId: row.warehouseDoorId.toLowerCase(),
+          effectiveFrom: instant.toUTC(),
+          effectiveTo: null,
+        })),
+        { client: savepoint },
+      ),
+    )
+  }
+
+  startShiftAreas(
+    rows: Array<{ shiftId: string; weighingAreaId: string }>,
+    instant: DateTime,
+    client: TransactionClientContract,
+  ) {
+    return this.writePlanningRows(client, rows.length, (savepoint) =>
+      ShiftWeighingArea.createMany(
+        rows.map((row) => ({
+          shiftId: row.shiftId.toLowerCase(),
+          weighingAreaId: row.weighingAreaId.toLowerCase(),
+          effectiveFrom: instant.toUTC(),
+          effectiveTo: null,
+        })),
+        { client: savepoint },
+      ),
+    )
+  }
+
+  /** Runs planning inserts in a savepoint, so a current-row clash leaves the transaction usable. */
+  private async writePlanningRows(
+    client: TransactionClientContract,
+    count: number,
+    write: (savepoint: TransactionClientContract) => Promise<unknown>,
+  ): Promise<PlanningWriteResult> {
+    if (count === 0) {
+      return { kind: 'WRITTEN' }
+    }
+
+    const savepoint = await client.transaction()
+
+    try {
+      await write(savepoint)
+      await savepoint.commit()
+
+      return { kind: 'WRITTEN' }
+    } catch (error) {
+      await savepoint.rollback()
+
+      if (isCurrentRowConflict(error)) {
+        return { kind: 'CURRENT_ROW_CONFLICT' }
       }
 
       throw error

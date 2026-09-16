@@ -7,9 +7,12 @@ import type {
 } from '#discharges/shared/discharge_detail_read'
 import Discharge from '#models/discharge'
 import Truck from '#models/truck'
+import WarehouseDoor from '#models/warehouse_door'
+import WarehouseDoorProductLotAssignment from '#models/warehouse_door_product_lot_assignment'
+import WeighingArea from '#models/weighing_area'
 import isUuid from '#shared/database/is_uuid'
 
-import DischargeRepository from './discharge_repository.ts'
+import DischargeRepository, { type PlanningOptions } from './discharge_repository.ts'
 
 export default class LucidDischargeRepository extends DischargeRepository {
   /**
@@ -195,5 +198,79 @@ export default class LucidDischargeRepository extends DischargeRepository {
     }
 
     return holdings
+  }
+
+  /**
+   * Names are compared case-insensitively, the way the site-reference collections order them. The
+   * other discharges come from current assignments only: an ended one, or one in a closed discharge,
+   * holds the door no more.
+   */
+  async findPlanningOptions(dischargeId: string): Promise<PlanningOptions | null> {
+    if (!isUuid(dischargeId)) {
+      return null
+    }
+
+    const discharge = await Discharge.find(dischargeId.toLowerCase())
+    if (!discharge) {
+      return null
+    }
+
+    const doors = await WarehouseDoor.query()
+      .select('warehouse_doors.*')
+      .join('warehouses', 'warehouses.id', 'warehouse_doors.warehouse_id')
+      .where('warehouse_doors.status', 'AVAILABLE')
+      .where('warehouses.status', 'AVAILABLE')
+      .orderByRaw('LOWER(warehouses.name) ASC')
+      .orderByRaw('LOWER(warehouse_doors.name) ASC')
+      .orderBy('warehouse_doors.id', 'asc')
+      .preload('warehouse')
+    const assignments =
+      doors.length === 0
+        ? []
+        : await WarehouseDoorProductLotAssignment.query()
+            .whereIn(
+              'warehouseDoorId',
+              doors.map((door) => door.id),
+            )
+            .whereNull('effectiveTo')
+            .whereNot('dischargeId', discharge.id)
+            .whereHas('discharge', (query) => query.whereIn('status', ['PLANNED', 'ACTIVE']))
+            .preload('discharge')
+    const weighingAreas = await WeighingArea.query()
+      .where('status', 'AVAILABLE')
+      .orderByRaw('LOWER(name) ASC')
+      .orderBy('id', 'asc')
+
+    return {
+      warehouseDoors: doors.map((door) => {
+        const holders = new Map<string, Discharge>()
+        for (const assignment of assignments) {
+          if (assignment.warehouseDoorId === door.id) {
+            holders.set(assignment.discharge.id, assignment.discharge)
+          }
+        }
+
+        return {
+          id: door.id,
+          name: door.name,
+          warehouse: { id: door.warehouse.id, name: door.warehouse.name },
+          otherDischargeAssignments: [...holders.values()]
+            .sort(
+              (left, right) =>
+                left.expectedStartAt.toMillis() - right.expectedStartAt.toMillis() ||
+                left.id.localeCompare(right.id),
+            )
+            .map((holder) => ({
+              discharge: {
+                id: holder.id,
+                vesselName: holder.vesselName,
+                status: holder.status as 'PLANNED' | 'ACTIVE',
+                expectedStartAt: holder.expectedStartAt,
+              },
+            })),
+        }
+      }),
+      weighingAreas: weighingAreas.map((area) => ({ id: area.id, name: area.name })),
+    }
   }
 }
