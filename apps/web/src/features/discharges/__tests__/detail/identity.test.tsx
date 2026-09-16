@@ -22,6 +22,22 @@ test('names the vessel and states the status of the discharge', async () => {
   expect(heading.parentElement).toHaveTextContent('Active')
 })
 
+test('labels the dock, the expected start, and the expected tonnage beside the vessel name', async () => {
+  mockDischargeDetail({
+    details: [buildDischargeDetail(OCEAN_CEDAR, { expectedTonnage: '32150.750' })],
+  })
+
+  renderDischargeDetail(OCEAN_CEDAR.id)
+
+  const heading = await screen.findByRole('heading', { level: 1, name: 'MV Ocean Cedar' })
+  const header = heading.parentElement?.nextElementSibling as HTMLElement
+  expect(field(header, 'Dock')).toHaveTextContent('Quai Est')
+  expect(field(header, 'Expected start')).toHaveTextContent(
+    formatDateTime(OCEAN_CEDAR.expectedStartAt),
+  )
+  expect(field(header, 'Expected tonnage')).toHaveTextContent('32,150.750 t')
+})
+
 test('shows the vessel, the dock, the expected start, and the expected tonnage', async () => {
   mockDischargeDetail({
     details: [

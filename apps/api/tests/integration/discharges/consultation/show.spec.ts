@@ -235,6 +235,8 @@ test.group('Discharge detail HTTP contract', (group) => {
       transportCompany: { id: company.id, name: 'Transports du Port', status: 'AVAILABLE' },
       reservedAt: entry.reservedAt,
       releasedAt: entry.releasedAt,
+      // A released entry no longer competes with any other discharge for the truck.
+      otherHoldings: [],
     })
     assert.isString(entry.reservedAt)
     assert.isString(entry.releasedAt)

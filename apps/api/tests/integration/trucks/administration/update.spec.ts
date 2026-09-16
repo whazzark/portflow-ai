@@ -7,6 +7,10 @@ import DischargeTruckAssignment from '#models/discharge_truck_assignment'
 import TransportCompany from '#models/transport_company'
 import Truck from '#models/truck'
 import { createPersistedTruckUsageScenario } from '../../../support/persisted_truck_usage.js'
+import {
+  createPreparedDischarge,
+  preparer,
+} from '../../discharges/preparation/preparation_scenario.ts'
 
 // Discharge truck assignments restrict truck deletion by foreign key, so any committed-truck
 // scenario built by createPersistedTruckUsageScenario must be cleared before trucks are. The
@@ -213,6 +217,50 @@ test.group('PATCH /api/v1/trucks/:id', (group) => {
 
     response.assertStatus(409)
     assert.equal(response.body().error.code, 'E_TRUCK_TRANSPORT_COMPANY_LOCKED')
+  })
+
+  test('keeps the company of a truck a planned discharge reserved through its pool, until it is withdrawn', async ({
+    assert,
+    client,
+  }) => {
+    const company = await TransportCompanyFactory.create()
+    const otherCompany = await TransportCompanyFactory.create()
+    const truck = await TruckFactory.merge({ transportCompanyId: company.id }).create()
+    const admin = await UserFactory.apply('active').merge({ role: 'OPERATIONS_ADMIN' }).create()
+    const { discharge } = await createPreparedDischarge('PLANNED')
+    const lead = await preparer()
+    const payload = {
+      registration: truck.registration,
+      vehicleModel: truck.vehicleModel,
+      capacityTonnes: truck.capacityTonnes.toNumber(),
+      transportCompanyId: otherCompany.id,
+    }
+
+    ;(
+      await client
+        .post(`/api/v1/discharges/${discharge.id}/truck-pool`)
+        .json({ truckIds: [truck.id] })
+        .loginAs(lead)
+    ).assertStatus(200)
+
+    const locked = await client.patch(`/api/v1/trucks/${truck.id}`).loginAs(admin).json(payload)
+
+    locked.assertStatus(409)
+    assert.equal(locked.body().error.code, 'E_TRUCK_TRANSPORT_COMPANY_LOCKED')
+    assert.equal((await Truck.findOrFail(truck.id)).transportCompanyId, company.id)
+    const assignment = await DischargeTruckAssignment.findByOrFail('truckId', truck.id)
+    assert.equal(assignment.transportCompanyNameSnapshot, company.name)
+
+    ;(
+      await client
+        .post(`/api/v1/discharges/${discharge.id}/truck-pool/withdrawals`)
+        .json({ truckIds: [truck.id] })
+        .loginAs(lead)
+    ).assertStatus(200)
+
+    const reassigned = await client.patch(`/api/v1/trucks/${truck.id}`).loginAs(admin).json(payload)
+    reassigned.assertStatus(200)
+    assert.equal((await Truck.findOrFail(truck.id)).transportCompanyId, otherCompany.id)
   })
 
   test('rejects unauthenticated and unauthorized updates', async ({ assert, client }) => {

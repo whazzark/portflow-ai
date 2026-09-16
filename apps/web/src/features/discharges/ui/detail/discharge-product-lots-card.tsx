@@ -1,3 +1,4 @@
+import { ContactIcon } from 'lucide-react'
 import { useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -9,24 +10,35 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
   formatTonnes,
-  type LotDoorNotice,
+  groupLotsByCustomer,
   lotDoorNotice,
+  lotRemovalBlock,
   splitPeriods,
 } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
+import { AddProductLotsSheet } from '@/features/discharges/ui/detail/add-product-lots-sheet'
+import { CustomerProductLotsSheet } from '@/features/discharges/ui/detail/customer-product-lots-sheet'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
 import { EffectivePeriod } from '@/features/discharges/ui/detail/effective-period'
+import { ProductLotRowActions } from '@/features/discharges/ui/detail/product-lot-row-actions'
 import { ProductLotSheet } from '@/features/discharges/ui/detail/product-lot-sheet'
 import { ReferenceLabel } from '@/features/discharges/ui/detail/reference-label'
-import { RemoveProductLotDialog } from '@/features/discharges/ui/detail/remove-product-lot-dialog'
+import {
+  LOT_REMOVAL_REASONS,
+  RemoveProductLotDialog,
+} from '@/features/discharges/ui/detail/remove-product-lot-dialog'
 
 type ProductLot = DischargeDetailDto['productLots'][number]
-
-const DOOR_NOTICES = {
-  NONE_ASSIGNED: 'No warehouse door assigned',
-  NONE_CURRENTLY_ASSIGNED: 'No warehouse door currently assigned',
-} as const satisfies Record<LotDoorNotice, string>
 
 function LotDoors({
   lot,
@@ -36,34 +48,41 @@ function LotDoors({
   dischargeStatus: DischargeDetailDto['status']
 }) {
   const { inEffect, ended } = splitPeriods(lot.doorAssignments, dischargeStatus)
-  const notice = lotDoorNotice(lot, dischargeStatus)
+
+  // No door yet is the usual state of a lot being prepared: a quiet dash, said in words to
+  // assistive technologies.
+  if (lot.doorAssignments.length === 0) {
+    return (
+      <span className="text-muted-foreground">
+        <span aria-hidden="true">—</span>
+        <span className="sr-only">No warehouse door assigned</span>
+      </span>
+    )
+  }
 
   return (
-    <div className="grid gap-2">
-      {lot.doorAssignments.length > 0 && (
-        <ul aria-label="Warehouse doors" className="grid gap-1">
-          {[...inEffect, ...ended].map((assignment) => (
-            <li
-              className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1"
-              key={assignment.id}
-            >
-              <span className="inline-flex flex-wrap items-center gap-1">
-                <ReferenceLabel
-                  name={assignment.warehouse.name}
-                  status={assignment.warehouse.status}
-                />
-                {' › '}
-                <ReferenceLabel
-                  name={assignment.warehouseDoor.name}
-                  status={assignment.warehouseDoor.status}
-                />
-              </span>
-              <EffectivePeriod dischargeStatus={dischargeStatus} period={assignment} />
-            </li>
-          ))}
-        </ul>
+    <div className="grid gap-1">
+      <ul aria-label="Warehouse doors" className="grid gap-1">
+        {[...inEffect, ...ended].map((assignment) => (
+          <li className="grid gap-0.5" key={assignment.id}>
+            <span className="inline-flex flex-wrap items-center gap-1">
+              <ReferenceLabel
+                name={assignment.warehouse.name}
+                status={assignment.warehouse.status}
+              />
+              {' › '}
+              <ReferenceLabel
+                name={assignment.warehouseDoor.name}
+                status={assignment.warehouseDoor.status}
+              />
+            </span>
+            <EffectivePeriod dischargeStatus={dischargeStatus} period={assignment} />
+          </li>
+        ))}
+      </ul>
+      {lotDoorNotice(lot, dischargeStatus) === 'NONE_CURRENTLY_ASSIGNED' && (
+        <p className="text-muted-foreground text-xs">No warehouse door currently assigned</p>
       )}
-      {notice && <p className="text-muted-foreground">{DOOR_NOTICES[notice]}</p>}
     </div>
   )
 }
@@ -74,81 +93,127 @@ type DischargeProductLotsCardProps = {
   canCorrect: boolean
 }
 
-type LotEditing = { mode: 'add' } | { mode: 'edit'; lot: ProductLot } | null
-
 export function DischargeProductLotsCard({ discharge, canCorrect }: DischargeProductLotsCardProps) {
-  const [editing, setEditing] = useState<LotEditing>(null)
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<ProductLot | null>(null)
   const [removing, setRemoving] = useState<ProductLot | null>(null)
-  const lastLotNoteId = useId()
-  const isLastLot = discharge.productLots.length === 1
+  const [correctingCustomerId, setCorrectingCustomerId] = useState<string | null>(null)
+  const tableId = useId()
+  const groups = groupLotsByCustomer(discharge.productLots)
+  const columnCount = canCorrect ? 4 : 3
 
   const addButton = (
-    <Button onClick={() => setEditing({ mode: 'add' })} size="sm" variant="outline">
-      Add product lot
+    <Button onClick={() => setAdding(true)} size="sm">
+      Add product lots
     </Button>
   )
 
   return (
     <DetailSection actions={canCorrect ? addButton : undefined} title="Product lots">
       {discharge.productLots.length > 0 ? (
-        <div className="grid gap-4">
-          {discharge.productLots.map((lot) => {
-            const lotName = `${lot.customer.name} · ${lot.productName}`
+        <div className="overflow-hidden rounded-lg border">
+          <Table aria-label="Product lots">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead className="text-right">Expected quantity</TableHead>
+                <TableHead>Warehouse doors</TableHead>
+                {canCorrect && (
+                  <TableHead className="w-10">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
+              </TableRow>
+            </TableHeader>
+            {groups.map((group, groupIndex) => {
+              const headerId = `${tableId}-customer-${groupIndex}`
 
-            return (
-              <article
-                aria-label={lotName}
-                className="grid gap-3 rounded-lg border p-4"
-                key={lot.id}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="grid gap-1">
-                    <h3 className="font-medium">{lot.productName}</h3>
-                    <ReferenceLabel name={lot.customer.name} status={lot.customer.status} />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium tabular-nums">
-                      {formatTonnes(lot.expectedQuantityTonnes)}
-                    </span>
-                    {canCorrect && (
-                      <>
+              return (
+                // A customer's lots form a group, named by the customer heading its rows.
+                <TableBody aria-labelledby={headerId} key={group.customer.id}>
+                  {/* A thick rule and the customer icon set each customer apart from the next. */}
+                  <TableRow className="border-t-2 bg-muted/40 hover:bg-muted/40">
+                    <th className="h-10 px-2 text-left align-middle font-semibold" scope="rowgroup">
+                      <span className="inline-flex flex-wrap items-center gap-x-2">
+                        <ContactIcon aria-hidden="true" className="size-4 text-muted-foreground" />
+                        {/* The group is named by its customer alone, not by its lot count. */}
+                        <span id={headerId}>
+                          <ReferenceLabel
+                            name={group.customer.name}
+                            status={group.customer.status}
+                          />
+                        </span>
+                        <span className="font-normal text-muted-foreground">
+                          · {group.lots.length} {group.lots.length === 1 ? 'lot' : 'lots'}
+                        </span>
+                      </span>
+                    </th>
+                    <TableCell className="text-right font-semibold tabular-nums">
+                      {formatTonnes(group.subtotal)}
+                    </TableCell>
+                    <TableCell className="text-right" colSpan={columnCount - 2}>
+                      {canCorrect && (
                         <Button
-                          aria-label={`Edit ${lotName}`}
-                          onClick={() => setEditing({ mode: 'edit', lot })}
+                          aria-label={`Edit ${group.customer.name}`}
+                          onClick={() => setCorrectingCustomerId(group.customer.id)}
                           size="sm"
                           variant="ghost"
                         >
                           Edit
                         </Button>
-                        <Button
-                          aria-describedby={isLastLot ? lastLotNoteId : undefined}
-                          aria-label={`Remove ${lotName}`}
-                          disabled={isLastLot}
-                          onClick={() => setRemoving(lot)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          Remove
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <p>
-                  {lot.description ?? (
-                    <span className="text-muted-foreground italic">Not specified</span>
-                  )}
-                </p>
-                <LotDoors dischargeStatus={discharge.status} lot={lot} />
-              </article>
-            )
-          })}
-          {/* A disabled button cannot show a tooltip, so the reason is written out and tied to it. */}
-          {canCorrect && isLastLot && (
-            <p className="text-muted-foreground text-sm" id={lastLotNoteId}>
-              A discharge needs at least one product lot
-            </p>
-          )}
+                      )}
+                    </TableCell>
+                  </TableRow>
+                  {group.lots.map((lot) => {
+                    const lotName = `${lot.customer.name} · ${lot.productName}`
+                    const block = lotRemovalBlock(lot, discharge.productLots.length)
+
+                    return (
+                      <TableRow key={lot.id}>
+                        <TableCell className="whitespace-normal pl-6 align-top">
+                          <span className="grid gap-0.5">
+                            <span className="font-medium">{lot.productName}</span>
+                            {lot.description && (
+                              <span className="text-muted-foreground italic">
+                                {lot.description}
+                              </span>
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right align-top tabular-nums">
+                          {formatTonnes(lot.expectedQuantityTonnes)}
+                        </TableCell>
+                        <TableCell className="whitespace-normal align-top">
+                          <LotDoors dischargeStatus={discharge.status} lot={lot} />
+                        </TableCell>
+                        {canCorrect && (
+                          <TableCell className="text-right align-top">
+                            <ProductLotRowActions
+                              name={lotName}
+                              onEdit={() => setEditing(lot)}
+                              onRemove={() => setRemoving(lot)}
+                              removalBlocked={block ? LOT_REMOVAL_REASONS[block] : null}
+                            />
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              )
+            })}
+            <TableFooter>
+              <TableRow>
+                <th className="h-10 px-2 text-left align-middle font-medium" scope="row">
+                  Expected total
+                </th>
+                <TableCell className="text-right tabular-nums">
+                  {formatTonnes(discharge.expectedTonnage)}
+                </TableCell>
+                <TableCell colSpan={columnCount - 2} />
+              </TableRow>
+            </TableFooter>
+          </Table>
         </div>
       ) : (
         <Empty className="border-0 p-0">
@@ -162,11 +227,21 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
         </Empty>
       )}
       {canCorrect && (
+        <AddProductLotsSheet discharge={discharge} onOpenChange={setAdding} open={adding} />
+      )}
+      {canCorrect && (
         <ProductLotSheet
           discharge={discharge}
-          lot={editing?.mode === 'edit' ? editing.lot : undefined}
+          lot={editing ?? undefined}
           onOpenChange={(open) => !open && setEditing(null)}
           open={editing !== null}
+        />
+      )}
+      {canCorrect && (
+        <CustomerProductLotsSheet
+          customerId={correctingCustomerId}
+          discharge={discharge}
+          onOpenChange={(open) => !open && setCorrectingCustomerId(null)}
         />
       )}
       {canCorrect && removing && (

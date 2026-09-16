@@ -24,12 +24,27 @@ type PlannedPeriod = { plannedStartAt: DateTime; plannedEndAt: DateTime }
 const DUPLICATE_LOT_MESSAGE = 'This customer already has a lot with this product name'
 
 /** A lot is identified by its customer and its product name, whatever its case or spacing. */
-function lotIdentityKey(lot: LotIdentity) {
+export function lotIdentityKey(lot: LotIdentity) {
   return JSON.stringify([lot.customerId.toLowerCase(), lot.productName.trim().toLowerCase()])
 }
 
 export function duplicateLotIssue(field: string): PreparationIssue {
   return { field, rule: 'productLotIdentityUnique', message: DUPLICATE_LOT_MESSAGE }
+}
+
+/** Every lot sharing its identity with another lot of the same submission, at its position. */
+export function findDuplicateLotIssues(productLots: LotIdentity[]) {
+  const lotCounts = new Map<string, number>()
+  for (const lot of productLots) {
+    const key = lotIdentityKey(lot)
+    lotCounts.set(key, (lotCounts.get(key) ?? 0) + 1)
+  }
+
+  return productLots.flatMap((lot, index) =>
+    (lotCounts.get(lotIdentityKey(lot)) ?? 0) > 1
+      ? [duplicateLotIssue(`productLots.${index}.productName`)]
+      : [],
+  )
 }
 
 /**
@@ -44,51 +59,52 @@ export function findPreparationIssues({
   productLots: LotIdentity[]
   shifts: PlannedPeriod[]
 }) {
-  const issues: PreparationIssue[] = []
-
-  const lotCounts = new Map<string, number>()
-  for (const lot of productLots) {
-    const key = lotIdentityKey(lot)
-    lotCounts.set(key, (lotCounts.get(key) ?? 0) + 1)
-  }
-  productLots.forEach((lot, index) => {
-    if ((lotCounts.get(lotIdentityKey(lot)) ?? 0) > 1) {
-      issues.push(duplicateLotIssue(`productLots.${index}.productName`))
-    }
-  })
+  const issues = findDuplicateLotIssues(productLots)
 
   shifts.forEach((shift, index) => {
-    if (shift.plannedEndAt.toMillis() <= shift.plannedStartAt.toMillis()) {
-      issues.push({
-        field: `shifts.${index}.plannedEndAt`,
-        rule: 'shiftPeriodOrder',
-        message: 'The planned end must be after the planned start',
-      })
+    if (!isOrderedPeriod(shift)) {
+      issues.push(shiftPeriodOrderIssue(`shifts.${index}.plannedEndAt`))
     }
   })
 
-  // A shift ending exactly when the next starts does not overlap it: the break may last nothing.
   const overlapping = new Set<number>()
   shifts.forEach((shift, index) => {
     shifts.forEach((other, otherIndex) => {
-      if (
-        otherIndex !== index &&
-        shift.plannedStartAt.toMillis() < other.plannedEndAt.toMillis() &&
-        other.plannedStartAt.toMillis() < shift.plannedEndAt.toMillis()
-      ) {
+      if (otherIndex !== index && periodsOverlap(shift, other)) {
         overlapping.add(index)
       }
     })
   })
   for (const index of [...overlapping].sort((left, right) => left - right)) {
-    issues.push({
-      field: `shifts.${index}.plannedStartAt`,
-      rule: 'shiftOverlap',
-      message: 'This shift overlaps another shift',
-    })
+    issues.push(shiftOverlapIssue(`shifts.${index}.plannedStartAt`))
   }
 
   return issues
+}
+
+/** A planned period ends after it starts: a shift of no length is no shift. */
+export function isOrderedPeriod(period: PlannedPeriod) {
+  return period.plannedEndAt.toMillis() > period.plannedStartAt.toMillis()
+}
+
+/** A shift ending exactly when the next starts does not overlap it: the break may last nothing. */
+export function periodsOverlap(left: PlannedPeriod, right: PlannedPeriod) {
+  return (
+    left.plannedStartAt.toMillis() < right.plannedEndAt.toMillis() &&
+    right.plannedStartAt.toMillis() < left.plannedEndAt.toMillis()
+  )
+}
+
+export function shiftPeriodOrderIssue(field: string): PreparationIssue {
+  return {
+    field,
+    rule: 'shiftPeriodOrder',
+    message: 'The planned end must be after the planned start',
+  }
+}
+
+export function shiftOverlapIssue(field: string): PreparationIssue {
+  return { field, rule: 'shiftOverlap', message: 'This shift overlaps another shift' }
 }
 
 /**

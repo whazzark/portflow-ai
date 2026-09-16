@@ -1,14 +1,15 @@
 import { toast } from 'sonner'
 
+import { Button } from '@/components/ui/button'
 import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
 import {
-  emptyProductLot,
   productLotFormValues,
   productLotSchema,
   toProductLotBody,
@@ -27,7 +28,7 @@ type ProductLot = DischargeDetailDto['productLots'][number]
 
 type ProductLotSheetProps = {
   discharge: DischargeDetailDto
-  /** The lot being corrected; absent when a lot is being added. */
+  /** The lot being corrected; absent while none is. */
   lot?: ProductLot
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -47,14 +48,12 @@ export function ProductLotSheet({ discharge, lot, open, onOpenChange }: ProductL
     <Sheet onOpenChange={onOpenChange} open={open}>
       <SheetContent className="overflow-y-auto" size="lg">
         <SheetHeader>
-          <SheetTitle>{lot ? 'Edit product lot' : 'Add product lot'}</SheetTitle>
+          <SheetTitle>Edit product lot</SheetTitle>
           <SheetDescription>
-            {lot
-              ? 'Correct the customer, product, expected quantity, or description of this lot.'
-              : 'Add a lot of bulk material this discharge unloads for a customer.'}
+            Correct the customer, product, expected quantity, or description of this lot.
           </SheetDescription>
         </SheetHeader>
-        {open && (
+        {open && lot && (
           <ProductLotForm discharge={discharge} lot={lot} onDone={() => onOpenChange(false)} />
         )}
       </SheetContent>
@@ -68,30 +67,22 @@ function ProductLotForm({
   onDone,
 }: {
   discharge: DischargeDetailDto
-  lot?: ProductLot
+  lot: ProductLot
   onDone: () => void
 }) {
-  const { addLot, correctLot } = useDischargeMutations()
+  const { correctLot } = useDischargeMutations()
   const customers = useCustomerOptions(lot?.customer)
 
   const form = useAppForm({
-    defaultValues: lot ? productLotFormValues(lot) : emptyProductLot(),
+    defaultValues: productLotFormValues(lot),
     validators: { onChange: productLotSchema, onSubmit: productLotSchema },
     onSubmit: async ({ formApi, value }) => {
       try {
-        if (lot) {
-          await correctLot.mutateAsync({
-            params: { dischargeId: discharge.id, id: lot.id },
-            body: toProductLotBody(value),
-          })
-          toast.success('Product lot updated')
-        } else {
-          await addLot.mutateAsync({
-            params: { dischargeId: discharge.id },
-            body: toProductLotBody(value),
-          })
-          toast.success('Product lot added')
-        }
+        await correctLot.mutateAsync({
+          params: { dischargeId: discharge.id, id: lot.id },
+          body: toProductLotBody(value),
+        })
+        toast.success('Product lot updated')
         onDone()
       } catch (error) {
         if (applyValidationError(formApi, error)) {
@@ -113,7 +104,7 @@ function ProductLotForm({
           return
         }
 
-        toast.error(lot ? 'Unable to update the product lot' : 'Unable to add the product lot', {
+        toast.error('Unable to update the product lot', {
           description: apiError.message,
         })
       }
@@ -124,20 +115,14 @@ function ProductLotForm({
     <div className="px-4 pb-4">
       <form.AppForm>
         <form.Form className="flex flex-col gap-6" noValidate={true}>
-          <ProductLotFields
-            customers={customers}
-            fields={ROOT_LOT_FIELDS}
-            form={form}
-            layout="stacked"
-            trailing={null}
-          />
+          <ProductLotFields customers={customers} fields={ROOT_LOT_FIELDS} form={form} />
           <form.FormError />
-          <form.SubmitButton
-            className="self-end"
-            pendingLabel={lot ? WRITE_PENDING_LABELS.update : 'Adding…'}
-          >
-            {lot ? 'Save' : 'Add product lot'}
-          </form.SubmitButton>
+          <SheetFooter className="flex-row justify-end gap-2 p-0">
+            <Button onClick={onDone} type="button" variant="outline">
+              Cancel
+            </Button>
+            <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS.update}>Save</form.SubmitButton>
+          </SheetFooter>
         </form.Form>
       </form.AppForm>
     </div>

@@ -36,6 +36,7 @@ export type TruckWriteResult =
   | { kind: 'ARCHIVED' }
   | { kind: 'SUSPENDED' }
   | { kind: 'TRANSPORT_COMPANY_CHANGED' }
+  | { kind: 'TRANSPORT_COMPANY_LOCKED' }
   | { kind: 'INVALID_TRANSPORT_COMPANY' }
 
 export type FindCompanyIdsWithAvailableTrucksInput = {

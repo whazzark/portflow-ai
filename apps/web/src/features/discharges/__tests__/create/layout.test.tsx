@@ -44,7 +44,7 @@ test('opens a lot description only on demand and sends what was typed', async ()
   await openCreationFromList()
   await fillValidPreparation()
   await goToStep('Product lots')
-  const lot = screen.getByRole('group', { name: 'Product lot 1' })
+  const lot = screen.getByRole('group', { name: 'Customer 1' })
 
   expect(within(lot).queryByRole('textbox', { name: 'Description' })).not.toBeInTheDocument()
   fireEvent.click(within(lot).getByRole('button', { name: 'Add description' }))

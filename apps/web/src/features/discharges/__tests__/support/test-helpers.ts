@@ -4,7 +4,12 @@ import { delay, HttpResponse, http } from 'msw'
 import { afterAll, beforeAll, expect, vi } from 'vitest'
 
 import type { SessionUser } from '@/features/auth/context/session-context'
-import type { DischargeDetailDto, DischargeDto } from '@/features/discharges/types'
+import type {
+  DischargeDetailDto,
+  DischargeDetailTab,
+  DischargeDto,
+  TruckCandidateDto,
+} from '@/features/discharges/types'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
 import {
@@ -13,9 +18,12 @@ import {
   API_BASE_URL,
   AVAILABLE_CUSTOMERS,
   AVAILABLE_DOCKS,
+  AVAILABLE_WEIGHING_AREAS,
   DISCHARGE_DETAILS,
   DISCHARGES,
   ELIGIBLE_RESPONSIBLES,
+  SHIFT_WAREHOUSES,
+  TRUCK_CANDIDATES,
 } from './fixtures'
 
 type MockDischargesOptions = {
@@ -108,6 +116,14 @@ export function renderDischarges(path = '/discharges') {
 
 export function renderDischargeDetail(id: string, search = '') {
   return renderApp(`/discharges/${id}${search}`)
+}
+
+/** A discharge opened on one of its sections, as a shared address names it. */
+export function renderDischargeTab(id: string, tab: DischargeDetailTab, search = '') {
+  const params = new URLSearchParams(search.replace(/^\?/, ''))
+  params.set('tab', tab)
+
+  return renderApp(`/discharges/${id}?${params}`)
 }
 
 export function dischargeTab(name: RegExp | string) {
@@ -372,17 +388,36 @@ export async function fillVesselStep() {
   change(screen.getByLabelText(/^Expected start/), '2026-10-01T06:00')
 }
 
-export async function fillLotsStep() {
-  const firstLot = screen.getByRole('group', { name: 'Product lot 1' })
-  await chooseOption(firstLot, 'Customer', AVAILABLE_CUSTOMERS[0].companyName)
-  change(within(firstLot).getByRole('textbox', { name: 'Product name' }), 'Blé tendre')
-  change(within(firstLot).getByRole('textbox', { name: 'Expected quantity (t)' }), '1200.5')
+/** The product row of a customer block, as `Customer 1` › `Product 1`. */
+export function productRow(block: number, product: number) {
+  const customerBlock = screen.getByRole('group', { name: `Customer ${block}` })
 
-  fireEvent.click(screen.getByRole('button', { name: 'Add product lot' }))
-  const secondLot = await screen.findByRole('group', { name: 'Product lot 2' })
-  await chooseOption(secondLot, 'Customer', AVAILABLE_CUSTOMERS[1].companyName)
-  change(within(secondLot).getByRole('textbox', { name: 'Product name' }), 'Orge')
-  change(within(secondLot).getByRole('textbox', { name: 'Expected quantity (t)' }), '800')
+  return within(customerBlock).getByRole('group', { name: `Product ${product}` })
+}
+
+/** Types a product row's name and expected quantity. */
+export function fillProduct(row: HTMLElement, productName: string, quantity: string) {
+  change(within(row).getByRole('textbox', { name: 'Product name' }), productName)
+  change(within(row).getByRole('textbox', { name: 'Expected quantity (t)' }), quantity)
+}
+
+/** Fills a customer block whose customer and first product are still empty. */
+export async function fillCustomerBlock(
+  block: number,
+  customerName: string,
+  productName: string,
+  quantity: string,
+) {
+  const customerBlock = await screen.findByRole('group', { name: `Customer ${block}` })
+  await chooseOption(customerBlock, 'Customer', customerName)
+  fillProduct(productRow(block, 1), productName, quantity)
+}
+
+export async function fillLotsStep() {
+  await fillCustomerBlock(1, AVAILABLE_CUSTOMERS[0].companyName, 'Blé tendre', '1200.5')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Add customer' }))
+  await fillCustomerBlock(2, AVAILABLE_CUSTOMERS[1].companyName, 'Orge', '800')
 }
 
 export async function fillShiftsStep() {
@@ -407,7 +442,7 @@ export async function fillValidPreparation() {
   await fillShiftsStep()
 }
 
-type DischargeWriteAnswer = { status: number; body: unknown } | 'network-error' | undefined
+export type DischargeWriteAnswer = { status: number; body: unknown } | 'network-error' | undefined
 
 type MockDischargeCorrectionsOptions = {
   user?: SessionUser
@@ -422,6 +457,17 @@ type MockDischargeCorrectionsOptions = {
     lotId?: string
     body?: Record<string, unknown>
   }) => DischargeWriteAnswer
+  /** Decide the answer to a customer's lots corrected at once; by default it is applied. */
+  respondToCustomerLots?: (change: {
+    customerId: string
+    body: CustomerLotsBody
+  }) => DischargeWriteAnswer
+}
+
+type CustomerLotsBody = {
+  customerId: string
+  productLots: Array<Record<string, unknown> & { id?: string }>
+  removedProductLotIds: string[]
 }
 
 /**
@@ -434,12 +480,14 @@ export function mockDischargeCorrections({
   docksDelayMs = 0,
   respondToIdentity,
   respondToLot,
+  respondToCustomerLots,
 }: MockDischargeCorrectionsOptions) {
   const state = {
     current: detail,
     detailRequests: 0,
     identityRequests: [] as Record<string, unknown>[],
     lotRequests: [] as Array<{ method: string; lotId?: string; body?: Record<string, unknown> }>,
+    customerLotRequests: [] as Array<{ customerId: string; body: CustomerLotsBody }>,
   }
 
   const answer = (
@@ -520,8 +568,9 @@ export function mockDischargeCorrections({
       return HttpResponse.json({ data: state.current })
     }),
     http.post(`${API_BASE_URL}/api/v1/discharges/:id/product-lots`, async ({ request }) => {
-      const body = (await request.json()) as Record<string, unknown>
+      const body = (await request.json()) as { productLots: Record<string, unknown>[] }
       state.lotRequests.push({ method: 'POST', body })
+      const requestNumber = state.lotRequests.length
 
       return answer(
         respondToLot?.({ method: 'POST', body }),
@@ -529,12 +578,56 @@ export function mockDischargeCorrections({
           ...state.current,
           productLots: [
             ...state.current.productLots,
-            lotFromBody(`added-lot-${state.lotRequests.length}`, body),
+            ...body.productLots.map((lot, index) =>
+              lotFromBody(`added-lot-${requestNumber}-${index + 1}`, lot),
+            ),
           ],
         }),
         201,
       )
     }),
+    http.patch(
+      `${API_BASE_URL}/api/v1/discharges/:id/customers/:customerId/product-lots`,
+      async ({ params, request }) => {
+        const body = (await request.json()) as CustomerLotsBody
+        const customerId = String(params.customerId)
+        state.customerLotRequests.push({ customerId, body })
+        const requestNumber = state.customerLotRequests.length
+
+        return answer(respondToCustomerLots?.({ customerId, body }), () => {
+          const withCustomer = (lot: ReturnType<typeof lotFromBody>) => {
+            const current = state.current.productLots.find(
+              (candidate) => candidate.customer.id === body.customerId,
+            )
+
+            return current && !AVAILABLE_CUSTOMERS.some((known) => known.id === body.customerId)
+              ? { ...lot, customer: current.customer }
+              : lot
+          }
+          const corrected = state.current.productLots
+            .filter((lot) => !body.removedProductLotIds.includes(lot.id))
+            .map((lot) => {
+              const entry = body.productLots.find((candidate) => candidate.id === lot.id)
+
+              return entry
+                ? withCustomer(lotFromBody(lot.id, { ...entry, customerId: body.customerId }))
+                : lot
+            })
+          const added = body.productLots
+            .filter((entry) => entry.id === undefined)
+            .map((entry, index) =>
+              withCustomer(
+                lotFromBody(`lot-added-${requestNumber}-${index + 1}`, {
+                  ...entry,
+                  customerId: body.customerId,
+                }),
+              ),
+            )
+
+          return { ...state.current, productLots: [...corrected, ...added] }
+        })
+      },
+    ),
     http.patch(
       `${API_BASE_URL}/api/v1/discharges/:id/product-lots/:lotId`,
       async ({ params, request }) => {
@@ -588,4 +681,259 @@ export function allowFormJourneyTime() {
     vi.resetConfig()
     configure({ asyncUtilTimeout: 3_000 })
   })
+}
+
+type MockTruckPlanningOptions = {
+  user?: SessionUser
+  detail: DischargeDetailDto
+  candidates?: TruckCandidateDto[]
+  /** Decide the answer to the candidates read; by default the candidates are listed. */
+  respondToCandidates?: () => DischargeWriteAnswer
+  /** Decide the answer to a reservation; by default it is applied and returned. */
+  respondToReserve?: (truckIds: string[]) => DischargeWriteAnswer
+  /** Decide the answer to a withdrawal; by default it is applied and returned. */
+  respondToWithdraw?: (truckIds: string[]) => DischargeWriteAnswer
+  /** Decide the answer to a shift correction; by default it is applied and returned. */
+  respondToShift?: (shiftId: string, body: ShiftCorrectionBody) => DischargeWriteAnswer
+}
+
+export type ShiftCorrectionBody = {
+  plannedStartAt: string
+  plannedEndAt: string
+  responsibleUserId: string
+  truckIds: string[]
+  warehouseDoorIds: string[]
+  weighingAreaIds: string[]
+}
+
+/**
+ * Serves one discharge's detail, its truck candidates, and the choices a shift correction offers, and
+ * applies reservations, withdrawals, and shift corrections to that detail as the API would. A test can then tell a detail refreshed from a
+ * write's answer from one fetched again, and replace any answer to reach a refusal.
+ */
+export function mockTruckPlanning({
+  user = ACTIVE_OPERATIONS_LEAD,
+  detail,
+  candidates = TRUCK_CANDIDATES,
+  respondToCandidates,
+  respondToReserve,
+  respondToWithdraw,
+  respondToShift,
+}: MockTruckPlanningOptions) {
+  const state = {
+    current: detail,
+    detailRequests: 0,
+    candidateRequests: 0,
+    requests: [] as Array<
+      | { kind: 'reserve' | 'withdraw'; truckIds: string[] }
+      | { kind: 'shift'; shiftId: string; body: ShiftCorrectionBody }
+    >,
+  }
+
+  const answer = (outcome: DischargeWriteAnswer, apply: () => DischargeDetailDto) => {
+    if (outcome === 'network-error') {
+      return HttpResponse.error()
+    }
+    if (outcome) {
+      return HttpResponse.json(outcome.body as object, { status: outcome.status })
+    }
+
+    state.current = apply()
+
+    return HttpResponse.json({ data: state.current })
+  }
+
+  const isCurrent = (row: { effectiveTo: string | null }) => row.effectiveTo === null
+  const registrationOf = (truckId: string) =>
+    state.current.truckPool.find((entry) => entry.truckId === truckId)?.registration ?? truckId
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+      state.detailRequests += 1
+
+      return HttpResponse.json({ data: state.current })
+    }),
+    http.get(`${API_BASE_URL}/api/v1/users/eligible-shift-responsibles`, () =>
+      HttpResponse.json({ data: ELIGIBLE_RESPONSIBLES }),
+    ),
+    http.get(`${API_BASE_URL}/api/v1/warehouses`, () =>
+      HttpResponse.json({ data: SHIFT_WAREHOUSES }),
+    ),
+    http.get(`${API_BASE_URL}/api/v1/weighing-areas/available`, () =>
+      HttpResponse.json({ data: AVAILABLE_WEIGHING_AREAS }),
+    ),
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id/truck-pool/candidates`, () => {
+      state.candidateRequests += 1
+
+      const outcome = respondToCandidates?.()
+      if (outcome === 'network-error') {
+        return HttpResponse.error()
+      }
+      if (outcome) {
+        return HttpResponse.json(outcome.body as object, { status: outcome.status })
+      }
+
+      const held = new Set(
+        state.current.truckPool
+          .filter((entry) => entry.releasedAt === null)
+          .map((entry) => entry.truckId),
+      )
+
+      return HttpResponse.json({ data: candidates.filter((candidate) => !held.has(candidate.id)) })
+    }),
+    http.post(`${API_BASE_URL}/api/v1/discharges/:id/truck-pool`, async ({ request }) => {
+      const { truckIds } = (await request.json()) as { truckIds: string[] }
+      state.requests.push({ kind: 'reserve', truckIds })
+
+      return answer(respondToReserve?.(truckIds), () => {
+        const reserved = candidates
+          .filter((candidate) => truckIds.includes(candidate.id))
+          .map((candidate) => ({
+            id: `pool-${candidate.id}`,
+            truckId: candidate.id,
+            registration: candidate.registration,
+            truckStatus: 'AVAILABLE' as const,
+            transportCompany: { ...candidate.transportCompany, status: 'AVAILABLE' as const },
+            reservedAt: '2026-09-15T08:00:00.000Z',
+            releasedAt: null,
+            otherHoldings: candidate.otherHoldings,
+          }))
+
+        return { ...state.current, truckPool: [...state.current.truckPool, ...reserved] }
+      })
+    }),
+    http.post(
+      `${API_BASE_URL}/api/v1/discharges/:id/truck-pool/withdrawals`,
+      async ({ request }) => {
+        const { truckIds } = (await request.json()) as { truckIds: string[] }
+        state.requests.push({ kind: 'withdraw', truckIds })
+
+        return answer(respondToWithdraw?.(truckIds), () => ({
+          ...state.current,
+          truckPool: state.current.truckPool.filter(
+            (entry) => entry.releasedAt !== null || !truckIds.includes(entry.truckId),
+          ),
+          shifts: state.current.shifts.map((shift) =>
+            shift.status === 'PLANNED'
+              ? {
+                  ...shift,
+                  trucks: shift.trucks.filter(
+                    (truck) => !isCurrent(truck) || !truckIds.includes(truck.truckId),
+                  ),
+                }
+              : shift,
+          ),
+        }))
+      },
+    ),
+    http.put(
+      `${API_BASE_URL}/api/v1/discharges/:id/shifts/:shiftId`,
+      async ({ params, request }) => {
+        const body = (await request.json()) as ShiftCorrectionBody
+        const shiftId = String(params.shiftId)
+        state.requests.push({ kind: 'shift', shiftId, body })
+
+        const keep = <Row extends { effectiveTo: string | null }>(
+          rows: Row[],
+          ids: string[],
+          idOf: (row: Row) => string,
+        ) => rows.filter((row) => !isCurrent(row) || ids.includes(idOf(row)))
+        const addedIds = <Row extends { effectiveTo: string | null }>(
+          kept: Row[],
+          ids: string[],
+          idOf: (row: Row) => string,
+        ) => {
+          const keptIds = new Set(kept.filter(isCurrent).map(idOf))
+          return ids.filter((id) => !keptIds.has(id))
+        }
+        const selection = { effectiveFrom: '2026-09-15T08:00:00.000Z', effectiveTo: null }
+
+        return answer(respondToShift?.(shiftId, body), () => ({
+          ...state.current,
+          shifts: state.current.shifts.map((shift) => {
+            if (shift.id !== shiftId) {
+              return shift
+            }
+
+            const responsible =
+              ELIGIBLE_RESPONSIBLES.find((user) => user.id === body.responsibleUserId) ??
+              shift.responsible
+            const trucks = keep(shift.trucks, body.truckIds, (truck) => truck.truckId)
+            const doors = keep(
+              shift.warehouseDoors,
+              body.warehouseDoorIds,
+              (door) => door.warehouseDoor.id,
+            )
+            const areas = keep(
+              shift.weighingAreas,
+              body.weighingAreaIds,
+              (area) => area.weighingArea.id,
+            )
+
+            return {
+              ...shift,
+              plannedStartAt: body.plannedStartAt,
+              plannedEndAt: body.plannedEndAt,
+              responsible,
+              trucks: [
+                ...trucks,
+                ...addedIds(trucks, body.truckIds, (truck) => truck.truckId).map((truckId) => ({
+                  id: `selection-${shiftId}-${truckId}`,
+                  truckId,
+                  registration: registrationOf(truckId),
+                  truckStatus: 'AVAILABLE' as const,
+                  ...selection,
+                })),
+              ],
+              warehouseDoors: [
+                ...doors,
+                ...addedIds(doors, body.warehouseDoorIds, (door) => door.warehouseDoor.id).flatMap(
+                  (doorId) =>
+                    SHIFT_WAREHOUSES.flatMap((warehouse) =>
+                      warehouse.doors
+                        .filter((door) => door.id === doorId)
+                        .map((door) => ({
+                          id: `selection-${shiftId}-${doorId}`,
+                          warehouseDoor: door,
+                          warehouse: {
+                            id: warehouse.id,
+                            name: warehouse.name,
+                            status: warehouse.status,
+                          },
+                          ...selection,
+                        })),
+                    ),
+                ),
+              ],
+              weighingAreas: [
+                ...areas,
+                ...addedIds(areas, body.weighingAreaIds, (area) => area.weighingArea.id).flatMap(
+                  (areaId) =>
+                    AVAILABLE_WEIGHING_AREAS.filter((area) => area.id === areaId).map((area) => ({
+                      id: `selection-${shiftId}-${areaId}`,
+                      weighingArea: area,
+                      ...selection,
+                    })),
+                ),
+              ],
+            }
+          }),
+        }))
+      },
+    ),
+  )
+
+  return state
+}
+
+/**
+ * Opens a product lot's menu, named `Customer · Product`, and returns its items. The menu is
+ * portaled out of the table, so its items are queried from `screen`.
+ */
+export async function openLotMenu(lotName: string) {
+  const lots = await screen.findByRole('region', { name: 'Product lots' })
+  fireEvent.click(within(lots).getByRole('button', { name: `Actions for ${lotName}` }))
+
+  return screen.findByRole('menu')
 }

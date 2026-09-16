@@ -8,7 +8,7 @@ import {
   buildLot,
   listedDischarge,
 } from '../support/fixtures'
-import { mockDischargeDetail, renderDischargeDetail } from '../support/test-helpers'
+import { mockDischargeDetail, renderDischargeTab } from '../support/test-helpers'
 
 const OCEAN_CEDAR = listedDischarge('MV Ocean Cedar', 'ACTIVE')
 
@@ -19,12 +19,12 @@ const ENDED_PERIOD = {
 
 function renderLots(overrides: Partial<DischargeDetailDto>) {
   mockDischargeDetail({ details: [buildDischargeDetail(OCEAN_CEDAR, overrides)] })
-  renderDischargeDetail(OCEAN_CEDAR.id)
+  renderDischargeTab(OCEAN_CEDAR.id, 'product-lots')
 
   return screen.findByRole('region', { name: 'Product lots' })
 }
 
-test('shows every lot once with its customer, product, quantity, and description', async () => {
+test('lists the lots under each customer, with its subtotal and the expected total', async () => {
   const region = await renderLots({
     productLots: [
       buildLot({
@@ -33,22 +33,38 @@ test('shows every lot once with its customer, product, quantity, and description
         expectedQuantityTonnes: '12500.500',
         productName: 'Blé tendre',
       }),
+      buildLot({ id: 'lot-b', productName: 'Orge', expectedQuantityTonnes: '0.250' }),
       buildLot({
-        id: 'lot-b',
+        id: 'lot-c',
         customer: { id: 'customer-soufflet', name: 'Soufflet Négoce', status: 'AVAILABLE' },
         productName: 'Blé tendre',
       }),
     ],
+    expectedTonnage: '13500.750',
   })
 
-  const cargill = within(region).getByRole('article', { name: 'Cargill France · Blé tendre' })
-  const soufflet = within(region).getByRole('article', { name: 'Soufflet Négoce · Blé tendre' })
-  expect(cargill).toHaveTextContent('12,500.500 t')
-  expect(cargill).toHaveTextContent('Protein 11.5%')
+  const [, cargill, soufflet] = within(region).getAllByRole('rowgroup')
+  expect(within(region).getByRole('rowgroup', { name: 'Cargill France' })).toBe(cargill)
+  expect(within(region).getByRole('rowgroup', { name: 'Soufflet Négoce' })).toBe(soufflet)
+
+  const [cargillHeader, wheat, barley] = within(cargill).getAllByRole('row')
+  expect(cargillHeader).toHaveTextContent('2 lots')
+  expect(cargillHeader).toHaveTextContent('12,500.750 t')
+  expect(wheat).toHaveTextContent('Blé tendre')
+  expect(wheat).toHaveTextContent('Protein 11.5%')
+  expect(wheat).toHaveTextContent('12,500.500 t')
+  expect(barley).toHaveTextContent('0.250 t')
   // The same product for two customers is two lots, never merged.
+  const [souffletHeader] = within(soufflet).getAllByRole('row')
+  expect(souffletHeader).toHaveTextContent('1 lot')
+  expect(souffletHeader).not.toHaveTextContent('lots')
+  expect(within(soufflet).getAllByRole('row')).toHaveLength(2)
   expect(soufflet).toHaveTextContent('1,000.000 t')
-  expect(soufflet).toHaveTextContent('Not specified')
-  expect(within(region).getAllByRole('article')).toHaveLength(2)
+  // An absent description leaves nothing behind.
+  expect(region).not.toHaveTextContent('Not specified')
+
+  const total = within(region).getByRole('rowheader', { name: 'Expected total' })
+  expect(total.closest('tr')).toHaveTextContent('13,500.750 t')
 })
 
 test('lists each door with its warehouse and period, the ones in effect first', async () => {
@@ -117,7 +133,7 @@ test('keeps archived customers, warehouses, and doors readable and marks them', 
     ],
   })
 
-  const lot = within(region).getByRole('article', { name: 'Négoce Retiré · Blé tendre' })
+  const lot = within(region).getByRole('rowgroup', { name: /Négoce Retiré/ })
   const [door] = within(lot).getAllByRole('listitem')
   expect(within(lot).getAllByText('Archived').length).toBeGreaterThanOrEqual(3)
   expect(door).toHaveTextContent('Magasin Retiré')

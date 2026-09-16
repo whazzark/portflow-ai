@@ -92,6 +92,11 @@ export default class UpdateTruckUseCase {
         // rather than either applying our stale decision or overwriting the concurrent change.
         continue
       }
+      if (result.kind === 'TRANSPORT_COMPANY_LOCKED') {
+        // A discharge reserved the truck after the check above: the repository's locked re-check
+        // is the one that decides.
+        throw new TruckTransportCompanyLockedException()
+      }
       if (result.kind === 'NOT_FOUND') {
         throw new TruckNotFoundException()
       }

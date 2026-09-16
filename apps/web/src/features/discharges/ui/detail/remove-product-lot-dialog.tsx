@@ -12,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { formatTonnes } from '@/features/discharges/discharge-detail-view'
+import { formatTonnes, type LotRemovalBlock } from '@/features/discharges/discharge-detail-view'
 import { useDischargeMutations } from '@/features/discharges/mutations/use-discharge-mutations'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { STARTED_REFUSAL_MESSAGE } from '@/features/discharges/ui/detail/edit-discharge-identity-sheet'
@@ -22,13 +22,14 @@ import { parseApiError } from '@/libraries/tuyau/api-error'
 type ProductLot = DischargeDetailDto['productLots'][number]
 
 /**
- * Refusals that the dialog explains in place, because retrying cannot succeed and the user needs to
- * read why before dismissing it.
+ * Why a lot cannot be removed, keyed by the API's refusal code. The lot's actions say it before
+ * anyone asks; the dialog explains it in place when the server refuses anyway, because retrying
+ * cannot succeed and the user needs to read why before dismissing it.
  */
-const BLOCKING_REFUSALS: Record<string, string> = {
+export const LOT_REMOVAL_REASONS = {
   E_DISCHARGE_LAST_PRODUCT_LOT: 'A discharge needs at least one product lot',
   E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS: 'This product lot has warehouse door assignments',
-}
+} as const satisfies Record<LotRemovalBlock, string>
 
 /**
  * The deliberate confirmation in front of a lot's removal. Mounted only while open, and kept open on
@@ -54,7 +55,7 @@ export function RemoveProductLotDialog({
       toast.success('Product lot removed')
     } catch (cause) {
       const error = parseApiError(cause)
-      const blocking = BLOCKING_REFUSALS[error.code ?? '']
+      const blocking = (LOT_REMOVAL_REASONS as Record<string, string | undefined>)[error.code ?? '']
 
       if (blocking) {
         setBlockingRefusal(blocking)

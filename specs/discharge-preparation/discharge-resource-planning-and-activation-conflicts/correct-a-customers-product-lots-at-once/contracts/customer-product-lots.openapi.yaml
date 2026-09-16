@@ -1,0 +1,194 @@
+openapi: 3.1.0
+info:
+  title: Portflow Customer Product Lots Correction Contract
+  version: 1.0.0
+  description: >-
+    The per-customer correction of a planned discharge's product lots, delivered under issue 55.
+    One request corrects, adds, and removes lots of one customer and may move the whole group to
+    another customer, atomically. It answers with the DischargeDetail shape of discharges.show
+    (issue 58, extended by issue 55). The route requires an ACTIVE operations lead, operations
+    admin, or organization admin (DischargePolicy.update). See research.md Decisions 1 to 6.
+paths:
+  /api/v1/discharges/{dischargeId}/customers/{customerId}/product-lots:
+    patch:
+      operationId: discharges.customer_product_lots.update
+      summary: Correct, add, and remove the product lots of one customer at once
+      description: >-
+        Atomic: every correction, addition, removal, and the customer change are applied, or
+        nothing changes.
+
+        - Each productLots entry with an id corrects that lot; an entry without an id adds a lot.
+        - Each removedProductLotIds entry removes that lot.
+        - A lot of the customer listed in neither array is left untouched and keeps its customer,
+          even when customerId moves the group (spec FR-012).
+        - customerId in the body is the customer every corrected and added lot belongs to
+          afterwards. It equals the path customerId unless the group moves.
+
+        Identity uniqueness (customer, product name ignoring case and surrounding spaces) is judged
+        on all the discharge's lots as they are after the change, so swapping two names, or
+        removing a lot and adding one with its name, is accepted. Corrected lots keep their id and
+        so their warehouse door assignments.
+      parameters:
+        - $ref: "#/components/parameters/DischargeId"
+        - $ref: "#/components/parameters/CustomerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerProductLotsCorrection" }
+            example:
+              customerId: 3f2c7a0e-6a1b-4c1e-9a55-0f6b2d9e8c11
+              productLots:
+                - id: 9b1f0c3a-2d4e-4f6a-8b7c-1d2e3f4a5b6c
+                  productName: Orge
+                  expectedQuantityTonnes: "800"
+                  description: null
+                - id: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                  productName: Blé tendre
+                  expectedQuantityTonnes: "1250.5"
+                  description: Hold 2
+                - productName: Colza
+                  expectedQuantityTonnes: "300"
+                  description: null
+              removedProductLotIds:
+                - 7c6b5a4d-3e2f-4a1b-9c8d-7e6f5a4b3c2d
+      responses:
+        "200":
+          description: The discharge detail after the change.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/DischargeDetail" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: >-
+            E_DISCHARGE_NOT_FOUND for an unknown or malformed discharge. E_PRODUCT_LOT_NOT_FOUND
+            when a listed or removed id is not a current lot of this discharge belonging to the path
+            customer: unknown, malformed, removed meanwhile, of another customer, or of another
+            discharge. The web treats the latter as stale lots (research.md Decision 4).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+        "409":
+          description: >-
+            E_DISCHARGE_NOT_PLANNED when the discharge is active or closed.
+            E_DISCHARGE_LAST_PRODUCT_LOT when the change would leave the discharge without any lot.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+        "422":
+          description: >-
+            E_VALIDATION_ERROR with every issue at once in error.details. Request validation issues
+            use VineJS rules at their field (productLots.N.productName, productLots.N.expectedQuantityTonnes,
+            productLots.N.description, productLots.N.id, removedProductLotIds.N, customerId).
+            Decided issues, found under the discharge's lock:
+
+            - productLots.N.id or removedProductLotIds.N — productLotListedOnce: the same lot is
+              listed twice across both arrays.
+            - customerId — availableCustomer: the group moves to a customer that is not AVAILABLE.
+            - removedProductLotIds.N — removableProductLot: the lot has or has had a warehouse door
+              assignment.
+            - productLots.N.productName — productLotIdentityUnique: after the change, this lot
+              shares its identity with another lot of the discharge (listed or not).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+
+components:
+  parameters:
+    DischargeId:
+      name: dischargeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      description: The customer whose lots are corrected, as the group reads today.
+      schema: { type: string, format: uuid }
+
+  schemas:
+    CustomerProductLotsCorrection:
+      type: object
+      required: [customerId, productLots, removedProductLotIds]
+      additionalProperties: false
+      properties:
+        customerId:
+          type: string
+          format: uuid
+          description: The customer of every corrected and added lot after the change.
+        productLots:
+          type: array
+          maxItems: 100
+          items: { $ref: "#/components/schemas/CustomerProductLotEntry" }
+        removedProductLotIds:
+          type: array
+          maxItems: 100
+          items: { type: string, format: uuid }
+
+    CustomerProductLotEntry:
+      type: object
+      required: [productName, expectedQuantityTonnes, description]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: A current lot of the path customer to correct. Absent for a lot to add.
+        productName:
+          type: string
+          maxLength: 255
+          description: Not blank; trimmed before it is stored and compared.
+        expectedQuantityTonnes:
+          type: string
+          description: The tonnage string GH-53 accepts (tonnageString), greater than zero.
+        description:
+          type: [string, "null"]
+          maxLength: 2000
+          description: Trimmed; an empty value is stored as null.
+
+    DischargeDetail:
+      description: >-
+        Unchanged: the DischargeDetail of discharges.show, as issue 58 defines it and issue 55
+        extends it. Not repeated here.
+      type: object
+
+    ApiErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details:
+              description: Present on E_VALIDATION_ERROR only.
+              type: array
+              items:
+                type: object
+                required: [field, rule, message]
+                properties:
+                  field: { type: string }
+                  rule: { type: string }
+                  message: { type: string }
+
+  responses:
+    Unauthenticated:
+      description: No session, or a session whose user is not ACTIVE. Code E_UNAUTHORIZED_ACCESS.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }
+    Forbidden:
+      description: >-
+        An ACTIVE observer. Code E_AUTHORIZATION_FAILURE. Nothing is changed, and the request
+        body is not validated.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorEnvelope" }

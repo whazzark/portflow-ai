@@ -9,7 +9,7 @@ export const nonBlank = vine.createRule(
   { name: 'nonBlank' },
 )
 
-const distinctUuids = vine.createRule(
+export const distinctUuids = vine.createRule(
   (value, _options, field) => {
     if (!Array.isArray(value)) {
       return

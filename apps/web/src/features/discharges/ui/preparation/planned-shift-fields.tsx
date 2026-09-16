@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 import {
   emptyPlannedShift,
-  formatShiftDuration,
+  formatLocalShiftDuration,
   type PlannedShiftFormValues,
 } from '@/features/discharges/discharge-preparation-schema'
 import type { PreparationOptions } from '@/features/discharges/ui/preparation/preparation-options'
@@ -61,7 +61,7 @@ export const PlannedShiftFields = withFieldGroup({
         </group.AppField>
         <group.Subscribe
           selector={(state) =>
-            formatShiftDuration(state.values.plannedStartAt, state.values.plannedEndAt)
+            formatLocalShiftDuration(state.values.plannedStartAt, state.values.plannedEndAt)
           }
         >
           {(length) => (

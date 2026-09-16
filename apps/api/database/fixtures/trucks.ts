@@ -47,7 +47,47 @@ const values = [
   ['EE-505-PF', 'Iveco S-Way', '29.5', TRANSPORT_COMPANY_FIXTURE_IDS.armor, 'returned'],
 ] as const
 
-export const TRUCK_FIXTURES = values.map(
+const FLEET_SIZE = 40
+// biome-ignore lint/security/noSecrets: registration letters, not a secret
+const FLEET_LETTERS = 'FGHJKLMNPQRSTUVWXY'
+const FLEET_MODELS = [
+  'Volvo FH 460',
+  'Scania R450',
+  'DAF XF 480',
+  'Renault T 480',
+  'MAN TGX 18.470',
+  'Iveco S-Way',
+  'Mercedes Actros',
+] as const
+const FLEET_COMPANIES = [
+  TRANSPORT_COMPANY_FIXTURE_IDS.atlantic,
+  TRANSPORT_COMPANY_FIXTURE_IDS.armor,
+  TRANSPORT_COMPANY_FIXTURE_IDS.estuaire,
+  TRANSPORT_COMPANY_FIXTURE_IDS.grandOuest,
+  TRANSPORT_COMPANY_FIXTURE_IDS.kernevez,
+] as const
+const FLEET_SUSPENDED = new Set([38, 39])
+
+/**
+ * The fleet the seeded discharges draw their truck pools from: enough for several discharges to
+ * hold eight to sixteen trucks at once while the active ones stay apart. The last two are suspended,
+ * so a planned pool can show a suspended truck that a shift still selects. Registrations start after
+ * `EE`, which keeps the trucks above first in every pool ordered by registration.
+ */
+const fleetValues = Array.from({ length: FLEET_SIZE }, (_, index) => {
+  const registration = `${FLEET_LETTERS[index % FLEET_LETTERS.length]}${FLEET_LETTERS[(index * 7 + 5) % FLEET_LETTERS.length]}-${110 + index * 17}-PF`
+  const state: TruckFixtureState = FLEET_SUSPENDED.has(index) ? 'suspended' : 'available'
+
+  return [
+    registration,
+    FLEET_MODELS[index % FLEET_MODELS.length],
+    String(26 + (index % 7)),
+    FLEET_COMPANIES[index % FLEET_COMPANIES.length],
+    state,
+  ] as const
+})
+
+export const TRUCK_FIXTURES = [...values, ...fleetValues].map(
   ([registration, vehicleModel, capacity, transportCompanyId, state], index) => {
     const lifecycle: TruckLifecycleAttributes =
       state === 'archived'
@@ -123,6 +163,8 @@ export const TRUCK_FIXTURES = values.map(
     }
   },
 )
+
+export const TRUCK_FLEET_FIXTURES = TRUCK_FIXTURES.slice(values.length)
 
 export const TRUCK_FIXTURE_IDS = {
   available: TRUCK_FIXTURES[0].id,

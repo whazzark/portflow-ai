@@ -86,3 +86,22 @@ test('announces a detail on no known field in the form-level error', () => {
     },
   })
 })
+
+test('names fields through a form-specific mapping, announcing unmapped details at form level', () => {
+  const setErrorMap = vi.fn()
+  const error = validationError([
+    { field: 'productLots.0.productName', message: 'Duplicate lot.' },
+    { field: 'productLots.9.customerId', message: 'Customer archived.' },
+  ])
+
+  applyValidationError({ setErrorMap }, error, undefined, (field) =>
+    field === 'productLots.0.productName' ? 'lotGroups[0].products[0].productName' : null,
+  )
+
+  expect(setErrorMap).toHaveBeenCalledWith({
+    onSubmit: {
+      fields: { 'lotGroups[0].products[0].productName': 'Duplicate lot.' },
+      form: 'Validation failure Customer archived.',
+    },
+  })
+})
