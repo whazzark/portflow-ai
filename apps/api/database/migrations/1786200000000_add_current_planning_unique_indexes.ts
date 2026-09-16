@@ -27,12 +27,26 @@ const CURRENT_ROW_INDEXES = [
  * runs and row locks are ignored. The door index is per discharge, not per site: a door may be
  * current in several planned discharges, and the start confirmation decides which one uses it.
  *
- * Written raw because a partial index is not portable through the schema builder; the statement is
- * the same on both dialects.
+ * Databases seeded before these rules can hold several current rows for one door of a discharge,
+ * because the seeder reused doors across the lots of a discharge. Only the earliest of them stays
+ * current; the others are removed first, as they never described a valid plan.
+ *
+ * Written raw because a partial index is not portable through the schema builder; the statements
+ * are the same on both dialects.
  */
 export default class extends BaseSchema {
   async up() {
     for (const index of CURRENT_ROW_INDEXES) {
+      const sameKey = index.columns
+        .split(', ')
+        .map((column) => `kept.${column} = ${index.table}.${column}`)
+        .join(' AND ')
+      this.schema.raw(
+        `DELETE FROM ${index.table} WHERE effective_to IS NULL AND EXISTS (` +
+          `SELECT 1 FROM ${index.table} AS kept WHERE kept.effective_to IS NULL AND ${sameKey} AND (` +
+          `kept.effective_from < ${index.table}.effective_from OR ` +
+          `(kept.effective_from = ${index.table}.effective_from AND kept.id < ${index.table}.id)))`,
+      )
       this.schema.raw(
         `CREATE UNIQUE INDEX ${index.name} ON ${index.table} (${index.columns}) WHERE effective_to IS NULL`,
       )
