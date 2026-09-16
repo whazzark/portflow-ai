@@ -95,7 +95,7 @@ function HistoryPopover({
 }) {
   return (
     <Popover>
-      <PopoverTrigger className="justify-self-start text-muted-foreground text-xs underline underline-offset-4 hover:text-foreground">
+      <PopoverTrigger className="text-muted-foreground text-xs underline underline-offset-4 hover:text-foreground">
         {label === 'history' ? 'History' : `${history.length} ended`}
       </PopoverTrigger>
       <PopoverContent>
@@ -127,7 +127,8 @@ export function LotDoorChips({
   const cell = lotDoorCell(lot.doorAssignments, dischargeStatus)
 
   return (
-    <div className="grid gap-1">
+    // One wrapping line: the chips, then the notice or the history link beside them.
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       {cell.doors.length > 0 ? (
         <ul aria-label="Warehouse doors" className="flex flex-wrap items-center gap-1">
           {cell.shown.map((assignment) => (
