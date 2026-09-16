@@ -11,6 +11,7 @@ import {
   formatTonnes,
   groupLotsByCustomer,
   isInEffect,
+  lotDoorCell,
   lotDoorNotice,
   lotRemovalBlock,
   plannedCoverage,
@@ -268,5 +269,47 @@ describe('shiftResources', () => {
       ],
       weighingAreas: ['Pont-bascule Nord'],
     })
+  })
+})
+
+describe('lotDoorCell', () => {
+  const door = (id: string, effectiveTo: string | null = null) =>
+    buildDoorPeriod({
+      id: `period-${id}-${effectiveTo ?? 'open'}`,
+      effectiveTo,
+      warehouseDoor: { id, name: id, status: 'AVAILABLE' },
+    })
+  const ids = (periods: Array<{ warehouseDoor: { id: string } }>) =>
+    periods.map((period) => period.warehouseDoor.id)
+
+  test('shows every door it holds up to the limit, and its ended ones apart', () => {
+    const cell = lotDoorCell(
+      [door('a'), door('b', ENDED.effectiveTo), door('c'), door('d')],
+      'PLANNED',
+    )
+
+    expect(ids(cell.shown)).toEqual(['a', 'c', 'd'])
+    expect(cell.hidden).toEqual([])
+    expect(ids(cell.history)).toEqual(['b'])
+    expect(cell.historyLabel).toBe('ended')
+  })
+
+  test('keeps one chip fewer than the limit once the rest need a +N', () => {
+    const cell = lotDoorCell(
+      ['a', 'b', 'c', 'd', 'e'].map((id) => door(id)),
+      'ACTIVE',
+    )
+
+    expect(ids(cell.shown)).toEqual(['a', 'b'])
+    expect(ids(cell.hidden)).toEqual(['c', 'd', 'e'])
+    expect(cell.doors).toHaveLength(5)
+  })
+
+  test('shows the doors a closed discharge used once each, all its periods as history', () => {
+    const cell = lotDoorCell([door('a', ENDED.effectiveTo), door('a'), door('b')], 'CLOSED')
+
+    expect(ids(cell.shown)).toEqual(['a', 'b'])
+    expect(cell.history).toHaveLength(3)
+    expect(cell.historyLabel).toBe('history')
   })
 })

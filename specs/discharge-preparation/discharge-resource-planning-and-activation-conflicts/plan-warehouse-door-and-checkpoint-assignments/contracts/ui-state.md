@@ -50,9 +50,21 @@ yet was noise, and "what is left to plan" is a question about the discharge, not
 | Current selections | Unchanged |
 
 A lot's door notices are unchanged: `No warehouse door assigned` and
-`No warehouse door currently assigned`. A door **still assigned** shows no period: the cell already
-means "assigned now", so its start would be a timestamp without a fact. An assignment that is over —
-ended, or belonging to a closed discharge — keeps its `Ended · {period}`.
+`No warehouse door currently assigned`.
+
+**A lot's `Warehouse doors` cell** stays one line high however many doors the lot has:
+
+- The doors it holds are chips named by the door (`Door A1`), in a list named `Warehouse doors`;
+  each chip reads `{warehouse} › {door}` to assistive technology and shows it on hover. An archived
+  door or warehouse adds an archive icon, and `(Archived)` in words.
+- Up to three doors are all chips; beyond, two chips and a `+{n}` button
+  (`Show {n} more warehouse doors`) opening a `Warehouse doors` popover that lists them all as
+  `{warehouse} › {door}`, with their state badges.
+- A door **still assigned** shows no period: the cell already means "assigned now".
+- Ended assignments leave the chips. A `{n} ended` link opens an `Ended assignments` popover listing
+  each as `{warehouse} › {door}` with its `Ended · {period}`.
+- A closed discharge holds nothing, so its chips are the doors it used, once each, and the link
+  reads `History`, opening a `Door history` popover of every period.
 
 ## Options loading
 

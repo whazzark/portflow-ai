@@ -146,11 +146,13 @@ test('saves the change set and shows the lot with its new doors', async () => {
   const wheat = within(screen.getByRole('region', { name: 'Product lots' })).getByRole('row', {
     name: /Blé tendre/,
   })
+  // Door A1's assignment is over: it leaves the chips for the lot's history.
   expect(
     within(within(wheat).getByRole('list', { name: 'Warehouse doors' }))
       .getAllByRole('listitem')
       .map((item) => item.textContent),
-  ).toEqual([expect.stringContaining('Door A2'), expect.stringContaining('Door A1')])
+  ).toEqual(['Magasin A › Door A2'])
+  expect(within(wheat).getByRole('button', { name: '1 ended' })).toBeInTheDocument()
 })
 
 test('says a door moves from another lot before the save, and after it', async () => {

@@ -21,16 +21,13 @@ import {
 import {
   formatTonnes,
   groupLotsByCustomer,
-  isInEffect,
-  lotDoorNotice,
   lotRemovalBlock,
-  splitPeriods,
 } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { AddProductLotsSheet } from '@/features/discharges/ui/detail/add-product-lots-sheet'
 import { CustomerProductLotsSheet } from '@/features/discharges/ui/detail/customer-product-lots-sheet'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
-import { EffectivePeriod } from '@/features/discharges/ui/detail/effective-period'
+import { LotDoorChips } from '@/features/discharges/ui/detail/lot-door-chips'
 import { ProductLotRowActions } from '@/features/discharges/ui/detail/product-lot-row-actions'
 import { ProductLotSheet } from '@/features/discharges/ui/detail/product-lot-sheet'
 import { ReferenceLabel } from '@/features/discharges/ui/detail/reference-label'
@@ -41,56 +38,6 @@ import {
 import { LotWarehouseDoorsDialog } from '@/features/discharges/ui/planning/lot-warehouse-doors-dialog'
 
 type ProductLot = DischargeDetailDto['productLots'][number]
-
-function LotDoors({
-  lot,
-  dischargeStatus,
-}: {
-  lot: ProductLot
-  dischargeStatus: DischargeDetailDto['status']
-}) {
-  const { inEffect, ended } = splitPeriods(lot.doorAssignments, dischargeStatus)
-
-  return (
-    <div className="grid gap-1">
-      {lot.doorAssignments.length > 0 ? (
-        <ul aria-label="Warehouse doors" className="grid gap-1">
-          {[...inEffect, ...ended].map((assignment) => (
-            <li className="grid gap-0.5" key={assignment.id}>
-              <span className="inline-flex flex-wrap items-center gap-1">
-                <ReferenceLabel
-                  name={assignment.warehouse.name}
-                  status={assignment.warehouse.status}
-                />
-                {' › '}
-                <ReferenceLabel
-                  name={assignment.warehouseDoor.name}
-                  status={assignment.warehouseDoor.status}
-                />
-              </span>
-              {/* Only once it is over: a current assignment is what the cell already means, so
-                  its start adds a timestamp without adding a fact. A closed discharge holds
-                  nothing, so its assignments are all history and keep their period. */}
-              {!isInEffect(assignment, dischargeStatus) && (
-                <EffectivePeriod dischargeStatus={dischargeStatus} period={assignment} />
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        // No door yet is the usual state of a lot being prepared: a quiet dash, said in words to
-        // assistive technologies.
-        <span className="text-muted-foreground">
-          <span aria-hidden="true">—</span>
-          <span className="sr-only">No warehouse door assigned</span>
-        </span>
-      )}
-      {lotDoorNotice(lot, dischargeStatus) === 'NONE_CURRENTLY_ASSIGNED' && (
-        <p className="text-muted-foreground text-xs">No warehouse door currently assigned</p>
-      )}
-    </div>
-  )
-}
 
 type DischargeProductLotsCardProps = {
   discharge: DischargeDetailDto
@@ -190,7 +137,7 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
                           {formatTonnes(lot.expectedQuantityTonnes)}
                         </TableCell>
                         <TableCell className="whitespace-normal align-top">
-                          <LotDoors dischargeStatus={discharge.status} lot={lot} />
+                          <LotDoorChips dischargeStatus={discharge.status} lot={lot} />
                         </TableCell>
                         {canCorrect && (
                           <TableCell className="text-right align-top">
