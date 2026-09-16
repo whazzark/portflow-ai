@@ -110,6 +110,7 @@ export default class CorrectPlannedShiftUseCase {
         client,
       )
       const warehouseDoors = await this.planWarehouseDoors(
+        discharge.id,
         shift.id,
         input.warehouseDoorIds,
         now,
@@ -189,6 +190,7 @@ export default class CorrectPlannedShiftUseCase {
   }
 
   private async planWarehouseDoors(
+    dischargeId: string,
     shiftId: string,
     warehouseDoorIds: string[],
     now: DateTime,
@@ -203,8 +205,20 @@ export default class CorrectPlannedShiftUseCase {
       addedIds.length > 0
         ? await this.preparationRepository.lockWarehouseDoors(addedIds, client)
         : new Map()
+    // Read under the discharge's lock, so an assignment withdrawn meanwhile cannot let a door
+    // through: a newly selected door must be one a lot of this discharge holds now.
+    const assignments = await this.preparationRepository.listCurrentDoorAssignments(
+      dischargeId,
+      client,
+    )
 
-    return planShiftWarehouseDoorSelection(warehouseDoorIds, currentSelection, addedDoors, now)
+    return planShiftWarehouseDoorSelection(
+      warehouseDoorIds,
+      currentSelection,
+      addedDoors,
+      assignments.map((assignment) => assignment.warehouseDoorId),
+      now,
+    )
   }
 
   private async planWeighingAreas(

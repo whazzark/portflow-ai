@@ -6,6 +6,7 @@ import ProductLot from '#models/product_lot'
 
 import {
   assignDoor,
+  createPlanningReferences,
   createPreparedDischarge,
   PREPARING_ROLES,
   preparer,
@@ -79,6 +80,32 @@ test.group('Product lot removal HTTP contract', (group) => {
       assert.equal(response.body().error.code, 'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS')
       assert.exists(await ProductLot.find(prepared.barley.id))
     }
+  })
+
+  test('refuses to remove a lot whose door was assigned and withdrawn through the product', async ({
+    assert,
+    client,
+  }) => {
+    const { discharge, barley } = await createPreparedDischarge()
+    const { doorA1 } = await createPlanningReferences()
+    const lead = await preparer()
+    const doors = `/api/v1/discharges/${discharge.id}/product-lots/${barley.id}/warehouse-doors`
+    await client
+      .patch(doors)
+      .json({ assign: [doorA1.id], withdraw: [] })
+      .loginAs(lead)
+    await client
+      .patch(doors)
+      .json({ assign: [], withdraw: [doorA1.id] })
+      .loginAs(lead)
+
+    const response = await client
+      .delete(`/api/v1/discharges/${discharge.id}/product-lots/${barley.id}`)
+      .loginAs(lead)
+
+    response.assertStatus(409)
+    assert.equal(response.body().error.code, 'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS')
+    assert.exists(await ProductLot.find(barley.id))
   })
 
   test('refuses a removal on an active or closed discharge', async ({ assert, client }) => {

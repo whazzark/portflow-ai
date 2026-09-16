@@ -139,6 +139,21 @@ export type ShiftTruckSelectionWriteResult = { kind: 'WRITTEN' } | { kind: 'ALRE
 
 export type TruckReservationWriteResult = { kind: 'WRITTEN' } | { kind: 'ALREADY_HELD' }
 
+export type CurrentDoorAssignment = {
+  id: string
+  productLotId: string
+  warehouseDoorId: string
+}
+
+export type CurrentShiftSelections = {
+  warehouseDoors: Array<{ id: string; shiftId: string; warehouseDoorId: string }>
+  weighingAreas: Array<{ id: string; shiftId: string; weighingAreaId: string }>
+}
+
+export type PlanningRowTable = 'DOOR_ASSIGNMENT' | 'SHIFT_DOOR' | 'SHIFT_AREA'
+
+export type PlanningWriteResult = { kind: 'WRITTEN' } | { kind: 'CURRENT_ROW_CONFLICT' }
+
 export type CreatePlannedDischargeResult =
   | { kind: 'CREATED' }
   | { kind: 'DUPLICATE_ID' }
@@ -362,4 +377,61 @@ export default abstract class DischargePreparationRepository {
     command: WriteCustomerProductLotsCorrectionCommand,
     client: TransactionClientContract,
   ): Promise<CustomerProductLotsWriteResult>
+
+  /** The door assignments of a discharge still in effect, read under the discharge's lock. */
+  abstract listCurrentDoorAssignments(
+    dischargeId: string,
+    client: TransactionClientContract,
+  ): Promise<CurrentDoorAssignment[]>
+
+  /** Every shift selection of a discharge still in effect, doors and weighing areas apart. */
+  abstract listCurrentShiftSelections(
+    dischargeId: string,
+    client: TransactionClientContract,
+  ): Promise<CurrentShiftSelections>
+
+  /**
+   * The latest start or end recorded among a discharge's door assignments, ended or not, from which
+   * the next recorded instant is kept strictly later.
+   */
+  abstract latestDoorAssignmentTime(
+    dischargeId: string,
+    client: TransactionClientContract,
+  ): Promise<DateTime | null>
+
+  /** The same, among one shift's door and weighing area selections. */
+  abstract latestShiftSelectionTime(
+    shiftId: string,
+    client: TransactionClientContract,
+  ): Promise<DateTime | null>
+
+  /** Ends the given rows still in effect at `instant`. Rows are never deleted. */
+  abstract endRows(
+    table: PlanningRowTable,
+    ids: string[],
+    instant: DateTime,
+    client: TransactionClientContract,
+  ): Promise<void>
+
+  /**
+   * Starts assignments in effect from `instant`. A row a current-row index refuses comes back as
+   * an outcome, and leaves the caller's transaction usable.
+   */
+  abstract startDoorAssignments(
+    rows: Array<{ dischargeId: string; productLotId: string; warehouseDoorId: string }>,
+    instant: DateTime,
+    client: TransactionClientContract,
+  ): Promise<PlanningWriteResult>
+
+  abstract startShiftDoors(
+    rows: Array<{ shiftId: string; warehouseDoorId: string }>,
+    instant: DateTime,
+    client: TransactionClientContract,
+  ): Promise<PlanningWriteResult>
+
+  abstract startShiftAreas(
+    rows: Array<{ shiftId: string; weighingAreaId: string }>,
+    instant: DateTime,
+    client: TransactionClientContract,
+  ): Promise<PlanningWriteResult>
 }

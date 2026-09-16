@@ -330,11 +330,11 @@ export default class LucidWarehouseRepository extends WarehouseRepository {
    * its doors. So usage is the shared warehouse-door rule (`#240` FR-006) projected back onto the
    * containing warehouse, assessed set-based over every candidate door rather than per warehouse.
    *
-   * The `FOR UPDATE` on the doors serializes this against a concurrent archival, but not against a
-   * discharge being planned: usage lives in `warehouse_door_product_lot_assignments`, and a row lock
-   * on the door does not block an INSERT into that table. Closing that race needs the assignment
-   * writer to take the same door lock before inserting. No such writer exists yet — only seeders —
-   * so this is an obligation on whoever adds one rather than a live defect.
+   * The `FOR UPDATE` on the doors serializes this against a concurrent archival. A row lock alone
+   * would not serialize it against a discharge being planned, since usage lives in
+   * `warehouse_door_product_lot_assignments` and a row lock does not block an INSERT there; the
+   * assignment writer (`ChangeLotWarehouseDoorsUseCase`) closes that race by locking the warehouse
+   * and then the door `FOR SHARE` before inserting, so one of the two always waits for the other.
    */
   private async findWarehousesWithDoorsInUse(trx: TransactionClientContract, ids: string[]) {
     const doors = await WarehouseDoor.query({ client: trx })

@@ -90,6 +90,12 @@ function stubRepositories({ shiftStatus = 'PLANNED' }: { shiftStatus?: ShiftStat
         listCurrentShiftWeighingAreas: record('listCurrentShiftWeighingAreas', [
           { id: 'area-kept', resourceId: KEPT },
         ]),
+        // Every door a lot of this discharge holds; a door absent here cannot be newly selected.
+        listCurrentDoorAssignments: record('listCurrentDoorAssignments', [
+          { id: 'assignment-kept', productLotId: 'lot-1', warehouseDoorId: KEPT },
+          { id: 'assignment-added', productLotId: 'lot-1', warehouseDoorId: ADDED },
+          { id: 'assignment-unknown', productLotId: 'lot-1', warehouseDoorId: UNKNOWN },
+        ]),
         lockTrucks: (ids: string[]) => {
           calls.push(`lockTrucks:${ids.join(',')}`)
           return Promise.resolve(locked('AVAILABLE')(ids))
@@ -154,6 +160,7 @@ test.group('Correct planned shift use case', (group) => {
       `lockTrucks:${ADDED}`,
       'listCurrentShiftWarehouseDoors',
       `lockWarehouseDoors:${ADDED}`,
+      'listCurrentDoorAssignments',
       'listCurrentShiftWeighingAreas',
       `lockWeighingAreas:${ADDED}`,
       'writeShiftTruckSelection',

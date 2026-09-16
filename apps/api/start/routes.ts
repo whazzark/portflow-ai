@@ -100,10 +100,16 @@ router
             router.get('/:id', [controllers.Discharges, 'show']).as('show')
             router.patch('/:id', [controllers.Discharges, 'update']).as('update')
             router
+              .get('/:id/planning-options', [controllers.Discharges, 'planningOptions'])
+              .as('planning_options')
+            router
               .group(() => {
                 router.post('/', [controllers.DischargeProductLots, 'store']).as('store')
                 router.patch('/:id', [controllers.DischargeProductLots, 'update']).as('update')
                 router.delete('/:id', [controllers.DischargeProductLots, 'destroy']).as('destroy')
+                router
+                  .patch('/:id/warehouse-doors', [controllers.DischargeProductLotDoors, 'update'])
+                  .as('warehouse_doors')
               })
               .prefix('/:dischargeId/product-lots')
               .as('product_lots')

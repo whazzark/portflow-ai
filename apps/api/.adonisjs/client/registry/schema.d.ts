@@ -487,6 +487,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'discharges.planning_options': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/discharges/:id/planning-options'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['planningOptions']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['planningOptions']>>>
+    }
+  }
   'discharges.product_lots.store': {
     methods: ["POST"]
     pattern: '/api/v1/discharges/:dischargeId/product-lots'
@@ -521,6 +533,18 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['destroy']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_product_lots_controller').default['destroy']>>>
+    }
+  }
+  'discharges.product_lots.warehouse_doors': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/discharges/:dischargeId/product-lots/:id/warehouse-doors'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#discharges/warehouse_doors/lot_warehouse_doors_validator').lotWarehouseDoorsValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { dischargeId: ParamValue; id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#discharges/warehouse_doors/lot_warehouse_doors_validator').lotWarehouseDoorsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_product_lot_doors_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_product_lot_doors_controller').default['update']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
   'discharges.truck_pool.candidates': {

@@ -258,12 +258,11 @@ export default class LucidWarehouseDoorRepository extends WarehouseDoorRepositor
       // The door is locked before the usage read, so a concurrent archival is settled first and
       // the eligibility this write acts on is the one the write lands in.
       //
-      // The lock does not close every race: usage lives in
-      // `warehouse_door_product_lot_assignments`, and a row lock on the door does not block an
-      // INSERT there. Closing that one needs the assignment writer to take the same door lock
-      // before inserting. No such writer exists yet — only seeders — so this is an obligation on
-      // whoever adds one rather than a live defect, exactly as
-      // `LucidWarehouseRepository.findWarehousesWithDoorsInUse` already records.
+      // Usage lives in `warehouse_door_product_lot_assignments`, and a row lock on the door does
+      // not block an INSERT there. The assignment writer (`ChangeLotWarehouseDoorsUseCase`) closes
+      // that race by locking the warehouse and then the door `FOR SHARE` before inserting, the same
+      // order as here, so either this archival waits and sees the assignment, or the writer waits
+      // and reads the archived status.
       await WarehouseDoor.query({ client: trx }).where('id', command.id).forUpdate().first()
 
       const usedIds = await this.usageChecker.findUsedByPlannedOrActiveDischarge({

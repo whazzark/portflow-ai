@@ -4,7 +4,9 @@ import type { HttpContext } from '@adonisjs/core/http'
 import CreatePlannedDischargeUseCase from '#discharges/create/create_planned_discharge_use_case'
 import { createPlannedDischargeValidator } from '#discharges/create/create_planned_discharge_validator'
 import ListDischargesUseCase from '#discharges/list/list_discharges_use_case'
+import ListPlanningOptionsUseCase from '#discharges/planning_options/list_planning_options_use_case'
 import DischargeDetailTransformer from '#discharges/shared/discharge_detail_transformer'
+import DischargePlanningOptionsTransformer from '#discharges/shared/discharge_planning_options_transformer'
 import DischargePolicy from '#discharges/shared/discharge_policy'
 import DischargeTransformer from '#discharges/shared/discharge_transformer'
 import ShowDischargeUseCase from '#discharges/show/show_discharge_use_case'
@@ -19,6 +21,7 @@ export default class DischargesController {
     private showDischargeUseCase: ShowDischargeUseCase,
     private createPlannedDischargeUseCase: CreatePlannedDischargeUseCase,
     private correctDischargeIdentityUseCase: CorrectDischargeIdentityUseCase,
+    private listPlanningOptionsUseCase: ListPlanningOptionsUseCase,
   ) {}
 
   async index({ bouncer, serialize }: HttpContext) {
@@ -68,5 +71,14 @@ export default class DischargesController {
     })
 
     return serialize(DischargeDetailTransformer.transform(discharge))
+  }
+
+  /** Open to the roles that may plan: an observer never opens a planning sheet. */
+  async planningOptions({ bouncer, params, serialize }: HttpContext) {
+    await bouncer.with(DischargePolicy).authorize('update')
+
+    const options = await this.listPlanningOptionsUseCase.handle({ dischargeId: params.id })
+
+    return serialize(DischargePlanningOptionsTransformer.transform(options))
   }
 }

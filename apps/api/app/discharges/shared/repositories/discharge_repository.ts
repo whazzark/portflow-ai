@@ -1,8 +1,27 @@
+import type { DateTime } from 'luxon'
+
 import type {
   DischargeDetailRead,
   TruckCandidatesRead,
 } from '#discharges/shared/discharge_detail_read'
 import type Discharge from '#models/discharge'
+
+export type PlanningOptions = {
+  warehouseDoors: Array<{
+    id: string
+    name: string
+    warehouse: { id: string; name: string }
+    otherDischargeAssignments: Array<{
+      discharge: {
+        id: string
+        vesselName: string
+        status: 'PLANNED' | 'ACTIVE'
+        expectedStartAt: DateTime
+      }
+    }>
+  }>
+  weighingAreas: Array<{ id: string; name: string }>
+}
 
 export default abstract class DischargeRepository {
   /**
@@ -32,4 +51,11 @@ export default abstract class DischargeRepository {
    * few enough for the page to search them in place, as every other truck collection does.
    */
   abstract listTruckCandidates(dischargeId: string): Promise<TruckCandidatesRead>
+
+  /**
+   * What a preparer may choose when planning a discharge's doors and checkpoints: available doors of
+   * available warehouses, each with the other planned or active discharges currently holding it,
+   * and available weighing areas. `null` when no discharge has this identity.
+   */
+  abstract findPlanningOptions(dischargeId: string): Promise<PlanningOptions | null>
 }
