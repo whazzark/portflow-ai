@@ -1,7 +1,6 @@
 import { inject } from '@adonisjs/core'
-import { DateTime } from 'luxon'
+import type { DateTime } from 'luxon'
 
-import SiteReferenceUsageChecker from '#site_references/shared/site_reference_usage_checker'
 import WeighingAreaRepository from '#weighing_areas/shared/repositories/weighing_area_repository'
 import {
   WeighingAreaAlreadyArchivedException,
@@ -18,33 +17,9 @@ export type ArchiveWeighingAreaInput = {
 
 @inject()
 export default class ArchiveWeighingAreaUseCase {
-  constructor(
-    private repository: WeighingAreaRepository,
-    private usageChecker: SiteReferenceUsageChecker,
-  ) {}
+  constructor(private repository: WeighingAreaRepository) {}
 
   async handle(input: ArchiveWeighingAreaInput) {
-    const area = await this.repository.findById(input.id)
-
-    if (!area) {
-      throw new WeighingAreaNotFoundException()
-    }
-
-    if (area.status === 'ARCHIVED') {
-      throw new WeighingAreaAlreadyArchivedException()
-    }
-
-    if (
-      (
-        await this.usageChecker.findUsedByPlannedOrActiveDischarge({
-          referenceType: 'WEIGHING_AREA',
-          referenceIds: [input.id],
-        })
-      ).has(input.id)
-    ) {
-      throw new WeighingAreaInUseException()
-    }
-
     const result = await this.repository.archiveAvailable({
       id: input.id,
       archivedAt: input.archivedAt,
@@ -52,14 +27,16 @@ export default class ArchiveWeighingAreaUseCase {
       archiveComment: input.comment?.trim() || null,
     })
 
-    if (result.kind === 'NOT_FOUND') {
-      throw new WeighingAreaNotFoundException()
+    switch (result.kind) {
+      case 'ARCHIVED':
+        return result.weighingArea
+      case 'NOT_FOUND':
+        throw new WeighingAreaNotFoundException()
+      case 'ALREADY_ARCHIVED':
+        throw new WeighingAreaAlreadyArchivedException()
+      // Decided by the repository under the area's lock, never from a usage read beforehand.
+      case 'IN_USE':
+        throw new WeighingAreaInUseException()
     }
-
-    if (result.kind === 'ALREADY_ARCHIVED') {
-      throw new WeighingAreaAlreadyArchivedException()
-    }
-
-    return result.weighingArea
   }
 }
