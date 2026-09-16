@@ -6,6 +6,10 @@ export const dischargeQueries = {
   // elsewhere, and a detail read from cache would present stale preparation as current.
   detail: (id: string) =>
     tuyauQuery.discharges.show.queryOptions({ params: { id } }, { staleTime: 0 }),
+  // Refetched whenever a planning sheet opens: another discharge may take a door at any moment,
+  // and a door or weighing area may be archived in the meantime.
+  planningOptions: (id: string) =>
+    tuyauQuery.discharges.planningOptions.queryOptions({ params: { id } }, { staleTime: 0 }),
   // Refetched on every visit to the creation page: an operations lead's access may have changed.
   eligibleResponsibles: () =>
     tuyauQuery.users.eligibleShiftResponsibles.queryOptions({}, { staleTime: 0 }),

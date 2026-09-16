@@ -1,12 +1,17 @@
 import { revalidateLogic } from '@tanstack/react-form'
 import { ArrowLeftIcon } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
+import {
+  lotHoldingDoor,
+  lotLabel,
+  shiftDoorOptions,
+} from '@/features/discharges/discharge-planning-view'
 import {
   formatLocalShiftDuration,
   SHIFT_CORRECTION_FIELDS,
@@ -28,9 +33,9 @@ import {
   type ChecklistRow,
   ShiftResourceChecklist,
 } from '@/features/discharges/ui/detail/shift-resource-checklist'
+import { useResourceRows } from '@/features/discharges/ui/detail/use-resource-rows'
 import {
   useResponsibleOptions,
-  useWarehouseDoorOptions,
   useWeighingAreaOptions,
 } from '@/features/discharges/ui/preparation/preparation-options'
 import { WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
@@ -86,28 +91,6 @@ export function ShiftEditPanel({ discharge, shift, onBack }: ShiftEditPanelProps
   )
 }
 
-/**
- * A resource list that keeps each row it has shown: one the refreshed choices no longer offer stays
- * listed while it is selected, so its refusal remains readable, but it may only be let go of.
- */
-function useResourceRows<Row extends ChecklistRow>(
-  current: Row[],
-  offered: Row[],
-  selected: readonly string[],
-) {
-  const seen = useRef(new Map<string, Row>())
-  for (const row of [...current, ...offered]) {
-    seen.current.set(row.id, row)
-  }
-
-  const offeredIds = new Set(offered.map((row) => row.id))
-  const listed = new Set([...current.map((row) => row.id), ...offeredIds, ...selected])
-
-  return [...seen.current.values()]
-    .filter((row) => listed.has(row.id))
-    .map((row) => ({ ...row, canCheck: offeredIds.has(row.id) }))
-}
-
 function ShiftEditForm({
   discharge,
   shift,
@@ -119,7 +102,6 @@ function ShiftEditForm({
 }) {
   const { correctShift } = useDischargeMutations()
   const responsibles = useResponsibleOptions()
-  const doors = useWarehouseDoorOptions()
   const areas = useWeighingAreaOptions()
   const [refusals, setRefusals] = useState<Refusals>(NO_REFUSALS)
   const refusalAlert = useRef<HTMLDivElement>(null)
@@ -133,6 +115,7 @@ function ShiftEditForm({
         id: membership.warehouseDoor.id,
         name: `${membership.warehouse.name} › ${membership.warehouseDoor.name}`,
         label: doorLabel(membership.warehouse, membership.warehouseDoor),
+        description: doorHolderDescription(discharge, membership.warehouseDoor.id),
         canCheck: false,
       })),
   )
@@ -286,7 +269,7 @@ function ShiftEditForm({
           {(field) => (
             <ResourceField
               current={currentAreas}
-              empty="No weighing area available"
+              empty={<p className="text-muted-foreground text-sm">No weighing area available</p>}
               label="Weighing areas"
               loading={areas.loading}
               lockedNote="Archived weighing areas cannot be newly selected"
@@ -307,18 +290,33 @@ function ShiftEditForm({
           {(field) => (
             <ResourceField
               current={currentDoors}
-              empty="No warehouse door available"
+              empty={
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">
+                    No door is assigned to a product lot
+                  </span>
+                  {/* A shift only uses doors its discharge's lots hold, so they are assigned there. */}
+                  <DischargeTabLink
+                    className={buttonVariants({ size: 'sm', variant: 'outline' })}
+                    onClick={onDone}
+                    tab="product-lots"
+                  >
+                    Go to product lots
+                  </DischargeTabLink>
+                </div>
+              }
               label="Warehouse doors"
-              loading={doors.loading}
-              lockedNote="Archived doors cannot be newly selected"
-              offered={doors.options.map((door) => ({
-                id: door.id,
-                name: `${door.warehouse.name} › ${door.name}`,
-                label: doorLabel(door.warehouse, door),
-                canCheck: true,
-              }))}
+              lockedNote="Archived doors and doors no lot holds cannot be newly selected"
+              offered={shiftDoorOptions(discharge)
+                .filter((option) => option.canCheck)
+                .map((option) => ({
+                  id: option.id,
+                  name: option.name,
+                  label: doorLabel(option.warehouse, option.warehouseDoor),
+                  description: lotLabel(option.lot),
+                  canCheck: true,
+                }))}
               onChange={field.handleChange}
-              onRetry={doors.onRetry}
               reasons={refusals.warehouseDoorIds}
               selected={field.state.value}
             />
@@ -372,9 +370,15 @@ function doorLabel(
   )
 }
 
+/** The lot holding a door the shift selected, or that none does any more. */
+function doorHolderDescription(discharge: DischargeDetailDto, doorId: string) {
+  const holder = lotHoldingDoor(discharge, doorId)
+
+  return holder ? lotLabel(holder) : 'No lot holds this door'
+}
+
 function ResourceField({
   current,
-  empty,
   offered,
   selected,
   ...props
@@ -382,22 +386,15 @@ function ResourceField({
   current: ChecklistRow[]
   offered: ChecklistRow[]
   selected: ShiftCorrectionFormValues['warehouseDoorIds']
-  empty: string
+  empty: ReactNode
   label: string
   lockedNote: string
-  loading: boolean
+  loading?: boolean
   onRetry?: () => void
   onChange: (ids: string[]) => void
   reasons: ReadonlyMap<string, string>
 }) {
   const rows = useResourceRows(current, offered, selected)
 
-  return (
-    <ShiftResourceChecklist
-      {...props}
-      empty={<p className="text-muted-foreground text-sm">{empty}</p>}
-      rows={rows}
-      selected={selected}
-    />
-  )
+  return <ShiftResourceChecklist {...props} rows={rows} selected={selected} />
 }

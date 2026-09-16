@@ -92,13 +92,6 @@ export function sumTonnes(values: string[]) {
   return `${thousandths / 1000n}.${String(thousandths % 1000n).padStart(3, '0')}`
 }
 
-/** Planned times are entered to the minute, so the summary shows them to the minute. */
-const PLANNED_TIME = new Intl.DateTimeFormat('en-GB', { dateStyle: 'short', timeStyle: 'short' })
-
-export function formatPlannedTime(iso: string) {
-  return PLANNED_TIME.format(new Date(iso))
-}
-
 const SHIFT_DAY = new Intl.DateTimeFormat('en-GB', {
   weekday: 'short',
   day: 'numeric',

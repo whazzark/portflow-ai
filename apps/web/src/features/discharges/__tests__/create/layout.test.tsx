@@ -1,8 +1,8 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
-import { formatPlannedTime, formatTonnes } from '@/features/discharges/discharge-detail-view'
-import { fromDateTimeLocalValue } from '@/helpers/dates'
+import { formatTonnes } from '@/features/discharges/discharge-detail-view'
+import { formatDateTime, fromDateTimeLocalValue } from '@/helpers/dates'
 
 import { ACTIVE_OPERATIONS_LEAD, ELIGIBLE_RESPONSIBLES } from '../support/fixtures'
 import {
@@ -82,7 +82,7 @@ test('keeps the totals and the creation in reach in the action bar', async () =>
 
   expect(bar).toHaveTextContent(`2 lots · ${formatTonnes('2000.500')} · 2 shifts`)
   expect(bar).toHaveTextContent(
-    `${formatPlannedTime(fromDateTimeLocalValue('2026-10-01T06:00') as string)} → ${formatPlannedTime(fromDateTimeLocalValue('2026-10-01T22:00') as string)}`,
+    `${formatDateTime(fromDateTimeLocalValue('2026-10-01T06:00') as string)} → ${formatDateTime(fromDateTimeLocalValue('2026-10-01T22:00') as string)}`,
   )
 
   await chooseOption(

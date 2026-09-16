@@ -89,7 +89,9 @@ test('lists each door with its warehouse and period, the ones in effect first', 
     expect.stringContaining('Magasin A › Door A1'),
     expect.stringContaining('Magasin B › Door B2'),
   ])
-  expect(doors[0]).toHaveTextContent('Since')
+  // A door still assigned carries no period: the cell already means "assigned now", so a start
+  // instant would add a timestamp without adding a fact. An ended one keeps its history.
+  expect(doors[0]).not.toHaveTextContent('Since')
   expect(doors[0]).not.toHaveTextContent('Ended')
   expect(doors[1]).toHaveTextContent('Ended')
 })

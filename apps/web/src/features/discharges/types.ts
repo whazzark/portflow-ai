@@ -10,6 +10,10 @@ export type DischargeOtherHoldingDto =
 /** A truck a planned discharge may reserve, with the other discharges already holding it. */
 export type TruckCandidateDto = Route.Response<'discharges.truck_pool.candidates'>['data'][number]
 
+/** What a preparer may choose when planning doors and checkpoints. */
+export type DischargePlanningOptionsDto = Route.Response<'discharges.planning_options'>['data']
+export type PlanningDoorDto = DischargePlanningOptionsDto['warehouseDoors'][number]
+
 /** The three tabs, lower-cased for the address; the API's own vocabulary is uppercase. */
 export const DISCHARGE_STATUS_FILTERS = ['planned', 'active', 'closed'] as const
 export type DischargeStatusFilter = (typeof DISCHARGE_STATUS_FILTERS)[number]

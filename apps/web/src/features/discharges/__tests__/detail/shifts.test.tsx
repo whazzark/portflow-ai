@@ -1,8 +1,9 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
-import { formatPlannedTime, formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
+import { formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
+import { formatDateTime } from '@/helpers/dates'
 import {
   ACTIVE_OBSERVER,
   ACTIVE_OPERATIONS_LEAD,
@@ -237,11 +238,9 @@ test('shows when a shift is planned, who is responsible, and how many trucks it 
   const panel = await screen.findByRole('dialog', { name: shiftName(EVENING_SHIFT) })
   expect(panel).toHaveTextContent('Active')
   expect(field(panel, 'Planned start')).toHaveTextContent(
-    formatPlannedTime('2026-10-04T14:30:00.000Z'),
+    formatDateTime('2026-10-04T14:30:00.000Z'),
   )
-  expect(field(panel, 'Planned end')).toHaveTextContent(
-    formatPlannedTime('2026-10-04T22:00:00.000Z'),
-  )
+  expect(field(panel, 'Planned end')).toHaveTextContent(formatDateTime('2026-10-04T22:00:00.000Z'))
   expect(field(panel, 'Duration')).toHaveTextContent('7 h 30 min')
   expect(field(panel, 'Responsible')).toHaveTextContent('Hugo Bernard')
   expect(within(panel).getByRole('heading', { name: 'Trucks (0)' })).toBeInTheDocument()

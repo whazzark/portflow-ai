@@ -21,6 +21,7 @@ import {
 import {
   formatTonnes,
   groupLotsByCustomer,
+  isInEffect,
   lotDoorNotice,
   lotRemovalBlock,
   splitPeriods,
@@ -37,6 +38,7 @@ import {
   LOT_REMOVAL_REASONS,
   RemoveProductLotDialog,
 } from '@/features/discharges/ui/detail/remove-product-lot-dialog'
+import { LotWarehouseDoorsDialog } from '@/features/discharges/ui/planning/lot-warehouse-doors-dialog'
 
 type ProductLot = DischargeDetailDto['productLots'][number]
 
@@ -49,37 +51,40 @@ function LotDoors({
 }) {
   const { inEffect, ended } = splitPeriods(lot.doorAssignments, dischargeStatus)
 
-  // No door yet is the usual state of a lot being prepared: a quiet dash, said in words to
-  // assistive technologies.
-  if (lot.doorAssignments.length === 0) {
-    return (
-      <span className="text-muted-foreground">
-        <span aria-hidden="true">—</span>
-        <span className="sr-only">No warehouse door assigned</span>
-      </span>
-    )
-  }
-
   return (
     <div className="grid gap-1">
-      <ul aria-label="Warehouse doors" className="grid gap-1">
-        {[...inEffect, ...ended].map((assignment) => (
-          <li className="grid gap-0.5" key={assignment.id}>
-            <span className="inline-flex flex-wrap items-center gap-1">
-              <ReferenceLabel
-                name={assignment.warehouse.name}
-                status={assignment.warehouse.status}
-              />
-              {' › '}
-              <ReferenceLabel
-                name={assignment.warehouseDoor.name}
-                status={assignment.warehouseDoor.status}
-              />
-            </span>
-            <EffectivePeriod dischargeStatus={dischargeStatus} period={assignment} />
-          </li>
-        ))}
-      </ul>
+      {lot.doorAssignments.length > 0 ? (
+        <ul aria-label="Warehouse doors" className="grid gap-1">
+          {[...inEffect, ...ended].map((assignment) => (
+            <li className="grid gap-0.5" key={assignment.id}>
+              <span className="inline-flex flex-wrap items-center gap-1">
+                <ReferenceLabel
+                  name={assignment.warehouse.name}
+                  status={assignment.warehouse.status}
+                />
+                {' › '}
+                <ReferenceLabel
+                  name={assignment.warehouseDoor.name}
+                  status={assignment.warehouseDoor.status}
+                />
+              </span>
+              {/* Only once it is over: a current assignment is what the cell already means, so
+                  its start adds a timestamp without adding a fact. A closed discharge holds
+                  nothing, so its assignments are all history and keep their period. */}
+              {!isInEffect(assignment, dischargeStatus) && (
+                <EffectivePeriod dischargeStatus={dischargeStatus} period={assignment} />
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        // No door yet is the usual state of a lot being prepared: a quiet dash, said in words to
+        // assistive technologies.
+        <span className="text-muted-foreground">
+          <span aria-hidden="true">—</span>
+          <span className="sr-only">No warehouse door assigned</span>
+        </span>
+      )}
       {lotDoorNotice(lot, dischargeStatus) === 'NONE_CURRENTLY_ASSIGNED' && (
         <p className="text-muted-foreground text-xs">No warehouse door currently assigned</p>
       )}
@@ -98,6 +103,7 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
   const [editing, setEditing] = useState<ProductLot | null>(null)
   const [removing, setRemoving] = useState<ProductLot | null>(null)
   const [correctingCustomerId, setCorrectingCustomerId] = useState<string | null>(null)
+  const [planningDoors, setPlanningDoors] = useState<ProductLot | null>(null)
   const tableId = useId()
   const groups = groupLotsByCustomer(discharge.productLots)
   const columnCount = canCorrect ? 4 : 3
@@ -190,6 +196,7 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
                           <TableCell className="text-right align-top">
                             <ProductLotRowActions
                               name={lotName}
+                              onDoors={() => setPlanningDoors(lot)}
                               onEdit={() => setEditing(lot)}
                               onRemove={() => setRemoving(lot)}
                               removalBlocked={block ? LOT_REMOVAL_REASONS[block] : null}
@@ -242,6 +249,13 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
           customerId={correctingCustomerId}
           discharge={discharge}
           onOpenChange={(open) => !open && setCorrectingCustomerId(null)}
+        />
+      )}
+      {canCorrect && (
+        <LotWarehouseDoorsDialog
+          discharge={discharge}
+          lot={planningDoors}
+          onOpenChange={(open) => !open && setPlanningDoors(null)}
         />
       )}
       {canCorrect && removing && (
