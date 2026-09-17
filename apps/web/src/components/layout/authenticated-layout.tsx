@@ -74,7 +74,9 @@ export function AuthenticatedLayout() {
   return (
     <SidebarProvider>
       <AppSidebar user={session.user} />
-      <SidebarInset>
+      {/* `min-w-0`: a flex item otherwise grows to its widest content, so a wide table would widen the
+          whole page and scroll it under the fixed sidebar instead of scrolling in its own container. */}
+      <SidebarInset className="min-w-0">
         <AuthenticatedHeader />
         <Outlet />
       </SidebarInset>
