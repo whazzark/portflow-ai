@@ -204,6 +204,95 @@ test.group('Discharge detail HTTP contract', (group) => {
     assert.equal(served.weighingAreas[0].weighingArea.name, weighingArea.name)
   })
 
+  test('serves each planned shift what it lacks to start, the same for every role', async ({
+    assert,
+    client,
+  }) => {
+    const dock = await DockFactory.create()
+    const discharge = await DischargeFactory.merge({ dockId: dock.id, status: 'PLANNED' }).create()
+    const customer = await CustomerFactory.create()
+    const lot = await ProductLotFactory.merge({
+      dischargeId: discharge.id,
+      customerId: customer.id,
+    }).create()
+    const responsible = await UserFactory.apply('active')
+      .merge({ role: 'OPERATIONS_LEAD', email: 'readiness.lead@portflow.test' })
+      .create()
+    const shift = await ShiftFactory.merge({
+      dischargeId: discharge.id,
+      responsibleUserId: responsible.id,
+    }).create()
+    const company = await TransportCompanyFactory.create()
+    const truck = await TruckFactory.merge({ transportCompanyId: company.id }).create()
+    await DischargeTruckAssignmentFactory.merge({
+      dischargeId: discharge.id,
+      truckId: truck.id,
+      transportCompanyId: company.id,
+    }).create()
+    const warehouse = await WarehouseFactory.create()
+    const door = await WarehouseDoorFactory.merge({ warehouseId: warehouse.id }).create()
+    await WarehouseDoorProductLotAssignmentFactory.merge({
+      dischargeId: discharge.id,
+      productLotId: lot.id,
+      warehouseDoorId: door.id,
+      effectiveTo: null,
+    }).create()
+    const weighingArea = await WeighingAreaFactory.create()
+    await ShiftTruckFactory.merge({ shiftId: shift.id, truckId: truck.id }).create()
+    await ShiftWarehouseDoorFactory.merge({ shiftId: shift.id, warehouseDoorId: door.id }).create()
+    await ShiftWeighingAreaFactory.merge({
+      shiftId: shift.id,
+      weighingAreaId: weighingArea.id,
+    }).create()
+    const lead = await UserFactory.apply('active').merge({ role: 'OPERATIONS_LEAD' }).create()
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const gapsFor = async (viewer: typeof lead) => {
+      const response = await client.get(`/api/v1/discharges/${discharge.id}`).loginAs(viewer)
+      response.assertStatus(200)
+
+      return response.body().data.shifts[0].readinessGaps
+    }
+
+    assert.deepEqual(await gapsFor(lead), [])
+
+    await truck.merge({ status: 'SUSPENDED', suspendedAt: DateTime.utc() }).save()
+    await responsible.merge({ accessStatus: 'DEACTIVATED' }).save()
+
+    assert.deepEqual(await gapsFor(lead), ['NO_USABLE_TRUCK', 'RESPONSIBLE_NOT_ELIGIBLE'])
+    const served = await client.get(`/api/v1/discharges/${discharge.id}`).loginAs(observer)
+    assert.deepEqual(served.body().data.shifts[0].readinessGaps, [
+      'NO_USABLE_TRUCK',
+      'RESPONSIBLE_NOT_ELIGIBLE',
+    ])
+    // The gap says the responsible can no longer be responsible; their access status stays private.
+    assert.notInclude(JSON.stringify(served.body()), 'DEACTIVATED')
+    assert.notProperty(served.body().data.shifts[0].responsible, 'accessStatus')
+  })
+
+  test('serves no readiness for a shift that has started', async ({ assert, client }) => {
+    const dock = await DockFactory.create()
+    const discharge = await DischargeFactory.apply('active').merge({ dockId: dock.id }).create()
+    const responsible = await UserFactory.apply('active').create()
+    for (const state of ['active', 'completed'] as const) {
+      await ShiftFactory.apply(state)
+        .merge({
+          dischargeId: discharge.id,
+          responsibleUserId: responsible.id,
+          sequence: state === 'completed' ? 1 : 2,
+        })
+        .create()
+    }
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+
+    const response = await client.get(`/api/v1/discharges/${discharge.id}`).loginAs(observer)
+
+    response.assertStatus(200)
+    assert.deepEqual(
+      response.body().data.shifts.map((shift: { readinessGaps: unknown }) => shift.readinessGaps),
+      [null, null],
+    )
+  })
+
   test('serves a closed discharge its released trucks as they were captured', async ({
     assert,
     client,

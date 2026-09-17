@@ -2,6 +2,7 @@ import { BaseTransformer } from '@adonisjs/core/transformers'
 import { Decimal } from 'decimal.js'
 
 import type { DischargeDetailRead } from '#discharges/shared/discharge_detail_read'
+import { plannedShiftReadinessGaps } from '#discharges/shared/planned_shift_readiness'
 
 type Reference<Status extends string> = { id: string; name: string; status: Status }
 
@@ -126,6 +127,9 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
           effectiveTo: membership.effectiveTo,
           weighingArea: toReference(membership.weighingArea),
         })),
+        // Derived from the eligibility of the responsible, whose role and access status stay
+        // administration's: the gap says that they can no longer be responsible, never why.
+        readinessGaps: plannedShiftReadinessGaps(shift, resource),
       })),
     }
   }

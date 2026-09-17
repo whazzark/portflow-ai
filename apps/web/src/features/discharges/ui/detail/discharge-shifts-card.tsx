@@ -1,9 +1,21 @@
 import { getRouteApi } from '@tanstack/react-router'
+import { PlusIcon } from 'lucide-react'
+import { useState } from 'react'
 
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import { Button } from '@/components/ui/button'
+
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from '@/components/ui/empty'
+import type { DrawnShiftPeriod } from '@/features/discharges/discharge-preparation-schema'
 import { openShift } from '@/features/discharges/shift-calendar'
 import { heldPoolEntries } from '@/features/discharges/truck-pool-selection'
 import type { DischargeDetailDto } from '@/features/discharges/types'
+import { AddShiftSheet } from '@/features/discharges/ui/detail/add-shift-sheet'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
 import { DischargeTabLink } from '@/features/discharges/ui/detail/discharge-tab-link'
 import { ShiftCalendar } from '@/features/discharges/ui/detail/shift-calendar'
@@ -15,9 +27,17 @@ type DischargeShiftsCardProps = {
   discharge: DischargeDetailDto
   /** A preparer on a planned discharge may choose each planned shift's trucks. */
   canCorrect?: boolean
+  /** A preparer may add shifts to a discharge that is not closed. */
+  canAddShifts?: boolean
 }
 
-export function DischargeShiftsCard({ canCorrect = false, discharge }: DischargeShiftsCardProps) {
+export function DischargeShiftsCard({
+  canAddShifts = false,
+  canCorrect = false,
+  discharge,
+}: DischargeShiftsCardProps) {
+  // Open with the period drawn on the calendar, if the addition started there.
+  const [adding, setAdding] = useState<{ period?: DrawnShiftPeriod } | null>(null)
   const { shiftId } = dischargeRoute.useSearch()
   const navigate = dischargeRoute.useNavigate()
   const openedShift = openShift(discharge.shifts, shiftId)
@@ -37,8 +57,15 @@ export function DischargeShiftsCard({ canCorrect = false, discharge }: Discharge
     })
   }
 
+  const addButton = (
+    <Button onClick={() => setAdding({})} size="sm">
+      <PlusIcon aria-hidden="true" />
+      Add shift
+    </Button>
+  )
+
   return (
-    <DetailSection title="Shifts">
+    <DetailSection actions={canAddShifts ? addButton : undefined} title="Shifts">
       {discharge.shifts.length > 0 ? (
         <div className="grid gap-4">
           {needsPool && (
@@ -54,6 +81,7 @@ export function DischargeShiftsCard({ canCorrect = false, discharge }: Discharge
           )}
           <ShiftCalendar
             discharge={discharge}
+            onDraw={canAddShifts ? (period) => setAdding({ period }) : undefined}
             onSelect={showShift}
             selectedShiftId={openedShift?.id ?? null}
           />
@@ -64,6 +92,7 @@ export function DischargeShiftsCard({ canCorrect = false, discharge }: Discharge
             <EmptyTitle>No shifts planned</EmptyTitle>
             <EmptyDescription>No shift has been prepared for this discharge yet.</EmptyDescription>
           </EmptyHeader>
+          {canAddShifts && <EmptyContent>{addButton}</EmptyContent>}
         </Empty>
       )}
       <ShiftPanel
@@ -72,6 +101,19 @@ export function DischargeShiftsCard({ canCorrect = false, discharge }: Discharge
         onClose={() => showShift(undefined)}
         shift={openedShift}
       />
+      {canAddShifts && (
+        <AddShiftSheet
+          discharge={discharge}
+          onAdded={showShift}
+          onOpenChange={(open) => {
+            if (!open) {
+              setAdding(null)
+            }
+          }}
+          open={adding !== null}
+          period={adding?.period}
+        />
+      )}
     </DetailSection>
   )
 }

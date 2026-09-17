@@ -6,8 +6,11 @@ import {
   buildShift,
   DISCHARGES,
 } from '@/features/discharges/__tests__/support/fixtures'
+import { formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
 import {
   addProductLotsCrossRulesSchema,
+  addShiftFormValues,
+  addShiftRulesSchema,
   createDischargeFieldsSchema,
   createDischargeFormDefaults,
   createDischargeSchema,
@@ -31,13 +34,14 @@ import {
   productLotSchema,
   shiftCorrectionFormValues,
   stepHasErrors,
+  toAddShiftBody,
   toCreateDischargeBody,
   toIdentityBody,
   toProductLotBody,
   toProductLotsBody,
   toShiftCorrectionBody,
 } from '@/features/discharges/discharge-preparation-schema'
-import { fromDateTimeLocalValue } from '@/helpers/dates'
+import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/helpers/dates'
 
 const validIdentity = {
   vesselName: 'MV Atlantic Dawn',
@@ -536,4 +540,128 @@ test('sends a period bound left unchanged as the shift holds it, to the second',
   const moved = toShiftCorrectionBody({ ...values, plannedEndAt: '2026-10-05T01:15' }, shift)
   expect(moved.plannedStartAt).toBe('2026-10-04T06:00:30.000Z')
   expect(moved.plannedEndAt).toBe(fromDateTimeLocalValue('2026-10-05T01:15'))
+})
+
+test('starts an added shift where the last shift ends, for as long, with nothing chosen', () => {
+  const values = addShiftFormValues({
+    shifts: [
+      buildShift({
+        plannedStartAt: '2026-10-04T06:00:00.000Z',
+        plannedEndAt: '2026-10-04T14:00:00.000Z',
+      }),
+    ],
+  })
+
+  expect(values).toEqual({
+    plannedStartAt: toDateTimeLocalValue('2026-10-04T14:00:00.000Z'),
+    plannedEndAt: toDateTimeLocalValue('2026-10-04T22:00:00.000Z'),
+    responsibleUserId: '',
+    truckIds: [],
+    warehouseDoorIds: [],
+    weighingAreaIds: [],
+  })
+  expect(addShiftFormValues({ shifts: [] })).toMatchObject({ plannedStartAt: '', plannedEndAt: '' })
+})
+
+const addRuleIssues = (
+  shifts: ReturnType<typeof buildShift>[],
+  plannedStartAt: string,
+  plannedEndAt: string,
+  addedId?: string,
+) => {
+  const result = addShiftRulesSchema(shifts, addedId).safeParse({
+    plannedStartAt: toDateTimeLocalValue(plannedStartAt),
+    plannedEndAt: toDateTimeLocalValue(plannedEndAt),
+    responsibleUserId: 'lead-1',
+    truckIds: [],
+    warehouseDoorIds: [],
+    weighingAreaIds: [],
+  })
+
+  return result.success
+    ? []
+    : result.error.issues.map((issue) => [issue.path.join('.'), issue.message])
+}
+
+test('refuses an added period that is inverted or overlaps a shift, naming that shift', () => {
+  const planned = buildShift({
+    plannedStartAt: '2026-10-04T06:00:00.000Z',
+    plannedEndAt: '2026-10-04T14:00:00.000Z',
+  })
+
+  expect(addRuleIssues([planned], '2026-10-04T20:00:00.000Z', '2026-10-04T18:00:00.000Z')).toEqual([
+    ['plannedEndAt', 'The planned end must be after the planned start'],
+  ])
+  expect(addRuleIssues([planned], '2026-10-04T10:00:00.000Z', '2026-10-04T18:00:00.000Z')).toEqual([
+    ['plannedStartAt', `This shift overlaps shift ${formatShiftPeriod(planned)}`],
+  ])
+  expect(addRuleIssues([planned], '2026-10-04T14:00:00.000Z', '2026-10-04T22:00:00.000Z')).toEqual(
+    [],
+  )
+})
+
+test('refuses an added shift starting before the shift that started last', () => {
+  const started = buildShift({
+    id: 'started',
+    status: 'ACTIVE',
+    plannedStartAt: '2026-10-04T06:00:00.000Z',
+    plannedEndAt: '2026-10-04T14:00:00.000Z',
+  })
+  const planned = buildShift({
+    id: 'planned',
+    plannedStartAt: '2026-10-05T06:00:00.000Z',
+    plannedEndAt: '2026-10-05T14:00:00.000Z',
+  })
+
+  expect(
+    addRuleIssues([started, planned], '2026-10-03T06:00:00.000Z', '2026-10-03T14:00:00.000Z'),
+  ).toEqual([
+    ['plannedStartAt', `A new shift must start after shift ${formatShiftPeriod(started)}`],
+  ])
+  // Between the active shift's end and the next planned shift is fine.
+  expect(
+    addRuleIssues([started, planned], '2026-10-04T14:00:00.000Z', '2026-10-04T22:00:00.000Z'),
+  ).toEqual([])
+})
+
+test('sends resources with an added shift only on a planned discharge', () => {
+  const values = {
+    plannedStartAt: '2026-10-04T14:00',
+    plannedEndAt: '2026-10-04T22:00',
+    responsibleUserId: 'lead-1',
+    truckIds: ['truck-a'],
+    warehouseDoorIds: ['door-a'],
+    weighingAreaIds: ['area-a'],
+  }
+
+  expect(toAddShiftBody(values, 'shift-new', 'PLANNED')).toEqual({
+    id: 'shift-new',
+    plannedStartAt: fromDateTimeLocalValue('2026-10-04T14:00'),
+    plannedEndAt: fromDateTimeLocalValue('2026-10-04T22:00'),
+    responsibleUserId: 'lead-1',
+    truckIds: ['truck-a'],
+    warehouseDoorIds: ['door-a'],
+    weighingAreaIds: ['area-a'],
+  })
+  expect(toAddShiftBody(values, 'shift-new', 'ACTIVE')).toEqual({
+    id: 'shift-new',
+    plannedStartAt: fromDateTimeLocalValue('2026-10-04T14:00'),
+    plannedEndAt: fromDateTimeLocalValue('2026-10-04T22:00'),
+    responsibleUserId: 'lead-1',
+  })
+})
+
+test('leaves out the shift the addition already saved, so its retry is judged by the API', () => {
+  const saved = buildShift({
+    id: 'added-1',
+    plannedStartAt: '2026-10-04T06:00:00.000Z',
+    plannedEndAt: '2026-10-04T14:00:00.000Z',
+  })
+
+  expect(
+    addRuleIssues([saved], '2026-10-04T06:00:00.000Z', '2026-10-04T14:00:00.000Z', 'added-1'),
+  ).toEqual([])
+  expect(addRuleIssues([saved], '2026-10-04T06:00:00.000Z', '2026-10-04T14:00:00.000Z')).toEqual([
+    ['plannedStartAt', `This shift overlaps shift ${formatShiftPeriod(saved)}`],
+  ])
 })

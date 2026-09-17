@@ -53,6 +53,7 @@ export type ScannedRoutes = {
     'discharges.truck_pool.store': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'discharges.truck_pool.withdraw': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'discharges.shift_trucks.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'shiftId': ParamValue} }
+    'discharges.shifts.store': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'discharges.shifts.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'shiftId': ParamValue} }
     'discharges.customer_product_lots.update': { paramsTuple: [ParamValue,ParamValue]; params: {'dischargeId': ParamValue,'customerId': ParamValue} }
     'users.eligible_shift_responsibles': { paramsTuple?: []; params?: {} }
@@ -170,6 +171,7 @@ export type ScannedRoutes = {
     'discharges.product_lots.store': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'discharges.truck_pool.store': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'discharges.truck_pool.withdraw': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
+    'discharges.shifts.store': { paramsTuple: [ParamValue]; params: {'dischargeId': ParamValue} }
     'users.store': { paramsTuple?: []; params?: {} }
     'users.deactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'users.reactivate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

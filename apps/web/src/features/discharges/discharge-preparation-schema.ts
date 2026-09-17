@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { formatShiftDuration } from '@/features/discharges/discharge-detail-view'
+import { formatShiftDuration, formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/helpers/dates'
 import { toFormFieldName } from '@/libraries/forms/api-error'
@@ -678,6 +678,132 @@ export function toShiftCorrectionBody(values: ShiftCorrectionFormValues, shift: 
     truckIds: values.truckIds,
     warehouseDoorIds: values.warehouseDoorIds,
     weighingAreaIds: values.weighingAreaIds,
+  }
+}
+
+type DetailShift = DischargeDetailDto['shifts'][number]
+
+/** A period drawn on the shift calendar: a press released where it began marks only a start. */
+export type DrawnShiftPeriod = { plannedStartAt: string; plannedEndAt: string | null }
+
+/**
+ * A shift being added starts where the discharge's last shift ends and lasts as long, as the
+ * creation's next shift does, with no responsible and no resource chosen yet. A period drawn on the
+ * calendar takes the place of that guess.
+ */
+export function addShiftFormValues(
+  discharge: Pick<DischargeDetailDto, 'shifts'>,
+  period?: DrawnShiftPeriod,
+): ShiftCorrectionFormValues {
+  const last = discharge.shifts.at(-1)
+  const next = nextPlannedShift(
+    last
+      ? {
+          plannedStartAt: toDateTimeLocalValue(last.plannedStartAt),
+          plannedEndAt: toDateTimeLocalValue(last.plannedEndAt),
+          responsibleUserId: '',
+        }
+      : undefined,
+  )
+
+  return {
+    ...next,
+    ...(period && {
+      plannedStartAt: toDateTimeLocalValue(period.plannedStartAt),
+      plannedEndAt: toDateTimeLocalValue(period.plannedEndAt),
+    }),
+    truckIds: [],
+    warehouseDoorIds: [],
+    weighingAreaIds: [],
+  }
+}
+
+/** The shift that started last, which a shift added to a discharge under way must start after. */
+export function latestStartedShift(shifts: DetailShift[]) {
+  return shifts
+    .filter((shift) => shift.status !== 'PLANNED' && shift.plannedStartAt)
+    .reduce<DetailShift | undefined>(
+      (latest, shift) =>
+        !latest || Date.parse(shift.plannedStartAt ?? '') > Date.parse(latest.plannedStartAt ?? '')
+          ? shift
+          : latest,
+      undefined,
+    )
+}
+
+/**
+ * The rules across a shift being added and the discharge's shifts, as the API judges them: its
+ * period against every shift, whatever its status, and on a discharge under way a start after the
+ * shift that started last. Unlike the API, which does not know the viewer's time zone, the form
+ * names the shift in the way. The shift carrying `addedId` is left out: it is this addition, already
+ * saved by an attempt whose response was lost, and its retry must still reach the API, which answers
+ * it as a replay.
+ */
+export function addShiftRulesSchema(allShifts: DetailShift[], addedId?: string) {
+  const shifts = allShifts.filter((shift) => shift.id !== addedId)
+
+  return z.custom<ShiftCorrectionFormValues>().superRefine((values, context) => {
+    const start = Date.parse(fromDateTimeLocalValue(values.plannedStartAt) ?? '')
+    const end = Date.parse(fromDateTimeLocalValue(values.plannedEndAt) ?? '')
+    if (Number.isNaN(start) || Number.isNaN(end)) {
+      return
+    }
+    if (end <= start) {
+      context.addIssue({
+        code: 'custom',
+        message: 'The planned end must be after the planned start',
+        path: ['plannedEndAt'],
+      })
+
+      return
+    }
+
+    // Periods that only touch do not overlap, as the API judges them.
+    const overlapped = shifts.find(
+      (other) =>
+        start < Date.parse(other.plannedEndAt ?? '') &&
+        Date.parse(other.plannedStartAt ?? '') < end,
+    )
+    if (overlapped) {
+      context.addIssue({
+        code: 'custom',
+        message: `This shift overlaps shift ${formatShiftPeriod(overlapped)}`,
+        path: ['plannedStartAt'],
+      })
+    }
+
+    const started = latestStartedShift(shifts)
+    if (started && start <= Date.parse(started.plannedStartAt ?? '')) {
+      context.addIssue({
+        code: 'custom',
+        message: `A new shift must start after shift ${formatShiftPeriod(started)}`,
+        path: ['plannedStartAt'],
+      })
+    }
+  })
+}
+
+/**
+ * The addition's body, with the identity its form generated when it opened. A discharge under way
+ * takes no resource with a new shift, so none is sent for one, whatever the form still holds.
+ */
+export function toAddShiftBody(
+  values: ShiftCorrectionFormValues,
+  id: string,
+  dischargeStatus: DischargeDetailDto['status'],
+) {
+  return {
+    id,
+    plannedStartAt: fromDateTimeLocalValue(values.plannedStartAt) as string,
+    plannedEndAt: fromDateTimeLocalValue(values.plannedEndAt) as string,
+    responsibleUserId: values.responsibleUserId,
+    ...(dischargeStatus === 'PLANNED'
+      ? {
+          truckIds: values.truckIds,
+          warehouseDoorIds: values.warehouseDoorIds,
+          weighingAreaIds: values.weighingAreaIds,
+        }
+      : {}),
   }
 }
 

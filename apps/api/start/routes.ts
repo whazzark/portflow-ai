@@ -131,6 +131,9 @@ router
                 'update',
               ])
               .as('shift_trucks.update')
+            router
+              .post('/:dischargeId/shifts', [controllers.DischargeShifts, 'store'])
+              .as('shifts.store')
             // The router matches whole segments, so this never answers `/shifts/:shiftId/trucks`.
             router
               .put('/:dischargeId/shifts/:shiftId', [controllers.DischargeShifts, 'update'])

@@ -77,6 +77,7 @@ export interface ApiDefinition {
       update: typeof routes['discharges.shift_trucks.update']
     }
     shifts: {
+      store: typeof routes['discharges.shifts.store']
       update: typeof routes['discharges.shifts.update']
     }
     customerProductLots: {

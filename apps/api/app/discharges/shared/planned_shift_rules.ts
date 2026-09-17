@@ -16,6 +16,7 @@ import type {
   LockedWeighingArea,
   ShiftResourceSelectionRow,
 } from '#discharges/shared/repositories/discharge_preparation_repository'
+import type { ShiftStatus } from '#models/shift'
 
 /**
  * The rules behind correcting one planned shift: its period among its discharge's other shifts,
@@ -73,6 +74,80 @@ export function planShiftSequences(
   return orderShifts(periods)
     .filter((shift) => current.get(shift.id) !== shift.sequence)
     .map((shift) => ({ shiftId: shift.id, sequence: shift.sequence }))
+}
+
+type ExistingShift = PlannedPeriod & { id: string; sequence: number; status: ShiftStatus }
+
+/**
+ * When a started shift started. No slice records an actual start yet, so its planned start stands
+ * in for it. GH-65, which records the actual start, must return it here once one exists: a shift
+ * started early would otherwise let a new shift be planned before it.
+ */
+export function startedShiftStart(shift: PlannedPeriod & { status: ShiftStatus }) {
+  return shift.plannedStartAt
+}
+
+export function shiftAfterStartedShiftsIssue(field: string): PreparationIssue {
+  return {
+    field,
+    rule: 'shiftAfterStartedShifts',
+    message: 'A new shift must start after the shifts already started',
+  }
+}
+
+/**
+ * The rules a shift added to a discharge breaks, at the fields the form holds them in. Its period is
+ * judged as a corrected one is, against every shift whatever its status. Planned shifts also start
+ * in chronological order, so on a discharge already under way a new shift must start after every
+ * shift that has started; between planned shifts, it may go anywhere they leave room.
+ */
+export function findAddedShiftIssues(period: PlannedPeriod, shifts: readonly ExistingShift[]) {
+  const issues = findShiftPeriodIssues(period, shifts)
+  const startedStarts = shifts
+    .filter((shift) => shift.status !== 'PLANNED')
+    .map((shift) => startedShiftStart(shift).toMillis())
+
+  if (startedStarts.length > 0 && period.plannedStartAt.toMillis() <= Math.max(...startedStarts)) {
+    issues.push(shiftAfterStartedShiftsIssue('plannedStartAt'))
+  }
+
+  return issues
+}
+
+/**
+ * The sequence a new shift takes among its discharge's shifts, and the sequences of the existing
+ * shifts that move to make room for it. `shifts` is every shift in its current sequence order, which
+ * keeps equal starts in the order they already had; the new shift goes after them.
+ *
+ * A started shift is history and keeps its number. The started-shift rule places a new shift after
+ * every one of them, so a plan that would move one is a broken invariant, not a refusal. That holds
+ * only while shifts start in planned-start order: GH-65, if it lets a later shift start before an
+ * earlier planned one, must turn this into a refusal or renumber around started shifts.
+ */
+export function planAddedShiftSequences(shifts: readonly ExistingShift[], added: PlannedPeriod) {
+  const ordered = orderShifts<PlannedPeriod & { id: string | null }>([
+    ...[...shifts].sort((left, right) => left.sequence - right.sequence),
+    { ...added, id: null },
+  ])
+  const current = new Map(shifts.map((shift) => [shift.id, shift]))
+  const sequences: Array<{ shiftId: string; sequence: number }> = []
+  let sequence = 0
+
+  for (const shift of ordered) {
+    if (shift.id === null) {
+      sequence = shift.sequence
+      continue
+    }
+    const existing = current.get(shift.id)
+    if (existing && existing.sequence !== shift.sequence) {
+      if (existing.status !== 'PLANNED') {
+        throw new Error(`Adding a shift would renumber started shift ${existing.id}`)
+      }
+      sequences.push({ shiftId: existing.id, sequence: shift.sequence })
+    }
+  }
+
+  return { sequence, sequences }
 }
 
 export const SHIFT_RESOURCE_ISSUE_MESSAGES = {

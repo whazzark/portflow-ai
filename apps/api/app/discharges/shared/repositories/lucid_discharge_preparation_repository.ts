@@ -24,6 +24,8 @@ import DischargePreparationRepository, {
   type CreatePlannedDischargeResult,
   type CustomerProductLotsWriteResult,
   type DeleteProductLotResult,
+  type InsertPlannedShiftCommand,
+  type InsertPlannedShiftResult,
   type LockedTruck,
   type LockedWarehouseDoor,
   type LockedWeighingArea,
@@ -64,6 +66,15 @@ function isDuplicateLotIdentity(error: unknown) {
     (candidate.code === '23505' && candidate.constraint === 'product_lots_identity_unique') ||
     (candidate.code === 'SQLITE_CONSTRAINT_UNIQUE' &&
       (candidate.message ?? '').includes('product_lots_identity_unique'))
+  )
+}
+
+function isDuplicateShiftId(error: unknown) {
+  const candidate = (error ?? {}) as DatabaseError
+
+  return (
+    (candidate.code === '23505' && candidate.constraint === 'shifts_pkey') ||
+    candidate.code === 'SQLITE_CONSTRAINT_PRIMARYKEY'
   )
 }
 
@@ -337,6 +348,70 @@ export default class LucidDischargePreparationRepository extends DischargePrepar
       .first()
 
     return shift ? { id: shift.id, status: shift.status } : null
+  }
+
+  async findShiftIdentity(dischargeId: string, shiftId: string, client: TransactionClientContract) {
+    return (await this.findShift(dischargeId, shiftId, client)) !== null
+  }
+
+  /** In a savepoint, so an identity clash undoes the renumbering too and leaves the caller usable. */
+  async insertPlannedShift(
+    command: InsertPlannedShiftCommand,
+    client: TransactionClientContract,
+  ): Promise<InsertPlannedShiftResult> {
+    const dischargeId = command.dischargeId.toLowerCase()
+    const shiftId = command.shiftId.toLowerCase()
+    const savepoint = await client.transaction()
+
+    try {
+      await this.renumberShifts(dischargeId, command.sequences, savepoint)
+      await Shift.create(
+        {
+          id: shiftId,
+          dischargeId,
+          sequence: command.sequence,
+          status: 'PLANNED',
+          plannedStartAt: command.plannedStartAt.toUTC(),
+          plannedEndAt: command.plannedEndAt.toUTC(),
+          responsibleUserId: command.responsibleUserId.toLowerCase(),
+        },
+        { client: savepoint },
+      )
+      if (command.warehouseDoors.inserts.length > 0) {
+        await ShiftWarehouseDoor.createMany(
+          command.warehouseDoors.inserts.map((selection) => ({
+            shiftId,
+            warehouseDoorId: selection.resourceId.toLowerCase(),
+            effectiveFrom: selection.effectiveFrom.toUTC(),
+            effectiveTo: null,
+          })),
+          { client: savepoint },
+        )
+      }
+      if (command.weighingAreas.inserts.length > 0) {
+        await ShiftWeighingArea.createMany(
+          command.weighingAreas.inserts.map((selection) => ({
+            shiftId,
+            weighingAreaId: selection.resourceId.toLowerCase(),
+            effectiveFrom: selection.effectiveFrom.toUTC(),
+            effectiveTo: null,
+          })),
+          { client: savepoint },
+        )
+      }
+      await this.touchDischarge(dischargeId, savepoint)
+      await savepoint.commit()
+
+      return { kind: 'INSERTED' }
+    } catch (error) {
+      await savepoint.rollback()
+
+      if (isDuplicateShiftId(error)) {
+        return { kind: 'DUPLICATE_ID' }
+      }
+
+      throw error
+    }
   }
 
   /** In a savepoint, so a replay racing this write leaves the caller's transaction usable. */

@@ -1,4 +1,4 @@
-import { formatShiftDay } from '@/features/discharges/discharge-detail-view'
+import { formatShiftDay, formatShiftDuration } from '@/features/discharges/discharge-detail-view'
 
 type CalendarShift = {
   id: string
@@ -11,6 +11,9 @@ const DAY_MS = 24 * 3_600_000
 
 /** A calendar always shows a week, however short the discharge. */
 const MIN_DAYS = 7
+
+/** A period drawn on the calendar snaps to this step, fine enough to need no correction most often. */
+export const DRAW_STEP_MINUTES = 30
 
 /** Twelve marks a day keep an hour readable without crowding a column's gutter. */
 const HOUR_MARK_STEP = 2
@@ -46,6 +49,25 @@ export function defaultShiftId(shifts: CalendarShift[]) {
     shifts.at(-1)
 
   return shift?.id ?? null
+}
+
+/**
+ * The period a gesture on the calendar draws, between the instant it pressed and the one it
+ * released, in either order. A press released where it began marks only a start, and lasts as long
+ * as the last shift when there is one to follow.
+ */
+export function drawnPeriod(from: number, to: number, fallbackDurationMs: number | null) {
+  if (from === to) {
+    return {
+      plannedStartAt: new Date(from).toISOString(),
+      plannedEndAt: fallbackDurationMs ? new Date(from + fallbackDurationMs).toISOString() : null,
+    }
+  }
+
+  return {
+    plannedStartAt: new Date(Math.min(from, to)).toISOString(),
+    plannedEndAt: new Date(Math.max(from, to)).toISOString(),
+  }
 }
 
 /** The shift an address opens in the panel; none when it names none of these shifts. */
@@ -163,12 +185,44 @@ export function shiftCalendar<S extends CalendarShift>(
   })
 
   // The time between one shift's end and the next one's start, measured from the latest end so
-  // far, so overlapping shifts never produce a break.
-  const breaks: Array<{ column: number; topPct: number; heightPct: number }> = []
+  // far, so overlapping shifts never produce a break. A break cut at midnight reads its duration
+  // once, in its tallest piece, where the label has the most room.
+  const breaks: Array<{
+    column: number
+    topPct: number
+    heightPct: number
+    /** The shift the break comes before. */
+    shiftId: string
+    /** The whole break, as instants, whichever piece this is. */
+    start: number
+    end: number
+    duration: string
+    labelled: boolean
+  }> = []
   let latestEnd: number | null = null
   for (const period of [...periods].sort((a, b) => a.start - b.start)) {
     if (latestEnd !== null && period.start > latestEnd) {
-      breaks.push(...pieces(latestEnd, period.start))
+      const breakStart = latestEnd
+      const breakPieces = pieces(breakStart, period.start)
+      const tallest = breakPieces.reduce(
+        (best, piece, index) => (piece.heightPct > breakPieces[best].heightPct ? index : best),
+        0,
+      )
+      const duration =
+        formatShiftDuration({
+          plannedStartAt: new Date(breakStart).toISOString(),
+          plannedEndAt: new Date(period.start).toISOString(),
+        }) ?? ''
+      breaks.push(
+        ...breakPieces.map((piece, index) => ({
+          ...piece,
+          shiftId: period.shift.id,
+          start: breakStart,
+          end: period.start,
+          duration,
+          labelled: index === tallest,
+        })),
+      )
     }
     latestEnd = latestEnd === null ? period.end : Math.max(latestEnd, period.end)
   }
@@ -178,6 +232,17 @@ export function shiftCalendar<S extends CalendarShift>(
     label: `${String(index * HOUR_MARK_STEP).padStart(2, '0')}:00`,
   }))
 
+  // The clock a point down a column reads, snapped to the drawing step. Counted on the clock like
+  // every placement, so a day the clocks change keeps its step on the hour.
+  const instantAt = (column: number, pct: number) => {
+    const bounded = Math.min(Math.max(column, 0), columnCount - 1)
+    const minutes = (Math.min(Math.max(pct, 0), 100) / 100) * 24 * 60
+    const date = new Date(dayStart(bounded))
+    date.setHours(0, Math.round(minutes / DRAW_STEP_MINUTES) * DRAW_STEP_MINUTES)
+
+    return date.getTime()
+  }
+
   const nowInstant = now?.getTime()
   const nowPlace = nowInstant === undefined ? null : place(nowInstant)
 
@@ -186,6 +251,8 @@ export function shiftCalendar<S extends CalendarShift>(
     segments,
     breaks,
     hourMarks,
+    instantAt,
+    periodPieces: pieces,
     // Only worth a line when the calendar does not already open on it.
     expectedStart:
       expectedStartPlace && expectedStart !== anchor

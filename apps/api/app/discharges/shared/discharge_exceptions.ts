@@ -52,3 +52,19 @@ export class DischargePlanningConflictException extends Exception {
   static code = 'E_DISCHARGE_PLANNING_CONFLICT'
   static message = 'This discharge changed meanwhile'
 }
+
+export class DischargeClosedException extends Exception {
+  static status = 409
+  static code = 'E_DISCHARGE_CLOSED'
+  static message = 'A closed discharge receives no new shift'
+}
+
+/**
+ * A shift identity sent with an addition that already names a shift of another discharge. The web
+ * generates a fresh identity for every add form, so only a forged request reaches this.
+ */
+export class ShiftIdConflictException extends Exception {
+  static status = 409
+  static code = 'E_SHIFT_ID_CONFLICT'
+  static message = 'This shift identity is already used'
+}

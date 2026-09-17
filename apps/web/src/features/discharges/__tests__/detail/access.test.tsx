@@ -72,7 +72,11 @@ test.each(
       const view = renderDischargeTab(listed.id, tab)
       await screen.findByRole('heading', { level: 1, name: listed.vesselName })
 
-      expect(screen.queryByRole('button', { name: ACTION_NAMES })).not.toBeInTheDocument()
+      // A discharge under way still receives its next shifts; nothing else of it is corrected here.
+      const actions = screen.queryAllByRole('button', { name: ACTION_NAMES })
+      expect(actions.map((action) => action.textContent)).toEqual(
+        listed === OCEAN_CEDAR && tab === 'shifts' ? ['Add shift'] : [],
+      )
       view.unmount()
     }
   }

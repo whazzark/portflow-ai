@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
-import { formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
+import { formatShiftPeriod, formatShiftTime } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { formatDateTime } from '@/helpers/dates'
 import {
@@ -60,6 +60,7 @@ const NIGHT_SHIFT = buildShift({
   plannedStartAt: '2026-10-04T22:30:00.000Z',
   plannedEndAt: '2026-10-05T06:00:00.000Z',
   responsible: { id: 'lead-3', firstName: 'Inès', lastName: 'Roux' },
+  readinessGaps: ['NO_USABLE_TRUCK', 'NO_USABLE_WAREHOUSE_DOOR', 'NO_USABLE_WEIGHING_AREA'],
 })
 
 const shiftName = (shift: DischargeDetailDto['shifts'][number]) =>
@@ -90,6 +91,49 @@ test('lays the shifts out on the calendar in planned order, each with its status
   )
   expect(bars[1]).toHaveAccessibleDescription(
     'Active, 7 h 30 min, Hugo Bernard, 0 trucks, 0 warehouse doors, 0 weighing areas',
+  )
+})
+
+test('reads the break before each shift that follows another, between them in the list', async () => {
+  const { region } = await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT, NIGHT_SHIFT] })
+
+  const calendar = within(region).getByRole('list', { name: 'Shift calendar' })
+  expect(
+    within(calendar)
+      .getAllByRole('listitem')
+      .map((item) => item.textContent),
+  ).toEqual([
+    expect.stringContaining('Léa Martin'),
+    '30 min break',
+    expect.stringContaining('Hugo Bernard'),
+    '30 min break',
+    expect.stringContaining('Inès Roux'),
+  ])
+})
+
+test('reads the duration of a break shorter than its badge on the calendar', async () => {
+  const soon = buildShift({
+    id: 'soon',
+    plannedStartAt: '2026-10-04T14:15:00.000Z',
+    plannedEndAt: '2026-10-04T22:00:00.000Z',
+  })
+  const { region } = await renderShifts({ shifts: [DAY_SHIFT, soon] })
+
+  // The calendar's badge reads the duration alone; the list item reads it as a break.
+  expect(within(region).getByText('15 min')).toBeInTheDocument()
+  expect(within(region).getByText('15 min break')).toBeInTheDocument()
+})
+
+test('explains a break on the calendar with its times when its badge is hovered', async () => {
+  const { region } = await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT] })
+
+  await userEvent.hover(within(region).getByText('30 min'))
+
+  const tooltip = await screen.findByText(
+    `Break · ${formatShiftTime(DAY_SHIFT.plannedEndAt)}–${formatShiftTime(EVENING_SHIFT.plannedStartAt)}`,
+  )
+  expect(tooltip.parentElement).toHaveTextContent(
+    'Time between the end of a shift and the start of the next one.',
   )
 })
 
@@ -134,17 +178,33 @@ test('names a shift worked past midnight by both of its days', async () => {
   expect(await openPanel(region, NIGHT_SHIFT)).toBeInTheDocument()
 })
 
-test('flags a planned shift with no truck selected yet', async () => {
-  const { region } = await renderShifts({ shifts: [DAY_SHIFT, NIGHT_SHIFT] })
+test('flags a planned shift that still lacks something to start', async () => {
+  const oneGap = buildShift({
+    id: 'one-gap',
+    plannedStartAt: '2026-10-05T06:00:00.000Z',
+    plannedEndAt: '2026-10-05T14:00:00.000Z',
+    readinessGaps: ['RESPONSIBLE_NOT_ELIGIBLE'],
+  })
+  const ready = buildShift({
+    id: 'ready',
+    plannedStartAt: '2026-10-05T14:00:00.000Z',
+    plannedEndAt: '2026-10-05T22:00:00.000Z',
+  })
+  const { region } = await renderShifts({ shifts: [DAY_SHIFT, NIGHT_SHIFT, oneGap, ready] })
 
   const calendar = within(region).getByRole('list', { name: 'Shift calendar' })
   const night = within(calendar).getByRole('button', { name: shiftName(NIGHT_SHIFT) })
-  const day = within(calendar).getByRole('button', { name: shiftName(DAY_SHIFT) })
-  expect(night).toHaveAccessibleDescription(/No truck selected$/)
-  // Written on the card itself, not only announced.
-  expect(night).toHaveTextContent('No truck')
-  expect(day).not.toHaveAccessibleDescription(/No truck selected/)
-  expect(day).not.toHaveTextContent('No truck')
+  expect(night).toHaveAccessibleDescription(/, 3 gaps$/)
+  // Written on the card itself, not only announced, and not by its border's colour alone.
+  expect(night).toHaveTextContent('3 gaps')
+  expect(within(calendar).getByRole('button', { name: shiftName(oneGap) })).toHaveTextContent(
+    '1 gap',
+  )
+  for (const shift of [DAY_SHIFT, ready]) {
+    const card = within(calendar).getByRole('button', { name: shiftName(shift) })
+    expect(card).not.toHaveAccessibleDescription(/gap/)
+    expect(card).not.toHaveTextContent(/gap/)
+  }
 })
 
 test('opens no panel until a shift is chosen', async () => {
@@ -244,7 +304,8 @@ test('shows when a shift is planned, who is responsible, and how many trucks it 
   expect(field(panel, 'Duration')).toHaveTextContent('7 h 30 min')
   expect(field(panel, 'Responsible')).toHaveTextContent('Hugo Bernard')
   expect(within(panel).getByRole('heading', { name: 'Trucks (0)' })).toBeInTheDocument()
-  expect(panel).not.toHaveTextContent('No truck selected')
+  // A started shift has no readiness to state.
+  expect(within(panel).queryByRole('region', { name: 'Readiness' })).not.toBeInTheDocument()
 })
 
 test('counts the trucks a finished shift used', async () => {
@@ -254,11 +315,13 @@ test('counts the trucks a finished shift used', async () => {
   expect(within(panel).getByRole('heading', { name: 'Trucks (1)' })).toBeInTheDocument()
 })
 
-test('flags a planned shift without any truck in its panel', async () => {
+test('lists what a planned shift lacks in its panel', async () => {
   await renderShifts({ shifts: [NIGHT_SHIFT] }, '?shiftId=night')
 
   const panel = await screen.findByRole('dialog', { name: shiftName(NIGHT_SHIFT) })
-  expect(panel).toHaveTextContent('No truck selected')
+  expect(within(panel).getByRole('list', { name: 'Readiness' })).toHaveTextContent(
+    'No usable truck',
+  )
   expect(within(panel).getByRole('heading', { name: 'Trucks (0)' })).toBeInTheDocument()
 })
 

@@ -1,6 +1,5 @@
 import { inject } from '@adonisjs/core'
 import db from '@adonisjs/lucid/services/db'
-import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import { DateTime } from 'luxon'
 
 import {
@@ -13,13 +12,8 @@ import {
   throwPreparationIssues,
 } from '#discharges/shared/discharge_preparation_issues'
 import { lockPlannedDischarge } from '#discharges/shared/planned_discharge_guard'
-import {
-  findShiftPeriodIssues,
-  planShiftSequences,
-  planShiftWarehouseDoorSelection,
-  planShiftWeighingAreaSelection,
-} from '#discharges/shared/planned_shift_rules'
-import { planShiftTruckSelection } from '#discharges/shared/planned_shift_trucks'
+import { planPlannedShiftResources } from '#discharges/shared/planned_shift_resources'
+import { findShiftPeriodIssues, planShiftSequences } from '#discharges/shared/planned_shift_rules'
 import DischargePreparationRepository from '#discharges/shared/repositories/discharge_preparation_repository'
 import DischargeRepository from '#discharges/shared/repositories/discharge_repository'
 import { isEligibleShiftResponsible } from '#users/shared/shift_responsible_eligibility'
@@ -33,13 +27,6 @@ export type CorrectPlannedShiftInput = {
   truckIds: string[]
   warehouseDoorIds: string[]
   weighingAreaIds: string[]
-}
-
-/** The requested resources the shift does not hold yet: the only ones a correction locks. */
-function newlySelected(requested: string[], currentSelection: Array<{ resourceId: string }>) {
-  const selected = new Set(currentSelection.map((row) => row.resourceId.toLowerCase()))
-
-  return requested.filter((id) => !selected.has(id.toLowerCase()))
 }
 
 /** Whether a selection plan changes nothing, which a replay of the same correction plans. */
@@ -103,25 +90,19 @@ export default class CorrectPlannedShiftUseCase {
         }
       }
 
-      const now = DateTime.utc()
-      const trucks = await planShiftTruckSelection(
-        this.preparationRepository,
-        { dischargeId: discharge.id, shiftId: shift.id, truckIds: input.truckIds, now },
-        client,
-      )
-      const warehouseDoors = await this.planWarehouseDoors(
-        discharge.id,
-        shift.id,
-        input.warehouseDoorIds,
-        now,
-        client,
-      )
-      const weighingAreas = await this.planWeighingAreas(
-        shift.id,
-        input.weighingAreaIds,
-        now,
-        client,
-      )
+      const { trucks, warehouseDoors, weighingAreas, ...resources } =
+        await planPlannedShiftResources(
+          this.preparationRepository,
+          {
+            dischargeId: discharge.id,
+            shiftId: shift.id,
+            truckIds: input.truckIds,
+            warehouseDoorIds: input.warehouseDoorIds,
+            weighingAreaIds: input.weighingAreaIds,
+            now: DateTime.utc(),
+          },
+          client,
+        )
 
       if (
         issues.length > 0 ||
@@ -129,12 +110,7 @@ export default class CorrectPlannedShiftUseCase {
         warehouseDoors.kind === 'ISSUES' ||
         weighingAreas.kind === 'ISSUES'
       ) {
-        throwPreparationIssues([
-          ...issues,
-          ...[trucks, warehouseDoors, weighingAreas].flatMap((plan) =>
-            plan.kind === 'ISSUES' ? plan.issues : [],
-          ),
-        ])
+        throwPreparationIssues([...issues, ...resources.issues])
         return
       }
 
@@ -187,56 +163,5 @@ export default class CorrectPlannedShiftUseCase {
     }
 
     return read
-  }
-
-  private async planWarehouseDoors(
-    dischargeId: string,
-    shiftId: string,
-    warehouseDoorIds: string[],
-    now: DateTime,
-    client: TransactionClientContract,
-  ) {
-    const currentSelection = await this.preparationRepository.listCurrentShiftWarehouseDoors(
-      shiftId,
-      client,
-    )
-    const addedIds = newlySelected(warehouseDoorIds, currentSelection)
-    const addedDoors =
-      addedIds.length > 0
-        ? await this.preparationRepository.lockWarehouseDoors(addedIds, client)
-        : new Map()
-    // Read under the discharge's lock, so an assignment withdrawn meanwhile cannot let a door
-    // through: a newly selected door must be one a lot of this discharge holds now.
-    const assignments = await this.preparationRepository.listCurrentDoorAssignments(
-      dischargeId,
-      client,
-    )
-
-    return planShiftWarehouseDoorSelection(
-      warehouseDoorIds,
-      currentSelection,
-      addedDoors,
-      assignments.map((assignment) => assignment.warehouseDoorId),
-      now,
-    )
-  }
-
-  private async planWeighingAreas(
-    shiftId: string,
-    weighingAreaIds: string[],
-    now: DateTime,
-    client: TransactionClientContract,
-  ) {
-    const currentSelection = await this.preparationRepository.listCurrentShiftWeighingAreas(
-      shiftId,
-      client,
-    )
-    const addedIds = newlySelected(weighingAreaIds, currentSelection)
-    const addedAreas =
-      addedIds.length > 0
-        ? await this.preparationRepository.lockWeighingAreas(addedIds, client)
-        : new Map()
-
-    return planShiftWeighingAreaSelection(weighingAreaIds, currentSelection, addedAreas, now)
   }
 }
