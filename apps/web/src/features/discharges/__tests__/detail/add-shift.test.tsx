@@ -157,7 +157,7 @@ test('adds a shift to an active discharge without offering resources', async () 
   renderDischargeTab(ACTIVE.id, 'shifts')
   const sheet = await openAddShift()
 
-  expect(sheet).toHaveTextContent('Its resources are chosen once it is added.')
+  expect(sheet).toHaveTextContent('It takes no resources while the discharge is under way.')
   expect(within(sheet).queryByRole('group', { name: /Trucks/ })).not.toBeInTheDocument()
   expect(within(sheet).queryByText('Weighing areas')).not.toBeInTheDocument()
   expect(within(sheet).queryByText('Warehouse doors')).not.toBeInTheDocument()

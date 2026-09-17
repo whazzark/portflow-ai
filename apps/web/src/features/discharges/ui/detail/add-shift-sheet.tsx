@@ -71,7 +71,7 @@ export function AddShiftSheet({
           <SheetDescription>
             {planned
               ? `Plan a new shift for ${discharge.vesselName}: its period, its responsible, and the resources it will use.`
-              : `Plan a new shift for ${discharge.vesselName}: its period and its responsible. Its resources are chosen once it is added.`}
+              : `Plan a new shift for ${discharge.vesselName}: its period and its responsible. It takes no resources while the discharge is under way.`}
           </SheetDescription>
         </SheetHeader>
         {/* Mounted only while open, so every opening starts a new addition with its own identity. */}
