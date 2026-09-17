@@ -1,3 +1,4 @@
+import testUtils from '@adonisjs/core/services/test_utils'
 import { test } from '@japa/runner'
 
 import { UserFactory } from '#database/factories/user_factory'
@@ -14,10 +15,12 @@ import {
 } from './add_shift_scenario.ts'
 
 /**
- * Not wrapped in a global transaction: concurrent requests must each run their own, so the discharge's
- * lock is what orders them. Every test builds its own discharge, so none reads another's rows.
+ * Concurrent requests share the suite's global transaction, as the other concurrency specs do: the
+ * discharge's lock, and the identity replay, are what keep two submissions from both writing.
  */
-test.group('Planned shift addition under concurrency', () => {
+test.group('Planned shift addition under concurrency', (group) => {
+  group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
+
   test('adds only one of two overlapping shifts submitted at once', async ({ assert, client }) => {
     const prepared = await preparedWithShift()
     const [left, right] = [await preparer(), await preparer('OPERATIONS_ADMIN')]

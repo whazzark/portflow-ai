@@ -3,7 +3,10 @@ import { randomUUID } from 'node:crypto'
 import { test } from '@japa/runner'
 import { errors } from '@vinejs/vine'
 
-import { plannedShiftCorrectionValidator } from '#discharges/shifts/planned_shift_validator'
+import {
+  plannedShiftAdditionValidator,
+  plannedShiftCorrectionValidator,
+} from '#discharges/shifts/planned_shift_validator'
 
 function uuids(count: number) {
   return Array.from({ length: count }, () => randomUUID())
@@ -88,6 +91,67 @@ test.group('Planned shift correction validator', () => {
       assert.deepInclude(
         duplicates?.map((issue) => ({ field: issue.field, rule: issue.rule })),
         { field, rule: 'distinct' },
+      )
+    }
+  })
+})
+
+test.group('Planned shift addition validator', () => {
+  const addition = (overrides: Record<string, unknown> = {}) => ({
+    id: randomUUID(),
+    plannedStartAt: '2026-09-20T06:00:00+02:00',
+    plannedEndAt: '2026-09-20T14:00:00Z',
+    responsibleUserId: randomUUID(),
+    ...overrides,
+  })
+
+  test('takes an identity, a period, and a responsible, with selections that may be omitted', async ({
+    assert,
+  }) => {
+    const id = randomUUID().toUpperCase()
+    const payload = await plannedShiftAdditionValidator.validate(addition({ id }))
+
+    assert.equal(payload.id, id.toLowerCase())
+    assert.isUndefined(payload.truckIds)
+    assert.isUndefined(payload.warehouseDoorIds)
+    assert.isUndefined(payload.weighingAreaIds)
+  })
+
+  test('keeps the selections it is given', async ({ assert }) => {
+    const [truck, door, area] = uuids(3)
+    const payload = await plannedShiftAdditionValidator.validate(
+      addition({ truckIds: [truck], warehouseDoorIds: [door], weighingAreaIds: [area] }),
+    )
+
+    assert.deepEqual(payload.truckIds, [truck])
+    assert.deepEqual(payload.warehouseDoorIds, [door])
+    assert.deepEqual(payload.weighingAreaIds, [area])
+  })
+
+  test('refuses a missing identity, period bound, or responsible, and a repeated resource', async ({
+    assert,
+  }) => {
+    for (const field of ['id', 'plannedStartAt', 'plannedEndAt', 'responsibleUserId']) {
+      const issues = await refusal(() =>
+        plannedShiftAdditionValidator.validate(addition({ [field]: undefined })),
+      )
+      assert.deepInclude(
+        issues?.map((issue) => issue.field),
+        field,
+      )
+    }
+
+    assert.isNotNull(
+      await refusal(() => plannedShiftAdditionValidator.validate(addition({ id: 'not-a-uuid' }))),
+    )
+
+    const repeated = randomUUID()
+    for (const field of ['truckIds', 'warehouseDoorIds', 'weighingAreaIds']) {
+      assert.isNotNull(
+        await refusal(() =>
+          plannedShiftAdditionValidator.validate(addition({ [field]: [repeated, repeated] })),
+        ),
+        field,
       )
     }
   })

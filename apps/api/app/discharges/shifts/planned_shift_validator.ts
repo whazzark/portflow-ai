@@ -23,3 +23,18 @@ export const plannedShiftCorrectionValidator = vine.create({
   warehouseDoorIds: resourceIds(),
   weighingAreaIds: resourceIds(),
 })
+
+/**
+ * A shift added to a discharge: the identity its form generated, which makes a resubmission find
+ * the shift it already added, its period, its responsible, and the resources it starts with. The
+ * selections may be left out, as an active discharge's shift is added without any.
+ */
+export const plannedShiftAdditionValidator = vine.create({
+  id: vine.string().uuid().toLowerCase(),
+  plannedStartAt: instant(),
+  plannedEndAt: instant(),
+  responsibleUserId: vine.string().uuid(),
+  truckIds: truckIds().optional(),
+  warehouseDoorIds: resourceIds().optional(),
+  weighingAreaIds: resourceIds().optional(),
+})

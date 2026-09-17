@@ -135,6 +135,24 @@ export type WritePlannedShiftCorrectionCommand = {
   weighingAreas: ShiftResourceSelectionChange
 }
 
+/**
+ * A planned shift added to a discharge: its values, the sequence `planAddedShiftSequences` gave it
+ * and the existing sequences it moved, and the doors and weighing areas it starts with.
+ */
+export type InsertPlannedShiftCommand = {
+  dischargeId: string
+  shiftId: string
+  sequence: number
+  plannedStartAt: DateTime
+  plannedEndAt: DateTime
+  responsibleUserId: string
+  sequences: Array<{ shiftId: string; sequence: number }>
+  warehouseDoors: Pick<ShiftResourceSelectionChange, 'inserts'>
+  weighingAreas: Pick<ShiftResourceSelectionChange, 'inserts'>
+}
+
+export type InsertPlannedShiftResult = { kind: 'INSERTED' } | { kind: 'DUPLICATE_ID' }
+
 export type ShiftTruckSelectionWriteResult = { kind: 'WRITTEN' } | { kind: 'ALREADY_SELECTED' }
 
 export type TruckReservationWriteResult = { kind: 'WRITTEN' } | { kind: 'ALREADY_HELD' }
@@ -293,6 +311,24 @@ export default abstract class DischargePreparationRepository {
     command: WritePlannedShiftCorrectionCommand,
     client: TransactionClientContract,
   ): Promise<void>
+
+  /** Whether a shift of this discharge already has this identity; a foreign one is not found. */
+  abstract findShiftIdentity(
+    dischargeId: string,
+    shiftId: string,
+    client: TransactionClientContract,
+  ): Promise<boolean>
+
+  /**
+   * Inserts a planned shift with its door and weighing area selections, after moving the shifts
+   * whose sequence changes. The caller holds the discharge's lock and has checked its rules. An
+   * identity already used by another shift comes back as an outcome rather than an error, with
+   * nothing written and the caller's transaction usable.
+   */
+  abstract insertPlannedShift(
+    command: InsertPlannedShiftCommand,
+    client: TransactionClientContract,
+  ): Promise<InsertPlannedShiftResult>
 
   /**
    * Deletes a withdrawal: the current selections first, then the held reservations, so no
