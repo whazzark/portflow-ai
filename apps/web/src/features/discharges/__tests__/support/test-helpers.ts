@@ -243,6 +243,7 @@ export function detailFromCreation(body: CreateDischargeBody): DischargeDetailDt
         return {
           id: `created-shift-${index + 1}`,
           status: 'PLANNED',
+          readinessGaps: ['NO_USABLE_TRUCK', 'NO_USABLE_WAREHOUSE_DOOR', 'NO_USABLE_WEIGHING_AREA'],
           plannedStartAt: shift.plannedStartAt,
           plannedEndAt: shift.plannedEndAt,
           responsible,
@@ -697,6 +698,20 @@ type MockTruckPlanningOptions = {
   respondToWithdraw?: (truckIds: string[]) => DischargeWriteAnswer
   /** Decide the answer to a shift correction; by default it is applied and returned. */
   respondToShift?: (shiftId: string, body: ShiftCorrectionBody) => DischargeWriteAnswer
+  /** Decide the answer to a shift addition; by default it is applied and returned. */
+  respondToAddShift?: (body: AddShiftBody) => DischargeWriteAnswer
+  /** Hold every shift addition back this long, to observe a save in progress. */
+  addShiftDelayMs?: number
+}
+
+export type AddShiftBody = {
+  id: string
+  plannedStartAt: string
+  plannedEndAt: string
+  responsibleUserId: string
+  truckIds?: string[]
+  warehouseDoorIds?: string[]
+  weighingAreaIds?: string[]
 }
 
 export type ShiftCorrectionBody = {
@@ -721,6 +736,8 @@ export function mockTruckPlanning({
   respondToReserve,
   respondToWithdraw,
   respondToShift,
+  respondToAddShift,
+  addShiftDelayMs = 0,
 }: MockTruckPlanningOptions) {
   const state = {
     current: detail,
@@ -729,6 +746,7 @@ export function mockTruckPlanning({
     requests: [] as Array<
       | { kind: 'reserve' | 'withdraw'; truckIds: string[] }
       | { kind: 'shift'; shiftId: string; body: ShiftCorrectionBody }
+      | { kind: 'add-shift'; body: AddShiftBody }
     >,
   }
 
@@ -829,6 +847,77 @@ export function mockTruckPlanning({
         }))
       },
     ),
+    http.post(`${API_BASE_URL}/api/v1/discharges/:id/shifts`, async ({ request }) => {
+      const body = (await request.json()) as AddShiftBody
+      state.requests.push({ kind: 'add-shift', body })
+      if (addShiftDelayMs > 0) {
+        await delay(addShiftDelayMs)
+      }
+
+      return answer(respondToAddShift?.(body), () => {
+        const selection = { effectiveFrom: '2026-09-15T08:00:00.000Z', effectiveTo: null }
+        const doors = state.current.productLots
+          .flatMap((lot) => lot.doorAssignments)
+          .filter((assignment) => isCurrent(assignment))
+        const added = {
+          id: body.id,
+          status: 'PLANNED' as const,
+          // What the API would find missing on a shift it has just added, its responsible eligible.
+          readinessGaps: [
+            ...(body.truckIds?.length ? [] : ['NO_USABLE_TRUCK' as const]),
+            ...(body.warehouseDoorIds?.length ? [] : ['NO_USABLE_WAREHOUSE_DOOR' as const]),
+            ...(body.weighingAreaIds?.length ? [] : ['NO_USABLE_WEIGHING_AREA' as const]),
+          ],
+          plannedStartAt: body.plannedStartAt,
+          plannedEndAt: body.plannedEndAt,
+          responsible: ELIGIBLE_RESPONSIBLES.find((user) => user.id === body.responsibleUserId) ?? {
+            id: body.responsibleUserId,
+            firstName: 'Unknown',
+            lastName: 'Responsible',
+          },
+          trucks: (body.truckIds ?? []).map((truckId) => ({
+            id: `row-${body.id}-${truckId}`,
+            truckId,
+            registration: registrationOf(truckId),
+            truckStatus: 'AVAILABLE' as const,
+            ...selection,
+          })),
+          warehouseDoors: (body.warehouseDoorIds ?? []).flatMap((doorId) => {
+            const door = doors.find((assignment) => assignment.warehouseDoor.id === doorId)
+            return door
+              ? [
+                  {
+                    id: `row-${body.id}-${doorId}`,
+                    warehouseDoor: door.warehouseDoor,
+                    warehouse: door.warehouse,
+                    ...selection,
+                  },
+                ]
+              : []
+          }),
+          weighingAreas: (body.weighingAreaIds ?? []).flatMap((areaId) => {
+            const area = AVAILABLE_WEIGHING_AREAS.find((candidate) => candidate.id === areaId)
+            return area
+              ? [
+                  {
+                    id: `row-${body.id}-${areaId}`,
+                    weighingArea: { id: area.id, name: area.name, status: area.status },
+                    ...selection,
+                  },
+                ]
+              : []
+          }),
+        }
+
+        return {
+          ...state.current,
+          shifts: [...state.current.shifts, added].sort(
+            (left, right) =>
+              Date.parse(left.plannedStartAt ?? '') - Date.parse(right.plannedStartAt ?? ''),
+          ),
+        }
+      })
+    }),
     http.put(
       `${API_BASE_URL}/api/v1/discharges/:id/shifts/:shiftId`,
       async ({ params, request }) => {

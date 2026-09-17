@@ -1,5 +1,3 @@
-import { TriangleAlertIcon } from 'lucide-react'
-
 import { ResourceDetailBody, ResourceDetailField } from '@/components/resource/resource-details'
 import { Button } from '@/components/ui/button'
 import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -8,10 +6,11 @@ import {
   formatShiftPeriod,
   shiftResources,
 } from '@/features/discharges/discharge-detail-view'
-import { missingTrucks } from '@/features/discharges/truck-pool-selection'
+import { heldPoolEntries } from '@/features/discharges/truck-pool-selection'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { ShiftStatusBadge } from '@/features/discharges/ui/detail/discharge-status-badge'
 import { ReferenceLabel } from '@/features/discharges/ui/detail/reference-label'
+import { ShiftReadiness } from '@/features/discharges/ui/detail/shift-readiness'
 import { ShiftResourceGroup } from '@/features/discharges/ui/detail/shift-resource-group'
 import { formatDateTime } from '@/helpers/dates'
 
@@ -38,12 +37,6 @@ export function ShiftDetails({ canCorrect, discharge, onEdit, shift }: ShiftDeta
         <SheetTitle>Shift {formatShiftPeriod(shift)}</SheetTitle>
         <SheetDescription className="flex flex-wrap items-center gap-2">
           <ShiftStatusBadge status={shift.status} />
-          {missingTrucks(shift) && (
-            <span className="inline-flex items-center gap-1">
-              <TriangleAlertIcon aria-hidden="true" className="size-4 shrink-0 text-warning" />
-              No truck selected
-            </span>
-          )}
         </SheetDescription>
       </SheetHeader>
       <ResourceDetailBody>
@@ -62,6 +55,15 @@ export function ShiftDetails({ canCorrect, discharge, onEdit, shift }: ShiftDeta
             value={shift.plannedEndAt && formatDateTime(shift.plannedEndAt)}
           />
         </dl>
+        {shift.readinessGaps && (
+          <div className="mt-8">
+            <ShiftReadiness
+              canCorrect={canEdit}
+              gaps={shift.readinessGaps}
+              holdsTrucks={heldPoolEntries(discharge).length > 0}
+            />
+          </div>
+        )}
         <div className="mt-8 grid gap-6">
           <ShiftResourceGroup
             count={resources.weighingAreas.length}

@@ -27,6 +27,8 @@ type DischargeDetailTabsProps = {
   discharge: DischargeDetailDto
   /** Whether the viewer may correct this discharge now: a preparer, on a planned discharge. */
   canCorrect: boolean
+  /** Whether the viewer may add shifts now: a preparer, on a discharge that is not closed. */
+  canAddShifts: boolean
   tab: DischargeDetailTab
   onTabChange: (tab: DischargeDetailTab) => void
 }
@@ -38,6 +40,7 @@ type DischargeDetailTabsProps = {
 export function DischargeDetailTabs({
   discharge,
   canCorrect,
+  canAddShifts,
   tab,
   onTabChange,
 }: DischargeDetailTabsProps) {
@@ -91,7 +94,11 @@ export function DischargeDetailTabs({
         <DischargeTruckPoolCard canCorrect={canCorrect} discharge={discharge} />
       </TabsContent>
       <TabsContent value="shifts">
-        <DischargeShiftsCard canCorrect={canCorrect} discharge={discharge} />
+        <DischargeShiftsCard
+          canAddShifts={canAddShifts}
+          canCorrect={canCorrect}
+          discharge={discharge}
+        />
       </TabsContent>
     </Tabs>
   )

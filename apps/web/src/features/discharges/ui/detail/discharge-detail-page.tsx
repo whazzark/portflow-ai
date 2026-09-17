@@ -3,7 +3,7 @@ import { getRouteApi } from '@tanstack/react-router'
 
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { tabSearch } from '@/features/discharges/discharge-detail-sections'
-import { canPrepareDischarges } from '@/features/discharges/discharge-permissions'
+import { canAddShifts, canPrepareDischarges } from '@/features/discharges/discharge-permissions'
 import { dischargeQueries } from '@/features/discharges/queries/discharge-queries'
 import type { DischargeDetailTab } from '@/features/discharges/types'
 import { DischargeDetailHeader } from '@/features/discharges/ui/detail/discharge-detail-header'
@@ -17,7 +17,8 @@ export function DischargeDetailPage() {
   const navigate = dischargeRoute.useNavigate()
   const dischargeQuery = useQuery(dischargeQueries.detail(dischargeId))
   const discharge = dischargeQuery.data?.data
-  const canPrepare = canPrepareDischarges(useAuthenticatedUser())
+  const user = useAuthenticatedUser()
+  const canPrepare = canPrepareDischarges(user)
 
   // The loader has already resolved the detail, so this only guards the type.
   if (!discharge) {
@@ -36,6 +37,7 @@ export function DischargeDetailPage() {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <DischargeDetailHeader discharge={discharge} />
       <DischargeDetailTabs
+        canAddShifts={canAddShifts(user, discharge)}
         canCorrect={canCorrect}
         discharge={discharge}
         onTabChange={openTab}

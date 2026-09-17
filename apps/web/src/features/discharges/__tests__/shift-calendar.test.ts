@@ -4,6 +4,7 @@ import { buildShift } from '@/features/discharges/__tests__/support/fixtures'
 import {
   blockRowCount,
   defaultShiftId,
+  drawnPeriod,
   openShift,
   shiftCalendar,
 } from '@/features/discharges/shift-calendar'
@@ -182,6 +183,25 @@ describe('shiftCalendar', () => {
     ])
   })
 
+  test('reads each break’s duration once, in its tallest piece, before the shift it precedes', () => {
+    const calendar = shiftCalendar({
+      expectedStartAt: at(4, 6),
+      shifts: [
+        shift('day', at(4, 6), at(4, 14)),
+        shift('evening', at(4, 14, 30), at(4, 22)),
+        shift('morning', at(5, 6), at(5, 14)),
+      ],
+    })
+
+    expect(
+      calendar?.breaks.map((gap) => [gap.shiftId, gap.column, gap.duration, gap.labelled]),
+    ).toEqual([
+      ['evening', 0, '30 min', true],
+      ['morning', 0, '8 h', false],
+      ['morning', 1, '8 h', true],
+    ])
+  })
+
   test('shows the current time only while it falls within the calendar', () => {
     const discharge = { expectedStartAt: at(4, 6), shifts: [shift('day', at(4, 6), at(5, 12))] }
 
@@ -191,6 +211,58 @@ describe('shiftCalendar', () => {
     expect(shiftCalendar(discharge, new Date(at(3, 23)))?.now).toBeNull()
     expect(shiftCalendar(discharge, new Date(at(11, 0)))?.now).toBeNull()
     expect(shiftCalendar(discharge)?.now).toBeNull()
+  })
+})
+
+describe('drawing a period', () => {
+  const hourPct = (hours: number) => (hours / 24) * 100
+  const calendar = shiftCalendar({
+    expectedStartAt: null,
+    shifts: [shift('day', at(4, 7), at(4, 13))],
+  })
+
+  test('reads a point down a column as its clock, snapped to half an hour', () => {
+    expect(calendar?.instantAt(1, hourPct(14.2))).toBe(Date.parse(at(5, 14)))
+    expect(calendar?.instantAt(0, hourPct(14.3))).toBe(Date.parse(at(4, 14, 30)))
+  })
+
+  test('keeps a point dragged past the columns within them', () => {
+    expect(calendar?.instantAt(-1, hourPct(12))).toBe(Date.parse(at(4, 12)))
+    expect(calendar?.instantAt(0, 120)).toBe(Date.parse(at(5, 0)))
+    expect(calendar?.instantAt(99, hourPct(6))).toBe(Date.parse(at(10, 6)))
+  })
+
+  test('reads the clock on a day the clocks change', () => {
+    const changing = shiftCalendar({
+      expectedStartAt: null,
+      shifts: [shift('day', at(25, 7), at(25, 13))],
+    })
+
+    expect(changing?.instantAt(0, hourPct(14))).toBe(Date.parse(at(25, 14)))
+  })
+
+  test('orders the ends of a period drawn upwards, and across midnight', () => {
+    expect(drawnPeriod(Date.parse(at(4, 22)), Date.parse(at(4, 14)), null)).toEqual({
+      plannedStartAt: at(4, 14),
+      plannedEndAt: at(4, 22),
+    })
+    expect(drawnPeriod(Date.parse(at(4, 22)), Date.parse(at(5, 6)), null)).toEqual({
+      plannedStartAt: at(4, 22),
+      plannedEndAt: at(5, 6),
+    })
+  })
+
+  test('gives a press the last shift’s duration, or only a start without one', () => {
+    const eightHours = 8 * 3_600_000
+
+    expect(drawnPeriod(Date.parse(at(4, 14)), Date.parse(at(4, 14)), eightHours)).toEqual({
+      plannedStartAt: at(4, 14),
+      plannedEndAt: at(4, 22),
+    })
+    expect(drawnPeriod(Date.parse(at(4, 14)), Date.parse(at(4, 14)), null)).toEqual({
+      plannedStartAt: at(4, 14),
+      plannedEndAt: null,
+    })
   })
 })
 

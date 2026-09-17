@@ -1,4 +1,5 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { focusManager } from '@tanstack/react-query'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
 import { formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
@@ -140,6 +141,57 @@ test('shows every refusal of the API on the value it concerns, keeping what was 
   expect(within(sheet).getByLabelText(/^Planned start/)).toHaveValue(
     toDateTimeLocalValue(FIRST.plannedEndAt),
   )
+})
+
+test('retries an addition whose response was lost, once the refreshed detail holds it', async () => {
+  let lost = true
+  const state = mockTruckPlanning({
+    detail: PLANNED,
+    respondToAddShift: (body) => {
+      if (lost) {
+        // The API added the shift, but its answer never came back.
+        lost = false
+        state.current = {
+          ...state.current,
+          shifts: [
+            ...state.current.shifts,
+            buildShift({
+              id: body.id,
+              plannedStartAt: body.plannedStartAt,
+              plannedEndAt: body.plannedEndAt,
+            }),
+          ],
+        }
+
+        return 'network-error'
+      }
+
+      // The replay: the API finds the shift it already added.
+      return { status: 200, body: { data: state.current } }
+    },
+  })
+  renderDischargeTab(PLANNED.id, 'shifts')
+  const sheet = await openAddShift()
+
+  await chooseOption(sheet, 'Responsible', 'Thomas Bernard')
+  submit(sheet)
+  expect(await screen.findByText('Unable to add the shift')).toBeInTheDocument()
+
+  const detailRequests = state.detailRequests
+  act(() => {
+    focusManager.setFocused(false)
+    focusManager.setFocused(true)
+  })
+  await waitFor(() => expect(state.detailRequests).toBeGreaterThan(detailRequests))
+  act(() => focusManager.setFocused(undefined))
+
+  submit(sheet)
+  expect(await screen.findByText('Shift added')).toBeInTheDocument()
+  const ids = state.requests.flatMap((request) =>
+    request.kind === 'add-shift' ? [request.body.id] : [],
+  )
+  expect(ids).toHaveLength(2)
+  expect(ids[1]).toBe(ids[0])
 })
 
 test('keeps the addition and its identity when it could not be saved', async () => {

@@ -238,6 +238,8 @@ type DetailShift = DischargeDetailDto['shifts'][number]
 
 export function buildShift(overrides: Partial<DetailShift> = {}): DetailShift {
   return {
+    // A started shift has no readiness; a planned one lacks nothing unless a test says what.
+    readinessGaps: (overrides.status ?? 'PLANNED') === 'PLANNED' ? [] : null,
     id: 'shift-1',
     status: 'PLANNED',
     plannedStartAt: '2026-10-04T06:00:00.000Z',

@@ -7,6 +7,7 @@ import { tuyauQuery } from '@/libraries/tuyau/client'
 
 export const STALE_DETAIL_CODES = new Set([
   'E_DISCHARGE_NOT_PLANNED',
+  'E_DISCHARGE_CLOSED',
   'E_DISCHARGE_NOT_FOUND',
   'E_PRODUCT_LOT_NOT_FOUND',
   'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS',
@@ -150,6 +151,23 @@ export function useDischargeMutations() {
     }),
   )
 
+  const addShift = useMutation(
+    tuyauQuery.discharges.shifts.store.mutationOptions({
+      onSuccess: (response) => applyDetail(response),
+      onError: async (error, variables) => {
+        const dischargeId = String(variables.params.dischargeId)
+        await refreshAfterStaleRefusal(error, dischargeId)
+        // Another user added or started a shift in the way, or a refused resource changed
+        // meanwhile: the calendar on screen is stale.
+        if (parseApiError(error).code === 'E_VALIDATION_ERROR') {
+          await queryClient.invalidateQueries({
+            queryKey: dischargeQueries.detail(dischargeId).queryKey,
+          })
+        }
+      },
+    }),
+  )
+
   return {
     create,
     correctIdentity,
@@ -161,5 +179,6 @@ export function useDischargeMutations() {
     reserveTrucks,
     withdrawTrucks,
     correctShift,
+    addShift,
   }
 }

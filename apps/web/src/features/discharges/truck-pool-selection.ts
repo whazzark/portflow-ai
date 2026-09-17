@@ -20,11 +20,6 @@ export function currentTruckIds(shift: Shift) {
   )
 }
 
-/** The gap the preparation summary counts: a planned shift nobody has given a truck yet. */
-export function missingTrucks(shift: Shift) {
-  return shift.status === 'PLANNED' && currentTruckIds(shift).size === 0
-}
-
 /**
  * The planned shifts that currently select one of these trucks, in chronological order: the shifts
  * a withdrawal of those trucks also changes.

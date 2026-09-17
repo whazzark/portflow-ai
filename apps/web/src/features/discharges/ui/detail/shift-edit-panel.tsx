@@ -1,21 +1,14 @@
 import { revalidateLogic } from '@tanstack/react-form'
 import { ArrowLeftIcon } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type Ref, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
 import {
-  lotHoldingDoor,
-  lotLabel,
-  shiftDoorOptions,
-} from '@/features/discharges/discharge-planning-view'
-import {
-  formatLocalShiftDuration,
   SHIFT_CORRECTION_FIELDS,
-  type ShiftCorrectionFormValues,
   shiftCorrectionFieldOf,
   shiftCorrectionFieldsSchema,
   shiftCorrectionFormValues,
@@ -24,20 +17,16 @@ import {
 } from '@/features/discharges/discharge-preparation-schema'
 import { useDischargeMutations } from '@/features/discharges/mutations/use-discharge-mutations'
 import { listRefusals } from '@/features/discharges/truck-pool-refusals'
-import { heldPoolEntries, offeredShiftTrucks } from '@/features/discharges/truck-pool-selection'
 import type { DischargeDetailDto } from '@/features/discharges/types'
-import { DischargeTabLink } from '@/features/discharges/ui/detail/discharge-tab-link'
 import { STARTED_REFUSAL_MESSAGE } from '@/features/discharges/ui/detail/edit-discharge-identity-sheet'
-import { ReferenceLabel } from '@/features/discharges/ui/detail/reference-label'
 import {
-  type ChecklistRow,
-  ShiftResourceChecklist,
-} from '@/features/discharges/ui/detail/shift-resource-checklist'
-import { useResourceRows } from '@/features/discharges/ui/detail/use-resource-rows'
-import {
-  useResponsibleOptions,
-  useWeighingAreaOptions,
-} from '@/features/discharges/ui/preparation/preparation-options'
+  NO_SHIFT_RESOURCE_REFUSALS,
+  SHIFT_RESOURCE_REFUSAL_TITLES,
+  ShiftPeriodFields,
+  ShiftResourceFields,
+  type ShiftResourceList,
+  type ShiftResourceRefusals,
+} from '@/features/discharges/ui/detail/shift-resource-fields'
 import { WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
@@ -53,21 +42,6 @@ type ShiftEditPanelProps = {
 }
 
 export const SHIFT_GONE_MESSAGE = 'This shift is no longer planned'
-
-type ResourceList = 'truckIds' | 'warehouseDoorIds' | 'weighingAreaIds'
-type Refusals = Record<ResourceList, ReadonlyMap<string, string>>
-
-const NO_REFUSALS: Refusals = {
-  truckIds: new Map(),
-  warehouseDoorIds: new Map(),
-  weighingAreaIds: new Map(),
-}
-
-const REFUSAL_TITLES: Record<ResourceList, string> = {
-  truckIds: 'Some trucks can no longer be selected',
-  warehouseDoorIds: 'Some warehouse doors can no longer be selected',
-  weighingAreaIds: 'Some weighing areas can no longer be selected',
-}
 
 /** The shift panel's correction of a planned shift, left through its header as every edit panel is. */
 export function ShiftEditPanel({ discharge, shift, onBack }: ShiftEditPanelProps) {
@@ -101,39 +75,8 @@ function ShiftEditForm({
   onDone: () => void
 }) {
   const { correctShift } = useDischargeMutations()
-  const responsibles = useResponsibleOptions()
-  const areas = useWeighingAreaOptions()
-  const [refusals, setRefusals] = useState<Refusals>(NO_REFUSALS)
+  const [refusals, setRefusals] = useState<ShiftResourceRefusals>(NO_SHIFT_RESOURCE_REFUSALS)
   const refusalAlert = useRef<HTMLDivElement>(null)
-
-  // Fixed when the edit opens, so a refreshed detail never moves a row under the user's pointer.
-  const [trucks] = useState(() => offeredShiftTrucks(discharge, shift.id))
-  const [currentDoors] = useState<ChecklistRow[]>(() =>
-    shift.warehouseDoors
-      .filter((membership) => membership.effectiveTo === null)
-      .map((membership) => ({
-        id: membership.warehouseDoor.id,
-        name: `${membership.warehouse.name} › ${membership.warehouseDoor.name}`,
-        label: doorLabel(membership.warehouse, membership.warehouseDoor),
-        description: doorHolderDescription(discharge, membership.warehouseDoor.id),
-        canCheck: false,
-      })),
-  )
-  const [currentAreas] = useState<ChecklistRow[]>(() =>
-    shift.weighingAreas
-      .filter((membership) => membership.effectiveTo === null)
-      .map((membership) => ({
-        id: membership.weighingArea.id,
-        name: membership.weighingArea.name,
-        label: (
-          <ReferenceLabel
-            name={membership.weighingArea.name}
-            status={membership.weighingArea.status}
-          />
-        ),
-        canCheck: false,
-      })),
-  )
 
   const form = useAppForm({
     defaultValues: shiftCorrectionFormValues(shift),
@@ -188,166 +131,37 @@ function ShiftEditForm({
     },
   })
 
-  const refusedLists = (Object.keys(REFUSAL_TITLES) as ResourceList[]).filter(
-    (list) => refusals[list].size > 0,
-  )
-
   useEffect(() => {
     if (Object.values(refusals).some((reasons) => reasons.size > 0)) {
       refusalAlert.current?.focus()
     }
   }, [refusals])
 
-  // A refused truck the refreshed pool no longer holds stays listed so its reason is readable, but
-  // like a suspended one it may only be let go of.
-  const heldNow = new Set(heldPoolEntries(discharge).map((entry) => entry.truckId))
-  const truckRows: ChecklistRow[] = trucks.map((truck) => ({
-    id: truck.truckId,
-    name: truck.registration,
-    label: <ReferenceLabel name={truck.registration} status={truck.truckStatus} />,
-    canCheck:
-      truck.canCheck && !(refusals.truckIds.has(truck.truckId) && !heldNow.has(truck.truckId)),
-  }))
-
-  const responsibleOptions = [
-    ...(responsibles.options.some((option) => option.id === shift.responsible.id)
-      ? []
-      : [shift.responsible]),
-    ...responsibles.options,
-  ]
-
   return (
     <form.AppForm>
       <form.Form className="flex flex-1 flex-col gap-6 px-4 pb-4" noValidate={true}>
-        {refusedLists.length > 0 && (
-          <Alert ref={refusalAlert} tabIndex={-1} variant="destructive">
-            <AlertDescription>
-              {refusedLists.map((list) => (
-                <p key={list}>{REFUSAL_TITLES[list]}</p>
-              ))}
-            </AlertDescription>
-          </Alert>
-        )}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <form.AppField name="responsibleUserId">
-              {(field) => (
-                <field.ComboboxField
-                  emptyMessage="No responsible matches"
-                  label="Responsible"
-                  loading={responsibles.loading}
-                  onRetry={responsibles.onRetry}
-                  options={responsibleOptions.map((responsible) => ({
-                    label: `${responsible.firstName} ${responsible.lastName}`,
-                    value: responsible.id,
-                  }))}
-                  placeholder="Search a responsible"
-                  required={true}
-                />
-              )}
-            </form.AppField>
-          </div>
-          <form.Subscribe
-            selector={(state) =>
-              formatLocalShiftDuration(state.values.plannedStartAt, state.values.plannedEndAt)
-            }
-          >
-            {(length) => (
-              <p className="text-muted-foreground text-sm tabular-nums sm:col-span-2">
-                Duration {length}
-              </p>
-            )}
-          </form.Subscribe>
-          <form.AppField name="plannedStartAt">
-            {(field) => <field.DateTimeField label="Planned start" required={true} />}
-          </form.AppField>
-          <form.AppField name="plannedEndAt">
-            {(field) => <field.DateTimeField label="Planned end" required={true} />}
-          </form.AppField>
-        </div>
-        <form.AppField name="weighingAreaIds">
-          {(field) => (
-            <ResourceField
-              current={currentAreas}
-              empty={<p className="text-muted-foreground text-sm">No weighing area available</p>}
-              label="Weighing areas"
-              loading={areas.loading}
-              lockedNote="Archived weighing areas cannot be newly selected"
-              offered={areas.options.map((area) => ({
-                id: area.id,
-                name: area.name,
-                label: <ReferenceLabel name={area.name} status={area.status} />,
-                canCheck: true,
-              }))}
-              onChange={field.handleChange}
-              onRetry={areas.onRetry}
-              reasons={refusals.weighingAreaIds}
-              selected={field.state.value}
-            />
-          )}
-        </form.AppField>
-        <form.AppField name="warehouseDoorIds">
-          {(field) => (
-            <ResourceField
-              current={currentDoors}
-              empty={
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">
-                    No door is assigned to a product lot
-                  </span>
-                  {/* A shift only uses doors its discharge's lots hold, so they are assigned there. */}
-                  <DischargeTabLink
-                    className={buttonVariants({ size: 'sm', variant: 'outline' })}
-                    onClick={onDone}
-                    tab="product-lots"
-                  >
-                    Go to product lots
-                  </DischargeTabLink>
-                </div>
-              }
-              label="Warehouse doors"
-              lockedNote="Archived doors and doors no lot holds cannot be newly selected"
-              offered={shiftDoorOptions(discharge)
-                .filter((option) => option.canCheck)
-                .map((option) => ({
-                  id: option.id,
-                  name: option.name,
-                  label: doorLabel(option.warehouse, option.warehouseDoor),
-                  description: lotLabel(option.lot),
-                  canCheck: true,
-                }))}
-              onChange={field.handleChange}
-              reasons={refusals.warehouseDoorIds}
-              selected={field.state.value}
-            />
-          )}
-        </form.AppField>
-        <form.AppField name="truckIds">
-          {(field) => (
-            <ShiftResourceChecklist
-              empty={
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">No trucks reserved</span>
-                  {/* Back to the details first, so the panel lets go of focus before its section
-                      is left. */}
-                  <DischargeTabLink
-                    className={buttonVariants({ size: 'sm', variant: 'outline' })}
-                    onClick={onDone}
-                    tab="truck-pool"
-                  >
-                    Go to truck pool
-                  </DischargeTabLink>
-                </div>
-              }
-              label="Trucks"
-              lockedNote="Suspended trucks cannot be newly selected"
-              onChange={field.handleChange}
-              reasons={refusals.truckIds}
-              rows={truckRows}
-              selected={field.state.value}
-            />
-          )}
-        </form.AppField>
+        <ShiftResourceRefusalAlert ref={refusalAlert} refusals={refusals} />
+        <ShiftPeriodFields
+          fields={{
+            plannedStartAt: 'plannedStartAt',
+            plannedEndAt: 'plannedEndAt',
+            responsibleUserId: 'responsibleUserId',
+          }}
+          form={form}
+          kept={shift.responsible}
+        />
+        <ShiftResourceFields
+          discharge={discharge}
+          fields={{
+            truckIds: 'truckIds',
+            warehouseDoorIds: 'warehouseDoorIds',
+            weighingAreaIds: 'weighingAreaIds',
+          }}
+          form={form}
+          onLeave={onDone}
+          refusals={refusals}
+          shift={shift}
+        />
         <SheetFooter className="sticky bottom-0 mt-auto flex-row items-center justify-end gap-3 bg-popover px-0 py-3">
           <form.FormError className="mr-auto" />
           <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS.update}>Save</form.SubmitButton>
@@ -357,44 +171,28 @@ function ShiftEditForm({
   )
 }
 
-function doorLabel(
-  warehouse: { name: string; status: 'AVAILABLE' | 'ARCHIVED' },
-  door: { name: string; status: 'AVAILABLE' | 'ARCHIVED' },
-) {
-  return (
-    <span className="inline-flex flex-wrap items-center gap-1">
-      <ReferenceLabel name={warehouse.name} status={warehouse.status} />
-      {' › '}
-      <ReferenceLabel name={door.name} status={door.status} />
-    </span>
-  )
-}
-
-/** The lot holding a door the shift selected, or that none does any more. */
-function doorHolderDescription(discharge: DischargeDetailDto, doorId: string) {
-  const holder = lotHoldingDoor(discharge, doorId)
-
-  return holder ? lotLabel(holder) : 'No lot holds this door'
-}
-
-function ResourceField({
-  current,
-  offered,
-  selected,
-  ...props
+/** Which resource lists the API refused, above the form; it takes focus so the refusal is read. */
+export function ShiftResourceRefusalAlert({
+  ref,
+  refusals,
 }: {
-  current: ChecklistRow[]
-  offered: ChecklistRow[]
-  selected: ShiftCorrectionFormValues['warehouseDoorIds']
-  empty: ReactNode
-  label: string
-  lockedNote: string
-  loading?: boolean
-  onRetry?: () => void
-  onChange: (ids: string[]) => void
-  reasons: ReadonlyMap<string, string>
+  ref: Ref<HTMLDivElement>
+  refusals: ShiftResourceRefusals
 }) {
-  const rows = useResourceRows(current, offered, selected)
+  const refused = (Object.keys(SHIFT_RESOURCE_REFUSAL_TITLES) as ShiftResourceList[]).filter(
+    (list) => refusals[list].size > 0,
+  )
+  if (refused.length === 0) {
+    return null
+  }
 
-  return <ShiftResourceChecklist {...props} rows={rows} selected={selected} />
+  return (
+    <Alert ref={ref} tabIndex={-1} variant="destructive">
+      <AlertDescription>
+        {refused.map((list) => (
+          <p key={list}>{SHIFT_RESOURCE_REFUSAL_TITLES[list]}</p>
+        ))}
+      </AlertDescription>
+    </Alert>
+  )
 }

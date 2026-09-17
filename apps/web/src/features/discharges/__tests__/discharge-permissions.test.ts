@@ -6,7 +6,7 @@ import {
   ACTIVE_OPERATIONS_LEAD,
   ACTIVE_ORGANIZATION_ADMIN,
 } from '@/features/discharges/__tests__/support/fixtures'
-import { canPrepareDischarges } from '@/features/discharges/discharge-permissions'
+import { canAddShifts, canPrepareDischarges } from '@/features/discharges/discharge-permissions'
 
 test.each([ACTIVE_OPERATIONS_LEAD, ACTIVE_OPERATIONS_ADMIN, ACTIVE_ORGANIZATION_ADMIN])(
   'lets an active $role prepare discharges',
@@ -24,4 +24,17 @@ test('keeps a user whose access is not active from preparing discharges', () => 
     false,
   )
   expect(canPrepareDischarges(null)).toBe(false)
+})
+
+test.each(['PLANNED', 'ACTIVE'] as const)(
+  'lets a preparer add shifts to a %s discharge',
+  (status) => {
+    expect(canAddShifts(ACTIVE_OPERATIONS_LEAD, { status })).toBe(true)
+  },
+)
+
+test('offers no shift addition on a closed discharge, nor to an observer', () => {
+  expect(canAddShifts(ACTIVE_OPERATIONS_LEAD, { status: 'CLOSED' })).toBe(false)
+  expect(canAddShifts(ACTIVE_OBSERVER, { status: 'PLANNED' })).toBe(false)
+  expect(canAddShifts(null, { status: 'ACTIVE' })).toBe(false)
 })
