@@ -535,6 +535,10 @@ function buildFixture(scenario: Scenario, ordinal: number) {
         plannedStartAt,
         plannedEndAt,
         responsibleUserId: responsibleUsers[index % responsibleUsers.length],
+        // A seeded shift that has started did so on time, and nobody is recorded as starting it,
+        // as the migration that introduced the start leaves it for existing rows.
+        actualStartAt: status === 'PLANNED' ? null : plannedStartAt,
+        startedByUserId: null,
       },
     }
   })
@@ -550,6 +554,9 @@ function buildFixture(scenario: Scenario, ordinal: number) {
         vesselComment: scenario.vesselComment,
         dockId: scenario.dockId,
         expectedStartAt: siteTime(firstShift.day, firstShift.start),
+        startedAt:
+          scenario.status === 'PLANNED' ? null : siteTime(firstShift.day, firstShift.start),
+        startedByUserId: null,
       },
     },
     productLots,

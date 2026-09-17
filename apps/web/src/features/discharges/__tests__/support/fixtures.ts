@@ -5,6 +5,7 @@ import type {
   DischargeDetailDto,
   DischargeDto,
   PlanningDoorDto,
+  StartProblemDto,
   TruckCandidateDto,
 } from '@/features/discharges/types'
 import { DOCKS } from '@/features/docks/__tests__/support/fixtures'
@@ -174,6 +175,10 @@ export function buildDischargeDetail(
     expectedStartAt: listed.expectedStartAt ?? '2026-10-01T06:00:00.000Z',
     expectedTonnage: '0.000',
     dock: { ...listed.dock, status: 'AVAILABLE' },
+    // A started fixture keeps its expected start, with nobody recorded as starting it.
+    startedAt:
+      listed.status === 'PLANNED' ? null : (listed.expectedStartAt ?? '2026-10-01T06:00:00.000Z'),
+    startedBy: null,
     productLots: [],
     shifts: [],
     truckPool: [],
@@ -245,6 +250,8 @@ export function buildShift(overrides: Partial<DetailShift> = {}): DetailShift {
     plannedStartAt: '2026-10-04T06:00:00.000Z',
     plannedEndAt: '2026-10-04T14:00:00.000Z',
     responsible: { id: 'lead-1', firstName: 'Léa', lastName: 'Martin' },
+    actualStartAt: null,
+    startedBy: null,
     trucks: [],
     warehouseDoors: [],
     weighingAreas: [],
@@ -393,3 +400,83 @@ export const PLANNING_WEIGHING_AREAS = [
   { id: 'area-north', name: 'Pont Nord' },
   { id: 'area-south', name: 'Pont Sud' },
 ]
+
+export function buildStartProblem(overrides: Partial<StartProblemDto> = {}): StartProblemDto {
+  return {
+    family: 'INCOMPLETE_PREPARATION',
+    code: 'LOT_WITHOUT_WAREHOUSE_DOOR',
+    subject: { type: 'PRODUCT_LOT', id: 'lot-detail-1' },
+    ...overrides,
+  }
+}
+
+/**
+ * A planned discharge that can start: each lot has a warehouse door of its own, the pool holds one
+ * truck, and the earliest shift uses that truck, a door, and a weighing area. A later shift has no
+ * resource yet.
+ */
+export function startableDetail(): DischargeDetailDto {
+  const doorPeriod = (lotDoor: 'a1' | 'b1') =>
+    buildDoorPeriod({
+      id: `door-period-${lotDoor}`,
+      warehouseDoor: {
+        id: `door-${lotDoor}`,
+        name: `Door ${lotDoor.toUpperCase()}`,
+        status: 'AVAILABLE',
+      },
+      warehouse:
+        lotDoor === 'a1'
+          ? { id: 'warehouse-a', name: 'Magasin A', status: 'AVAILABLE' }
+          : { id: 'warehouse-b', name: 'Magasin B', status: 'AVAILABLE' },
+    })
+
+  return buildDischargeDetail(listedDischarge('MV Atlantic Dawn', 'PLANNED'), {
+    productLots: [
+      buildLot({ id: 'lot-wheat', doorAssignments: [doorPeriod('a1')] }),
+      buildLot({
+        id: 'lot-barley',
+        productName: 'Orge',
+        customer: { id: 'customer-soufflet', name: 'Soufflet Négoce', status: 'AVAILABLE' },
+        doorAssignments: [doorPeriod('b1')],
+      }),
+    ],
+    truckPool: [buildPoolEntry({ id: 'pool-a', truckId: 'truck-a', registration: 'AA-100-AA' })],
+    shifts: [
+      buildShift({
+        id: 'shift-first',
+        trucks: [
+          {
+            id: 'shift-truck-a',
+            truckId: 'truck-a',
+            registration: 'AA-100-AA',
+            truckStatus: 'AVAILABLE',
+            effectiveFrom: '2026-09-07T08:00:00.000Z',
+            effectiveTo: null,
+          },
+        ],
+        warehouseDoors: [
+          {
+            id: 'shift-door-a1',
+            effectiveFrom: '2026-09-07T08:00:00.000Z',
+            effectiveTo: null,
+            warehouseDoor: { id: 'door-a1', name: 'Door A1', status: 'AVAILABLE' },
+            warehouse: { id: 'warehouse-a', name: 'Magasin A', status: 'AVAILABLE' },
+          },
+        ],
+        weighingAreas: [
+          {
+            id: 'shift-area-north',
+            effectiveFrom: '2026-09-07T08:00:00.000Z',
+            effectiveTo: null,
+            weighingArea: { id: 'area-north', name: 'Pont-bascule Nord', status: 'AVAILABLE' },
+          },
+        ],
+      }),
+      buildShift({
+        id: 'shift-later',
+        plannedStartAt: '2026-10-04T14:00:00.000Z',
+        plannedEndAt: '2026-10-04T22:00:00.000Z',
+      }),
+    ],
+  })
+}

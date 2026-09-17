@@ -23,6 +23,10 @@ export default class Shift extends ShiftSchema {
   @belongsTo(() => User, { foreignKey: 'responsibleUserId' })
   declare responsible: BelongsTo<typeof User>
 
+  /** The user who started the shift, who need not be its responsible. */
+  @belongsTo(() => User, { foreignKey: 'startedByUserId' })
+  declare startedBy: BelongsTo<typeof User>
+
   @hasMany(() => ShiftTruck)
   declare truckMemberships: HasMany<typeof ShiftTruck>
 

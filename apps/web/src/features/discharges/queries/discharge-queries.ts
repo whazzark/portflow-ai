@@ -10,6 +10,13 @@ export const dischargeQueries = {
   // and a door or weighing area may be archived in the meantime.
   planningOptions: (id: string) =>
     tuyauQuery.discharges.planningOptions.queryOptions({ params: { id } }, { staleTime: 0 }),
+  // Refetched on every opening of the start confirmation, and never retried: the answer only holds
+  // for the moment it was read, and a failure is shown with its own retry.
+  startCheck: (id: string) =>
+    tuyauQuery.discharges.startCheck.queryOptions(
+      { params: { id } },
+      { staleTime: 0, gcTime: 0, retry: false },
+    ),
   // Refetched on every visit to the creation page: an operations lead's access may have changed.
   eligibleResponsibles: () =>
     tuyauQuery.users.eligibleShiftResponsibles.queryOptions({}, { staleTime: 0 }),

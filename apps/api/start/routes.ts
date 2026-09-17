@@ -102,6 +102,8 @@ router
             router
               .get('/:id/planning-options', [controllers.Discharges, 'planningOptions'])
               .as('planning_options')
+            router.get('/:id/start-check', [controllers.DischargeStart, 'check']).as('start_check')
+            router.post('/:id/start', [controllers.DischargeStart, 'store']).as('start')
             router
               .group(() => {
                 router.post('/', [controllers.DischargeProductLots, 'store']).as('store')

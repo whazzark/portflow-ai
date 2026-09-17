@@ -43,6 +43,7 @@ export default class LucidDischargeRepository extends DischargeRepository {
     const discharge = await Discharge.query()
       .where('id', id)
       .preload('dock')
+      .preload('startedBy')
       .preload('productLots', (productLots) =>
         productLots
           // Read by customer, the way a user scans a discharge's lots. The customer's name lives
@@ -73,6 +74,7 @@ export default class LucidDischargeRepository extends DischargeRepository {
           .orderBy('planned_start_at', 'asc')
           .orderBy('id', 'asc')
           .preload('responsible')
+          .preload('startedBy')
           .preload('truckMemberships', (memberships) =>
             memberships.orderBy('effective_from', 'asc').orderBy('id', 'asc').preload('truck'),
           )

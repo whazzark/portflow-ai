@@ -39,4 +39,14 @@ export default class DischargePolicy extends BasePolicy {
   update(user: User): AuthorizerResponse {
     return isEligibleShiftResponsible(user)
   }
+
+  /**
+   * Confirming a discharge's start. The same roles prepare and start a discharge today, but the start
+   * is its own ability so that a later slice can narrow who may put a discharge into operation
+   * without touching who may prepare one. Whether the discharge is still planned, and whether it can
+   * start, are the use case's decisions, read under its locks.
+   */
+  start(user: User): AuthorizerResponse {
+    return isEligibleShiftResponsible(user)
+  }
 }

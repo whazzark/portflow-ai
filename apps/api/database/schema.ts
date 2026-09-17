@@ -62,7 +62,7 @@ export class DischargeTruckAssignmentSchema extends BaseModel {
 }
 
 export class DischargeSchema extends BaseModel {
-  static $columns = ['createdAt', 'dockId', 'expectedStartAt', 'id', 'status', 'updatedAt', 'vesselComment', 'vesselImo', 'vesselName'] as const
+  static $columns = ['createdAt', 'dockId', 'expectedStartAt', 'id', 'startedAt', 'startedByUserId', 'status', 'updatedAt', 'vesselComment', 'vesselImo', 'vesselName'] as const
   $columns = DischargeSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -72,6 +72,10 @@ export class DischargeSchema extends BaseModel {
   declare expectedStartAt: DateTime
   @column({ isPrimary: true })
   declare id: string
+  @column.dateTime()
+  declare startedAt: DateTime | null
+  @column()
+  declare startedByUserId: string | null
   @column()
   declare status: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
@@ -211,8 +215,10 @@ export class ShiftWeighingAreaSchema extends BaseModel {
 }
 
 export class ShiftSchema extends BaseModel {
-  static $columns = ['createdAt', 'dischargeId', 'id', 'plannedEndAt', 'plannedStartAt', 'responsibleUserId', 'sequence', 'status', 'updatedAt'] as const
+  static $columns = ['actualStartAt', 'createdAt', 'dischargeId', 'id', 'plannedEndAt', 'plannedStartAt', 'responsibleUserId', 'sequence', 'startedByUserId', 'status', 'updatedAt'] as const
   $columns = ShiftSchema.$columns
+  @column.dateTime()
+  declare actualStartAt: DateTime | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
@@ -227,6 +233,8 @@ export class ShiftSchema extends BaseModel {
   declare responsibleUserId: string
   @column()
   declare sequence: number
+  @column()
+  declare startedByUserId: string | null
   @column()
   declare status: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })

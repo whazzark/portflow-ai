@@ -17,8 +17,10 @@ export const ShiftFactory = factory
   })
   .state('active', (shift) => {
     shift.status = 'ACTIVE'
+    shift.actualStartAt ??= shift.plannedStartAt
   })
   .state('completed', (shift) => {
     shift.status = 'COMPLETED'
+    shift.actualStartAt ??= shift.plannedStartAt
   })
   .build()

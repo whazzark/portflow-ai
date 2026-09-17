@@ -4,9 +4,11 @@ import CustomerRepository from '#customers/shared/repositories/customer_reposito
 import LucidCustomerRepository from '#customers/shared/repositories/lucid_customer_repository'
 import DischargePreparationRepository from '#discharges/shared/repositories/discharge_preparation_repository'
 import DischargeRepository from '#discharges/shared/repositories/discharge_repository'
+import DischargeStartRepository from '#discharges/shared/repositories/discharge_start_repository'
 import DischargeUsageRepository from '#discharges/shared/repositories/discharge_usage_repository'
 import LucidDischargePreparationRepository from '#discharges/shared/repositories/lucid_discharge_preparation_repository'
 import LucidDischargeRepository from '#discharges/shared/repositories/lucid_discharge_repository'
+import LucidDischargeStartRepository from '#discharges/shared/repositories/lucid_discharge_start_repository'
 import LucidDischargeUsageRepository from '#discharges/shared/repositories/lucid_discharge_usage_repository'
 import DockRepository from '#docks/shared/repositories/dock_repository'
 import LucidDockRepository from '#docks/shared/repositories/lucid_dock_repository'
@@ -51,6 +53,10 @@ export default class RepositoriesProvider {
 
     this.app.container.bind(DischargePreparationRepository, () => {
       return this.app.container.make(LucidDischargePreparationRepository)
+    })
+
+    this.app.container.bind(DischargeStartRepository, () => {
+      return this.app.container.make(LucidDischargeStartRepository)
     })
 
     this.app.container.bind(DockRepository, () => {

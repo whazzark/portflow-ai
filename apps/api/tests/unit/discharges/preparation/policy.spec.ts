@@ -16,6 +16,7 @@ test.group('Discharge preparation policy', () => {
 
       assert.isTrue(policy.create(user), `expected ${role} to create a discharge`)
       assert.isTrue(policy.update(user), `expected ${role} to correct a discharge`)
+      assert.isTrue(policy.start(user), `expected ${role} to start a discharge`)
     }
   })
 
@@ -27,6 +28,7 @@ test.group('Discharge preparation policy', () => {
 
       assert.isFalse(policy.create(user), `expected an ${accessStatus} observer to be denied`)
       assert.isFalse(policy.update(user), `expected an ${accessStatus} observer to be denied`)
+      assert.isFalse(policy.start(user), `expected an ${accessStatus} observer to be denied`)
     }
   })
 
@@ -39,6 +41,7 @@ test.group('Discharge preparation policy', () => {
 
         assert.isFalse(policy.create(user), `expected ${accessStatus} ${role} to be denied`)
         assert.isFalse(policy.update(user), `expected ${accessStatus} ${role} to be denied`)
+        assert.isFalse(policy.start(user), `expected ${accessStatus} ${role} to be denied`)
       }
     }
   })

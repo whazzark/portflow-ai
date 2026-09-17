@@ -6,6 +6,7 @@ import DischargeTruckAssignment from '#models/discharge_truck_assignment'
 import Dock from '#models/dock'
 import ProductLot from '#models/product_lot'
 import Shift from '#models/shift'
+import User from '#models/user'
 import WarehouseDoorProductLotAssignment from '#models/warehouse_door_product_lot_assignment'
 
 export const DISCHARGE_STATUSES = ['PLANNED', 'ACTIVE', 'CLOSED'] as const
@@ -30,6 +31,10 @@ export default class Discharge extends DischargeSchema {
 
   @hasMany(() => WarehouseDoorProductLotAssignment)
   declare doorAssignments: HasMany<typeof WarehouseDoorProductLotAssignment>
+
+  /** The user who confirmed the start; unknown for discharges started before it was recorded. */
+  @belongsTo(() => User, { foreignKey: 'startedByUserId' })
+  declare startedBy: BelongsTo<typeof User>
 
   @beforeCreate()
   static assignId(discharge: Discharge) {

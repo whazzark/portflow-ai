@@ -499,6 +499,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['planningOptions']>>>
     }
   }
+  'discharges.start_check': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/discharges/:id/start-check'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_start_controller').default['check']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_start_controller').default['check']>>>
+    }
+  }
+  'discharges.start': {
+    methods: ["POST"]
+    pattern: '/api/v1/discharges/:id/start'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharge_start_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharge_start_controller').default['store']>>>
+    }
+  }
   'discharges.product_lots.store': {
     methods: ["POST"]
     pattern: '/api/v1/discharges/:dischargeId/product-lots'
