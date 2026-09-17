@@ -1,0 +1,204 @@
+openapi: 3.1.0
+info:
+  title: Portflow Planned Shift Addition and Readiness Contract
+  version: 1.0.0
+  description: >-
+    The contract introduced by issue 63. It adds one command, which adds a planned shift to a planned
+    or active discharge, and one field on each shift of the DischargeDetail shape (discharges.show):
+    readinessGaps. Every other part of DischargeDetail is unchanged and only referenced. The command
+    requires an ACTIVE operations lead, operations admin, or organization admin
+    (DischargePolicy.update). See research.md Decisions 1 to 7.
+paths:
+  /api/v1/discharges/{dischargeId}/shifts:
+    post:
+      operationId: discharges.shifts.store
+      summary: Add a planned shift to a planned or active discharge
+      description: >-
+        Runs in one transaction under the discharge's FOR UPDATE lock (research.md Decision 2).
+        If a shift of this discharge already has the body's id, the call is a replay: it answers 200
+        with the current detail and changes nothing, whatever the discharge's status is now. Otherwise:
+        a closed discharge is refused (E_DISCHARGE_CLOSED); an active discharge with any non-empty
+        resource list is refused (E_DISCHARGE_NOT_PLANNED, Decision 3); and every rule issue is
+        collected and refused together with 422. On success, the shift is inserted as PLANNED, the
+        other shifts are renumbered by planned start (Decision 5), and on a planned discharge the
+        selected resources are written from now.
+      parameters:
+        - $ref: "#/components/parameters/DischargeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AddPlannedShiftBody" }
+            examples:
+              plannedDischargeWithResources:
+                value:
+                  id: 6f1d2c3b-4a5e-4f60-8b7a-9c0d1e2f3a4b
+                  plannedStartAt: "2026-10-02T06:00:00.000Z"
+                  plannedEndAt: "2026-10-02T14:00:00.000Z"
+                  responsibleUserId: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                  truckIds: [2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e]
+                  warehouseDoorIds: [3c4d5e6f-7a8b-4c9d-8e1f-2a3b4c5d6e7f]
+                  weighingAreaIds: [4d5e6f7a-8b9c-4d0e-9f2a-3b4c5d6e7f8a]
+              activeDischarge:
+                value:
+                  id: 7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d
+                  plannedStartAt: "2026-10-03T06:00:00.000Z"
+                  plannedEndAt: "2026-10-03T14:00:00.000Z"
+                  responsibleUserId: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+      responses:
+        "201":
+          description: The shift was added; the discharge after the addition.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "200":
+          description: A replay of an addition that already succeeded; nothing changed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { description: Not authenticated. No discharge, user, or resource information is returned. }
+        "403": { description: Not an active operations lead, operations admin, or organization admin. }
+        "404":
+          description: Unknown discharge.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CodedError" }
+              example: { errors: [{ code: E_DISCHARGE_NOT_FOUND, message: Discharge not found }] }
+        "409":
+          description: The discharge's state no longer admits this addition.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CodedError" }
+              examples:
+                closed:
+                  value: { errors: [{ code: E_DISCHARGE_CLOSED, message: A closed discharge receives no new shift }] }
+                resourcesOnActive:
+                  value: { errors: [{ code: E_DISCHARGE_NOT_PLANNED, message: Only a planned discharge can be changed }] }
+                idConflict:
+                  value: { errors: [{ code: E_SHIFT_ID_CONFLICT, message: This shift identity is already used }] }
+        "422":
+          description: >-
+            One or more entered values break a rule. Each issue names its field; the list positions
+            of refused resources are in the field path.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationError" }
+              example:
+                errors:
+                  - { field: plannedStartAt, rule: shiftOverlap, message: This shift overlaps another shift }
+                  - { field: responsibleUserId, rule: eligibleShiftResponsible, message: This user can no longer be responsible for a shift }
+                  - { field: warehouseDoorIds.0, rule: assignedWarehouseDoor, message: This warehouse door is not assigned to a product lot of this discharge }
+
+  /api/v1/discharges/{id}:
+    get:
+      operationId: discharges.show
+      summary: Discharge detail (issue 58), with readinessGaps added to each shift
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Unchanged apart from Shift.readinessGaps.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+
+components:
+  parameters:
+    DischargeId:
+      in: path
+      name: dischargeId
+      required: true
+      schema: { type: string, format: uuid }
+
+  schemas:
+    AddPlannedShiftBody:
+      type: object
+      additionalProperties: false
+      required: [id, plannedStartAt, plannedEndAt, responsibleUserId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Generated by the client when the form opens and kept across its retries.
+        plannedStartAt: { type: string, format: date-time }
+        plannedEndAt: { type: string, format: date-time }
+        responsibleUserId: { type: string, format: uuid }
+        truckIds:
+          type: array
+          default: []
+          maxItems: 100
+          uniqueItems: true
+          items: { type: string, format: uuid }
+          description: Planned discharge only. Held, non-suspended trucks of the discharge.
+        warehouseDoorIds:
+          type: array
+          default: []
+          maxItems: 100
+          uniqueItems: true
+          items: { type: string, format: uuid }
+          description: Planned discharge only. Available doors a lot of the discharge currently holds.
+        weighingAreaIds:
+          type: array
+          default: []
+          maxItems: 100
+          uniqueItems: true
+          items: { type: string, format: uuid }
+          description: Planned discharge only. Available weighing areas.
+
+    ReadinessGap:
+      type: string
+      enum: [NO_USABLE_TRUCK, NO_USABLE_WAREHOUSE_DOOR, NO_USABLE_WEIGHING_AREA, RESPONSIBLE_NOT_ELIGIBLE]
+
+    ShiftReadinessExtension:
+      description: The field this contract adds to DischargeDetail.shifts[]. See data-model.md.
+      type: object
+      required: [readinessGaps]
+      properties:
+        readinessGaps:
+          oneOf:
+            - type: "null"
+              description: The shift is ACTIVE or COMPLETED.
+            - type: array
+              description: The shift is PLANNED; empty when nothing is missing. Codes appear in enum order.
+              uniqueItems: true
+              items: { $ref: "#/components/schemas/ReadinessGap" }
+
+    DischargeDetailEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          description: >-
+            The DischargeDetail of issue 58, as extended by issues 53 to 55. Each element of
+            data.shifts also carries ShiftReadinessExtension.
+          type: object
+
+    CodedError:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [code, message]
+            properties:
+              code: { type: string }
+              message: { type: string }
+
+    ValidationError:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, rule, message]
+            properties:
+              field: { type: string }
+              rule: { type: string }
+              message: { type: string }

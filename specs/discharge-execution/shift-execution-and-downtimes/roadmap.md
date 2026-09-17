@@ -13,7 +13,7 @@ The rows are ordered by execution order. Blockers are recorded as GitHub issue d
 
 | ID | Sub-feature | Blocked by | Status | Artifact |
 |---|---|---|---|---|
-| GH-63 | Create and Inspect Planned Shifts | GH-53 | planned | ./create-and-inspect-planned-shifts/ |
+| GH-63 | Create and Inspect Planned Shifts | GH-53 | in-progress | ./create-and-inspect-planned-shifts/ |
 | GH-64 | Replan, Order, and Remove Future Shifts | GH-63 | planned | ./replan-order-and-remove-future-shifts/ |
 | GH-65 | Start the First Shift and Activate the Discharge | GH-56, GH-63 | planned | ./start-the-first-shift-and-activate-the-discharge/ |
 | GH-66 | Protect and Reassign Shift Responsibility | GH-63 | planned | ./protect-and-reassign-shift-responsibility/ |
