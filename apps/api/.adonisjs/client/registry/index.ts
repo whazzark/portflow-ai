@@ -252,6 +252,18 @@ const routes = {
     tokens: [{"old":"/api/v1/discharges/:id/planning-options","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:id/planning-options","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:id/planning-options","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:id/planning-options","type":1,"val":"id","end":""},{"old":"/api/v1/discharges/:id/planning-options","type":0,"val":"planning-options","end":""}],
     types: placeholder as Registry['discharges.planning_options']['types'],
   },
+  'discharges.start_check': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/discharges/:id/start-check',
+    tokens: [{"old":"/api/v1/discharges/:id/start-check","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:id/start-check","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:id/start-check","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:id/start-check","type":1,"val":"id","end":""},{"old":"/api/v1/discharges/:id/start-check","type":0,"val":"start-check","end":""}],
+    types: placeholder as Registry['discharges.start_check']['types'],
+  },
+  'discharges.start': {
+    methods: ["POST"],
+    pattern: '/api/v1/discharges/:id/start',
+    tokens: [{"old":"/api/v1/discharges/:id/start","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/:id/start","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/:id/start","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/:id/start","type":1,"val":"id","end":""},{"old":"/api/v1/discharges/:id/start","type":0,"val":"start","end":""}],
+    types: placeholder as Registry['discharges.start']['types'],
+  },
   'discharges.product_lots.store': {
     methods: ["POST"],
     pattern: '/api/v1/discharges/:dischargeId/product-lots',

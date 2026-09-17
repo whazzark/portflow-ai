@@ -14,9 +14,11 @@ export const DischargeFactory = factory
   }))
   .state('active', (discharge) => {
     discharge.status = 'ACTIVE'
+    discharge.startedAt ??= discharge.expectedStartAt
   })
   .state('closed', (discharge) => {
     discharge.status = 'CLOSED'
     discharge.expectedStartAt = DateTime.now().minus({ days: 30 })
+    discharge.startedAt ??= discharge.expectedStartAt
   })
   .build()

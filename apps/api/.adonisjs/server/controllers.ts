@@ -10,6 +10,7 @@ export const controllers = {
   DischargeProductLots: () => import('#controllers/discharge_product_lots_controller'),
   DischargeShiftTrucks: () => import('#controllers/discharge_shift_trucks_controller'),
   DischargeShifts: () => import('#controllers/discharge_shifts_controller'),
+  DischargeStart: () => import('#controllers/discharge_start_controller'),
   DischargeTruckPool: () => import('#controllers/discharge_truck_pool_controller'),
   Discharges: () => import('#controllers/discharges_controller'),
   Docks: () => import('#controllers/docks_controller'),

@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
 import { DISCHARGE_DETAIL_TABS } from '@/features/discharges/types'
+import { formatDateTime } from '@/helpers/dates'
 import {
   ACTIVE_OBSERVER,
   ACTIVE_ROLES,
@@ -57,8 +58,10 @@ test.each(
   mockDischargeDetail({ user, details: WITH_PLANNING_TARGETS })
 
   const { unmount } = renderDischargeDetail(ATLANTIC_DAWN.id)
-  const overview = await screen.findByRole('region', { name: 'Overview' })
-  expect(within(overview).getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+  await screen.findByRole('heading', { level: 1, name: ATLANTIC_DAWN.vesselName })
+  // Editing and starting act on the whole discharge, so they sit beside its name, not in a section.
+  expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument()
   unmount()
 
   // The lots live in their own tab, where a lot's menu offers its warehouse door planning.
@@ -91,4 +94,27 @@ test('sends an unauthenticated visitor to sign in without disclosing the dischar
   ).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/login')
   expect(screen.queryByText('MV Ocean Cedar')).not.toBeInTheDocument()
+})
+
+test('tells who started an active discharge and when, or only when nobody is recorded', async () => {
+  const startedBy = buildDischargeDetail(OCEAN_CEDAR, {
+    startedAt: '2026-10-04T05:47:00.000Z',
+    startedBy: { id: 'lead-1', firstName: 'Léa', lastName: 'Martin' },
+  })
+  mockDischargeDetail({ user: ACTIVE_OBSERVER, details: [startedBy] })
+
+  const view = renderDischargeDetail(OCEAN_CEDAR.id)
+  await screen.findByRole('heading', { level: 1, name: OCEAN_CEDAR.vesselName })
+  expect(screen.getByText(/Started/).closest('div')).toHaveTextContent(
+    `Started${formatDateTime('2026-10-04T05:47:00.000Z')} by Léa Martin`,
+  )
+  view.unmount()
+
+  mockDischargeDetail({
+    user: ACTIVE_OBSERVER,
+    details: [{ ...startedBy, startedBy: null }],
+  })
+  renderDischargeDetail(OCEAN_CEDAR.id)
+  await screen.findByRole('heading', { level: 1, name: OCEAN_CEDAR.vesselName })
+  expect(screen.getByText(/Started/).closest('div')).not.toHaveTextContent(' by ')
 })

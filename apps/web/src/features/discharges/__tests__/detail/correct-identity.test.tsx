@@ -20,8 +20,8 @@ const ATLANTIC_DAWN = buildDischargeDetail(listedDischarge('MV Atlantic Dawn', '
 })
 
 async function openEditSheet() {
-  const overview = await screen.findByRole('region', { name: 'Overview' })
-  fireEvent.click(within(overview).getByRole('button', { name: 'Edit' }))
+  // Editing acts on the whole discharge, so it sits beside its name, as starting does.
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
 
   return screen.findByRole('dialog', { name: 'Edit discharge' })
 }
@@ -122,9 +122,8 @@ test('closes and refreshes when the discharge has started in the meantime', asyn
     expect(screen.queryByRole('dialog', { name: 'Edit discharge' })).not.toBeInTheDocument(),
   )
   await waitFor(() => expect(state.detailRequests).toBeGreaterThan(detailRequestsBeforeSave))
-  const overview = screen.getByRole('region', { name: 'Overview' })
   await waitFor(() =>
-    expect(within(overview).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument(),
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument(),
   )
 })
 

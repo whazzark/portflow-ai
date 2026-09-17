@@ -196,6 +196,13 @@ export type CreatePlannedDischargeResult =
  *   waits for the write to commit and then sees it as a usage — or commits first, and this write
  *   then reads the archived status. A row lock alone would not block an insert that references the
  *   row, which is why the lock is taken explicitly before reading the status.
+ * - The start confirmation (`DischargeStartRepository`) claims, at their places in this order, the
+ *   resources an active discharge holds exclusively — its dock, its pool's trucks, and its current
+ *   doors — `FOR NO KEY UPDATE` instead. That mode conflicts with itself, so two starts sharing one of
+ *   them queue on it, and the later one reads the earlier as an active holder. Any later writer that
+ *   makes a dock, truck, or door held by an active discharge — a dock reassignment (GH-75), a truck
+ *   assignment (GH-76), or a door assignment (GH-77) on an active discharge — must take the same
+ *   claim before reading the resource's active holders, or it could race a start.
  */
 export default abstract class DischargePreparationRepository {
   /** The discharge locked `FOR UPDATE`, or `null` for an unknown or malformed identity. */

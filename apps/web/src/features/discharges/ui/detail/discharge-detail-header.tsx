@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 
 import { formatTonnes } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
@@ -11,10 +11,16 @@ type DischargeDetailHeaderProps = {
   discharge: DischargeDetailDto
   /** Actions on the whole discharge, such as starting it, beside its name. */
   actions?: ReactNode
+  /** Where focus goes when an action removes itself, as starting the discharge does. */
+  headingRef?: Ref<HTMLHeadingElement>
 }
 
 /** What stays in view whichever section is open: which discharge this is, and where it stands. */
-export function DischargeDetailHeader({ discharge, actions }: DischargeDetailHeaderProps) {
+export function DischargeDetailHeader({
+  discharge,
+  actions,
+  headingRef,
+}: DischargeDetailHeaderProps) {
   return (
     <div className="flex flex-col gap-3">
       <BackToDischargesLink />
@@ -23,7 +29,9 @@ export function DischargeDetailHeader({ discharge, actions }: DischargeDetailHea
           {/* Visible, unlike the list's: the breadcrumb names the vessel, but only the heading
               carries the discharge's status beside it. */}
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-semibold text-2xl">{discharge.vesselName}</h1>
+            <h1 className="font-semibold text-2xl outline-none" ref={headingRef} tabIndex={-1}>
+              {discharge.vesselName}
+            </h1>
             <DischargeStatusBadge status={discharge.status} />
           </div>
           {/* Labelled on screen: a bare dock name or tonnage does not say what it is at a glance.
@@ -41,6 +49,16 @@ export function DischargeDetailHeader({ discharge, actions }: DischargeDetailHea
                 {formatDateTime(discharge.expectedStartAt)}
               </dd>
             </div>
+            {discharge.startedAt && (
+              <div className="flex items-baseline gap-1.5">
+                <dt>Started</dt>
+                <dd className="font-medium text-foreground">
+                  {formatDateTime(discharge.startedAt)}
+                  {discharge.startedBy &&
+                    ` by ${discharge.startedBy.firstName} ${discharge.startedBy.lastName}`}
+                </dd>
+              </div>
+            )}
             <div className="flex items-baseline gap-1.5">
               <dt>Expected tonnage</dt>
               <dd className="font-medium text-foreground tabular-nums">

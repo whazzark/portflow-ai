@@ -8,6 +8,7 @@ import type {
   DischargeDetailDto,
   DischargeDetailTab,
   DischargeDto,
+  StartCheckDto,
   TruckCandidateDto,
 } from '@/features/discharges/types'
 import { server } from '@/test/msw/server'
@@ -217,6 +218,8 @@ export function detailFromCreation(body: CreateDischargeBody): DischargeDetailDt
     expectedStartAt: body.expectedStartAt,
     expectedTonnage: '0.000',
     dock: { id: dock.id, name: dock.name, status: 'AVAILABLE' },
+    startedAt: null,
+    startedBy: null,
     productLots: body.productLots.map((lot, index) => {
       const customer = AVAILABLE_CUSTOMERS.find((candidate) => candidate.id === lot.customerId)
 
@@ -247,6 +250,8 @@ export function detailFromCreation(body: CreateDischargeBody): DischargeDetailDt
           plannedStartAt: shift.plannedStartAt,
           plannedEndAt: shift.plannedEndAt,
           responsible,
+          actualStartAt: null,
+          startedBy: null,
           trucks: [],
           warehouseDoors: [],
           weighingAreas: [],
@@ -862,6 +867,8 @@ export function mockTruckPlanning({
         const added = {
           id: body.id,
           status: 'PLANNED' as const,
+          actualStartAt: null,
+          startedBy: null,
           // What the API would find missing on a shift it has just added, its responsible eligible.
           readinessGaps: [
             ...(body.truckIds?.length ? [] : ['NO_USABLE_TRUCK' as const]),
@@ -1188,6 +1195,95 @@ export function mockDischargePlanning({
         return HttpResponse.json({ data: state.current })
       },
     ),
+  )
+
+  return state
+}
+
+type MockDischargeStartOptions = {
+  user?: SessionUser
+  detail: DischargeDetailDto
+  /** Decide the answer to a start check; by default the earliest planned shift, no problem. */
+  respondToCheck?: () => DischargeWriteAnswer | { problems: StartCheckDto['problems'] }
+  /** Decide the answer to a start; by default the discharge and its first shift start. */
+  respondToStart?: () => DischargeWriteAnswer
+  /** Hold every start answer back this long, to observe the pending state. */
+  startDelayMs?: number
+}
+
+/**
+ * Serves one discharge's detail, its start check, and its start, applying a start to the detail as
+ * the API would: the discharge and its earliest planned shift become active, started by the user.
+ */
+export function mockDischargeStart({
+  user = ACTIVE_OPERATIONS_LEAD,
+  detail,
+  respondToCheck,
+  respondToStart,
+  startDelayMs = 0,
+}: MockDischargeStartOptions) {
+  const state = { current: detail, detailRequests: 0, checkRequests: 0, startRequests: 0 }
+  const firstShift = () =>
+    [...state.current.shifts]
+      .filter((shift) => shift.status === 'PLANNED')
+      .sort((left, right) => (left.plannedStartAt ?? '').localeCompare(right.plannedStartAt ?? ''))
+      .at(0)
+  const answer = (outcome: { status: number; body: unknown } | 'network-error') =>
+    outcome === 'network-error'
+      ? HttpResponse.error()
+      : HttpResponse.json(outcome.body as object, { status: outcome.status })
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+      state.detailRequests += 1
+
+      return HttpResponse.json({ data: state.current })
+    }),
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id/start-check`, () => {
+      state.checkRequests += 1
+      const outcome = respondToCheck?.()
+
+      if (outcome && (outcome === 'network-error' || 'status' in outcome)) {
+        return answer(outcome)
+      }
+
+      return HttpResponse.json({
+        data: {
+          dischargeId: state.current.id,
+          shiftId: firstShift()?.id ?? null,
+          problems: outcome?.problems ?? [],
+        },
+      })
+    }),
+    http.post(`${API_BASE_URL}/api/v1/discharges/:id/start`, async () => {
+      state.startRequests += 1
+      if (startDelayMs > 0) {
+        await delay(startDelayMs)
+      }
+
+      const outcome = respondToStart?.()
+      if (outcome) {
+        return answer(outcome)
+      }
+
+      const startedAt = '2026-10-04T05:47:00.000Z'
+      const startedBy = { id: user.id, firstName: user.firstName, lastName: user.lastName }
+      const shiftId = firstShift()?.id
+      state.current = {
+        ...state.current,
+        status: 'ACTIVE',
+        startedAt,
+        startedBy,
+        shifts: state.current.shifts.map((shift) =>
+          shift.id === shiftId
+            ? { ...shift, status: 'ACTIVE', actualStartAt: startedAt, startedBy }
+            : shift,
+        ),
+      }
+
+      return HttpResponse.json({ data: state.current })
+    }),
   )
 
   return state

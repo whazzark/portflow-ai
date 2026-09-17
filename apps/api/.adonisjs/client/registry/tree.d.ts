@@ -62,6 +62,8 @@ export interface ApiDefinition {
     show: typeof routes['discharges.show']
     update: typeof routes['discharges.update']
     planningOptions: typeof routes['discharges.planning_options']
+    startCheck: typeof routes['discharges.start_check']
+    start: typeof routes['discharges.start']
     productLots: {
       store: typeof routes['discharges.product_lots.store']
       update: typeof routes['discharges.product_lots.update']

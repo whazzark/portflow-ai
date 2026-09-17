@@ -84,7 +84,7 @@ export function DischargeDetailTabs({
         </TabsList>
       </div>
       <TabsContent className="grid gap-6" value="overview">
-        <DischargeIdentityCard canCorrect={canCorrect} discharge={discharge} />
+        <DischargeIdentityCard discharge={discharge} />
         {discharge.status === 'PLANNED' && <DischargePreparationCard discharge={discharge} />}
       </TabsContent>
       <TabsContent value="product-lots">

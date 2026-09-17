@@ -1,0 +1,239 @@
+openapi: 3.1.0
+info:
+  title: Portflow Discharge Start Confirmation Contract
+  version: 1.0.0
+  description: >-
+    The contract introduced by issue 56. It covers the start check a review reads and the start
+    command that activates a planned discharge and its earliest planned shift together. The command
+    answers with the DischargeDetail shape of issue 58 (discharges.show), extended with the start
+    fields below. Every endpoint requires an ACTIVE operations lead, operations admin, or
+    organization admin (DischargePolicy.start). See research.md Decisions 1 to 8.
+paths:
+  /api/v1/discharges/{id}/start-check:
+    get:
+      operationId: discharges.start_check
+      summary: The shift that would start and every problem found now
+      description: >-
+        Evaluates the start rules on unlocked reads and changes nothing. An empty problem list
+        means the start would be accepted at this moment; the command checks again under lock.
+      parameters:
+        - $ref: "#/components/parameters/DischargeId"
+      responses:
+        "200":
+          description: The start check.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StartCheckEnvelope" }
+              examples:
+                blocked:
+                  value:
+                    data:
+                      dischargeId: 3f1c2b4a-5d6e-4f70-8a91-b2c3d4e5f607
+                      shiftId: 9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d
+                      problems:
+                        - family: INCOMPLETE_PREPARATION
+                          code: LOT_WITHOUT_WAREHOUSE_DOOR
+                          subject: { type: PRODUCT_LOT, id: 1b2c3d4e-5f60-4718-9a2b-3c4d5e6f7081 }
+                        - family: ACTIVE_DISCHARGE_CONFLICT
+                          code: TRUCK_HELD
+                          subject: { type: TRUCK, id: 7c6d5e4f-3a2b-4c1d-8e0f-9a8b7c6d5e4f }
+                          holder:
+                            dischargeId: 0e1d2c3b-4a59-4687-9a6b-5c4d3e2f1a0b
+                            vesselName: MV Ocean Cedar
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeNotFound" }
+        "409": { $ref: "#/components/responses/DischargeNotPlanned" }
+
+  /api/v1/discharges/{id}/start:
+    post:
+      operationId: discharges.start
+      summary: Start a planned discharge and its earliest planned shift
+      description: >-
+        In one transaction, locks the discharge and claims its dock, held trucks, and current doors
+        (research.md Decision 4), evaluates every start rule, and either refuses with every problem
+        or makes the discharge and its earliest planned shift ACTIVE at one recorded instant, with
+        the requesting user as the starting actor. Takes no body. A repeated request finds the
+        discharge no longer planned.
+      parameters:
+        - $ref: "#/components/parameters/DischargeId"
+      responses:
+        "200":
+          description: The started discharge's detail.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DischargeDetailEnvelope" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/DischargeNotFound" }
+        "409":
+          description: >-
+            E_DISCHARGE_START_REFUSED with every problem in meta.problems;
+            E_DISCHARGE_NOT_PLANNED when the discharge is already active or closed;
+            E_DISCHARGE_PLANNING_CONFLICT when a concurrent write reached a database backstop
+            first (research.md Decision 5).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/StartRefusedError"
+                  - $ref: "#/components/schemas/Error"
+
+components:
+  parameters:
+    DischargeId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthenticated:
+      description: No authenticated session.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: An observer, or a user whose access is not active.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    DischargeNotFound:
+      description: E_DISCHARGE_NOT_FOUND for an unknown or malformed id.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    DischargeNotPlanned:
+      description: E_DISCHARGE_NOT_PLANNED for an active or closed discharge.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+
+    StartRefusedError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, meta]
+          properties:
+            code: { const: E_DISCHARGE_START_REFUSED }
+            message: { type: string, examples: ["This discharge cannot start yet"] }
+            meta:
+              type: object
+              required: [shiftId, problems]
+              properties:
+                shiftId: { type: [string, "null"], format: uuid }
+                problems:
+                  type: array
+                  minItems: 1
+                  items: { $ref: "#/components/schemas/StartProblem" }
+
+    StartCheckEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [dischargeId, shiftId, problems]
+          properties:
+            dischargeId: { type: string, format: uuid }
+            shiftId:
+              type: [string, "null"]
+              format: uuid
+              description: The earliest planned shift, or null when the discharge has none.
+            problems:
+              type: array
+              items: { $ref: "#/components/schemas/StartProblem" }
+
+    StartProblem:
+      type: object
+      required: [family, code, subject]
+      description: See data-model.md, Start problem, for when each code is raised and its ordering.
+      properties:
+        family:
+          enum: [INCOMPLETE_PREPARATION, UNAVAILABLE_REFERENCE, INELIGIBLE_RESPONSIBLE, ACTIVE_DISCHARGE_CONFLICT]
+        code:
+          enum:
+            - NO_PRODUCT_LOT
+            - NO_PLANNED_SHIFT
+            - LOT_WITHOUT_WAREHOUSE_DOOR
+            - SHIFT_WITHOUT_TRUCK
+            - SHIFT_WITHOUT_WAREHOUSE_DOOR
+            - SHIFT_WITHOUT_WEIGHING_AREA
+            - DOCK_ARCHIVED
+            - CUSTOMER_ARCHIVED
+            - WAREHOUSE_DOOR_ARCHIVED
+            - WEIGHING_AREA_ARCHIVED
+            - TRUCK_ARCHIVED
+            - RESPONSIBLE_INELIGIBLE
+            - DOCK_HELD
+            - TRUCK_HELD
+            - WAREHOUSE_DOOR_HELD
+        subject: { $ref: "#/components/schemas/ProblemRef" }
+        context: { $ref: "#/components/schemas/ProblemRef" }
+        holder:
+          type: object
+          required: [dischargeId, vesselName]
+          properties:
+            dischargeId: { type: string, format: uuid }
+            vesselName: { type: string }
+
+    ProblemRef:
+      type: object
+      required: [type, id]
+      properties:
+        type:
+          enum: [DISCHARGE, PRODUCT_LOT, SHIFT, USER, DOCK, CUSTOMER, WAREHOUSE_DOOR, WEIGHING_AREA, TRUCK]
+        id: { type: string, format: uuid }
+
+    StartActor:
+      type: [object, "null"]
+      required: [id, firstName, lastName]
+      properties:
+        id: { type: string, format: uuid }
+        firstName: { type: string }
+        lastName: { type: string }
+
+    DischargeDetailEnvelope:
+      type: object
+      required: [data]
+      description: >-
+        The existing discharges.show detail, unchanged apart from the fields listed here, which the
+        show endpoint returns too.
+      properties:
+        data:
+          type: object
+          required: [id, status, startedAt, startedBy, shifts]
+          properties:
+            id: { type: string, format: uuid }
+            status: { enum: [PLANNED, ACTIVE, CLOSED] }
+            startedAt:
+              type: [string, "null"]
+              format: date-time
+              description: The start confirmation instant; null while planned.
+            startedBy:
+              $ref: "#/components/schemas/StartActor"
+              description: The confirming user; null while planned or for backfilled history.
+            shifts:
+              type: array
+              items:
+                type: object
+                required: [id, status, actualStartAt, startedBy]
+                properties:
+                  id: { type: string, format: uuid }
+                  status: { enum: [PLANNED, ACTIVE, COMPLETED] }
+                  actualStartAt: { type: [string, "null"], format: date-time }
+                  startedBy: { $ref: "#/components/schemas/StartActor" }

@@ -11,6 +11,11 @@ function toReference<Status extends string>(reference: Reference<Status>): Refer
   return { id: reference.id, name: reference.name, status: reference.status }
 }
 
+/** A name is all the page shows of a user; contact details and access status are administration's. */
+function toActor(user: { id: string; firstName: string; lastName: string } | null) {
+  return user ? { id: user.id, firstName: user.firstName, lastName: user.lastName } : null
+}
+
 /** A tonnage keeps exactly its three decimals on the wire; a number would not guarantee them. */
 function toTonnes(value: Decimal) {
   return value.toFixed(3)
@@ -32,6 +37,7 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
       'vesselImo',
       'vesselComment',
       'expectedStartAt',
+      'startedAt',
     ])
     const expectedTonnage = resource.productLots.reduce(
       (total, productLot) => total.plus(productLot.expectedQuantityTonnes),
@@ -51,6 +57,9 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
       // Summed here rather than in the browser: the lots are decimals, and the web has no decimal
       // arithmetic to add them without drifting.
       expectedTonnage: toTonnes(expectedTonnage),
+      // Who confirmed the start. Discharges started before the confirmation was recorded have a
+      // start time but no known actor.
+      startedBy: toActor(resource.startedBy ?? null),
       dock: toReference(resource.dock),
       productLots: resource.productLots.map((productLot) => ({
         id: productLot.id,
@@ -97,12 +106,13 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
         status: shift.status,
         plannedStartAt: shift.plannedStartAt,
         plannedEndAt: shift.plannedEndAt,
-        // A name is all the page shows; contact details and access status are administration's.
         responsible: {
           id: shift.responsible.id,
           firstName: shift.responsible.firstName,
           lastName: shift.responsible.lastName,
         },
+        actualStartAt: shift.actualStartAt,
+        startedBy: toActor(shift.startedBy ?? null),
         trucks: shift.truckMemberships.map((membership) => ({
           id: membership.id,
           truckId: membership.truckId,

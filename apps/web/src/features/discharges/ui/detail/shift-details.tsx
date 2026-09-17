@@ -54,6 +54,21 @@ export function ShiftDetails({ canCorrect, discharge, onEdit, shift }: ShiftDeta
             label="Planned end"
             value={shift.plannedEndAt && formatDateTime(shift.plannedEndAt)}
           />
+          {shift.actualStartAt && (
+            <>
+              <ResourceDetailField
+                label="Actual start"
+                value={formatDateTime(shift.actualStartAt)}
+              />
+              {/* The user who started the shift, who need not be its responsible. */}
+              <ResourceDetailField
+                label="Started by"
+                value={
+                  shift.startedBy && `${shift.startedBy.firstName} ${shift.startedBy.lastName}`
+                }
+              />
+            </>
+          )}
         </dl>
         {shift.readinessGaps && (
           <div className="mt-8">

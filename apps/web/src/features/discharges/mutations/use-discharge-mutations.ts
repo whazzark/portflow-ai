@@ -168,6 +168,22 @@ export function useDischargeMutations() {
     }),
   )
 
+  const start = useMutation(
+    tuyauQuery.discharges.start.mutationOptions({
+      onSuccess: (response) => applyDetail(response),
+      onError: async (error, variables) => {
+        const dischargeId = String(variables.params.id)
+        await refreshAfterStaleRefusal(error, dischargeId)
+        // A refused start was checked against a plan that may differ from the one on screen.
+        if (parseApiError(error).code === 'E_DISCHARGE_START_REFUSED') {
+          await queryClient.invalidateQueries({
+            queryKey: dischargeQueries.detail(dischargeId).queryKey,
+          })
+        }
+      },
+    }),
+  )
+
   return {
     create,
     correctIdentity,
@@ -180,5 +196,6 @@ export function useDischargeMutations() {
     withdrawTrucks,
     correctShift,
     addShift,
+    start,
   }
 }

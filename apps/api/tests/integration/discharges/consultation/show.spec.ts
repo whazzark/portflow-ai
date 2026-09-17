@@ -331,6 +331,75 @@ test.group('Discharge detail HTTP contract', (group) => {
     assert.isString(entry.releasedAt)
   })
 
+  test('serves who started a discharge and its shifts, and when', async ({ assert, client }) => {
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+    const starter = await UserFactory.apply('active')
+      .merge({ email: 'starter@portflow.test', firstName: 'Hugo', lastName: 'Leroy' })
+      .create()
+    const responsible = await UserFactory.apply('active').create()
+    const [plannedDock, startedDock, legacyDock] = await Promise.all([
+      DockFactory.create(),
+      DockFactory.create(),
+      DockFactory.create(),
+    ])
+    const startedAt = DateTime.utc(2026, 9, 1, 6, 30)
+    const planned = await DischargeFactory.merge({ dockId: plannedDock.id }).create()
+    await ShiftFactory.merge({
+      dischargeId: planned.id,
+      responsibleUserId: responsible.id,
+    }).create()
+    const started = await DischargeFactory.apply('active')
+      .merge({ dockId: startedDock.id, startedAt, startedByUserId: starter.id })
+      .create()
+    await ShiftFactory.apply('active')
+      .merge({
+        actualStartAt: startedAt,
+        dischargeId: started.id,
+        responsibleUserId: responsible.id,
+        startedByUserId: starter.id,
+      })
+      .create()
+    // Discharges started before the confirmation existed keep their time but know no actor.
+    const legacy = await DischargeFactory.apply('active')
+      .merge({ dockId: legacyDock.id, startedAt, startedByUserId: null })
+      .create()
+    await ShiftFactory.apply('active')
+      .merge({
+        actualStartAt: startedAt,
+        dischargeId: legacy.id,
+        responsibleUserId: responsible.id,
+        startedByUserId: null,
+      })
+      .create()
+
+    const read = async (id: string) =>
+      (await client.get(`/api/v1/discharges/${id}`).loginAs(observer)).body().data
+    const [plannedData, startedData, legacyData] = [
+      await read(planned.id),
+      await read(started.id),
+      await read(legacy.id),
+    ]
+
+    assert.isNull(plannedData.startedAt)
+    assert.isNull(plannedData.startedBy)
+    assert.isNull(plannedData.shifts[0].actualStartAt)
+    assert.isNull(plannedData.shifts[0].startedBy)
+
+    const actor = { id: starter.id, firstName: 'Hugo', lastName: 'Leroy' }
+    assert.equal(DateTime.fromISO(startedData.startedAt).toMillis(), startedAt.toMillis())
+    assert.deepEqual(startedData.startedBy, actor)
+    assert.equal(
+      DateTime.fromISO(startedData.shifts[0].actualStartAt).toMillis(),
+      startedAt.toMillis(),
+    )
+    assert.deepEqual(startedData.shifts[0].startedBy, actor)
+    assert.notInclude(JSON.stringify(startedData), 'starter@portflow.test')
+
+    assert.isString(legacyData.startedAt)
+    assert.isNull(legacyData.startedBy)
+    assert.isNull(legacyData.shifts[0].startedBy)
+  })
+
   test('answers an unknown or malformed identity with the discharge not-found code', async ({
     client,
   }) => {
