@@ -735,12 +735,9 @@ export function latestStartedShift(shifts: DetailShift[]) {
  * The rules across a shift being added and the discharge's shifts, as the API judges them: its
  * period against every shift, whatever its status, and on a discharge under way a start after the
  * shift that started last. Unlike the API, which does not know the viewer's time zone, the form
- * names the shift in the way.
- */
-/**
- * The addition's rules against the discharge's shifts. The shift carrying `addedId` is left out: it is
- * this addition, already saved by an attempt whose response was lost, and its retry must still reach
- * the API, which answers it as a replay.
+ * names the shift in the way. The shift carrying `addedId` is left out: it is this addition, already
+ * saved by an attempt whose response was lost, and its retry must still reach the API, which answers
+ * it as a replay.
  */
 export function addShiftRulesSchema(allShifts: DetailShift[], addedId?: string) {
   const shifts = allShifts.filter((shift) => shift.id !== addedId)
