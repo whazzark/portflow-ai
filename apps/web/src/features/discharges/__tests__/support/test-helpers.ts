@@ -8,6 +8,7 @@ import type {
   DischargeDetailDto,
   DischargeDetailTab,
   DischargeDto,
+  DockOccupancyDto,
   StartCheckDto,
   TruckCandidateDto,
 } from '@/features/discharges/types'
@@ -86,6 +87,11 @@ export function mockDischargeDetail({
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
     http.get(`${API_BASE_URL}/api/v1/discharges/:id`, async ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
+
       const id = String(params.id)
       onRequest?.(id)
 
@@ -109,6 +115,38 @@ export function mockDischargeDetail({
       }
 
       return HttpResponse.json({ data: detail })
+    }),
+  )
+  // An active discharge's overview reads its dock's occupancy; a free dock unless a test says
+  // otherwise.
+  mockDockOccupancy()
+}
+
+type MockDockOccupancyOptions = {
+  occupancy?: DockOccupancyDto[]
+  /** Fail this many reads before answering. */
+  failTimes?: number
+  onRequest?: (dockId: string | null) => void
+}
+
+/** Which discharges hold a dock, as its occupancy read answers. */
+export function mockDockOccupancy({
+  occupancy = [],
+  failTimes = 0,
+  onRequest,
+}: MockDockOccupancyOptions = {}) {
+  let remainingFailures = failTimes
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/discharges/dock-occupancy`, ({ request }) => {
+      onRequest?.(new URL(request.url).searchParams.get('dockId'))
+      if (remainingFailures > 0) {
+        remainingFailures -= 1
+
+        return new HttpResponse(null, { status: 500 })
+      }
+
+      return HttpResponse.json({ data: occupancy })
     }),
   )
 }

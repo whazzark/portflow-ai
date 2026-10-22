@@ -1,11 +1,11 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 
 import { formatShiftDuration, formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
 import { formatDateTime } from '@/helpers/dates'
 import { ACTIVE_OBSERVER, ACTIVE_OPERATIONS_LEAD, activeDischargeDetail } from '../support/fixtures'
-import { mockDischargeDetail, renderDischargeTab } from '../support/test-helpers'
+import { mockDischargeDetail, mockDockOccupancy, renderDischargeTab } from '../support/test-helpers'
 
 function betweenShifts() {
   const discharge = activeDischargeDetail()
@@ -146,3 +146,147 @@ test('opens the active shift in the shifts section', async () => {
   ).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({ tab: 'shifts', shiftId: 'shift-6' })
 })
+
+const HOUR_MS = 3_600_000
+
+/** Two hours into the scenario's active shift, as the timeline's now. */
+function freezeNow(discharge = activeDischargeDetail(), hours = 2) {
+  const now = new Date(Date.parse(discharge.shifts[5].actualStartAt ?? '') + hours * HOUR_MS)
+  vi.useFakeTimers({ toFake: ['Date'], now })
+
+  return now
+}
+
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+const pad = (value: number) => String(value).padStart(2, '0')
+const nowLabel = (now: Date) =>
+  `Now ${pad(now.getDate())}/${pad(now.getMonth() + 1)} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+
+test('places the discharge on its dock after the current shift card', async () => {
+  const discharge = activeDischargeDetail({
+    startedBy: { id: 'lead-1', firstName: 'Léa', lastName: 'Martin' },
+  })
+  freezeNow(discharge)
+  mockDischargeDetail({ details: [discharge] })
+
+  renderDischargeTab(discharge.id, 'overview')
+
+  const timeline = await screen.findByRole('region', { name: 'Dock timeline · Quai Est' })
+  const regions = screen.getAllByRole('region')
+  expect(regions.indexOf(timeline)).toBe(
+    regions.indexOf(screen.getByRole('region', { name: 'Current shift' })) + 1,
+  )
+  expect(within(timeline).getByRole('list', { name: 'Legend' })).toHaveTextContent(
+    'CompletedIn progressPlanned',
+  )
+  expect(timeline).toHaveTextContent(
+    `Started ${formatDateTime(discharge.startedAt)} by Léa Martin · planned until ${formatDateTime(discharge.shifts[13].plannedEndAt)}`,
+  )
+  expect(timeline).toHaveTextContent('Shifts5 of 14 completed')
+})
+
+test('draws every shift of the discharge and tells the one in progress', async () => {
+  const discharge = activeDischargeDetail()
+  freezeNow(discharge)
+  mockDischargeDetail({ details: [discharge] })
+
+  renderDischargeTab(discharge.id, 'overview')
+
+  const timeline = await screen.findByRole('region', { name: 'Dock timeline · Quai Est' })
+  const shifts = within(timeline).getByRole('list', { name: 'Shifts of MV Ocean Cedar' })
+  const blocks = within(shifts).getAllByRole('listitem')
+  expect(blocks).toHaveLength(14)
+  expect(blocks[0]).toHaveAccessibleName(`Completed, ${formatShiftPeriod(discharge.shifts[0])}`)
+  expect(blocks[5]).toHaveAccessibleName(`In progress, ${formatShiftPeriod(discharge.shifts[5])}`)
+  expect(blocks[6]).toHaveAccessibleName(`Planned, ${formatShiftPeriod(discharge.shifts[6])}`)
+})
+
+test('says when the shift in progress has run past its planned end', async () => {
+  const discharge = activeDischargeDetail()
+  freezeNow(discharge, 9)
+  mockDischargeDetail({ details: [discharge] })
+
+  renderDischargeTab(discharge.id, 'overview')
+
+  const timeline = await screen.findByRole('region', { name: 'Dock timeline · Quai Est' })
+  const shifts = within(timeline).getByRole('list', { name: 'Shifts of MV Ocean Cedar' })
+  expect(within(shifts).getAllByRole('listitem')[5]).toHaveAccessibleName(
+    `In progress, ${formatShiftPeriod(discharge.shifts[5])}, past its planned end`,
+  )
+})
+
+test('marks now on the timeline', async () => {
+  const discharge = activeDischargeDetail()
+  const now = freezeNow(discharge)
+  mockDischargeDetail({ details: [discharge] })
+
+  renderDischargeTab(discharge.id, 'overview')
+
+  const timeline = await screen.findByRole('region', { name: 'Dock timeline · Quai Est' })
+  expect(within(timeline).getByText(nowLabel(now))).toBeInTheDocument()
+})
+
+test('shows the other discharges holding the dock after this one', async () => {
+  const discharge = activeDischargeDetail()
+  freezeNow(discharge)
+  const docks: Array<string | null> = []
+  mockDischargeDetail({ details: [discharge] })
+  mockDockOccupancy({
+    onRequest: (dockId) => docks.push(dockId),
+    occupancy: [
+      {
+        discharge: { id: discharge.id, vesselName: discharge.vesselName, status: 'ACTIVE' },
+        startAt: discharge.shifts[0].plannedStartAt ?? '',
+        endAt: discharge.shifts[13].plannedEndAt ?? '',
+      },
+      {
+        discharge: { id: 'nordic', vesselName: 'MV Nordic Breeze', status: 'PLANNED' },
+        startAt: discharge.shifts[13].plannedStartAt ?? '',
+        endAt: discharge.shifts[13].plannedEndAt ?? '',
+      },
+    ],
+  })
+
+  renderDischargeTab(discharge.id, 'overview')
+
+  const timeline = await screen.findByRole('region', { name: 'Dock timeline · Quai Est' })
+  const lanes = within(timeline).getByRole('list', { name: 'Discharges on the dock' })
+  await within(lanes).findByRole('listitem', { name: 'MV Nordic Breeze' })
+  expect(
+    within(lanes)
+      .getAllByRole('listitem', { name: /^MV / })
+      .map((lane) => lane.getAttribute('aria-label')),
+  ).toEqual(['MV Ocean Cedar', 'MV Nordic Breeze'])
+  expect(docks).toContain('dock-est')
+})
+
+test('keeps its own lane when the dock occupancy cannot be read', async () => {
+  const discharge = activeDischargeDetail()
+  freezeNow(discharge)
+  mockDischargeDetail({ details: [discharge] })
+  mockDockOccupancy({ failTimes: 5 })
+
+  renderDischargeTab(discharge.id, 'overview')
+
+  const timeline = await screen.findByRole('region', { name: 'Dock timeline · Quai Est' })
+  expect(
+    within(timeline).getByRole('list', { name: 'Shifts of MV Ocean Cedar' }),
+  ).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Current shift' })).toBeInTheDocument()
+})
+
+test.each(['product-lots', 'truck-pool', 'shifts'] as const)(
+  'does not repeat the dock timeline on %s',
+  async (tab) => {
+    const discharge = activeDischargeDetail()
+    mockDischargeDetail({ details: [discharge] })
+
+    renderDischargeTab(discharge.id, tab)
+
+    await screen.findByRole('heading', { level: 1, name: 'MV Ocean Cedar' })
+    expect(screen.queryByRole('region', { name: /^Dock timeline/ })).not.toBeInTheDocument()
+  },
+)
