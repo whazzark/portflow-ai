@@ -121,11 +121,14 @@ retained Create and Edit screens.
    customer, **Then** the Customer code field is marked invalid with the message "Already used by
    {company name}." and the sheet stays open with the entered values.
 2. **Given** valid values, **When** the administrator submits the create sheet, **Then** the
-   customer is created, the sheet closes, and the new customer appears in the Available list.
+   customer is created, a confirmation toast names it, the sheet shows the new customer's detail,
+   and the customer appears in the Available list.
 3. **Given** the edit sheet of an available customer, **When** the administrator saves changes,
-   **Then** the sheet closes and the list and detail show the corrected values.
+   **Then** the sheet returns to the customer's detail, a confirmation toast names it, and the list
+   and detail show the corrected values.
 4. **Given** either sheet with unsaved input, **When** the administrator chooses "Cancel" or closes
-   the sheet, **Then** nothing is saved.
+   the sheet, **Then** nothing is saved; "Cancel" closes the create sheet and returns the edit sheet
+   to the customer's detail.
 
 ---
 
@@ -188,7 +191,7 @@ the retained screens.
 **Acceptance Scenarios**:
 
 1. **Given** three available customers are selected, **When** the selection changes, **Then** a bulk
-   action region labelled "Bulk actions" shows "3 selected", "Archive" and "Clear".
+   action toolbar named "Bulk customer actions" shows "3 selected", "Archive" and "Clear".
 2. **Given** the bulk archive dialog, **When** it opens, **Then** it lists each selected customer's
    code and company name, takes an optional comment (placeholder "Why are these customers
    archived?"), and its confirm button states how many customers will be archived.
@@ -299,7 +302,7 @@ detail sheet, a dialog and a toast, comparing with the retained light-theme scre
 - **FR-009**: Each row MUST offer a selection checkbox named "Select customer {code}", and the
   header a checkbox named "Select all available customers" / "Select all archived customers"
   acting on the customers currently listed.
-- **FR-010**: While at least one customer is selected, a "Bulk actions" region MUST show the number
+- **FR-010**: While at least one customer is selected, a bulk action toolbar MUST show the number
   selected, the tab's bulk action (Archive on Available, Reactivate on Archived) and "Clear". The
   existing keyboard shortcuts for select-all and clear MUST keep working.
 
@@ -400,6 +403,10 @@ detail sheet, a dialog and a toast, comparing with the retained light-theme scre
 - Q: Does search narrow to code and company name, as the design's copy says, or keep matching
   lifecycle comments? → A: Keep matching lifecycle comments; the placeholder and no-match copy say
   so. The design's "code or company name" wording is a documented deviation.
+- Plan-time alignment (see `plan.md`, Spec adjustments): after a successful create or edit the
+  sheet shows the customer's detail, as the `create-a-customer` and `update-a-customer` contracts
+  already do; the bulk bar keeps the shared toolbar name "Bulk customer actions" rather than a
+  "Bulk actions" region.
 
 ## Assumptions
 
