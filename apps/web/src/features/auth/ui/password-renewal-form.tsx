@@ -62,6 +62,7 @@ export function PasswordRenewalForm() {
           <form.AppField name="password">
             {(field) => (
               <field.TextField
+                className="h-10"
                 autoComplete="new-password"
                 label="New password"
                 placeholder="**********"
@@ -74,6 +75,7 @@ export function PasswordRenewalForm() {
           <form.AppField name="passwordConfirmation">
             {(field) => (
               <field.TextField
+                className="h-10"
                 autoComplete="new-password"
                 description="At least 12 characters."
                 label="Confirm new password"
