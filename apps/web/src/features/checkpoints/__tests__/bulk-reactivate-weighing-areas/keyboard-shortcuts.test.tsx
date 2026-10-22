@@ -75,7 +75,7 @@ test('Ctrl+A stays inert while typing in the search field', async () => {
   await screen.findByRole('button', {
     name: `View weighing area ${RETIRED_SCALE.name} (Archived)`,
   })
-  await user.click(screen.getByRole('textbox', { name: 'Search checkpoints' }))
+  await user.click(screen.getByRole('combobox', { name: 'Search checkpoints' }))
   await user.keyboard('{Control>}a{/Control}')
 
   expect(screen.queryByText('2 selected')).not.toBeInTheDocument()

@@ -67,7 +67,7 @@ test('Ctrl+A does not hijack the native select-all while typing in the search fi
   renderCheckpoints('/checkpoints?status=archived')
 
   await screen.findByRole('button', { name: `View dock ${RETIRED_DOCK.name} (Archived)` })
-  await user.click(screen.getByRole('textbox', { name: 'Search checkpoints' }))
+  await user.click(screen.getByRole('combobox', { name: 'Search checkpoints' }))
   await user.keyboard('{Control>}a{/Control}')
 
   expect(screen.queryByRole('button', { name: 'Reactivate selected' })).not.toBeInTheDocument()

@@ -29,3 +29,17 @@ export function presentCheckpoints(
     (checkpoint) => !visibility || visibility[checkpoint.kind],
   ) as PresentedCheckpoint[]
 }
+
+/**
+ * What a search leaves of the checkpoints the type and status filters already admit: the matches,
+ * which are all the map shows while a search is active, and the total they are counted against.
+ */
+export function searchCheckpoints(checkpoints: PresentedCheckpoint[], search: string) {
+  return {
+    matches:
+      normalizeCheckpointSearch(search).length === 0
+        ? checkpoints
+        : checkpoints.filter((checkpoint) => checkpoint.isSearchMatch),
+    total: checkpoints.length,
+  }
+}

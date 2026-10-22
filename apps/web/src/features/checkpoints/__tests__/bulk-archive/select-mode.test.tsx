@@ -185,15 +185,14 @@ test('a weighing area hidden by search stays checked, but changing the status fi
   await user.click(screen.getByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` }))
   expect(screen.getByText('1 selected')).toBeInTheDocument()
 
-  await user.type(screen.getByRole('textbox', { name: 'Search checkpoints' }), 'zzz-no-match')
+  await user.type(screen.getByRole('combobox', { name: 'Search checkpoints' }), 'zzz-no-match')
 
   // Search narrows what is displayed, not what was chosen (spec FR-036): the count survives even
   // though the checked marker itself is no longer a search match.
   expect(screen.getByText('1 selected')).toBeInTheDocument()
 
-  await user.clear(screen.getByRole('textbox', { name: 'Search checkpoints' }))
-  await user.click(screen.getByRole('button', { name: /Filter checkpoints:/ }))
-  await user.click(screen.getByRole('menuitemradio', { name: /Archived/ }))
+  await user.clear(screen.getByRole('combobox', { name: 'Search checkpoints' }))
+  await user.click(screen.getByRole('button', { name: /^Available/ }))
 
   // The status filter changes what is *eligible*, so it does prune the selection, unlike search.
   expect(screen.queryByText('1 selected')).not.toBeInTheDocument()
