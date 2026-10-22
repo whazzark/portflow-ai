@@ -109,10 +109,25 @@ describe('activeDockTimeline', () => {
     ])
   })
 
-  test('widens the window to show the other discharges it overlaps', () => {
-    const timeline = activeDockTimeline(discharge, [OTHER], NOW)
+  test('keeps to the days of the discharge itself, whatever the other discharges on the dock', () => {
+    const alone = activeDockTimeline(discharge, [], NOW).window
 
-    expect(Date.parse(timeline.window.to)).toBeGreaterThanOrEqual(Date.parse(OTHER.endAt))
+    expect(activeDockTimeline(discharge, [OTHER], NOW).window).toEqual(alone)
+  })
+
+  test('leaves out the other discharges that fall wholly outside those days', () => {
+    const later = {
+      discharge: { id: 'later', vesselName: 'MV Far Away', status: 'PLANNED' as const },
+      startAt: new Date(Date.parse(OTHER.endAt) + 60 * 24 * HOUR_MS).toISOString(),
+      endAt: new Date(Date.parse(OTHER.endAt) + 62 * 24 * HOUR_MS).toISOString(),
+    }
+
+    const { lanes } = activeDockTimeline(discharge, [OTHER, later], NOW)
+
+    expect(lanes.map((lane) => lane.discharge.vesselName)).toEqual([
+      'MV Ocean Cedar',
+      'MV Nordic Breeze',
+    ])
   })
 
   test('places now within the window, and leaves it out once the window is past', () => {

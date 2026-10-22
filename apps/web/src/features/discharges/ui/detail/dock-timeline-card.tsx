@@ -61,6 +61,10 @@ function useNow() {
   const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
     setNow(new Date())
+    // Moved on each minute, the precision it is labelled at, while the page stays open.
+    const timer = window.setInterval(() => setNow(new Date()), 60_000)
+
+    return () => window.clearInterval(timer)
   }, [])
 
   return now
@@ -144,11 +148,12 @@ export function DockTimelineCard({ discharge }: DockTimelineCardProps) {
             <ul aria-label="Discharges on the dock" className="grid gap-2">
               {timeline.lanes.map((lane) => (
                 <li
-                  aria-label={lane.discharge.vesselName}
+                  aria-labelledby={`lane-${lane.discharge.id}`}
                   className="flex items-stretch gap-2"
                   key={lane.discharge.id}
                 >
                   <span
+                    id={`lane-${lane.discharge.id}`}
                     className={classnames(
                       'w-38 shrink-0 truncate py-2 text-sm',
                       lane.discharge.isCurrent ? 'font-medium' : 'text-muted-foreground',

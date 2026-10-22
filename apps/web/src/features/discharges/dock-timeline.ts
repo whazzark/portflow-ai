@@ -74,8 +74,8 @@ function shiftBlock(shift: Shift, now: number | null): TimelineBlock | null {
 
 /**
  * The dock as a started discharge sees it: its own shifts, completed, active, and planned, and the
- * other discharges holding the dock, over whole days from its start to its last planned end — or
- * to now, if it runs later. Now is `null` until the page knows it, as it does not while rendered on
+ * other discharges holding the dock where they overlap, over whole days from its start to its last
+ * planned end — or to now, if it runs later. Now is `null` until the page knows it, as it does not while rendered on
  * the server.
  */
 export function activeDockTimeline(
@@ -97,23 +97,30 @@ export function activeDockTimeline(
     }
   }
 
-  const others: TimelineLane[] = occupancy
-    .filter((entry) => entry.discharge.id !== discharge.id)
-    .map((entry) => ({
-      discharge: { ...entry.discharge, isCurrent: false },
-      blocks: [{ from: entry.startAt, to: entry.endAt, state: 'OCCUPANCY', overrun: false }],
-      breaks: [],
-    }))
-
+  // The discharge's own days, and now: another discharge planned weeks away would otherwise stretch
+  // the strip until this one is a sliver.
   const instants = [
     ...(discharge.startedAt ? [Date.parse(discharge.startedAt)] : []),
     ...blocks.flatMap((block) => [Date.parse(block.from), Date.parse(block.to)]),
-    ...others.flatMap((lane) => [Date.parse(lane.blocks[0].from), Date.parse(lane.blocks[0].to)]),
     ...(now === null ? [] : [now]),
   ]
   const from = startOfLocalDay(Math.min(...instants))
   const latest = Math.max(...instants)
   const to = startOfLocalDay(latest) === latest ? latest : nextLocalDay(latest)
+
+  // Other discharges drawn only where they overlap those days; the card clips them to its edges.
+  const others: TimelineLane[] = occupancy
+    .filter(
+      (entry) =>
+        entry.discharge.id !== discharge.id &&
+        Date.parse(entry.endAt) > from &&
+        Date.parse(entry.startAt) < to,
+    )
+    .map((entry) => ({
+      discharge: { ...entry.discharge, isCurrent: false },
+      blocks: [{ from: entry.startAt, to: entry.endAt, state: 'OCCUPANCY', overrun: false }],
+      breaks: [],
+    }))
 
   const days: DockTimeline['days'] = []
   for (let day = from; day < to; day = nextLocalDay(day)) {

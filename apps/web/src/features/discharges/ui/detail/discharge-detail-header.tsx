@@ -21,8 +21,8 @@ export function DischargeDetailHeader({
   actions,
   headingRef,
 }: DischargeDetailHeaderProps) {
-  // An active discharge is read by the period it spans rather than by when it was expected. The
-  // closed record keeps its own layout until its overview is redone.
+  // An active discharge is read by the period it spans rather than by when it was expected, and its
+  // dock timeline tells who started it. Planned and closed records keep their facts line.
   const spansPeriod = discharge.status === 'ACTIVE'
 
   return (
@@ -63,12 +63,24 @@ export function DischargeDetailHeader({
                 </div>
               </>
             ) : (
-              <div className="flex items-baseline gap-1.5">
-                <dt>Expected start</dt>
-                <dd className="font-medium text-foreground">
-                  {formatDateTime(discharge.expectedStartAt)}
-                </dd>
-              </div>
+              <>
+                <div className="flex items-baseline gap-1.5">
+                  <dt>Expected start</dt>
+                  <dd className="font-medium text-foreground">
+                    {formatDateTime(discharge.expectedStartAt)}
+                  </dd>
+                </div>
+                {discharge.startedAt && (
+                  <div className="flex items-baseline gap-1.5">
+                    <dt>Started</dt>
+                    <dd className="font-medium text-foreground">
+                      {formatDateTime(discharge.startedAt)}
+                      {discharge.startedBy &&
+                        ` by ${discharge.startedBy.firstName} ${discharge.startedBy.lastName}`}
+                    </dd>
+                  </div>
+                )}
+              </>
             )}
             <div className="flex items-baseline gap-1.5">
               <dt>Expected tonnage</dt>

@@ -7,6 +7,10 @@ import type { DischargeDetailDto } from '@/features/discharges/types'
 
 type Shift = DischargeDetailDto['shifts'][number]
 
+/** A count with its noun, as the active overview's cards read them: `1 truck`, `6 trucks`. */
+export const counted = (count: number, one: string, many: string) =>
+  `${count} ${count === 1 ? one : many}`
+
 export type NextShift = {
   shift: Shift
   counts: { trucks: number; warehouseDoors: number; weighingAreas: number }

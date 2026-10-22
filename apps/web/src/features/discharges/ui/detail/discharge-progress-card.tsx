@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { dischargeProgress } from '@/features/discharges/active-discharge-view'
+import { counted, dischargeProgress } from '@/features/discharges/active-discharge-view'
 import {
   formatShiftDay,
   formatShiftTime,
@@ -14,8 +14,6 @@ import { formatDateTime } from '@/helpers/dates'
 type DischargeProgressCardProps = {
   discharge: DischargeDetailDto
 }
-
-const counted = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
 
 type ProgressRowProps = {
   label: string

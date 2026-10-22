@@ -268,7 +268,7 @@ test('shows the other discharges holding the dock after this one', async () => {
   expect(
     within(lanes)
       .getAllByRole('listitem', { name: /^MV / })
-      .map((lane) => lane.getAttribute('aria-label')),
+      .map((lane) => lane.firstElementChild?.textContent),
   ).toEqual(['MV Ocean Cedar', 'MV Nordic Breeze'])
   expect(docks).toContain('dock-est')
 })

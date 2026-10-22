@@ -3,7 +3,11 @@ import { PlusIcon } from 'lucide-react'
 import { type ReactNode, useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { activeShiftSummary, type NextShift } from '@/features/discharges/active-discharge-view'
+import {
+  activeShiftSummary,
+  counted,
+  type NextShift,
+} from '@/features/discharges/active-discharge-view'
 import { shiftSearch } from '@/features/discharges/discharge-detail-sections'
 import { formatShiftDuration, formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
@@ -22,8 +26,6 @@ type ActiveShiftCardProps = {
   /** A preparer may add a shift, the way forward once nothing is planned any more. */
   canAddShifts: boolean
 }
-
-const counted = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
 
 function describeNext(next: NextShift | null) {
   if (!next) {
@@ -57,7 +59,7 @@ function ResourceList({ label, items }: ResourceListProps) {
       <h3 className="text-muted-foreground text-sm" id={headingId}>
         {name}
       </h3>
-      <ul aria-label={name} className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+      <ul aria-labelledby={headingId} className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
         {items.map((item) => (
           <li className="min-w-0 break-words" key={item.key}>
             {item.content}

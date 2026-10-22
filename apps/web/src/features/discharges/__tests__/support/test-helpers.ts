@@ -117,9 +117,6 @@ export function mockDischargeDetail({
       return HttpResponse.json({ data: detail })
     }),
   )
-  // An active discharge's overview reads its dock's occupancy; a free dock unless a test says
-  // otherwise.
-  mockDockOccupancy()
 }
 
 type MockDockOccupancyOptions = {
@@ -345,6 +342,10 @@ export function mockCreateDischarge({
       return HttpResponse.json(answer.body as object, { status: answer.status })
     }),
     http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
       const detail = created.get(String(params.id))
 
       if (!detail) {
@@ -584,7 +585,11 @@ export function mockDischargeCorrections({
     http.get(`${API_BASE_URL}/api/v1/customers/available`, () =>
       HttpResponse.json({ data: AVAILABLE_CUSTOMERS }),
     ),
-    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
       state.detailRequests += 1
 
       return HttpResponse.json({ data: state.current })
@@ -812,7 +817,11 @@ export function mockTruckPlanning({
 
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
-    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
       state.detailRequests += 1
 
       return HttpResponse.json({ data: state.current })
@@ -1178,7 +1187,11 @@ export function mockDischargePlanning({
 
       return HttpResponse.json({ data: { warehouseDoors: doors, weighingAreas } })
     }),
-    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
       state.detailRequests += 1
 
       return HttpResponse.json({ data: state.current })
@@ -1273,7 +1286,11 @@ export function mockDischargeStart({
 
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
-    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
       state.detailRequests += 1
 
       return HttpResponse.json({ data: state.current })
