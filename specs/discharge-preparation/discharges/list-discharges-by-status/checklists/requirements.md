@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,9 +31,6 @@
 
 ## Notes
 
-- Two clarifications remain open and block `/speckit-plan`:
-  1. Closed column source (User Story 3, FR-014): no closure time is recorded today; Discharge
-     Closure is #98, still open.
-  2. Tab counts under a search (FR-016): GH-61 FR-005 keeps status totals, while the retained
-     no-match design shows 0 on every tab.
-- Requirements that "testable and unambiguous" covers exclude the two marked items.
+- Clarified 2026-10-22: the Closed column shows a muted placeholder until Discharge Closure (#98)
+  records the closure time; tab counts keep each status's total under a search (GH-61 FR-005).
+- All items pass; the spec is ready for human review before `/speckit-plan`.

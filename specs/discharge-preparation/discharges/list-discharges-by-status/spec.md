@@ -18,6 +18,18 @@ https://github.com/whazzark/portflow-ai/issues/322"
 **Design reference**: Portflow — Écrans canvas, page **Discharges**, boards *Liste — Active*,
 *Liste — Planned*, *Liste — Closed* and *Liste — aucun résultat* (*Retenue* column).
 
+## Clarifications
+
+### Session 2026-10-22
+
+- Q: No closure time is recorded for a discharge today — Discharge Closure (#98) is not delivered.
+  What should the Closed column show? → A: An explicit muted placeholder for every closed
+  discharge until Discharge Closure (#98) records the closure time; this slice records or derives
+  no closure time.
+- Q: While a search narrows the list, do the tab counts keep each status's total or report the
+  matches per status, as the retained no-match design suggests? → A: They keep each status's
+  total, as GH-61 FR-005 requires; the design's zeros are not retained.
+
 ## Context
 
 The discharges workbench delivered by GH-61
@@ -113,10 +125,9 @@ start, closure, expected tonnage, and shortened customers.
    closed, its expected tonnage, and its customers.
 2. **Given** the Closed tab is selected, **When** the user reads the column headers, **Then** they
    are Vessel, Dock, Started, Closed, Expected tonnage, and Customers.
-3. **Given** a closed discharge whose closure time is not known, **When** its row is displayed,
-   **Then** the Closed cell shows an explicit muted placeholder rather than a fabricated time.
-   [NEEDS CLARIFICATION: No closure time is recorded for a discharge today — Discharge Closure
-   (#98) is not delivered. What should the Closed column show?]
+3. **Given** a closed discharge whose closure time is not recorded — every closed discharge until
+   Discharge Closure (#98) records it — **When** its row is displayed, **Then** the Closed cell
+   shows an explicit muted placeholder rather than a fabricated or derived time.
 
 ---
 
@@ -171,8 +182,8 @@ search action, then clear and verify the list is restored.
    customer, or product, and offers a Clear search action, without claiming the status is empty.
 3. **Given** the no-match state, **When** the user activates Clear search, **Then** the search is
    emptied, removed from the address, and the selected status's full collection is listed again.
-4. **Given** a search narrows the list, **When** the user reads the tab counts, **Then** they behave
-   as decided for FR-016.
+4. **Given** a search narrows the list, **When** the user reads the tab counts, **Then** each still
+   reports its status's total, unchanged by the search.
 
 ### Edge Cases
 
@@ -245,17 +256,17 @@ search action, then clear and verify the list is restored.
   problems shown when the user opens that discharge's start.
 - **FR-013**: The Ready and problem badges MUST be distinguishable by more than color alone.
 - **FR-014**: The Closed tab MUST show the columns Vessel, Dock, Started, Closed, Expected tonnage,
-  and Customers. The Closed cell MUST show [NEEDS CLARIFICATION: source of the closure time —
-  see User Story 3].
+  and Customers. The Closed cell MUST show the discharge's recorded closure time when one exists
+  and an explicit muted placeholder otherwise. This slice MUST NOT record, derive, or estimate a
+  closure time (for example from the last shift); recording it belongs to Discharge Closure (#98).
 - **FR-015**: A discharge's expected tonnage MUST be the sum of the expected quantities of its
   product lots, in tonnes with three decimals.
 
 #### Search feedback
 
-- **FR-016**: No result counter MUST be shown next to the search field. The tab counts MUST
-  [NEEDS CLARIFICATION: keep reporting each status's total while a search narrows the list, as
-  GH-61 FR-005 requires, or report the number of matches per status, as the retained no-match
-  design suggests by showing 0 on every tab?]
+- **FR-016**: No result counter MUST be shown next to the search field. Each tab count MUST keep
+  reporting its status's total while a search narrows the list, as GH-61 FR-005 requires; it MUST
+  NOT report the number of matches.
 - **FR-017**: The no-match state MUST name the searched term, suggest the searchable fields, and
   offer a Clear search action that empties the search, removes it from the address, and restores the
   selected status's collection. It MUST remain distinct from a status's empty state, which keeps its
@@ -333,7 +344,8 @@ search action, then clear and verify the list is restored.
 - #314 (V2 palette and authenticated shell), merged in #333.
 - GH-61 (discharges list) and GH-58 (opening a discharge), delivered.
 - The discharge start check (GH-56), delivered, whose problem evaluation the badge reuses.
-- The closure time of closed discharges depends on the answer to the Closed-column clarification.
+- Discharge Closure (#98) will record the closure time; until it does, the Closed column shows its
+  placeholder for every closed discharge, and no change to this slice is needed when it lands.
 
 ## Traceability
 
