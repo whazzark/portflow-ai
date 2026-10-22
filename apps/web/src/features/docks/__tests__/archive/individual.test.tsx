@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
@@ -74,11 +74,11 @@ test('archives a dock with a comment', async () => {
   await openDock(user, NORTH_DOCK.name, 'Available')
 
   await user.click(screen.getByRole('button', { name: 'Archive' }))
-  await screen.findByRole('heading', { name: 'Archive dock?' })
+  await screen.findByRole('heading', { name: `Archive ${NORTH_DOCK.name}?` })
   await user.type(screen.getByRole('textbox', { name: /comment/i }), 'Quay closed for resurfacing')
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText(`Dock “${NORTH_DOCK.name}” archived`)).toBeInTheDocument()
+  expect(await screen.findByText(`${NORTH_DOCK.name} archived`)).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: 'Quay closed for resurfacing' })
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument(),
@@ -102,9 +102,55 @@ test('archives a dock without a comment', async () => {
   await openDock(user, NORTH_DOCK.name, 'Available')
 
   await user.click(screen.getByRole('button', { name: 'Archive' }))
-  await screen.findByRole('heading', { name: 'Archive dock?' })
+  await screen.findByRole('heading', { name: `Archive ${NORTH_DOCK.name}?` })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText(`Dock “${NORTH_DOCK.name}” archived`)).toBeInTheDocument()
+  expect(await screen.findByText(`${NORTH_DOCK.name} archived`)).toBeInTheDocument()
   expect(capturedBody).toMatchObject({ comment: null })
+})
+
+test('explains archiving in discharge terms and offers to view the archived dock', async () => {
+  const user = userEvent.setup()
+  const archived = {
+    ...NORTH_DOCK,
+    status: 'ARCHIVED' as const,
+    archivedAt: '2026-08-24T00:00:00.000Z',
+  }
+  let currentDocks = DOCKS
+
+  mockDocks()
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/docks/${NORTH_DOCK.id}/archive`, () => {
+      currentDocks = currentDocks.map((dock) => (dock.id === NORTH_DOCK.id ? archived : dock))
+      return HttpResponse.json({ data: archived })
+    }),
+    http.get(`${API_BASE_URL}/api/v1/docks`, () => HttpResponse.json({ data: currentDocks })),
+  )
+
+  // biome-ignore lint/security/noSecrets: route search string, not a secret
+  const { router } = renderCheckpoints('/checkpoints?status=available')
+  await openDock(user, NORTH_DOCK.name, 'Available')
+
+  await user.click(screen.getByRole('button', { name: 'Archive' }))
+  const dialog = await screen.findByRole('alertdialog', { name: `Archive ${NORTH_DOCK.name}?` })
+  expect(dialog).toHaveTextContent(
+    'The dock can no longer be selected for new discharges. Past discharges keep it. You can reactivate it later from Archived.',
+  )
+  await user.click(screen.getByRole('button', { name: 'Archive' }))
+
+  expect(await screen.findByText(`${NORTH_DOCK.name} archived`)).toBeInTheDocument()
+  expect(screen.getByText('Find it under Archived to reactivate it.')).toBeInTheDocument()
+  await waitFor(() =>
+    expect(screen.queryByRole('complementary', { name: NORTH_DOCK.name })).not.toBeInTheDocument(),
+  )
+
+  await user.click(screen.getByRole('button', { name: 'View' }))
+
+  expect(router.state.location.search).toMatchObject({
+    checkpointId: `dock:${NORTH_DOCK.id}`,
+    status: 'all',
+  })
+  const details = await screen.findByRole('complementary', { name: NORTH_DOCK.name })
+  expect(details).toHaveTextContent('Dock · Archived')
+  expect(within(details).getByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
 })

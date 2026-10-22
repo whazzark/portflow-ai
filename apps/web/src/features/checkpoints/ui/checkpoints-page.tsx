@@ -777,6 +777,17 @@ export function CheckpointsPage() {
       search: (previous) => ({ ...previous, checkpointId: undefined, edit: undefined }),
     })
   }
+  // A just-archived checkpoint leaves the default Available view; View brings Archived in and
+  // reopens it there.
+  const viewArchived = (selection: { kind: CheckpointKind; id: string }) => {
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        checkpointId: serializeCheckpointSelection(selection),
+        status: previous.status === 'available' ? 'all' : previous.status,
+      }),
+    })
+  }
   const isViewing = Boolean(selectedResource) && !creationKind && !isEditing && !selectingKind
   const anchorPoint: LatLng | undefined = creationKind
     ? (pendingPlacement ?? undefined)
@@ -923,6 +934,7 @@ export function CheckpointsPage() {
               key={serializeCheckpointSelection(selectedResource.selection)}
               onClose={closeDetails}
               onEdit={startEditing}
+              onView={() => viewArchived(selectedResource.selection)}
             />
           ) : undefined)
         }

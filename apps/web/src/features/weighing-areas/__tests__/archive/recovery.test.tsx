@@ -24,7 +24,7 @@ async function openAndStartArchiving(user: ReturnType<typeof userEvent.setup>) {
   )
   await screen.findByRole('heading', { name: ALPHA_SCALE.name })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
-  await screen.findByRole('heading', { name: 'Archive weighing area?' })
+  await screen.findByRole('heading', { name: `Archive ${ALPHA_SCALE.name}?` })
 }
 
 test('an over-long comment is refused in a toast, keeps the dialog open, and a shortened resubmit succeeds', async () => {
@@ -71,7 +71,7 @@ test('an over-long comment is refused in a toast, keeps the dialog open, and a s
   expect(screen.getByText('The comment field must not exceed 1000 characters')).toBeInTheDocument()
   // The dialog stays open and the typed comment is preserved, so the administrator can correct
   // and resubmit without reopening the weighing area (spec US3 scenario 6).
-  expect(screen.getByRole('heading', { name: 'Archive weighing area?' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: `Archive ${ALPHA_SCALE.name}?` })).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: /comment/i })).toHaveValue('a'.repeat(1001))
 
   fireEvent.change(screen.getByRole('textbox', { name: /comment/i }), {
@@ -80,7 +80,7 @@ test('an over-long comment is refused in a toast, keeps the dialog open, and a s
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
   expect(
-    await screen.findByText(`Weighing area “${ALPHA_SCALE.name}” archived`),
+    await screen.findByText(`${ALPHA_SCALE.name} archived`),
   ).toBeInTheDocument()
 })
 
@@ -107,7 +107,7 @@ test('an in-use refusal surfaces in a toast with its specific reason', async () 
   expect(
     await screen.findByText('Weighing area is used by a planned or active discharge'),
   ).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Archive weighing area?' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: `Archive ${ALPHA_SCALE.name}?` })).toBeInTheDocument()
 })
 
 test('an already-archived refusal surfaces in a toast with its own distinct reason', async () => {
@@ -159,6 +159,6 @@ test('a transient failure surfaces in a toast and a retry after recovery succeed
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
   expect(
-    await screen.findByText(`Weighing area “${ALPHA_SCALE.name}” archived`),
+    await screen.findByText(`${ALPHA_SCALE.name} archived`),
   ).toBeInTheDocument()
 })

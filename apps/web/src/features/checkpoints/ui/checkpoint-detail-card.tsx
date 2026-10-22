@@ -1,5 +1,12 @@
 import { CopyIcon, InfoIcon, PencilIcon } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  describeLifecycleEffect,
+  type LifecycleAction,
+  lifecycleDialogTitle,
+  lifecycleSuccessMessage,
+} from '@/components/lifecycle/lifecycle-copy'
+import type { ResourceLifecycleConfig } from '@/components/lifecycle/resource-lifecycle-actions'
 import { ResourceLifecycleSummary } from '@/components/lifecycle/resource-lifecycle-summary'
 import type { ResourceMapAnchor } from '@/components/resource-map/resource-map-anchor'
 import { ResourceMapCard } from '@/components/resource-map/resource-map-card'
@@ -32,6 +39,40 @@ export function formatCheckpointCoordinates({
   return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
 }
 
+/**
+ * The Checkpoints map's archive wording: the confirmation names the checkpoint and says what
+ * archiving means for discharges, and the success toast offers to open it under Archived.
+ * Reactivation keeps the canonical copy.
+ */
+function checkpointLifecycleCopy(
+  noun: string,
+  name: string,
+  onView: () => void,
+): Pick<
+  ResourceLifecycleConfig,
+  'describeTitle' | 'describeEffect' | 'describeSuccess' | 'successToast'
+> {
+  const isArchive = (action: LifecycleAction) => action === 'archive'
+
+  return {
+    describeTitle: (action) =>
+      isArchive(action) ? `Archive ${name}?` : lifecycleDialogTitle(action, noun),
+    describeEffect: (action) =>
+      isArchive(action)
+        ? `The ${noun} can no longer be selected for new discharges. Past discharges keep it. You can reactivate it later from Archived.`
+        : describeLifecycleEffect(action, name),
+    describeSuccess: (action) =>
+      isArchive(action) ? `${name} archived` : lifecycleSuccessMessage(action, noun, name),
+    successToast: (action) =>
+      isArchive(action)
+        ? {
+            description: 'Find it under Archived to reactivate it.',
+            action: { label: 'View', onClick: onView },
+          }
+        : undefined,
+  }
+}
+
 /** The selected checkpoint's card: where it is, what state it is in, and what can be done to it. */
 export function CheckpointDetailCard({
   checkpoint,
@@ -39,16 +80,24 @@ export function CheckpointDetailCard({
   canManage,
   onEdit,
   onClose,
+  onView,
 }: {
   checkpoint: NonNullable<SelectedCheckpoint>
   anchor: ResourceMapAnchor | null
   canManage: boolean
   onEdit: () => void
   onClose: () => void
+  /** Opens this checkpoint where its status now lists it — the toast's View after an archive. */
+  onView: () => void
 }) {
   const { resource, selection } = checkpoint
   const coordinates = formatCheckpointCoordinates(resource)
   const isArchived = resource.status === 'ARCHIVED'
+  const copy = checkpointLifecycleCopy(
+    CHECKPOINT_KIND_LABELS[selection.kind].toLowerCase(),
+    resource.name,
+    onView,
+  )
   const lifecycleBlocks =
     checkpoint.selection.kind === 'DOCK'
       ? dockLifecycleBlocks(checkpoint.resource)
@@ -76,9 +125,13 @@ export function CheckpointDetailCard({
               </Button>
             )}
             {checkpoint.selection.kind === 'DOCK' ? (
-              <DockLifecycleActions className="ml-auto" dock={checkpoint.resource} />
+              <DockLifecycleActions className="ml-auto" copy={copy} dock={checkpoint.resource} />
             ) : (
-              <WeighingAreaLifecycleActions className="ml-auto" area={checkpoint.resource} />
+              <WeighingAreaLifecycleActions
+                area={checkpoint.resource}
+                className="ml-auto"
+                copy={copy}
+              />
             )}
           </>
         ) : undefined

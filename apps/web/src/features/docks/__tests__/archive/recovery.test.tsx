@@ -21,7 +21,7 @@ async function openAndStartArchiving(user: ReturnType<typeof userEvent.setup>) {
   )
   await screen.findByRole('heading', { name: NORTH_DOCK.name })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
-  await screen.findByRole('heading', { name: 'Archive dock?' })
+  await screen.findByRole('heading', { name: `Archive ${NORTH_DOCK.name}?` })
 }
 
 test('a refusal keeps the dialog open with the typed comment, and a corrected resubmit succeeds', async () => {
@@ -62,7 +62,7 @@ test('a refusal keeps the dialog open with the typed comment, and a corrected re
   expect(screen.getByText('The comment field must not exceed 1000 characters')).toBeInTheDocument()
   // The dialog stays open with the comment intact, so the administrator corrects and resubmits
   // without reopening the dock.
-  expect(screen.getByRole('heading', { name: 'Archive dock?' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: `Archive ${NORTH_DOCK.name}?` })).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: /comment/i })).toHaveValue('a'.repeat(1001))
 
   fireEvent.change(screen.getByRole('textbox', { name: /comment/i }), {
@@ -70,7 +70,7 @@ test('a refusal keeps the dialog open with the typed comment, and a corrected re
   })
   await user.click(screen.getByRole('button', { name: 'Archive' }))
 
-  expect(await screen.findByText(`Dock “${NORTH_DOCK.name}” archived`)).toBeInTheDocument()
+  expect(await screen.findByText(`${NORTH_DOCK.name} archived`)).toBeInTheDocument()
 })
 
 test('an in-use refusal names its own reason and leaves the dock available', async () => {
@@ -96,5 +96,5 @@ test('an in-use refusal names its own reason and leaves the dock available', asy
   expect(
     await screen.findByText('Dock is used by a planned or active discharge'),
   ).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Archive dock?' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: `Archive ${NORTH_DOCK.name}?` })).toBeInTheDocument()
 })
