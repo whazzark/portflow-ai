@@ -33,7 +33,9 @@ function DockTimelineLink({ children }: { children: string }) {
       onClick={(event) => {
         event.preventDefault()
         const timeline = document.getElementById(DOCK_TIMELINE_ID)
-        timeline?.focus()
+        // Shown as focused even from a click: the timeline may already be in view, and the ring is
+        // then the only sign the link did something.
+        timeline?.focus({ focusVisible: true } as FocusOptions)
         timeline?.scrollIntoView?.({ block: 'nearest' })
       }}
     >

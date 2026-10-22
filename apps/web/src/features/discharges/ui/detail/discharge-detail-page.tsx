@@ -75,7 +75,9 @@ export function DischargeDetailPage() {
         }
         comment={
           // The comment is context for the plan as a whole, so it stays with the overview.
-          discharge.status === 'PLANNED' && tab === 'overview' ? discharge.vesselComment : null
+          discharge.status === 'PLANNED' && tab === 'overview'
+            ? discharge.vesselComment?.trim()
+            : null
         }
         discharge={discharge}
         headingRef={headingRef}

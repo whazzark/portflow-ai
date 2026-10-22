@@ -29,10 +29,11 @@ export type TimelineOccupation = {
   pointOnly: boolean
   overlapsPlannedPeriod: boolean
   /**
-   * An active discharge ending before the span: kept, since it holds the dock now and is why a
-   * start would be refused, but not drawn and not counted against the period.
+   * An active discharge outside the span, ending before it or, for a plan now overdue, starting
+   * after it: kept, since it holds the dock now and is why a start would be refused, but not drawn
+   * and not counted against the period. `null` when it falls within the span.
    */
-  outsideSpan: boolean
+  outsideSpan: 'BEFORE' | 'AFTER' | null
 }
 
 export type DockTimeline = {
@@ -65,8 +66,9 @@ export function dockTimeline(detail: DischargeDetailDto, now: number): DockTimel
   const plan: [number, number] = period
     ? [Date.parse(period.plannedStartAt), Date.parse(period.plannedEndAt)]
     : [expectedStart, expectedStart]
+  // The expected start is drawn too, so a plan whose shifts begin later still shows it on the span.
   const frame: [number, number] = period
-    ? plan
+    ? [Math.min(plan[0], expectedStart), Math.max(plan[1], expectedStart)]
     : [expectedStart - UNPLANNED_HALF_SPAN, expectedStart + UNPLANNED_HALF_SPAN]
   const padding = Math.max((frame[1] - frame[0]) * PADDING_RATIO, MIN_PADDING)
   const span = { startAt: frame[0] - padding, endAt: frame[1] + padding }
@@ -131,7 +133,7 @@ export function dockTimeline(detail: DischargeDetailDto, now: number): DockTimel
           [interval.startAt, interval.endAt ?? Number.POSITIVE_INFINITY],
           plan,
         ),
-        outsideSpan: !inSpan,
+        outsideSpan: inSpan ? null : interval.startAt > span.endAt ? 'AFTER' : 'BEFORE',
       },
     ]
   })
@@ -148,7 +150,7 @@ export function dockTimeline(detail: DischargeDetailDto, now: number): DockTimel
     shifts,
     gaps,
     occupations,
-    dockFree: occupations.every((occupation) => occupation.outsideSpan),
+    dockFree: occupations.every((occupation) => occupation.outsideSpan !== null),
   }
 }
 

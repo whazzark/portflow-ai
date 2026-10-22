@@ -167,8 +167,13 @@ test.each(DISCHARGE_DETAIL_TABS.filter((tab) => tab !== 'overview'))(
 test('names the active discharge holding the dock now, even when it ends before the period', async () => {
   renderOverview({
     dockOccupations: [
-      { ...HOLDER, startedAt: '2026-09-28T06:00:00.000Z', plannedEndAt: '2026-10-04T20:00:00.000Z' },
+      {
+        ...HOLDER,
+        startedAt: '2026-09-28T06:00:00.000Z',
+        plannedEndAt: '2026-10-04T20:00:00.000Z',
+      },
     ],
+    expectedStartAt: '2026-10-08T06:00:00.000Z',
     shifts: [
       buildShift({
         plannedStartAt: '2026-10-08T06:00:00.000Z',
@@ -184,4 +189,21 @@ test('names the active discharge holding the dock now, even when it ends before 
   ).getByRole('listitem')
   expect(holder).toHaveTextContent('MV Ocean Cedar')
   expect(holder).toHaveTextContent('Ends before this period')
+})
+
+test('names a gap once when two shifts start together after it', async () => {
+  renderOverview({
+    shifts: [
+      FIRST,
+      buildShift({
+        id: 'shift-short',
+        plannedStartAt: '2026-10-05T06:00:00.000Z',
+        plannedEndAt: '2026-10-05T10:00:00.000Z',
+      }),
+      SECOND,
+    ],
+  })
+
+  const events = within(await timeline()).getByRole('list', { name: 'This discharge on the dock' })
+  expect(within(events).getAllByText('Gap of 16 h before the next shift')).toHaveLength(1)
 })

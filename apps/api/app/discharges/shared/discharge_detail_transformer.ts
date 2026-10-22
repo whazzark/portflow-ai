@@ -141,8 +141,8 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
         // administration's: the gap says that they can no longer be responsible, never why.
         readinessGaps: plannedShiftReadinessGaps(shift, resource),
       })),
-      // Who else the dock is promised to, drawn by a planned discharge's timeline. Only what the
-      // list already tells every role, plus the span of each one's planned shifts.
+      // Who else the dock is promised to, drawn by a planned discharge's timeline: facts every role
+      // may already read on each of those discharges' own detail.
       dockOccupations: dockOccupations.map((occupation) => ({
         dischargeId: occupation.dischargeId,
         vesselName: occupation.vesselName,

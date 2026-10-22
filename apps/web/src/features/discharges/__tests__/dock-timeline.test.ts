@@ -78,6 +78,18 @@ describe('span', () => {
   })
 })
 
+describe('expected start before the shifts', () => {
+  test('widens the span to the expected start, so its marker is never pinned to the edge', () => {
+    const timeline = dockTimeline(
+      detail({ expectedStartAt: '2026-10-01T06:00:00.000Z' }),
+      NOW_INSIDE,
+    )
+
+    expect(timeline.span.startAt).toBeLessThan(at('2026-10-01T06:00:00.000Z'))
+    expect(timeline.expectedStart.position).toBeGreaterThan(0)
+  })
+})
+
 describe('now and the expected start', () => {
   test('places now and the expected start inside the span', () => {
     const timeline = dockTimeline(detail(), NOW_INSIDE)
@@ -280,12 +292,25 @@ describe('occupations', () => {
     expect(timeline.occupations).toEqual([
       expect.objectContaining({
         status: 'ACTIVE',
-        outsideSpan: true,
+        outsideSpan: 'BEFORE',
         overlapsPlannedPeriod: false,
       }),
     ])
     // Nothing is promised the dock over this discharge's own period.
     expect(timeline.dockFree).toBe(true)
+  })
+
+  test('says an active discharge starting after an overdue plan starts after it', () => {
+    const [occupation] = dockTimeline(
+      detail({
+        dockOccupations: [
+          buildDockOccupation({ startedAt: '2026-10-10T06:00:00.000Z', plannedEndAt: null }),
+        ],
+      }),
+      at('2026-10-22T00:00:00.000Z'),
+    ).occupations
+
+    expect(occupation).toEqual(expect.objectContaining({ outsideSpan: 'AFTER' }))
   })
 
   test('drops the discharges that fall outside the span', () => {

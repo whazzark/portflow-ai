@@ -163,7 +163,11 @@ export function DockTimelineCard({
                 <DischargeStatusBadge status={occupation.status} />
                 <span className="text-muted-foreground">{occupationPeriod(occupation)}</span>
                 {occupation.outsideSpan && (
-                  <span className="text-muted-foreground">Ends before this period</span>
+                  <span className="text-muted-foreground">
+                    {occupation.outsideSpan === 'BEFORE'
+                      ? 'Ends before this period'
+                      : 'Starts after this period'}
+                  </span>
                 )}
                 {occupation.overlapsPlannedPeriod && (
                   <span className="inline-flex items-center gap-1.5">
@@ -193,8 +197,12 @@ export function DockTimelineCard({
             Expected start, {formatDateTime(iso(timeline.expectedStart.at))}
           </li>
           {timeline.shifts.length > 0 ? (
-            timeline.shifts.map((shift) => {
-              const gap = timeline.gaps.find((candidate) => candidate.endAt === shift.startAt)
+            timeline.shifts.map((shift, index) => {
+              // Named once, before the first shift that closes it, however many start together.
+              const gap =
+                timeline.shifts[index - 1]?.startAt === shift.startAt
+                  ? undefined
+                  : timeline.gaps.find((candidate) => candidate.endAt === shift.startAt)
 
               return [
                 gap && (

@@ -38,7 +38,7 @@ Input: the detail, `now`. Output:
 
 | Field | Meaning |
 |-------|---------|
-| `span` | `{ startAt, endAt }` — planned period (or expected start ± 12 h) padded 10 % / ≥ 2 h each side |
+| `span` | `{ startAt, endAt }` — planned period widened to include the expected start (or expected start ± 12 h without shifts), padded 10 % / ≥ 2 h each side |
 | `now` | `{ position: number }` (0–1) when inside the span, else `{ relation: 'BEFORE' \| 'AFTER' }` |
 | `expectedStart` | `{ at, position }` |
 | `shifts` | `[{ id, startAt, endAt, from, to }]` in planned-start order; `from`/`to` are 0–1 positions |
@@ -51,8 +51,9 @@ Rules:
 - Active occupation: `startAt = startedAt`; `endAt = plannedEndAt` if later than both `startedAt`
   and now, else `null` (`openEnded`, drawn to the span's end): an active discharge that overran its
   plan still holds the dock until it is closed.
-- An active occupation ending before the span is kept with `outsideSpan: true`: listed (it holds the
-  dock now and is why a start is refused), not drawn, and not counted against `dockFree`. Planned
+- An active occupation outside the span is kept with `outsideSpan: 'BEFORE' | 'AFTER'` (after: a
+  plan now overdue): listed (it holds the dock now and is why a start is refused), not drawn, and not
+  counted against `dockFree`. Planned
   occupations outside the span are dropped.
 - Planned occupation with shifts: `plannedStartAt → plannedEndAt`; without shifts: `pointOnly` at
   `expectedStartAt`.
