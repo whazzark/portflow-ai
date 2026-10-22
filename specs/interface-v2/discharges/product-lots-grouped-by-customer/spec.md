@@ -62,7 +62,7 @@ another discharge.
    who can read the discharge opens its Product lots tab, **Then** that lot's door cell shows
    « No door » in the amber warning tone instead of a dash.
 2. **Given** a planned discharge with a lot whose current door is also currently assigned to an
-   active discharge, **When** the tab is opened, **Then** that door's chip shows the door in the
+   active discharge, **When** a user allowed to prepare discharges opens the tab, **Then** that door's chip shows the door in the
    amber warning tone together with « Held by <vessel name of the holding discharge> ».
 3. **Given** a lot with several doors of which only one is held, **When** the tab is opened,
    **Then** only the held door carries the « Held by … » indicator; the others look as usual.
@@ -103,8 +103,9 @@ start.
 1. **Given** a user allowed to prepare discharges on a planned discharge, **When** a lot shows
    « No door » or « Held by … », **Then** an Assign doors action is offered right beside the
    indicator, and it opens that lot's Assign doors dialog.
-2. **Given** an observer, **When** they read a lot with a door problem, **Then** the amber
-   indicator is shown but no Assign doors action is offered.
+2. **Given** an observer, **When** they read a lot without a door, **Then** the amber « No door »
+   indicator is shown but no Assign doors action is offered; « Held by … » is not shown to them
+   (see Assumptions).
 3. **Given** the Assign doors dialog opened for a lot, **When** it is shown, **Then** its title names
    the lot by customer, product, and expected quantity, and it shows two lists: the available doors,
    grouped under their warehouse with a count and a search, and the doors assigned to this lot, with
@@ -242,7 +243,8 @@ verify the running count and total.
 - **FR-006**: On a planned discharge, a lot without any current warehouse door MUST show « No door »
   in the amber warning tone.
 - **FR-007**: On a planned discharge, a current door of a lot that is held by an active discharge
-  MUST show « Held by <vessel name> » in the amber warning tone on that door's chip.
+  MUST show « Held by <vessel name> » in the amber warning tone on that door's chip, for users
+  allowed to prepare and start the discharge.
 - **FR-008**: The lots and doors flagged by FR-006 and FR-007 MUST be exactly those the start
   confirmation reports as « lot without warehouse door » and « warehouse door held » for this
   discharge at the same moment.
@@ -338,8 +340,10 @@ verify the running count and total.
 - « Held by » means held by an **active** discharge, the conflict that blocks the start. A door also
   planned on other planned discharges is not a problem; it is only mentioned (« Also on N
   discharges ») in the Assign doors dialog.
-- Door problems are shown to every user who can read the planned discharge, including observers,
-  since they are facts about the preparation; only the actions are restricted.
+- « No door » is shown to every user who can read the planned discharge, including observers.
+  « Held by … » and the held-door count are shown only to users allowed to prepare and start the
+  discharge, because which active discharge holds a door is read from the start check, which
+  observers may not read (amended at planning, 2026-10-22; see plan D2).
 - The closed discharge's door history (ended assignments) is redesigned by #329, and the active
   discharge's overview by #328. This feature keeps today's door history access on active and closed
   discharges unchanged, apart from the grouped V2 layout.
