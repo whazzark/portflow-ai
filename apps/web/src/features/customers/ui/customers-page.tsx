@@ -4,6 +4,10 @@ import type { OnChangeFn, SortingState } from '@tanstack/react-table'
 import { PlusIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
+import {
+  LIFECYCLE_ACTION_LABELS,
+  LIFECYCLE_PAST_PARTICIPLES,
+} from '@/components/lifecycle/lifecycle-copy'
 import { useBulkSelection } from '@/components/lifecycle/use-bulk-selection'
 import {
   useClearSelectionShortcut,
@@ -51,6 +55,15 @@ export function CustomersPage() {
   const customers = customersQuery.data?.data ?? []
   const availableCustomers = customers.filter((customer) => customer.status === 'AVAILABLE')
   const archivedCustomers = customers.filter((customer) => customer.status === 'ARCHIVED')
+  // The selection as the confirmation lists it, in the directory's order: each customer by the
+  // code the row shows, over its company name.
+  const bulkSelection = customers
+    .filter((customer) => selectedCustomerIds.has(customer.id))
+    .map((customer) => ({
+      id: customer.id,
+      primary: customer.code,
+      secondary: customer.companyName,
+    }))
 
   // What the active tab currently lists, once the search has narrowed it — the same set the table
   // renders, and so the same set `Select all` and Ctrl/Cmd+A act on.
@@ -246,6 +259,13 @@ export function CustomersPage() {
           plural={CUSTOMER_PLURAL}
           refresh={mutations.refreshCustomers}
           selectedIds={lifecycleActionIds}
+          selection={bulkSelection}
+          describeConfirm={(action, count) =>
+            `${LIFECYCLE_ACTION_LABELS[action]} ${count} ${count === 1 ? CUSTOMER_SINGULAR : CUSTOMER_PLURAL}`
+          }
+          commentPlaceholder={(action) =>
+            `Why are these customers ${LIFECYCLE_PAST_PARTICIPLES[action]}?`
+          }
           singular={CUSTOMER_SINGULAR}
           submit={async ({ ids, comment }) =>
             toBulkCustomerLifecycleOutcome(
