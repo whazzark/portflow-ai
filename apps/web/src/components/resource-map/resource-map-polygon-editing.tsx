@@ -29,7 +29,7 @@ export function EditablePolygonPlacement({
   onInsertPoint,
   onRemovePoint,
   minimumPoints = 3,
-  fillColor = '#2c7f9a',
+  fillColor = '#1f6f8b',
 }: {
   points: LatLng[]
   onMovePoint: (index: number, point: LatLng) => void

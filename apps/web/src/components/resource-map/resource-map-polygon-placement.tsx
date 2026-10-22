@@ -24,7 +24,7 @@ export function PendingPolygonPlacement({
   onMovePoint,
   onComplete,
   completed = false,
-  fillColor = '#2c7f9a',
+  fillColor = '#1f6f8b',
 }: {
   armed: boolean
   points: LatLng[]

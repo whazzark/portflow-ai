@@ -65,11 +65,13 @@ export function UserMenu({ user }: { user: SessionUser }) {
 
   return (
     <>
-      <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none">
+      <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:items-center">
         <SidebarMenuItem>
           <DropdownMenu modal={false} open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
             <Tooltip>
-              <TooltipTrigger render={<span className="block w-full" />}>
+              <TooltipTrigger
+                render={<span className="block w-full group-data-[collapsible=icon]:w-auto" />}
+              >
                 <DropdownMenuTrigger
                   aria-label={`Open user menu for ${fullName}`}
                   render={

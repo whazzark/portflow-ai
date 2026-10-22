@@ -58,7 +58,7 @@ describe('warehouse polygon selection', () => {
       2,
       expect.objectContaining({
         fillPaint: expect.objectContaining({ 'fill-color': '#f2f4f5' }),
-        linePaint: expect.objectContaining({ 'line-color': '#5d6c77' }),
+        linePaint: expect.objectContaining({ 'line-color': '#56646f' }),
       }),
     )
   })

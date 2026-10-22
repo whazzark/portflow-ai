@@ -9,5 +9,5 @@ export const WAREHOUSE_STATUS_COLORS: Record<
   { fill: string; line: string }
 > = {
   AVAILABLE: { fill: '#1f6f8b', line: '#164f63' },
-  ARCHIVED: { fill: '#f2f4f5', line: '#5d6c77' },
+  ARCHIVED: { fill: '#f2f4f5', line: '#56646f' },
 }

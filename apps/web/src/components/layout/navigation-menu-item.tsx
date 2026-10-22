@@ -39,7 +39,7 @@ export function NavigationMenuItem({ item }: { item: NavigationItem }) {
         tooltip={`${item.label} — Coming soon`}
         className={classnames(
           MENU_BUTTON_CLASS_NAME,
-          'text-muted-foreground disabled:opacity-100 group-data-[collapsible=icon]:opacity-45',
+          'text-muted-foreground disabled:opacity-100 group-data-[collapsible=icon]:disabled:opacity-45',
         )}
       >
         <Icon className="opacity-60" />
