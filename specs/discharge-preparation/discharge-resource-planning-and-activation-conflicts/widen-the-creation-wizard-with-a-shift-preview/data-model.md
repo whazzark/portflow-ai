@@ -50,7 +50,7 @@ Computed by `shift-preview.ts` from the form values (`dockId`, `vesselName`, `ex
 | `shifts` | For each valid period: `{ number, startAt, endAt, leftPct, widthPct }`. `number` is the 1-based form position. |
 | `breaks` | Gaps between consecutive shift blocks after sorting by start, measured from the latest end so far: `{ leftPct, widthPct }`. Overlapping shifts produce no break. |
 | `unscheduled` | The numbers of shifts without a valid period, read « Shift n · no period yet ». |
-| `summary` | `{ count, totalHours }` over valid periods, read « n shifts · h h ». `null` when there is none. |
+| `summary` | `{ count, duration }` over valid periods (duration such as « 16 h » or « 7 h 30 min »), read « n shifts · duration ». `null` when there is none. |
 
 ### Period sizing (research.md Decision 4)
 
