@@ -12,6 +12,7 @@ test('renders a stale customer alert with valid description markup', async () =>
       <CustomerSheet
         canAdminister={true}
         customerId="missing-customer"
+        customers={[]}
         mode="view"
         onChange={vi.fn()}
       />

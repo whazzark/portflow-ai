@@ -17,6 +17,8 @@ import { resourceSuccessMessage } from '@/helpers/resource-copy'
 
 type CustomerSheetProps = {
   customer?: CustomerDto
+  /** Every customer already listed, so a refused code can name the customer holding it. */
+  customers: CustomerDto[]
   customerId?: string
   mode?: 'create' | 'edit' | 'view'
   canAdminister: boolean
@@ -25,6 +27,7 @@ type CustomerSheetProps = {
 
 export function CustomerSheet({
   customer,
+  customers,
   customerId,
   mode,
   canAdminister,
@@ -39,6 +42,8 @@ export function CustomerSheet({
       <SheetContent className="overflow-hidden" size="lg">
         {mode === 'create' ? (
           <CreateCustomerPanel
+            customers={customers}
+            onCancel={close}
             onCreate={async (value) => {
               const result = await mutations.create.mutateAsync({ body: value })
 
@@ -67,7 +72,8 @@ export function CustomerSheet({
         ) : mode === 'edit' && canAdminister && customer.status === 'AVAILABLE' ? (
           <EditCustomerPanel
             customer={customer}
-            onBack={() => onChange({ customerId: customer.id, mode: 'view' })}
+            customers={customers}
+            onCancel={() => onChange({ customerId: customer.id, mode: 'view' })}
             onUpdate={async (value) => {
               const result = await mutations.update.mutateAsync({
                 params: { id: customer.id },

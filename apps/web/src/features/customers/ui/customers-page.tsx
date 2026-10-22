@@ -259,6 +259,7 @@ export function CustomersPage() {
       )}
       <CustomerSheet
         canAdminister={canAdminister}
+        customers={customers}
         customerId={sheetCustomerId}
         customer={
           sheetCustomerId

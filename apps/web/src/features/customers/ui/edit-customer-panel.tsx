@@ -1,42 +1,41 @@
-import { ArrowLeftIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import type { CustomerDto } from '@/features/customers/types'
 import { CustomerForm } from '@/features/customers/ui/customer-form'
 
 type EditCustomerPanelProps = {
   customer: CustomerDto
-  onBack: () => void
+  customers: CustomerDto[]
+  /** Leaves the edit for the customer's details, saving nothing. */
+  onCancel: () => void
   onUpdate: (value: { code: string; companyName: string }) => Promise<CustomerDto>
   onSuccess: (customer: CustomerDto) => void
 }
 
 export function EditCustomerPanel({
   customer,
-  onBack,
+  customers,
+  onCancel,
   onUpdate,
   onSuccess,
 }: EditCustomerPanelProps) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <SheetHeader>
-        <Button className="self-start" onClick={onBack} size="sm" variant="ghost">
-          <ArrowLeftIcon aria-hidden="true" />
-          Back to details
-        </Button>
-        <SheetTitle>Edit customer</SheetTitle>
-        <SheetDescription>Update the current customer identity.</SheetDescription>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <SheetHeader className="shrink-0 border-b px-6 py-5 pr-14">
+        <SheetTitle className="text-lg">Edit customer</SheetTitle>
+        <SheetDescription>
+          {customer.companyName} · {customer.code}
+        </SheetDescription>
       </SheetHeader>
-      <div className="px-4">
-        <CustomerForm
-          customer={customer}
-          onCreate={() => {
-            throw new Error('Create is not available while editing')
-          }}
-          onSuccess={onSuccess}
-          onUpdate={onUpdate}
-        />
-      </div>
+      <CustomerForm
+        customer={customer}
+        customers={customers}
+        onCancel={onCancel}
+        onCreate={() => {
+          throw new Error('Create is not available while editing')
+        }}
+        onSuccess={onSuccess}
+        onUpdate={onUpdate}
+      />
     </div>
   )
 }

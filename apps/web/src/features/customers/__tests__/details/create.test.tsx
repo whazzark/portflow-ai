@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import type { CustomerDto } from '@/features/customers/types'
@@ -30,21 +30,51 @@ test('creates a customer and exposes it in the list and detail sheet', async () 
   await screen.findByRole('table', { name: 'Available customers' })
   fireEvent.click(screen.getByRole('button', { name: 'Create customer' }))
 
+  const sheet = await screen.findByRole('dialog', { name: 'Create customer' })
+  expect(within(sheet).getByText('Available as soon as it is created')).toBeInTheDocument()
+  expect(
+    within(sheet).getByText(
+      'The code identifies the customer in discharges and reports. It is stored in uppercase and can be changed later.',
+    ),
+  ).toBeInTheDocument()
+
   fireEvent.change(await screen.findByRole('textbox', { name: 'Customer code' }), {
     target: { value: created.code },
   })
   fireEvent.change(screen.getByRole('textbox', { name: 'Company name' }), {
     target: { value: created.companyName },
   })
-  fireEvent.click(screen.getByRole('button', { name: 'Create customer' }))
+  fireEvent.click(within(sheet).getByRole('button', { name: 'Create customer' }))
 
+  expect(await screen.findByText('Customer “New Harbor” created')).toBeInTheDocument()
   expect(await screen.findByRole('heading', { name: created.companyName })).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Close' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   expect(
     await screen.findByRole('button', { name: `View customer ${created.code}` }),
   ).toBeInTheDocument()
-  await waitFor(() =>
-    expect(screen.getByRole('tab', { name: 'Available (3)' })).toBeInTheDocument(),
+  await waitFor(() => expect(screen.getByRole('tab', { name: 'Available 3' })).toBeInTheDocument())
+})
+
+test('cancels a creation without sending it', async () => {
+  let posted = false
+
+  mockCustomers()
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/customers`, () => {
+      posted = true
+      return HttpResponse.json({ data: CUSTOMERS[0] }, { status: 201 })
+    }),
   )
+
+  const { router } = renderCustomers('/customers?mode=create')
+  const sheet = await screen.findByRole('dialog', { name: 'Create customer' })
+  fireEvent.change(within(sheet).getByRole('textbox', { name: 'Customer code' }), {
+    target: { value: 'NEW-04' },
+  })
+  fireEvent.click(within(sheet).getByRole('button', { name: 'Cancel' }))
+
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(router.state.location.search).not.toHaveProperty('mode')
+  expect(posted).toBe(false)
 })
