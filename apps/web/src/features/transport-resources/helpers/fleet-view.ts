@@ -78,7 +78,8 @@ function compareTrucks(sort: FleetSort, order: 'asc' | 'desc') {
 
     if (sort === 'status') {
       return (
-        direction * (STATUS_RANK[STATUS_BY_DTO[left.status]] - STATUS_RANK[STATUS_BY_DTO[right.status]]) ||
+        direction *
+          (STATUS_RANK[STATUS_BY_DTO[left.status]] - STATUS_RANK[STATUS_BY_DTO[right.status]]) ||
         byRegistration(left, right)
       )
     }
@@ -139,9 +140,7 @@ export function buildFleetView(input: FleetViewInput): FleetView {
     })
   }
 
-  const filtered = input.transportCompanyId
-    ? companyById.get(input.transportCompanyId)
-    : undefined
+  const filtered = input.transportCompanyId ? companyById.get(input.transportCompanyId) : undefined
   const groups = filtered
     ? listedGroups.filter((group) => group.company.id === filtered.id)
     : listedGroups

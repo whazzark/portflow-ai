@@ -7,7 +7,7 @@ The roles and accessible names the tests and assistive technology rely on. Wordi
 
 | Element | Role / name |
 |---|---|
-| Search | `searchbox` "Search transport resources", placeholder "Search registration, model or company" |
+| Search | `textbox` "Search transport resources" (`InputSearch`), placeholder "Search registration, model or company" |
 | Status pills | `group` "Filter by truck status" containing `button`s "Available N", "Suspended N", "Archived N" with `aria-pressed` |
 | Create (administrators) | `button` "Create" + `button` "Choose what to create" (`aria-haspopup="menu"`) → `menuitem`s "Truck", "Transport company" |
 | Company filter banner | text "Showing «company»", `button` "Show all companies", text "N other companies hidden" |

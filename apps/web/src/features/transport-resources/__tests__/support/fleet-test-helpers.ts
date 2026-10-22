@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 
 import type { SessionUser } from '@/features/auth/context/session-context'
@@ -70,8 +70,9 @@ export function fleetTable() {
   return screen.getByRole('table', { name: 'Trucks by transport company' })
 }
 
+/** The first render goes through the route loader and the session read, which takes a while. */
 export function findFleetTable() {
-  return screen.findByRole('table', { name: 'Trucks by transport company' })
+  return screen.findByRole('table', { name: 'Trucks by transport company' }, { timeout: 10000 })
 }
 
 /** The group header row of a company, found by its collapse/expand toggle. */
@@ -121,4 +122,25 @@ export function listedRegistrations() {
   return within(fleetTable())
     .queryAllByRole('button', { name: /^View truck / })
     .map((button) => (button.getAttribute('aria-label') ?? '').replace('View truck ', ''))
+}
+
+/** Waits for the listed registrations: filters and search go through a navigation first. */
+export function expectListed(registrations: string[]) {
+  return waitFor(() => {
+    if (JSON.stringify(listedRegistrations()) !== JSON.stringify(registrations)) {
+      throw new Error(`Listed ${JSON.stringify(listedRegistrations())}`)
+    }
+  })
+}
+
+/** A `/transport-resources` address, encoded the way the router writes its search. */
+export function fleetPath(search: Record<string, unknown>) {
+  const params = new URLSearchParams(
+    Object.entries(search).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? value : JSON.stringify(value),
+    ]),
+  )
+
+  return `/transport-resources?${params}`
 }

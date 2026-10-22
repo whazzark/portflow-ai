@@ -14,7 +14,7 @@ const statusSelection = z
   .optional()
   .catch(undefined)
 
-const mode = z.enum(['view', 'edit', 'create']).catch('view')
+const mode = z.enum(['view', 'edit', 'create']).default('view').catch('view')
 
 /**
  * The V2 screen is one grouped table, so one status selection and one search replace the two
@@ -26,8 +26,8 @@ export const transportResourcesSearchSchema = z
     status: statusSelection,
     search: z.string().optional().catch(undefined),
     transportCompanyId: z.string().optional().catch(undefined),
-    sort: z.enum(FLEET_SORTS).catch('registration'),
-    order: z.enum(['asc', 'desc']).catch('asc'),
+    sort: z.enum(FLEET_SORTS).default('registration').catch('registration'),
+    order: z.enum(['asc', 'desc']).default('asc').catch('asc'),
     truckId: z.string().optional().catch(undefined),
     truckMode: mode,
     truckCompanyId: z.string().optional().catch(undefined),
@@ -77,7 +77,7 @@ export type TransportResourcesSearch = z.output<typeof transportResourcesSearchS
 export function fromLegacyTransportCompanySearch(search: {
   status: 'available' | 'archived'
   search: string
-  transportCompanyId: string | undefined
+  transportCompanyId?: string
 }): Pick<TransportResourcesSearch, 'status' | 'search' | 'transportCompanyId'> {
   return {
     status: search.status === 'archived' ? ['archived'] : DEFAULT_FLEET_STATUSES,

@@ -70,7 +70,10 @@ export const FLEET_COMPANIES: TransportCompanyDto[] = [
 let truckSequence = 0
 
 function truck(
-  values: Pick<TruckDto, 'registration' | 'vehicleModel' | 'capacityTonnes' | 'transportCompanyId'> &
+  values: Pick<
+    TruckDto,
+    'registration' | 'vehicleModel' | 'capacityTonnes' | 'transportCompanyId'
+  > &
     Partial<TruckDto>,
 ): TruckDto {
   truckSequence += 1

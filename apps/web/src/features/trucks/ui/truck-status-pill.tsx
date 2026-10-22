@@ -36,7 +36,7 @@ export function TruckRegistration({
   return (
     <span
       className={classnames(
-        'inline-flex h-6 items-center rounded-sm border bg-background px-2 font-mono text-[13px] font-medium tracking-wide whitespace-nowrap',
+        'inline-flex h-6 items-center whitespace-nowrap rounded-sm border bg-background px-2 font-medium font-mono text-[13px] tracking-wide',
         className,
       )}
     >

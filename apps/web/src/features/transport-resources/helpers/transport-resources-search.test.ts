@@ -24,9 +24,14 @@ describe('defaults and fallbacks', () => {
   })
 
   test('falls back to defaults on malformed values', () => {
-    expect(parse({ status: 'nonsense', sort: 'weight', order: 'up', truckMode: 'delete' })).toMatchObject(
-      { status: ['available', 'suspended'], sort: 'registration', order: 'asc', truckMode: 'view' },
-    )
+    expect(
+      parse({ status: 'nonsense', sort: 'weight', order: 'up', truckMode: 'delete' }),
+    ).toMatchObject({
+      status: ['available', 'suspended'],
+      sort: 'registration',
+      order: 'asc',
+      truckMode: 'view',
+    })
   })
 
   test('keeps a de-duplicated, non-empty status selection in a stable order', () => {
@@ -114,7 +119,11 @@ describe('the former Transport companies address', () => {
 
   test('maps its available status to the default selection', () => {
     expect(
-      fromLegacyTransportCompanySearch({ status: 'available', search: '', transportCompanyId: undefined }),
+      fromLegacyTransportCompanySearch({
+        status: 'available',
+        search: '',
+        transportCompanyId: undefined,
+      }),
     ).toEqual({ status: ['available', 'suspended'], search: '', transportCompanyId: undefined })
   })
 })

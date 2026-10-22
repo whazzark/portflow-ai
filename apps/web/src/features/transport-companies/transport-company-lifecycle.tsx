@@ -1,7 +1,3 @@
-import type {
-  BulkLifecycleBlocker,
-  BulkLifecycleOutcome,
-} from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import type { LifecycleAction } from '@/components/lifecycle/lifecycle-copy'
 import {
   ResourceLifecycleActions,
@@ -10,19 +6,9 @@ import {
 } from '@/components/lifecycle/resource-lifecycle-actions'
 import type { LifecycleBlock } from '@/components/lifecycle/resource-lifecycle-summary'
 import { useTransportCompanyMutations } from '@/features/transport-companies/mutations/use-transport-company-mutations'
-import type {
-  BulkTransportCompanyLifecycleResult,
-  TransportCompanyDto,
-} from '@/features/transport-companies/types'
+import type { TransportCompanyDto } from '@/features/transport-companies/types'
 
 export const TRANSPORT_COMPANY_SINGULAR = 'transport company'
-export const TRANSPORT_COMPANY_PLURAL = 'transport companies'
-
-/** A company that still provides available trucks cannot be archived; the API refuses it and the
- * bulk toolbar names that reason, so the button stays offered rather than silently disappearing. */
-export const TRANSPORT_COMPANY_BLOCKER_REASON_LABELS = {
-  HAS_AVAILABLE_TRUCKS: 'still provides available trucks',
-}
 
 export function transportCompanyLifecycleActions(
   status: TransportCompanyDto['status'],
@@ -109,19 +95,4 @@ export function TransportCompanyLifecycleActions({
       config={config}
     />
   )
-}
-
-export function toBulkTransportCompanyLifecycleOutcome(
-  result: BulkTransportCompanyLifecycleResult,
-): BulkLifecycleOutcome {
-  return {
-    updatedCount: result.updatedCompanies.length,
-    blocked: result.blockedCompanies.map(
-      (blocked): BulkLifecycleBlocker => ({
-        id: blocked.id,
-        name: blocked.name ?? undefined,
-        reason: blocked.reason,
-      }),
-    ),
-  }
 }
