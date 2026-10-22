@@ -17,6 +17,20 @@ export const dischargeQueries = {
       { params: { id } },
       { staleTime: 0, gcTime: 0, retry: false },
     ),
+  // The same check, read by a planned discharge's page for what blocks its start. Kept apart from
+  // the confirmation's own read, so opening it still asks afresh and shows its own failures; nested
+  // under its key, so whatever invalidates the check refreshes the banner too. Never retried: a
+  // failure simply shows nothing.
+  startBlockers: (id: string) => {
+    const options = tuyauQuery.discharges.startCheck.queryOptions(
+      { params: { id } },
+      { staleTime: 0, retry: false },
+    )
+
+    const queryKey = [...options.queryKey, ['blockers']] as unknown as typeof options.queryKey
+
+    return { ...options, queryKey }
+  },
   // Refetched on every visit to the creation page: an operations lead's access may have changed.
   eligibleResponsibles: () =>
     tuyauQuery.users.eligibleShiftResponsibles.queryOptions({}, { staleTime: 0 }),

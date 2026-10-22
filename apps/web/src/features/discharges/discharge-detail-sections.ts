@@ -6,6 +6,14 @@ import {
   type DischargeDetailTab,
 } from '@/features/discharges/types'
 
+/**
+ * The sections a start problem is fixed in, as the start confirmation groups them, so a section's
+ * tab can say it holds one. A section with several problems is named once.
+ */
+export function problemTabs(sections: Array<{ link: { tab: DischargeDetailTab } }>) {
+  return new Set(sections.map((section) => section.link.tab))
+}
+
 export function isDischargeDetailTab(value: string): value is DischargeDetailTab {
   return DISCHARGE_DETAIL_TABS.includes(value as DischargeDetailTab)
 }
@@ -44,7 +52,21 @@ export function detailTabCounts(detail: DischargeDetailDto) {
  * confirmation.
  */
 export function preparationSummary(detail: DischargeDetailDto) {
+  // An archived dock comes first: no other discharge holding it would make it usable again.
+  const holder = detail.dockOccupations.find((occupation) => occupation.status === 'ACTIVE')
+  const dockGap =
+    detail.dock.status === 'ARCHIVED'
+      ? ({ kind: 'ARCHIVED' } as const)
+      : holder
+        ? ({
+            kind: 'HELD',
+            dischargeId: holder.dischargeId,
+            vesselName: holder.vesselName,
+          } as const)
+        : null
+
   return {
+    dock: { name: detail.dock.name, gap: dockGap },
     productLots: {
       total: detail.productLots.length,
       withoutCurrentDoor: detail.productLots.filter(

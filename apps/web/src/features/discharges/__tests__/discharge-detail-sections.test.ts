@@ -6,14 +6,19 @@ import {
   buildLot,
   buildPoolEntry,
   buildShift,
+  buildStartProblem,
   listedDischarge,
+  startableDetail,
 } from '@/features/discharges/__tests__/support/fixtures'
 import {
   detailTabCounts,
   isDischargeDetailTab,
   preparationSummary,
+  problemTabs,
   tabSearch,
 } from '@/features/discharges/discharge-detail-sections'
+import { startProblemSections } from '@/features/discharges/discharge-start-view'
+import type { StartProblemDto } from '@/features/discharges/types'
 
 const planned = listedDischarge('MV Atlantic Dawn', 'PLANNED')
 const closed = listedDischarge('MV Loire Star', 'CLOSED')
@@ -102,5 +107,53 @@ describe('preparationSummary', () => {
     })
 
     expect(preparationSummary(detail).shifts).toEqual({ total: 4, plannedWithoutTrucks: 2 })
+  })
+})
+
+describe('problemTabs', () => {
+  const detail = startableDetail()
+  const tabsOf = (problems: StartProblemDto[]) =>
+    [...problemTabs(startProblemSections(problems, detail))].sort()
+  const holder = { dischargeId: 'discharge-cedar', vesselName: 'MV Ocean Cedar' }
+
+  test('marks the overview for a problem with the dock', () => {
+    expect(
+      tabsOf([
+        buildStartProblem({
+          family: 'ACTIVE_DISCHARGE_CONFLICT',
+          code: 'DOCK_HELD',
+          subject: { type: 'DOCK', id: detail.dock.id },
+          holder,
+        }),
+      ]),
+    ).toEqual(['overview'])
+  })
+
+  test('marks the tab each problem is fixed in, once per tab', () => {
+    expect(
+      tabsOf([
+        buildStartProblem({ subject: { type: 'PRODUCT_LOT', id: 'lot-wheat' } }),
+        buildStartProblem({
+          family: 'UNAVAILABLE_REFERENCE',
+          code: 'CUSTOMER_ARCHIVED',
+          subject: { type: 'CUSTOMER', id: 'customer-soufflet' },
+          context: { type: 'PRODUCT_LOT', id: 'lot-barley' },
+        }),
+        buildStartProblem({
+          family: 'ACTIVE_DISCHARGE_CONFLICT',
+          code: 'TRUCK_HELD',
+          subject: { type: 'TRUCK', id: 'truck-a' },
+          holder,
+        }),
+        buildStartProblem({
+          code: 'SHIFT_WITHOUT_TRUCK',
+          subject: { type: 'SHIFT', id: 'shift-first' },
+        }),
+      ]),
+    ).toEqual(['product-lots', 'shifts', 'truck-pool'])
+  })
+
+  test('marks nothing when nothing blocks the start', () => {
+    expect(tabsOf([])).toEqual([])
   })
 })

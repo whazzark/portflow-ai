@@ -9,6 +9,7 @@ import type {
   DischargeDetailTab,
   DischargeDto,
   StartCheckDto,
+  StartProblemDto,
   TruckCandidateDto,
 } from '@/features/discharges/types'
 import { server } from '@/test/msw/server'
@@ -71,6 +72,10 @@ type MockDischargeDetailOptions = {
   /** Hold every answer back this long, to observe the pending state. */
   delayMs?: number
   onRequest?: (id: string) => void
+  /** What the start check answers for every discharge; none by default, as the shared handler. */
+  startProblems?: StartProblemDto[]
+  /** Fail the start check, to show the detail does not depend on it. */
+  startCheckFails?: boolean
 }
 
 export function mockDischargeDetail({
@@ -80,8 +85,11 @@ export function mockDischargeDetail({
   failTimes = 0,
   delayMs = 0,
   onRequest,
+  startProblems = [],
+  startCheckFails = false,
 }: MockDischargeDetailOptions = {}) {
   let remainingFailures = failTimes
+  const checks = { requests: 0 }
 
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
@@ -110,7 +118,20 @@ export function mockDischargeDetail({
 
       return HttpResponse.json({ data: detail })
     }),
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id/start-check`, ({ params }) => {
+      checks.requests += 1
+
+      if (startCheckFails) {
+        return new HttpResponse(null, { status: 500 })
+      }
+
+      return HttpResponse.json({
+        data: { dischargeId: String(params.id), shiftId: null, problems: startProblems },
+      })
+    }),
   )
+
+  return checks
 }
 
 export function renderDischarges(path = '/discharges') {
@@ -220,6 +241,7 @@ export function detailFromCreation(body: CreateDischargeBody): DischargeDetailDt
     dock: { id: dock.id, name: dock.name, status: 'AVAILABLE' },
     startedAt: null,
     startedBy: null,
+    dockOccupations: [],
     productLots: body.productLots.map((lot, index) => {
       const customer = AVAILABLE_CUSTOMERS.find((candidate) => candidate.id === lot.customerId)
 

@@ -111,7 +111,8 @@ test('follows a lot problem to the product lots', async () => {
 
 test('shows a failed check with a retry, and no start until it succeeds', async () => {
   const detail = startableDetail()
-  let failures = 1
+  // The page reads the check for its banner first; only the confirmation's own read fails.
+  let failures = 0
   const state = mockDischargeStart({
     detail,
     respondToCheck: () => {
@@ -123,6 +124,8 @@ test('shows a failed check with a retry, and no start until it succeeds', async 
     },
   })
   renderDischargeDetail(detail.id)
+  await waitFor(() => expect(state.checkRequests).toBe(1))
+  failures = 1
 
   const dialog = await openStart()
 
@@ -135,7 +138,7 @@ test('shows a failed check with a retry, and no start until it succeeds', async 
   await waitFor(() =>
     expect(within(dialog).getByRole('button', { name: 'Start discharge' })).toBeEnabled(),
   )
-  expect(state.checkRequests).toBe(2)
+  expect(state.checkRequests).toBe(3)
 })
 
 test('keeps the review open after a failure unrelated to the preparation', async () => {
@@ -168,13 +171,16 @@ test('keeps the review open and checks again when the discharge changed meanwhil
   })
   renderDischargeDetail(detail.id)
 
-  const dialog = await openStart()
+  // The page's own read for its banner comes first.
   await waitFor(() => expect(state.checkRequests).toBe(1))
+  const dialog = await openStart()
+  await waitFor(() => expect(state.checkRequests).toBe(2))
   await confirmStart(dialog)
 
   expect(
     await screen.findByText('This discharge changed meanwhile. Check its doors and try again.'),
   ).toBeInTheDocument()
-  await waitFor(() => expect(state.checkRequests).toBe(2))
+  // The confirmation checks again, and so does the banner, the plan having moved on.
+  await waitFor(() => expect(state.checkRequests).toBe(4))
   expect(screen.getByRole('dialog', { name: 'Start MV Atlantic Dawn' })).toBeInTheDocument()
 })

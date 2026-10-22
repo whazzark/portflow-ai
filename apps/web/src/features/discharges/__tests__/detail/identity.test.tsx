@@ -66,9 +66,10 @@ test('marks an absent IMO and comment as not specified rather than leaving them 
 
   renderDischargeDetail(balticStar.id)
 
-  const overview = await screen.findByRole('region', { name: 'Overview' })
-  expect(field(overview, 'IMO')).toHaveTextContent('Not specified')
-  expect(field(overview, 'Vessel comment')).toHaveTextContent('Not specified')
+  // A planned discharge carries its IMO in the header, and leaves an absent comment out entirely.
+  await screen.findByRole('heading', { level: 1, name: 'MV Baltic Star' })
+  expect(field(screen.getByLabelText('Discharge facts'), 'IMO')).toHaveTextContent('Not specified')
+  expect(screen.queryByText('Vessel comment')).not.toBeInTheDocument()
 })
 
 test('keeps an archived dock readable and says it is archived', async () => {

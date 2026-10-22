@@ -5,6 +5,7 @@ import { expect, test } from 'vitest'
 import {
   ACTIVE_OBSERVER,
   buildDischargeDetail,
+  buildDockOccupation,
   buildDoorPeriod,
   buildLot,
   buildPoolEntry,
@@ -94,4 +95,48 @@ test.each([
 
   expect(screen.getByRole('region', { name: 'Overview' })).toBeInTheDocument()
   expect(screen.queryByRole('region', { name: 'Preparation' })).not.toBeInTheDocument()
+})
+
+test('lists the dock first, then the lots, the truck pool, and the shifts', async () => {
+  await renderSummary()
+
+  const summary = screen.getByRole('region', { name: 'Preparation' })
+  expect(
+    within(summary)
+      .getAllByRole('link')
+      .map((link) => link.textContent),
+  ).toEqual(['Dock', 'Product lots', 'Truck pool', 'Shifts'])
+  expect(summaryRow('Dock')).toHaveTextContent('Quai Nord')
+  // Below the dock timeline, which the overview opens on.
+  const regions = within(screen.getByRole('tabpanel')).getAllByRole('region')
+  expect(regions.map((region) => within(region).getAllByRole('heading')[0].textContent)).toEqual([
+    'Dock Quai Nord',
+    'Preparation',
+  ])
+})
+
+test('says in words when the dock is held by an active discharge, or archived', async () => {
+  const view = await renderSummary(
+    buildDischargeDetail(ATLANTIC_DAWN, {
+      dockOccupations: [buildDockOccupation({ vesselName: 'MV Ocean Cedar' })],
+    }),
+  )
+  expect(summaryRow('Dock')).toHaveTextContent('Held by MV Ocean Cedar (active)')
+  view.unmount()
+
+  await renderSummary(
+    buildDischargeDetail(ATLANTIC_DAWN, {
+      dock: { id: 'dock-nord', name: 'Quai Nord', status: 'ARCHIVED' },
+    }),
+  )
+  expect(summaryRow('Dock')).toHaveTextContent('Dock archived')
+})
+
+test('brings focus to the dock timeline from the dock row', async () => {
+  const user = userEvent.setup()
+  await renderSummary()
+
+  await user.click(within(summaryRow('Dock')).getByRole('link', { name: 'Dock' }))
+
+  expect(screen.getByRole('region', { name: 'Dock Quai Nord' })).toHaveFocus()
 })

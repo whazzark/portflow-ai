@@ -182,6 +182,23 @@ export function buildDischargeDetail(
     productLots: [],
     shifts: [],
     truckPool: [],
+    dockOccupations: [],
+    ...overrides,
+  }
+}
+
+type DockOccupation = DischargeDetailDto['dockOccupations'][number]
+
+/** Another discharge assigned to the same dock, active and holding it unless told otherwise. */
+export function buildDockOccupation(overrides: Partial<DockOccupation> = {}): DockOccupation {
+  return {
+    dischargeId: 'discharge-holder',
+    vesselName: 'MV Dock Holder',
+    status: 'ACTIVE',
+    expectedStartAt: '2026-09-30T06:00:00.000Z',
+    startedAt: '2026-09-30T06:00:00.000Z',
+    plannedStartAt: '2026-09-30T06:00:00.000Z',
+    plannedEndAt: '2026-10-01T18:00:00.000Z',
     ...overrides,
   }
 }
