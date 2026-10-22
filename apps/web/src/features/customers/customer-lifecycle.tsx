@@ -44,6 +44,15 @@ export function useCustomerLifecycleConfig(customer: CustomerDto): ResourceLifec
   return {
     singular: CUSTOMER_SINGULAR,
     name: customer.companyName,
+    describeTitle: (action) =>
+      `${action === 'reactivate' ? 'Reactivate' : 'Archive'} ${customer.companyName}?`,
+    describeEffect: (action) =>
+      action === 'reactivate'
+        ? `${customer.code} can be added to new discharges again. Its archive stays in the history.`
+        : `${customer.code} can no longer be added to a new discharge. Past discharges and ` +
+          'reports keep it. You can reactivate it later.',
+    commentPlaceholder: (action) =>
+      `Why is this customer ${action === 'reactivate' ? 'reactivated' : 'archived'}?`,
     isPending: mutations.archive.isPending || mutations.reactivate.isPending,
     refresh: mutations.refreshCustomers,
     submit: (action, body) =>

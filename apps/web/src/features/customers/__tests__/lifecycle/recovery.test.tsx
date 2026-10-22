@@ -55,7 +55,7 @@ test('a refusal keeps the dialog open with the typed comment, and a corrected re
   expect(screen.getByText('The comment field must not exceed 1000 characters')).toBeInTheDocument()
   // The dialog stays open with the comment intact, so the administrator corrects and resubmits
   // without reopening the customer.
-  expect(screen.getByRole('heading', { name: 'Archive customer?' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Archive Acme Logistics?' })).toBeInTheDocument()
   expect(comment).toHaveValue('a'.repeat(1001))
 
   fireEvent.change(comment, { target: { value: 'Shortened' } })
@@ -85,5 +85,5 @@ test('an in-use refusal names its own reason and leaves the customer available',
   expect(
     await screen.findByText('Customer is used by a planned or active discharge'),
   ).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Archive customer?' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Archive Acme Logistics?' })).toBeInTheDocument()
 })

@@ -137,15 +137,15 @@ compare dialogs and toast with the boards.
 
 ### Tests for User Story 4 (write first, must fail)
 
-- [ ] T024 [P] [US4] Update apps/web/src/features/customers/__tests__/list/row-actions.test.tsx: trigger named "Actions for {code}"; available menu items View, Edit, a `separator`, Archive; archived menu View, Reactivate
-- [ ] T025 [P] [US4] Update apps/web/src/features/customers/__tests__/lifecycle/lifecycle.test.tsx: archive dialog title "Archive {companyName}?", description "{code} can no longer be added to a new discharge. Past discharges and reports keep it. You can reactivate it later.", comment placeholder "Why is this customer archived?", buttons Cancel/Archive, success toast "Customer “{companyName}” archived" and counts update; reactivate dialog title "Reactivate {companyName}?", description "{code} can be added to new discharges again. Its archive stays in the history.", placeholder "Why is this customer reactivated?"; check apps/web/src/features/customers/__tests__/lifecycle/recovery.test.tsx still passes the refusal path (update only copy assertions)
+- [X] T024 [P] [US4] Update apps/web/src/features/customers/__tests__/list/row-actions.test.tsx: trigger named "Actions for {code}"; available menu items View, Edit, a `separator`, Archive; archived menu View, Reactivate
+- [X] T025 [P] [US4] Update apps/web/src/features/customers/__tests__/lifecycle/lifecycle.test.tsx: archive dialog title "Archive {companyName}?", description "{code} can no longer be added to a new discharge. Past discharges and reports keep it. You can reactivate it later.", comment placeholder "Why is this customer archived?", buttons Cancel/Archive, success toast "Customer “{companyName}” archived" and counts update; reactivate dialog title "Reactivate {companyName}?", description "{code} can be added to new discharges again. Its archive stays in the history.", placeholder "Why is this customer reactivated?"; check apps/web/src/features/customers/__tests__/lifecycle/recovery.test.tsx still passes the refusal path (update only copy assertions)
 
 ### Implementation for User Story 4
 
-- [ ] T026 [P] [US4] Add optional `describeTitle?: (action) => string` and `commentPlaceholder?: (action) => string` to `ResourceLifecycleConfig` and use them in `ResourceLifecycleDialog` (fallback to `lifecycleDialogTitle` / no placeholder) in apps/web/src/components/lifecycle/resource-lifecycle-actions.tsx
-- [ ] T027 [P] [US4] Render a `DropdownMenuSeparator` between View/Edit and the lifecycle items when both groups are present in apps/web/src/components/lifecycle/resource-row-actions.tsx (no name or label change)
-- [ ] T028 [US4] Supply `describeTitle`, `describeEffect` and `commentPlaceholder` with the customer copy in `useCustomerLifecycleConfig` in apps/web/src/features/customers/customer-lifecycle.tsx (depends on T026)
-- [ ] T029 [US4] Name the row menu by the customer code (`name={customer.code}`) in apps/web/src/features/customers/ui/customer-row-actions.tsx (depends on T027)
+- [X] T026 [P] [US4] Add optional `describeTitle?: (action) => string` and `commentPlaceholder?: (action) => string` to `ResourceLifecycleConfig` and use them in `ResourceLifecycleDialog` (fallback to `lifecycleDialogTitle` / no placeholder) in apps/web/src/components/lifecycle/resource-lifecycle-actions.tsx
+- [X] T027 [P] [US4] Render a `DropdownMenuSeparator` between View/Edit and the lifecycle items when both groups are present in apps/web/src/components/lifecycle/resource-row-actions.tsx (no name or label change)
+- [X] T028 [US4] Supply `describeTitle`, `describeEffect` and `commentPlaceholder` with the customer copy in `useCustomerLifecycleConfig` in apps/web/src/features/customers/customer-lifecycle.tsx (depends on T026)
+- [X] T029 [US4] Name the row menu by the customer code (`name={customer.code}`) in apps/web/src/features/customers/ui/customer-row-actions.tsx (depends on T027)
 
 **Checkpoint**: T024–T025 green; other features' lifecycle tests unchanged and green.
 
@@ -157,7 +157,7 @@ compare dialogs and toast with the boards.
 
 **Independent Test**: As an Observer, open the list and a detail; compare with the read-only board.
 
-- [ ] T030 [US6] Extend apps/web/src/features/customers/__tests__/details/permissions.test.tsx (OBSERVER fixture): no "Create customer", no checkboxes, no "Actions" column header nor row menus, detail without footer buttons, `?mode=create` and `?customerId=…&mode=edit` open no form, no-match "Show archived" still offered (consultation); fix any gating gap found in apps/web/src/features/customers/ui/customer-table.tsx or apps/web/src/features/customers/ui/customer-section.tsx (empty-state Create action must stay administrator-only)
+- [X] T030 [US6] Extend apps/web/src/features/customers/__tests__/details/permissions.test.tsx (OBSERVER fixture): no "Create customer", no checkboxes, no "Actions" column header nor row menus, detail without footer buttons, `?mode=create` and `?customerId=…&mode=edit` open no form, no-match "Show archived" still offered (consultation); fix any gating gap found in apps/web/src/features/customers/ui/customer-table.tsx or apps/web/src/features/customers/ui/customer-section.tsx (empty-state Create action must stay administrator-only)
 
 **Checkpoint**: T030 green.
 

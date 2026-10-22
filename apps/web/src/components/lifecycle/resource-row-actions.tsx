@@ -5,6 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { LIFECYCLE_ACTION_LABELS, type LifecycleAction } from './lifecycle-copy'
@@ -83,6 +84,9 @@ export function ResourceRowActions({
         <DropdownMenuContent align="end">
           {onView && <DropdownMenuItem onClick={onView}>View</DropdownMenuItem>}
           {canEdit && <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>}
+          {/* Consulting and correcting are set apart from the lifecycle changes, which carry
+              consequences and ask for confirmation. */}
+          {(onView !== undefined || canEdit) && actions.length > 0 && <DropdownMenuSeparator />}
           {actions.map((action) => (
             <DropdownMenuItem
               key={action}
