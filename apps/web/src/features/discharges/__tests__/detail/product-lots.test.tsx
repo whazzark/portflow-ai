@@ -392,9 +392,9 @@ test('offers Assign doors beside each door problem, opening that lot’s doors',
     }),
   )
 
-  expect(await screen.findByRole('dialog', { name: 'Warehouse doors' })).toHaveAccessibleDescription(
-    'Soufflet Négoce · Pois · 1,000.000 t',
-  )
+  expect(
+    await screen.findByRole('dialog', { name: 'Warehouse doors' }),
+  ).toHaveAccessibleDescription('Soufflet Négoce · Pois · 1,000.000 t')
 })
 
 test('offers no Assign doors to an observer', async () => {
@@ -452,6 +452,8 @@ test('offers a preparer to add lots to a planned discharge without any', async (
   const region = await screen.findByRole('region', { name: 'Product lots' })
 
   expect(within(region).getByText('No product lots')).toBeInTheDocument()
-  expect(within(region).getAllByRole('button', { name: 'Add product lots' }).length).toBeGreaterThan(0)
+  expect(
+    within(region).getAllByRole('button', { name: 'Add product lots' }).length,
+  ).toBeGreaterThan(0)
   expect(region).not.toHaveTextContent('0 lots')
 })

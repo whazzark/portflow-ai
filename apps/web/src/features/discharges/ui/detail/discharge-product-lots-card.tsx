@@ -57,8 +57,7 @@ const rowProblems = (problems: LotDoorProblems, lotId: string): LotDoorRowProble
   heldBy: problems.heldDoors.get(lotId) ?? NO_HELD_DOOR,
 })
 
-const hasDoorProblem = (problems: LotDoorRowProblems) =>
-  problems.noDoor || problems.heldBy.size > 0
+const hasDoorProblem = (problems: LotDoorRowProblems) => problems.noDoor || problems.heldBy.size > 0
 
 /**
  * How much the discharge unloads, then what still blocks its doors. A count of held doors appears

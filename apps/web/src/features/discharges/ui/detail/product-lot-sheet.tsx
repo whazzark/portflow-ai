@@ -152,7 +152,9 @@ function ProductLotForm({
                 Assign doors
               </Button>
             </div>
-            <FieldDescription>Doors are changed from Assign doors, not from this form.</FieldDescription>
+            <FieldDescription>
+              Doors are changed from Assign doors, not from this form.
+            </FieldDescription>
           </FieldSet>
           <form.FormError />
           <SheetFooter className="flex-row justify-end gap-2 p-0">
