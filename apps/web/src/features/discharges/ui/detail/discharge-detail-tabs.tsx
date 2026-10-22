@@ -86,7 +86,7 @@ export function DischargeDetailTabs({
       </div>
       <TabsContent className="grid gap-6" value="overview">
         {discharge.status === 'ACTIVE' ? (
-          <ActiveOverview discharge={discharge} />
+          <ActiveOverview canAddShifts={canAddShifts} discharge={discharge} />
         ) : (
           <>
             <DischargeIdentityCard discharge={discharge} />
