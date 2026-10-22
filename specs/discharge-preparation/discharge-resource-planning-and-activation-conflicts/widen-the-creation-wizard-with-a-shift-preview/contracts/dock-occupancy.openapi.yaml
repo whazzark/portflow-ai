@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: >-
     Introduced by issue 323 for the creation wizard's shift preview, dock-scoped so that issue 324's
-    dock timeline can reuse it. Read only. Requires an ACTIVE user (DischargePolicy.list). See
+    dock timeline can reuse it. Read only. Requires an ACTIVE user (DischargePolicy.list; the auth middleware answers 401 to any other session). See
     research.md Decisions 1 to 3 and data-model.md.
 paths:
   /api/v1/discharges/dock-occupancy:
@@ -38,8 +38,7 @@ paths:
                 free:
                   value:
                     data: []
-        "401": { description: Not signed in (E_UNAUTHORIZED_ACCESS). }
-        "403": { description: The user is not ACTIVE (E_AUTHORIZATION_FAILURE). }
+        "401": { description: Not signed in, or the session user is not ACTIVE (E_UNAUTHORIZED_ACCESS). }
         "422": { description: dockId missing or not a uuid (E_VALIDATION_ERROR). }
 components:
   schemas:
