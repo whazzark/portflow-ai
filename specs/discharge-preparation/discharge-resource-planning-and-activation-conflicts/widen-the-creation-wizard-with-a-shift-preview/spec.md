@@ -183,7 +183,7 @@ scrolled clear of the footer, and the footer stays visible.
 - **FR-006**: The Planned shifts step MUST show a « Shift preview » as its first element, above the
   Planned shifts form; it scrolls with the page and is not pinned.
 - **FR-007**: The preview MUST show a summary line with the selected dock's name, « free from » the
-  end of the latest other discharge occupancy ending at or before the expected start (only when
+  latest end among other discharge occupancies that start before the expected start (only when
   there is one), and the expected start.
 - **FR-008**: The preview MUST show a legend distinguishing other discharges, planned shifts, and the
   Expected start marker.
