@@ -1,4 +1,4 @@
-import { type MouseEvent, useState } from 'react'
+import { type MouseEvent, type ReactNode, useEffect, useState } from 'react'
 import {
   CHECKPOINT_KIND_LABELS,
   CHECKPOINT_KIND_PLURAL_LABELS,
@@ -88,6 +88,10 @@ export function CheckpointMap({
   selectableKinds = [],
   onToggleSelectMode,
   onShiftSelect,
+  onAnchorChange,
+  fitRequest,
+  ghost,
+  onMapClick,
 }: {
   checkpoints: PresentedCheckpoint[]
   onSelect: (checkpoint: PresentedCheckpoint) => void
@@ -100,11 +104,34 @@ export function CheckpointMap({
   selectableKinds?: CheckpointKind[]
   onToggleSelectMode?: (kind: CheckpointKind) => void
   onShiftSelect?: (kind: CheckpointKind, id: string) => void
+  anchorPoint?: MockLatLng
+  onAnchorChange?: (anchor: { x: number; y: number } | null) => void
+  fitRequest?: { key: number; ids: string[] }
+  ghost?: { position: MockLatLng; label: string; icon?: ReactNode }
+  onMapClick?: () => void
 }) {
   const isArmed = placement?.armed ?? false
 
+  // jsdom renders no map, so there is never a screen position to anchor a card to.
+  useEffect(() => {
+    onAnchorChange?.(null)
+  }, [onAnchorChange])
+
   return (
-    <section aria-label="Checkpoint map">
+    <section
+      aria-label="Checkpoint map"
+      data-fit-request={fitRequest ? [...fitRequest.ids].sort().join(',') : undefined}
+    >
+      {onMapClick && !isArmed && (
+        <button onClick={onMapClick} type="button">
+          Simulate click on empty map
+        </button>
+      )}
+      {ghost && (
+        <span aria-label={ghost.label} role="img">
+          {ghost.position.latitude}, {ghost.position.longitude}
+        </span>
+      )}
       {onToggleSelectMode &&
         selectableKinds.map((kind) => (
           <button

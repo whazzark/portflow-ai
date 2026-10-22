@@ -12,10 +12,14 @@ export function ResourceMapWorkspace({
   sourceError = false,
   onRetrySource,
   mapUnavailableActions,
+  toolbar,
+  banner,
+  card,
+  overlay,
 }: {
   resourceLabel: string
   map: (onMapError: () => void) => ReactNode
-  controls: ReactNode
+  controls?: ReactNode
   legend?: ReactNode
   emptyMessage?: string
   sourceMessage?: string
@@ -27,6 +31,14 @@ export function ResourceMapWorkspace({
    * configured, where the map — and the cluster with it — never renders at all.
    */
   mapUnavailableActions?: ReactNode
+  /** The floating toolbar, top-left. Takes `controls`' place when given. */
+  toolbar?: ReactNode
+  /** A mode banner, shown instead of the toolbar while the map is in a mode. */
+  banner?: ReactNode
+  /** A `ResourceMapCard`, positioned against this section. */
+  card?: ReactNode
+  /** A centred notice over the map, such as a search with no match. */
+  overlay?: ReactNode
 }) {
   const [hasMapError, setHasMapError] = useState(false)
   const singularResourceLabel = resourceLabel.replace(/s$/, '')
@@ -53,8 +65,14 @@ export function ResourceMapWorkspace({
         </div>
       )}
       <div className="absolute top-4 left-4 z-10 max-w-[calc(100%-2rem)] md:top-6 md:left-6 md:max-w-[calc(100%-3rem)]">
-        {controls}
+        {banner ?? toolbar ?? controls}
       </div>
+      {overlay && (
+        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center p-6">
+          <div className="pointer-events-auto">{overlay}</div>
+        </div>
+      )}
+      {card}
       {(hasMapError || sourceMessage) && (
         <div className="absolute top-3 right-3 z-10 flex max-w-sm flex-col gap-2">
           {hasMapError && (

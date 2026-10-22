@@ -1,6 +1,8 @@
-import { SquareDashedMousePointer } from 'lucide-react'
+import { Maximize, SquareDashedMousePointer } from 'lucide-react'
+import type * as MapLibreGL from 'maplibre-gl'
 import { LngLatBounds } from 'maplibre-gl'
-import { type ReactNode, useEffect, useMemo } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef } from 'react'
+import type { ResourceMapAnchor } from '@/components/resource-map/resource-map-anchor'
 import {
   type ResourceMapCreateAction,
   ResourceMapCreateControl,
@@ -15,6 +17,8 @@ import {
   ControlGroup,
   Map as MapCanvas,
   MapControls,
+  MapMarker,
+  MarkerContent,
   useMap,
 } from '@/components/ui/map'
 import { mapStyleUrls } from '@/config/map'
@@ -92,19 +96,138 @@ function FitCheckpointBounds({
       return
     }
 
-    if (coordinates.length === 1) {
-      map.easeTo({ center: coordinates[0], zoom: 13 })
-      return
-    }
-
-    const bounds = coordinates.reduce(
-      (current, coordinate) => current.extend(coordinate),
-      new LngLatBounds(),
-    )
-    map.fitBounds(bounds, { maxZoom: 13, padding: 56 })
+    fitCoordinates(map, coordinates)
   }, [coordinates, isLoaded, map])
 
   return null
+}
+
+/**
+ * Reports where `point` sits in the map container's pixel space, and again whenever the camera or
+ * the container moves, so an overlay card can stay next to it. Reports `null` without a point.
+ */
+function ReportAnchor({
+  point,
+  onAnchorChange,
+}: {
+  point?: LatLng
+  onAnchorChange: (anchor: ResourceMapAnchor | null) => void
+}) {
+  const { map, isLoaded } = useMap()
+  const onAnchorChangeRef = useRef(onAnchorChange)
+  onAnchorChangeRef.current = onAnchorChange
+  const latitude = point?.latitude
+  const longitude = point?.longitude
+
+  useEffect(() => {
+    if (!map || !isLoaded || latitude === undefined || longitude === undefined) {
+      onAnchorChangeRef.current(null)
+      return
+    }
+
+    const report = () => {
+      const { x, y } = map.project([longitude, latitude])
+      onAnchorChangeRef.current({ x, y })
+    }
+
+    report()
+    map.on('move', report)
+    map.on('resize', report)
+    return () => {
+      map.off('move', report)
+      map.off('resize', report)
+    }
+  }, [isLoaded, latitude, longitude, map])
+
+  return null
+}
+
+/** Calls `onClick` for a click on the map itself — not on a marker, whose element sits above the
+ * canvas — unless a placement is armed, which owns map clicks. */
+function MapClickListener({ onClick }: { onClick: () => void }) {
+  const { map } = useMap()
+  const onClickRef = useRef(onClick)
+  onClickRef.current = onClick
+
+  useEffect(() => {
+    if (!map) {
+      return
+    }
+    const handleClick = (_event: MapLibreGL.MapMouseEvent) => onClickRef.current()
+    map.on('click', handleClick)
+    return () => {
+      map.off('click', handleClick)
+    }
+  }, [map])
+
+  return null
+}
+
+/** Fits the camera to the requested checkpoints each time `request.key` changes. */
+function FitRequest({
+  checkpoints,
+  request,
+}: {
+  checkpoints: PresentedCheckpoint[]
+  request?: { key: number; ids: string[] }
+}) {
+  const { map, isLoaded } = useMap()
+  const checkpointsRef = useRef(checkpoints)
+  checkpointsRef.current = checkpoints
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only a new request key refits
+  useEffect(() => {
+    if (!map || !isLoaded || !request) {
+      return
+    }
+    const ids = new Set(request.ids)
+    fitCoordinates(
+      map,
+      checkpointsRef.current
+        .filter((checkpoint) => ids.has(checkpoint.id))
+        .map((checkpoint) => [checkpoint.longitude, checkpoint.latitude]),
+    )
+  }, [map, isLoaded, request?.key])
+
+  return null
+}
+
+function fitCoordinates(map: MapLibreGL.Map, coordinates: [number, number][]) {
+  if (coordinates.length === 0) {
+    return
+  }
+  if (coordinates.length === 1) {
+    map.easeTo({ center: coordinates[0], zoom: 13 })
+    return
+  }
+  const bounds = coordinates.reduce(
+    (current, coordinate) => current.extend(coordinate),
+    new LngLatBounds(),
+  )
+  map.fitBounds(bounds, { maxZoom: 13, padding: 56 })
+}
+
+function FitAllControl({ checkpoints }: { checkpoints: PresentedCheckpoint[] }) {
+  const { map } = useMap()
+
+  return (
+    <ControlGroup>
+      <ControlButton
+        disabled={checkpoints.length === 0}
+        label="Fit all checkpoints"
+        onClick={() => {
+          if (map) {
+            fitCoordinates(
+              map,
+              checkpoints.map((checkpoint) => [checkpoint.longitude, checkpoint.latitude]),
+            )
+          }
+        }}
+      >
+        <Maximize aria-hidden="true" className="size-4" />
+      </ControlButton>
+    </ControlGroup>
+  )
 }
 
 export function CheckpointMap({
@@ -121,6 +244,11 @@ export function CheckpointMap({
   selectableKinds = [],
   onToggleSelectMode,
   onShiftSelect,
+  anchorPoint,
+  onAnchorChange,
+  fitRequest,
+  ghost,
+  onMapClick,
 }: {
   checkpoints: PresentedCheckpoint[]
   selected?: PresentedCheckpoint
@@ -145,6 +273,15 @@ export function CheckpointMap({
   /** Shift-clicking a checkable marker enters/adds to that kind's select mode directly,
    * regardless of the current mode. */
   onShiftSelect?: (kind: CheckpointKind, id: string) => void
+  /** The point an overlay card is anchored to; its screen position goes to `onAnchorChange`. */
+  anchorPoint?: LatLng
+  onAnchorChange?: (anchor: ResourceMapAnchor | null) => void
+  /** Bumping `key` fits the camera to the checkpoints named by `ids`. */
+  fitRequest?: { key: number; ids: string[] }
+  /** Where a checkpoint being moved stood before the move, drawn as a muted marker. */
+  ghost?: { position: LatLng; label: string; icon: ReactNode }
+  /** A click on the map itself, away from any marker. */
+  onMapClick?: () => void
 }) {
   const initialCenter = useMemo<[number, number]>(() => {
     const firstCheckpoint = checkpoints[0]
@@ -168,6 +305,22 @@ export function CheckpointMap({
       zoom={checkpoints.length === 1 ? 13 : 5}
     >
       <FitCheckpointBounds checkpoints={checkpoints} selected={selected} />
+      <FitRequest checkpoints={checkpoints} request={fitRequest} />
+      {onAnchorChange && <ReportAnchor onAnchorChange={onAnchorChange} point={anchorPoint} />}
+      {onMapClick && !isArmed && <MapClickListener onClick={onMapClick} />}
+      {ghost && (
+        <MapMarker latitude={ghost.position.latitude} longitude={ghost.position.longitude}>
+          <MarkerContent className="pointer-events-none">
+            <span
+              aria-label={ghost.label}
+              className="grid size-8 place-items-center rounded-full border-2 border-muted-foreground border-dashed bg-background/80 text-muted-foreground opacity-80"
+              role="img"
+            >
+              {ghost.icon}
+            </span>
+          </MarkerContent>
+        </MapMarker>
+      )}
       {checkpoints.map((checkpoint) => {
         const isCheckable =
           selectableKinds.includes(checkpoint.kind) && (checkableIds?.has(checkpoint.id) ?? false)
@@ -221,6 +374,7 @@ export function CheckpointMap({
             </ControlGroup>
           ))}
         <ResourceMapCreateControl actions={createActions} />
+        <FitAllControl checkpoints={checkpoints} />
       </MapControls>
     </MapCanvas>
   )
