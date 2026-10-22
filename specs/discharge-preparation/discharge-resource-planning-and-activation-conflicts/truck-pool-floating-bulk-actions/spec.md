@@ -189,8 +189,10 @@ Add trucks, search, select trucks in two companies, and reserve them.
 - **FR-008**: Above the table, the pool MUST show a summary line « n truck(s) reserved » counting
   held trucks, followed by « · n suspended » only when at least one held truck is suspended.
 - **FR-009**: When at least one held truck is also held by another discharge, the pool MUST show
-  the hint « Also held by planned discharges: the first to start keeps the truck » with a warning
-  icon; otherwise the hint MUST be absent.
+  a hint with a warning icon: « Also held by planned discharges: the first to start keeps the
+  truck » when every other holder is planned, or « Also held by other discharges: a truck can serve
+  only one active discharge » when one of them is active (amended at plan review, research R6);
+  otherwise the hint MUST be absent.
 - **FR-010**: The warning icon on an affected row MUST open, on click and on keyboard activation, a
   popover titled « Also held by » listing each other discharge holding the truck with its vessel
   name and status, and the sentence explaining that starting a discharge settles the competition.

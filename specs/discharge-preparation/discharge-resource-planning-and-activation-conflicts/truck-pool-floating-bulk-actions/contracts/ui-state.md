@@ -49,7 +49,7 @@ Absent from the DOM when nothing is selected. Sticky at the bottom of the conten
 
 - « n trucks not in the pool » above the list (all candidates, independent of the search).
 - Groups per transport company: header « <company> » with « m » or « n of m » selected.
-- Candidate row: `checkbox` « <registration> »; when held elsewhere, inline text
+- Each company is a `group` named after it. Candidate row: `checkbox` « Select <registration> »; when held elsewhere, inline text
   « Held by <vessel>, <vessel> · <Status> » (one segment per status).
 - Search, « Select all » (visible candidates), refusal alert, retry, footer « n selected »,
-  « Cancel », « Add trucks » unchanged.
+  « Cancel » unchanged; the submit button reads « Add trucks » (pending « Adding… »), as spec US3 asks.

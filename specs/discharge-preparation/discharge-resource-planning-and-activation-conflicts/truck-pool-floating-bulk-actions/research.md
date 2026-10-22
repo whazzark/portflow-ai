@@ -88,7 +88,7 @@ design choices the spec leaves to planning.
 
 ## R8. Withdraw confirmation copy
 
-- **Decision**: Title unchanged (« Withdraw AA-101-PF? » / « Withdraw n trucks? »). Description:
+- **Decision**: Title names the truck when there is one (« Withdraw AA-101-PF? », was « Withdraw truck? ») and the count otherwise (« Withdraw n trucks? »), as spec US3 scenario 1 asks. Description:
   « <registrations> leave(s) the pool of <vessel>. » followed, when shifts are affected, by « It is
   also removed from the n shift(s) that use it: » / « They are also removed from the n shifts that
   use them: » and the chronological list. Refusal and error handling unchanged.
@@ -101,7 +101,7 @@ design choices the spec leaves to planning.
   `selected`. Group header shows the name and « m », or « n of m » when n > 0. A line above the list
   states « n trucks not in the pool » (n = all candidates, not only those matching the search).
   « Select all » keeps its current visible-only semantics; no per-group checkbox (the artboard has
-  none). Footer keeps « n selected », Cancel, Add trucks.
+  none). Footer keeps « n selected » and Cancel; the submit button is renamed « Reserve » → « Add trucks » (spec US3 scenario 5).
 - **Rationale**: Mirrors the artboard without adding behaviors the design doesn't show; existing
   refusal/remembered-candidate logic stays as is (remembered refused candidates join their
   company's group).
