@@ -102,9 +102,9 @@ its own. All paths are relative to the repository root; `web/` below abbreviates
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T020 Run `pnpm check` (fix with `pnpm check:fix`), `pnpm typecheck`, and `pnpm test` from the repository root; all must pass
+- [X] T020 Run `pnpm check` (fix with `pnpm check:fix`), `pnpm typecheck`, and `pnpm test` from the repository root; all must pass
 - [ ] T021 Run the browser walkthrough in `specs/interface-v2/discharges/closed-discharge-record-without-door-history/quickstart.md` (MV Loire Star, plus one planned and one active discharge, and at 375 px), comparing against the canvas `discharges-retenue-closed-*` screens; fix any visual or accessibility gap in the files touched above
-- [ ] T022 Obtain a fresh read-only review of the final diff (`/code-review` in a new session or a read-only review subagent), resolve or justify every confirmed finding, then mark the tasks above `[X]`
+- [X] T022 Obtain a fresh read-only review of the final diff (`/code-review` in a new session or a read-only review subagent), resolve or justify every confirmed finding, then mark the tasks above `[X]`
 
 ---
 
