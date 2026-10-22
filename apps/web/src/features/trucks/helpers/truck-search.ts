@@ -16,6 +16,7 @@ export function truckMatchesSearch(
   return (
     !normalizedSearch ||
     normalizeSearch(truck.registration).includes(normalizedSearch) ||
+    normalizeSearch(truck.vehicleModel ?? '').includes(normalizedSearch) ||
     normalizeSearch(company?.name ?? '').includes(normalizedSearch)
   )
 }
