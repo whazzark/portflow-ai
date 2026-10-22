@@ -1,27 +1,22 @@
 <!--
 Sync Impact Report
-- Version change: 2.0.0 → 3.0.0
+- Version change: 3.0.0 → 3.1.0
 - Modified principles:
-  - I. Versioned intent is the contract → I. Selected feature intent is versioned
-  - II. One coherent delivery unit per spec → II. One independently deliverable feature per spec
-  - III. Risk-proportionate human gates protect product intent → III. Vanilla Spec Kit gates protect product intent
-  - VIII. Secure, reversible automation → VIII. One workflow owner
-- Removed sections:
-  - Custom standard/high-assurance delivery workflow and artifact-hash approval rules
-- Added sections:
-  - Official Spec Kit lifecycle and incremental backlog adoption rules
+  - VII. Verification is part of delivery — the fresh read-only review of the final diff is now a
+    Claude Code review (Claude Code is now the repository's sole AI agent)
+- Added sections: none
+- Removed sections: none
 - Templates:
-  - ✅ .specify/templates/spec-template.md — vanilla template restored; compatible
-  - ✅ .specify/templates/plan-template.md — vanilla Constitution Check consumes these principles
-  - ✅ .specify/templates/tasks-template.md — vanilla task generation loads this constitution
-  - ✅ .specify/templates/checklist-template.md — vanilla template restored; optional workflow remains compatible
+  - ✅ .specify/templates/plan-template.md — no reviewer-specific rule; compatible
+  - ✅ .specify/templates/spec-template.md — no change required
+  - ✅ .specify/templates/tasks-template.md — no change required
+  - ✅ .claude/skills/speckit-*/SKILL.md — generic guidance; no outdated agent references
 - Runtime guidance:
   - ✅ AGENTS.md
+  - ✅ .github/PULL_REQUEST_TEMPLATE.md
   - ✅ docs/agents/spec-kit.md
-  - ✅ docs/agents/issue-tracker.md
-  - ✅ docs/agents/triage-labels.md
   - ✅ docs/architecture/ai-development-factory.md
-  - ✅ README.md and .github/PULL_REQUEST_TEMPLATE.md
+  - ✅ README.md
 - Deferred items: none
 -->
 
@@ -70,9 +65,9 @@ NOT be duplicated in a second hand-maintained document.
 ### VII. Verification is part of delivery
 
 Before a PR is ready, formatting and lint checks, typechecking, affected tests, the full fast test
-suite, and relevant browser flows MUST pass. A fresh read-only Codex review MUST assess the final
-diff, with confirmed findings resolved or explicitly justified. Human review and merge remain
-mandatory.
+suite, and relevant browser flows MUST pass. A fresh read-only Claude Code review (for example
+`/code-review` in a new session or a read-only review subagent) MUST assess the final diff, with
+confirmed findings resolved or explicitly justified. Human review and merge remain mandatory.
 
 ### VIII. One workflow owner
 
@@ -112,4 +107,4 @@ remain consistent with this constitution. Constitution versions follow semantic 
 for incompatible governance changes, MINOR for new principles or materially expanded obligations,
 and PATCH for non-semantic clarification.
 
-**Version**: 3.0.0 | **Ratified**: 2026-07-27 | **Last Amended**: 2026-07-31
+**Version**: 3.1.0 | **Ratified**: 2026-07-27 | **Last Amended**: 2026-10-22

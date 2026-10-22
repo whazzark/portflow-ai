@@ -40,6 +40,6 @@ Spec: `specs/.../spec.md` or `N/A`
 - [ ] Acceptance criteria were verified against the delivered result
 - [ ] `pnpm check && pnpm typecheck && pnpm test` run locally and pass
 - [ ] Affected browser journeys were exercised when `apps/web` changed
-- [ ] A fresh Codex session reviewed the final diff
+- [ ] A fresh read-only Claude Code review assessed the final diff
 - [ ] Confirmed review findings were resolved or explicitly justified
 - [ ] New domain terms and durable architecture decisions are documented where applicable
