@@ -31,9 +31,9 @@
 
 ## Notes
 
-- Two clarifications remain open for the human spec review:
-  - User Story 5, scenario 6: whether the bulk selection bar and dialog preview skipped customers
-    before submission (needs the customer list to say which customers a planned discharge uses).
+- Resolved: skipped customers in a bulk archive are reported only in the result toast (no
+  pre-submission preview, no API change).
+- One clarification remains open for the human spec review:
   - FR-007: whether search narrows to code and company name as drawn, or keeps matching lifecycle
     comments.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.

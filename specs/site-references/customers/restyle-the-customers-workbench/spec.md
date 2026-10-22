@@ -200,12 +200,10 @@ the retained screens.
    success toast reports the number archived and the selection clears.
 5. **Given** a selection, **When** the administrator changes tab or search, **Then** the selection
    clears.
-6. [NEEDS CLARIFICATION: The retained bulk-selection bar and dialog announce skipped customers
-   *before* submission ("NORDENG is on a planned discharge and will be skipped", "Archive 2 of 3
-   customers?", "Skipped · on a planned discharge"). The customer list does not currently tell the
-   web app which customers a planned discharge uses, so this preview needs the list to carry that
-   information. Is the pre-submission preview in scope for this restyle, or is the skipped set
-   reported only in the result toast?]
+6. **Given** a selection that includes a customer used by a planned discharge, **When** the bulk
+   action bar and the bulk archive dialog render, **Then** neither announces that customer as
+   skipped: the dialog lists every selected customer and its confirm action counts all of them;
+   skipped customers are reported only in the result toast.
 
 ---
 
@@ -363,8 +361,7 @@ detail sheet, a dialog and a toast, comparing with the retained light-theme scre
 
 - **Customer**: a company registered for the site, identified by its Customer Code, with a company
   name, a status (Available or Archived), creation and update timestamps, and its latest archive and
-  reactivation (actor, date, comment). No new attribute is introduced unless the clarification on
-  the bulk preview requires one.
+  reactivation (actor, date, comment). No new attribute is introduced.
 - **Lifecycle transition**: an archive or reactivation of a customer, with its actor, timestamp and
   optional comment, shown in the list's lifecycle columns and the detail History.
 - **Bulk lifecycle outcome**: the result of a bulk archive or reactivation: the customers changed
@@ -377,7 +374,8 @@ detail sheet, a dialog and a toast, comparing with the retained light-theme scre
 
 - **SC-001**: Each of the 16 retained Customers screens on the design canvas has a matching state in
   the application, and a side-by-side review finds no difference in layout, copy or available
-  actions beyond those this specification documents.
+  actions beyond those this specification documents (notably, no pre-submission preview of skipped
+  customers in the bulk selection bar and dialog).
 - **SC-002**: Every customer task available before the restyle (search, sort, switch tab, view,
   create, edit, archive, reactivate, bulk archive, bulk reactivate) can still be completed, with no
   increase in the number of steps.
@@ -389,6 +387,15 @@ detail sheet, a dialog and a toast, comparing with the retained light-theme scre
   and why from the toast alone, without opening another screen.
 - **SC-006**: Every interactive control in the Customers states is reachable and operable by
   keyboard and has an accessible name.
+
+## Clarifications
+
+### Session 2026-10-22
+
+- Q: Do the bulk selection bar and dialog preview skipped customers before submission, as drawn
+  ("NORDENG is on a planned discharge and will be skipped", "Archive 2 of 3 customers?")? → A: No.
+  Skipped customers are reported only in the result toast; the restyle introduces no API change.
+  The design's pre-submission preview is a documented deviation.
 
 ## Assumptions
 
