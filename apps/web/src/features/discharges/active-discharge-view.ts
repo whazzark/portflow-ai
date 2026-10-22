@@ -1,4 +1,8 @@
-import { shiftResources } from '@/features/discharges/discharge-detail-view'
+import {
+  dischargePeriod,
+  isInEffect,
+  shiftResources,
+} from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 
 type Shift = DischargeDetailDto['shifts'][number]
@@ -64,5 +68,57 @@ export function activeShiftSummary(
     state: 'BETWEEN',
     last: lastIndex >= 0 ? shifts[lastIndex] : null,
     next: nextShift(shifts, lastIndex),
+  }
+}
+
+/**
+ * Where a started discharge stands, from what its record already holds: its shifts by state, its
+ * product lots and the doors they hold now, and the trucks it holds or has released.
+ */
+export function dischargeProgress(
+  discharge: Pick<
+    DischargeDetailDto,
+    'status' | 'expectedTonnage' | 'productLots' | 'truckPool' | 'shifts'
+  >,
+) {
+  const { shifts, productLots, truckPool } = discharge
+  const count = (status: Shift['status']) =>
+    shifts.filter((shift) => shift.status === status).length
+
+  const doorNames: string[] = []
+  let withDoor = 0
+  for (const lot of productLots) {
+    const held = lot.doorAssignments.filter((period) => isInEffect(period, discharge.status))
+    if (held.length > 0) {
+      withDoor += 1
+    }
+    for (const period of held) {
+      if (!doorNames.includes(period.warehouseDoor.name)) {
+        doorNames.push(period.warehouseDoor.name)
+      }
+    }
+  }
+
+  return {
+    shifts: {
+      total: shifts.length,
+      completed: count('COMPLETED'),
+      active: count('ACTIVE'),
+      planned: count('PLANNED'),
+      plannedEnd: dischargePeriod(discharge).to,
+    },
+    lots: {
+      total: productLots.length,
+      customers: new Set(productLots.map((lot) => lot.customer.id)).size,
+      expectedTonnage: discharge.expectedTonnage,
+      withDoor: { count: withDoor, doorNames },
+      withoutDoor: productLots.length - withDoor,
+    },
+    trucks: {
+      held: truckPool.filter((entry) => entry.releasedAt === null).length,
+      released: truckPool
+        .filter((entry) => entry.releasedAt !== null)
+        .map((entry) => ({ registration: entry.registration, releasedAt: entry.releasedAt })),
+    },
   }
 }

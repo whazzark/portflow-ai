@@ -2,9 +2,19 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { formatShiftDuration, formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
+import {
+  formatShiftDay,
+  formatShiftDuration,
+  formatShiftPeriod,
+  formatShiftTime,
+} from '@/features/discharges/discharge-detail-view'
 import { formatDateTime } from '@/helpers/dates'
-import { ACTIVE_OBSERVER, ACTIVE_OPERATIONS_LEAD, activeDischargeDetail } from '../support/fixtures'
+import {
+  ACTIVE_OBSERVER,
+  ACTIVE_OPERATIONS_LEAD,
+  activeDischargeDetail,
+  DISCHARGES,
+} from '../support/fixtures'
 import { mockDischargeDetail, mockDockOccupancy, renderDischargeTab } from '../support/test-helpers'
 
 function betweenShifts() {
@@ -26,7 +36,7 @@ test('leads the overview with the active shift, who is responsible, and what it 
   renderDischargeTab(discharge.id, 'overview')
 
   const card = await screen.findByRole('region', { name: 'Current shift' })
-  expect(screen.getAllByRole('region')[0]).toBe(card)
+  expect(within(screen.getByRole('tabpanel')).getAllByRole('region')[0]).toBe(card)
   expect(within(card).getByText('Active')).toBeInTheDocument()
   expect(card).toHaveTextContent(
     `Shift 6 of 14 · ${formatShiftPeriod(active)} · ${formatShiftDuration(active)}`,
@@ -288,5 +298,67 @@ test.each(['product-lots', 'truck-pool', 'shifts'] as const)(
 
     await screen.findByRole('heading', { level: 1, name: 'MV Ocean Cedar' })
     expect(screen.queryByRole('region', { name: /^Dock timeline/ })).not.toBeInTheDocument()
+  },
+)
+
+test('ends the overview with the progress of the shifts, the product lots, and the truck pool', async () => {
+  const discharge = activeDischargeDetail()
+  mockDischargeDetail({ details: [discharge] })
+
+  renderDischargeTab(discharge.id, 'overview')
+
+  const progress = await screen.findByRole('region', { name: 'Progress' })
+  expect(within(screen.getByRole('tabpanel')).getAllByRole('region').at(-1)).toBe(progress)
+  expect(progress).toHaveTextContent('Read-only while active, except adding shifts')
+  expect(progress).toHaveTextContent('14 shifts · 5 completed · 1 active · 8 planned')
+  expect(progress).toHaveTextContent(
+    `Ends ${formatShiftDay(new Date(discharge.shifts[13].plannedEndAt ?? ''))} at ${formatShiftTime(discharge.shifts[13].plannedEndAt)} as planned`,
+  )
+  expect(progress).toHaveTextContent('5 lots · 5 customers · 16,790.500 t')
+  expect(progress).toHaveTextContent(
+    '2 with a warehouse door (Porte Douane, Porte Nord) · 3 without',
+  )
+  expect(progress).toHaveTextContent('9 trucks held')
+  expect(progress).toHaveTextContent(
+    `1 released on ${formatDateTime(discharge.truckPool.at(-1)?.releasedAt ?? null)} (CC-303-PF)`,
+  )
+})
+
+test.each([
+  ['Shifts', 'shifts'],
+  ['Product lots', 'product-lots'],
+  ['Truck pool', 'truck-pool'],
+] as const)('opens the %s section from the progress card', async (link, tab) => {
+  const discharge = activeDischargeDetail()
+  mockDischargeDetail({ details: [discharge] })
+
+  const { router } = renderDischargeTab(discharge.id, 'overview')
+
+  const progress = await screen.findByRole('region', { name: 'Progress' })
+  await userEvent.setup().click(within(progress).getByRole('link', { name: link }))
+
+  expect(await screen.findByRole('tab', { name: new RegExp(`^${link}`) })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  expect(router.state.location.search).toMatchObject({ tab })
+})
+
+test.each([
+  ['planned', 'MV Atlantic Dawn'],
+  ['closed', 'MV Loire Star'],
+] as const)(
+  'shows neither the current shift nor the progress on a %s discharge',
+  async (_, vessel) => {
+    mockDischargeDetail()
+    const listed = DISCHARGES.find(
+      (discharge) => discharge.vesselName === vessel && discharge.status !== 'ACTIVE',
+    )
+
+    renderDischargeTab(listed?.id ?? '', 'overview')
+
+    await screen.findByRole('heading', { level: 1, name: vessel })
+    expect(screen.queryByRole('region', { name: 'Current shift' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Progress' })).not.toBeInTheDocument()
   },
 )
