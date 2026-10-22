@@ -290,6 +290,8 @@ verify the running count and total.
 - **FR-025**: Editing one lot MUST happen in a side sheet allowing correction of customer, product
   name, expected quantity, and description, and showing the lot's current doors read-only with their
   problem indicators, an Assign doors action, and a note that doors are changed from Assign doors.
+  While the sheet has unsaved changes, Assign doors is unavailable and says to save or cancel them
+  first, so leaving for the doors never discards an edit (added at implementation review).
 - **FR-026**: Correcting a customer's lots MUST happen in a side sheet showing the customer with its
   subtotal and a running « N lots · total » that follows the edits.
 - **FR-027**: Adding lots MUST happen in a side sheet organized by customer, with Add product and Add

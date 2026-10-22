@@ -72,7 +72,7 @@ test('locks a door a planned shift uses in the lot’s column, naming the shift'
   // Said on the row, since a locked door has no button to carry it.
   expect(within(row).getByText(removeFromShiftsFirst(1))).not.toHaveClass('sr-only')
   expect(removeFromShiftsFirst(1)).toBe(
-    'Used by 1 shift. Remove it from them before removing it from the lot.',
+    'Used by 1 shift. Remove it from that shift before removing it from the lot.',
   )
 })
 

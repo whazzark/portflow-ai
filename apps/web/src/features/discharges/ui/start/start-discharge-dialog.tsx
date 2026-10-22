@@ -50,15 +50,21 @@ export function StartDischargeDialog({ discharge, onClose, onStarted }: StartDis
   const alertRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
   const check = useQuery(dischargeQueries.startCheck(discharge.id))
+  // The Product lots tab may hold an answer read before this opened: only one read since counts,
+  // so the confirmation is never offered, nor refused, on the plan as it stood earlier.
+  const [openedAt] = useState(() => Date.now())
+  const checked = check.isSuccess && check.dataUpdatedAt >= openedAt
+  const checkFailed = check.isError && check.errorUpdatedAt >= openedAt
+  const checking = !checked && !checkFailed
   const { start } = useDischargeMutations()
   const [refusals, setRefusals] = useState(0)
   const [failed, setFailed] = useState(false)
   const review = startReview(discharge, check.data?.data.shiftId ?? null)
   const problems = check.data?.data.problems ?? []
-  const checkCode = check.error ? parseApiError(check.error).code : null
+  const checkCode = checkFailed ? parseApiError(check.error).code : null
   const closingCheck = checkCode ? CLOSING_MESSAGES[checkCode] : undefined
   // A start the API would refuse is not offered: the user fixes the problems, then opens it again.
-  const blocked = check.isSuccess && problems.length > 0
+  const blocked = checked && problems.length > 0
 
   // A refusal replaces the list; moving focus to it tells a keyboard or screen reader user why.
   useEffect(() => {
@@ -130,8 +136,8 @@ export function StartDischargeDialog({ discharge, onClose, onStarted }: StartDis
           </DialogDescription>
         </DialogHeader>
         <div className="grid min-h-0 flex-1 content-start gap-6 overflow-y-auto">
-          {check.isPending && <Skeleton aria-label="Checking the discharge" className="h-5 w-64" />}
-          {check.isError && !closingCheck && (
+          {checking && <Skeleton aria-label="Checking the discharge" className="h-5 w-64" />}
+          {checkFailed && !closingCheck && (
             <Alert variant="destructive">
               <AlertDescription className="flex flex-wrap items-center gap-3">
                 <span>Unable to check this discharge.</span>
@@ -163,7 +169,7 @@ export function StartDischargeDialog({ discharge, onClose, onStarted }: StartDis
               </details>
             </>
           ) : (
-            <StartReviewContent checking={!check.isSuccess} discharge={discharge} review={review} />
+            <StartReviewContent checking={!checked} discharge={discharge} review={review} />
           )}
         </div>
         {failed && (
@@ -182,7 +188,7 @@ export function StartDischargeDialog({ discharge, onClose, onStarted }: StartDis
             Cancel
           </Button>
           <Button
-            disabled={!check.isSuccess || blocked || start.isPending}
+            disabled={!checked || blocked || start.isPending}
             onClick={() => void confirm()}
             type="button"
           >

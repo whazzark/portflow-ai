@@ -28,13 +28,13 @@ export function useDischargeMutations() {
    */
   const applyDetail = async (response: { data: DischargeDetailDto }) => {
     queryClient.setQueryData(dischargeQueries.detail(response.data.id).queryKey, response)
-    await Promise.all([
-      queryClient.invalidateQueries({ exact: true, queryKey: dischargeQueries.all().queryKey }),
-      response.data.status === 'PLANNED' &&
-        queryClient.invalidateQueries({
-          queryKey: dischargeQueries.startCheck(response.data.id).queryKey,
-        }),
-    ])
+    if (response.data.status === 'PLANNED') {
+      // Not awaited: the save is done once the detail is applied, whatever the check answers.
+      void queryClient.invalidateQueries({
+        queryKey: dischargeQueries.startCheck(response.data.id).queryKey,
+      })
+    }
+    await queryClient.invalidateQueries({ exact: true, queryKey: dischargeQueries.all().queryKey })
   }
 
   /**

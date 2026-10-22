@@ -261,6 +261,12 @@ function mockStartCheck(problems: () => StartProblemDto[] | 'error') {
   return state
 }
 
+/**
+ * Lets a request the page should not make, or an answer it has just received, show on screen
+ * before asserting that nothing did: an absence checked at once would hold whatever the page does.
+ */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 500))
+
 const lotRow = (region: HTMLElement, product: string) => {
   const row = within(region)
     .getAllByRole('row')
@@ -305,6 +311,7 @@ test('counts nothing amiss when every lot has a door nobody holds', async () => 
   const region = await screen.findByRole('region', { name: 'Product lots' })
 
   await waitFor(() => expect(check.requests).toBeGreaterThan(0))
+  await settle()
   expect(region).toHaveTextContent('2 lots · 1 customer · 3,000.000 t')
   expect(region).not.toHaveTextContent('without a door')
   expect(region).not.toHaveTextContent('held by another discharge')
@@ -352,6 +359,7 @@ test('still shows the lots and the ones without a door when the start check fail
   const region = await screen.findByRole('region', { name: 'Product lots' })
 
   await waitFor(() => expect(check.requests).toBeGreaterThan(0))
+  await settle()
   expect(within(lotRow(region, 'Pois')).getByText('No door')).toBeInTheDocument()
   expect(within(region).getByText('1 lot without a door')).toBeInTheDocument()
   // Held doors are unknown, not absent: nothing says either way.
@@ -364,6 +372,7 @@ test('shows an observer the lots without a door, but not who holds a door', asyn
   const check = mockStartCheck(() => [NO_DOOR_PEAS, HELD_A1])
   renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
   const region = await screen.findByRole('region', { name: 'Product lots' })
+  await settle()
 
   expect(within(lotRow(region, 'Pois')).getByText('No door')).toBeInTheDocument()
   expect(within(region).getByText('1 lot without a door')).toBeInTheDocument()
@@ -456,4 +465,31 @@ test('offers a preparer to add lots to a planned discharge without any', async (
     within(region).getAllByRole('button', { name: 'Add product lots' }).length,
   ).toBeGreaterThan(0)
   expect(region).not.toHaveTextContent('0 lots')
+})
+
+test('still says a door is held when it sits behind +N', async () => {
+  const doors = ['1', '2', '3', '4'].map((index) =>
+    buildDoorPeriod({
+      id: `open-${index}`,
+      warehouseDoor: { id: `door-a${index}`, name: `Door A${index}`, status: 'AVAILABLE' },
+    }),
+  )
+  mockDischargePlanning({
+    detail: {
+      ...PLANNED_LOTS,
+      productLots: [buildLot({ id: 'lot-wheat', doorAssignments: doors })],
+    },
+  })
+  mockStartCheck(() => [
+    buildStartProblem({
+      ...HELD_A1,
+      subject: { type: 'WAREHOUSE_DOOR', id: 'door-a4' },
+    }),
+  ])
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  const list = within(region).getByRole('list', { name: 'Warehouse doors' })
+  expect(list).not.toHaveTextContent('Door A4')
+  expect(await within(region).findByText('Door A4 held by MV Ocean Cedar')).toBeInTheDocument()
 })

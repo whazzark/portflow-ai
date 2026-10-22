@@ -8,9 +8,9 @@ import { classnames } from '@/libraries/shadcn/helpers'
 
 /** Why a door the planned shifts use cannot be let go of from the lot. */
 export function removeFromShiftsFirst(shiftCount: number) {
-  const shifts = shiftCount === 1 ? '1 shift' : `${shiftCount} shifts`
-
-  return `Used by ${shifts}. Remove it from them before removing it from the lot.`
+  return shiftCount === 1
+    ? 'Used by 1 shift. Remove it from that shift before removing it from the lot.'
+    : `Used by ${shiftCount} shifts. Remove it from them before removing it from the lot.`
 }
 
 /** A door as both columns of the transfer know it. */

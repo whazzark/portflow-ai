@@ -37,8 +37,8 @@ export function DoorHoldings({ assignments }: DoorHoldingsProps) {
   return (
     <Tooltip>
       <TooltipTrigger
-        // The count is spoken by the hints tied to the checkbox, so this only needs to be reachable.
-        aria-label={`Also assigned to ${labels.join(', ')}`}
+        // The visible words start the name, so a voice user can say what they see.
+        aria-label={`Also on ${assignments.length} ${assignments.length === 1 ? 'discharge' : 'discharges'}: ${labels.join(', ')}`}
         className="inline-flex items-center gap-1 rounded-sm text-sm text-warning outline-none focus-visible:ring-2 focus-visible:ring-ring"
         type="button"
       >

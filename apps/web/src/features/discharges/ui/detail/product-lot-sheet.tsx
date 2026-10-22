@@ -1,3 +1,5 @@
+import { useStore } from '@tanstack/react-form'
+import { useId } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -10,6 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { lotLabel } from '@/features/discharges/discharge-planning-view'
 import {
   productLotFormValues,
   productLotSchema,
@@ -98,6 +101,7 @@ function ProductLotForm({
 }) {
   const { correctLot } = useDischargeMutations()
   const customers = useCustomerOptions(lot?.customer)
+  const unsavedId = useId()
 
   const form = useAppForm({
     defaultValues: productLotFormValues(lot),
@@ -137,6 +141,8 @@ function ProductLotForm({
     },
   })
 
+  const dirty = useStore(form.store, (state) => state.isDirty)
+
   return (
     <div className="px-4 pb-4">
       <form.AppForm>
@@ -148,13 +154,27 @@ function ProductLotForm({
             <FieldLegend variant="label">Warehouse doors</FieldLegend>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <LotDoorChips dischargeStatus={discharge.status} lot={lot} problems={problems} />
-              <Button onClick={onAssignDoors} size="xs" type="button" variant="outline">
+              <Button
+                aria-describedby={dirty ? unsavedId : undefined}
+                aria-label={`Assign doors for ${lotLabel(lot)}`}
+                // Leaving with unsaved changes would lose them: they are saved or cancelled first.
+                disabled={dirty}
+                onClick={onAssignDoors}
+                size="xs"
+                type="button"
+                variant="outline"
+              >
                 Assign doors
               </Button>
             </div>
             <FieldDescription>
               Doors are changed from Assign doors, not from this form.
             </FieldDescription>
+            {dirty && (
+              <FieldDescription id={unsavedId}>
+                Save or cancel this lot's changes before assigning doors.
+              </FieldDescription>
+            )}
           </FieldSet>
           <form.FormError />
           <SheetFooter className="flex-row justify-end gap-2 p-0">

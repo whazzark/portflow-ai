@@ -184,8 +184,24 @@ test('shows the lot’s doors in its sheet, changed from Assign doors only', asy
     within(doors).getByText('Doors are changed from Assign doors, not from this form.'),
   ).toBeInTheDocument()
 
+  // Unsaved changes would be lost on leaving: they are saved or cancelled first.
   change(within(sheet).getByRole('textbox', { name: 'Expected quantity (t)' }), '900')
-  fireEvent.click(within(doors).getByRole('button', { name: 'Assign doors' }))
+  const assign = within(doors).getByRole('button', {
+    name: 'Assign doors for Cargill France · Blé tendre',
+  })
+  expect(assign).toBeDisabled()
+  expect(assign).toHaveAccessibleDescription(
+    "Save or cancel this lot's changes before assigning doors.",
+  )
+  fireEvent.click(within(sheet).getByRole('button', { name: 'Cancel' }))
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: 'Edit product lot' })).not.toBeInTheDocument(),
+  )
+
+  const reopened = await openEdit()
+  fireEvent.click(
+    within(reopened).getByRole('button', { name: 'Assign doors for Cargill France · Blé tendre' }),
+  )
 
   const dialog = await screen.findByRole('dialog', { name: 'Warehouse doors' })
   expect(dialog).toHaveAccessibleDescription('Cargill France · Blé tendre · 1,000.000 t')

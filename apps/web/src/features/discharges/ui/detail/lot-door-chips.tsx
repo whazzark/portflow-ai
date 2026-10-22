@@ -193,6 +193,16 @@ export function LotDoorChips({
           <span className="sr-only">No warehouse door assigned</span>
         </span>
       ) : null}
+      {/* A held door behind +N is still said on the row: the problem never needs the popover. */}
+      {cell.hidden.map((assignment) => {
+        const holder = problems?.heldBy.get(assignment.warehouseDoor.id)
+
+        return holder ? (
+          <WarningText key={assignment.id}>
+            {assignment.warehouseDoor.name} held by {holder}
+          </WarningText>
+        ) : null
+      })}
       {!problems?.noDoor && lotDoorNotice(lot, dischargeStatus) === 'NONE_CURRENTLY_ASSIGNED' && (
         <p className="text-muted-foreground text-xs">No warehouse door currently assigned</p>
       )}
