@@ -37,14 +37,18 @@ import {
   SHIFT_STATUS_LABELS,
   ShiftStatusBadge,
 } from '@/features/discharges/ui/detail/discharge-status-badge'
+import { BREAK_HATCH_CLASSES } from '@/features/discharges/ui/detail/shift-calendar-summary'
 import { classnames } from '@/libraries/shadcn/helpers'
 
 type Shift = DischargeDetailDto['shifts'][number]
 
 /** The narrowest a column gets: wide enough for a shift's times and status badge side by side. */
 const MIN_COLUMN_WIDTH_PX = 176
-/** Tall enough per hour for a four-hour shift to show every line of its card. */
-const HOUR_HEIGHT_PX = 32
+/**
+ * Short enough for a whole day to fit a laptop screen without scrolling, and tall enough for a
+ * six-hour shift to show every line of its card.
+ */
+const HOUR_HEIGHT_PX = 20
 /** The height of a break's badge; a shorter break reads a compact one, spilling over no text. */
 const BREAK_BADGE_MIN_PX = 20
 
@@ -133,7 +137,9 @@ export function ShiftCalendar({
   // The instants a gesture pressed and has reached so far, while it draws a period.
   const [draft, setDraft] = useState<{ from: number; to: number } | null>(null)
   const drawing = draft !== null
-  const calendar = shiftCalendar(discharge, discharge.status === 'ACTIVE' ? new Date() : undefined)
+  // Only a discharge under way has a now worth marking among its shifts.
+  const now = discharge.status === 'ACTIVE' ? new Date() : undefined
+  const calendar = shiftCalendar(discharge, now)
 
   // A shared address may open a shift lying past the visible columns; without one, the shift under
   // way or next to prepare is the one worth finding.
@@ -232,6 +238,12 @@ export function ShiftCalendar({
   }
 
   const continuations = calendar.segments.filter((segment) => !segment.primary)
+  // How tall each shift's first part is, which decides the lines its continuation takes over.
+  const primaryHeightPct = new Map(
+    calendar.segments
+      .filter((segment) => segment.primary)
+      .map((segment) => [segment.shift.id, segment.heightPct]),
+  )
 
   return (
     <div className="md:-mx-1 md:overflow-x-auto md:px-1 md:pb-2" ref={scroller}>
@@ -307,7 +319,7 @@ export function ShiftCalendar({
               ))}
               {calendar.breaks.map((gap) => (
                 <div
-                  className="absolute w-(--column-width) bg-[repeating-linear-gradient(135deg,var(--color-border)_0_1px,transparent_1px_6px)] bg-muted/40"
+                  className={classnames('absolute w-(--column-width)', BREAK_HATCH_CLASSES)}
                   key={`${gap.column}-${gap.topPct}`}
                   style={placement(gap.column, gap.topPct, gap.heightPct)}
                 />
@@ -334,14 +346,18 @@ export function ShiftCalendar({
                 >
                   <div
                     className={classnames(
-                      'size-full overflow-hidden rounded-md border p-2 text-muted-foreground text-xs tabular-nums',
+                      'size-full overflow-hidden rounded-md border p-2',
                       BLOCK_STATUS_CLASSES[segment.shift.status],
+                      gapCountOf(segment.shift) > 0 && 'border-2 border-warning p-[7px]',
                       segment.shift.id === selectedShiftId && SELECTED_BLOCK_CLASSES,
                       continuationClasses(segment),
                     )}
                   >
-                    {formatShiftTime(segment.shift.plannedStartAt)}–
-                    {formatShiftTime(segment.shift.plannedEndAt)}
+                    <ShiftContinuation
+                      primaryHeightPx={heightPx(primaryHeightPct.get(segment.shift.id) ?? 0)}
+                      segmentHeightPx={heightPx(segment.heightPct)}
+                      shift={segment.shift}
+                    />
                   </div>
                 </div>
               ))}
@@ -393,7 +409,7 @@ export function ShiftCalendar({
                       <ShiftBlock
                         className={continuationClasses(segment)}
                         onSelect={() => onSelect(segment.shift.id)}
-                        rowCount={blockRowCount((segment.heightPct / 100) * 24 * HOUR_HEIGHT_PX)}
+                        rowCount={blockRowCount(heightPx(segment.heightPct))}
                         selected={segment.shift.id === selectedShiftId}
                         shift={segment.shift}
                       />
@@ -422,7 +438,7 @@ export function ShiftCalendar({
                         render={<span />}
                       >
                         <BreakBadge
-                          compact={(gap.heightPct / 100) * 24 * HOUR_HEIGHT_PX < BREAK_BADGE_MIN_PX}
+                          compact={heightPx(gap.heightPct) < BREAK_BADGE_MIN_PX}
                           label={gap.duration}
                         />
                       </TooltipTrigger>
@@ -468,7 +484,12 @@ export function ShiftCalendar({
                 <div
                   className="absolute h-0.5 w-(--column-width) bg-destructive"
                   style={placement(calendar.now.column, calendar.now.pct)}
-                />
+                >
+                  <span className="absolute -top-1 -left-1 size-2.5 rounded-full bg-destructive" />
+                  <span className="absolute right-1 bottom-1 rounded-sm bg-card px-1 font-semibold text-destructive text-xs tabular-nums">
+                    Now {now && formatShiftTime(now.toISOString())}
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -489,6 +510,12 @@ type ShiftBlockProps = {
 
 const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? '' : 's'}`
 
+/** Only a planned shift has gaps; a started one reads `null`. */
+const gapCountOf = (shift: Shift) => shift.readinessGaps?.length ?? 0
+
+/** The pixels a part of a shift spans down its column. */
+const heightPx = (heightPct: number) => (heightPct / 100) * 24 * HOUR_HEIGHT_PX
+
 /** One kind of resource on a card's resource line: its icon and how many the shift uses. */
 function ResourceCount({ count, icon: Icon }: { count: number; icon: typeof TruckIcon }) {
   return (
@@ -499,28 +526,129 @@ function ResourceCount({ count, icon: Icon }: { count: number; icon: typeof Truc
   )
 }
 
+/** What still lacks for a planned shift to start, in amber and in words. */
+function GapBadge({ count }: { count: number }) {
+  return (
+    <span className="inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-full bg-warning/10 px-2 font-semibold text-warning text-xs">
+      <TriangleAlertIcon className="size-3.5 shrink-0" />
+      {plural(count, 'gap')}
+    </span>
+  )
+}
+
+/**
+ * A shift card's lines, in order of importance, so a card too short for all of them leaves out the
+ * last: its times, its status or what it still lacks, its responsible, and its resource counts.
+ */
+function shiftLines(shift: Shift) {
+  const resources = shiftResources(shift)
+  const duration = formatShiftDuration(shift)
+  const gapCount = gapCountOf(shift)
+
+  return [
+    {
+      className: 'h-5 items-center gap-2 whitespace-nowrap',
+      content: (
+        <>
+          {/* Without the calendar, a narrow screen reads the day from the shift itself. */}
+          {shift.plannedStartAt && (
+            <span className="font-semibold md:hidden">
+              {formatShiftDay(new Date(shift.plannedStartAt))}
+            </span>
+          )}
+          <span className="font-semibold tabular-nums">
+            {formatShiftTime(shift.plannedStartAt)}–{formatShiftTime(shift.plannedEndAt)}
+          </span>
+          {duration && <span className="text-muted-foreground text-xs">{duration}</span>}
+        </>
+      ),
+    },
+    {
+      className: 'h-5 items-center gap-2',
+      // Every shift of a planned discharge is planned: what it lacks says more than its status.
+      content:
+        gapCount > 0 ? <GapBadge count={gapCount} /> : <ShiftStatusBadge status={shift.status} />,
+    },
+    {
+      className: 'h-5 max-w-full items-center gap-1.5',
+      content: (
+        <>
+          <UserIcon className="size-3.5 shrink-0" />
+          <span className="truncate">
+            {shift.responsible.firstName} {shift.responsible.lastName}
+          </span>
+        </>
+      ),
+    },
+    {
+      // Counts only, side by side: the names are the panel's, and a narrow column has no room.
+      className: 'h-5 items-center gap-4 tabular-nums',
+      content: (
+        <>
+          <ResourceCount count={resources.truckIds.length} icon={TruckIcon} />
+          <ResourceCount count={resources.warehouseDoors.length} icon={DoorOpenIcon} />
+          <ResourceCount count={resources.weighingAreas.length} icon={ScaleIcon} />
+        </>
+      ),
+    },
+  ]
+}
+
+/**
+ * The part of a shift worked past midnight, in the next column: its times as a continuation, then
+ * the lines its first part had no room for, as far as this part's own height allows. The first
+ * part stays the shift's one control.
+ */
+function ShiftContinuation({
+  primaryHeightPx,
+  segmentHeightPx,
+  shift,
+}: {
+  primaryHeightPx: number
+  segmentHeightPx: number
+  shift: Shift
+}) {
+  const shown = blockRowCount(primaryHeightPx)
+  const room = blockRowCount(segmentHeightPx) - 1
+
+  return (
+    <span className="flex flex-col items-start gap-1 text-sm">
+      <span className="flex h-5 items-center text-muted-foreground text-xs tabular-nums">
+        {formatShiftTime(shift.plannedStartAt)}–{formatShiftTime(shift.plannedEndAt)} (cont.)
+      </span>
+      {shiftLines(shift)
+        .slice(shown, shown + Math.max(0, room))
+        .map((line, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: the lines of a card never reorder
+          <span className={classnames('flex', line.className)} key={index}>
+            {line.content}
+          </span>
+        ))}
+    </span>
+  )
+}
+
 function ShiftBlock({ className, onSelect, rowCount, selected, shift }: ShiftBlockProps) {
   const summaryId = useId()
   const resources = shiftResources(shift)
-  const truckCount = resources.truckIds.length
   const duration = formatShiftDuration(shift)
-  // Only a planned shift has gaps; a started one reads `null`.
-  const gapCount = shift.readinessGaps?.length ?? 0
+  const gapCount = gapCountOf(shift)
   // A line past what the card's height holds is left out of the calendar, never of the list.
   const row = (index: number) => (index < rowCount ? 'flex' : 'flex md:hidden')
 
   return (
     <button
       aria-describedby={summaryId}
-      aria-label={`Shift ${formatShiftPeriod(shift)}`}
+      aria-label={`Shift ${formatShiftPeriod(shift)}${gapCount > 0 ? `, ${plural(gapCount, 'gap')}` : ''}`}
       aria-pressed={selected}
       data-shift-id={shift.id}
       className={classnames(
         // The scroll margin keeps a block scrolled into view clear of the sticky hour gutter.
         'flex size-full items-start overflow-hidden rounded-md border p-2 text-left text-sm outline-none transition-colors hover:border-ring focus-visible:inset-ring-3 focus-visible:inset-ring-ring/50 md:scroll-ml-16',
         BLOCK_STATUS_CLASSES[shift.status],
-        // A planned shift still lacking something to start is what to see from afar.
-        gapCount > 0 && 'border-warning',
+        // A planned shift still lacking something to start is what to see from afar; the thicker
+        // border gives back its pixel in padding, as a chosen shift's does.
+        gapCount > 0 && 'border-2 border-warning p-[7px]',
         selected && SELECTED_BLOCK_CLASSES,
         className,
       )}
@@ -533,7 +661,7 @@ function ShiftBlock({ className, onSelect, rowCount, selected, shift }: ShiftBlo
           SHIFT_STATUS_LABELS[shift.status],
           duration,
           `${shift.responsible.firstName} ${shift.responsible.lastName}`,
-          plural(truckCount, 'truck'),
+          plural(resources.truckIds.length, 'truck'),
           plural(resources.warehouseDoors.length, 'warehouse door'),
           plural(resources.weighingAreas.length, 'weighing area'),
           gapCount > 0 && plural(gapCount, 'gap'),
@@ -545,39 +673,12 @@ function ShiftBlock({ className, onSelect, rowCount, selected, shift }: ShiftBlo
         aria-hidden="true"
         className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5 md:flex-col md:flex-nowrap md:items-start md:gap-1"
       >
-        <span className={classnames(row(0), 'h-5 items-center gap-2 whitespace-nowrap')}>
-          {/* Without the calendar, a narrow screen reads the day from the shift itself. */}
-          {shift.plannedStartAt && (
-            <span className="font-medium md:hidden">
-              {formatShiftDay(new Date(shift.plannedStartAt))}
-            </span>
-          )}
-          <span className="font-medium tabular-nums">
-            {formatShiftTime(shift.plannedStartAt)}–{formatShiftTime(shift.plannedEndAt)}
+        {shiftLines(shift).map((line, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: the lines of a card never reorder
+          <span className={classnames(row(index), line.className)} key={index}>
+            {line.content}
           </span>
-          {duration && <span className="text-muted-foreground text-xs">· {duration}</span>}
-        </span>
-        <span className={classnames(row(1), 'h-5 items-center gap-2')}>
-          <ShiftStatusBadge status={shift.status} />
-          {gapCount > 0 && (
-            <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-warning text-xs">
-              <TriangleAlertIcon className="size-3.5 shrink-0" />
-              {plural(gapCount, 'gap')}
-            </span>
-          )}
-        </span>
-        <span className={classnames(row(2), 'h-5 max-w-full items-center gap-1.5')}>
-          <UserIcon className="size-3.5 shrink-0" />
-          <span className="truncate">
-            {shift.responsible.firstName} {shift.responsible.lastName}
-          </span>
-        </span>
-        {/* Counts only, side by side: the names are the panel's, and a narrow column has no room. */}
-        <span className={classnames(row(3), 'h-5 items-center gap-4 tabular-nums')}>
-          <ResourceCount count={truckCount} icon={TruckIcon} />
-          <ResourceCount count={resources.warehouseDoors.length} icon={DoorOpenIcon} />
-          <ResourceCount count={resources.weighingAreas.length} icon={ScaleIcon} />
-        </span>
+        ))}
       </span>
     </button>
   )

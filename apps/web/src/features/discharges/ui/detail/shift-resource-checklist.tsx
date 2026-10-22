@@ -85,7 +85,9 @@ export function ShiftResourceChecklist({
           {label}
         </h3>
         {rows.length > 0 && (
-          <span className="text-muted-foreground text-xs tabular-nums">{chosen.size} selected</span>
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {chosen.size} of {rows.length} selected
+          </span>
         )}
       </div>
       {rows.length === 0 ? (

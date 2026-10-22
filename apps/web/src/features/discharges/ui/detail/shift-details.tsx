@@ -4,6 +4,7 @@ import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/compon
 import {
   formatShiftDuration,
   formatShiftPeriod,
+  sharedResourcePeriod,
   shiftResources,
 } from '@/features/discharges/discharge-detail-view'
 import { heldPoolEntries } from '@/features/discharges/truck-pool-selection'
@@ -22,21 +23,28 @@ type ShiftDetailsProps = {
   /** A preparer on a planned discharge may correct a planned shift. */
   canCorrect: boolean
   onEdit: () => void
+  onClose: () => void
 }
 
 /** Everything the open shift is planned with and uses, in the shift panel. */
-export function ShiftDetails({ canCorrect, discharge, onEdit, shift }: ShiftDetailsProps) {
+export function ShiftDetails({ canCorrect, discharge, onClose, onEdit, shift }: ShiftDetailsProps) {
   const canEdit = canCorrect && shift.status === 'PLANNED'
   // A finished shift's resources have all ended, so it counts those it used.
   const resources = shiftResources(shift)
+  const { trucksSince, allResourcesSince } = sharedResourcePeriod(shift, discharge.status)
+  // Shifts come in planned order, so its rank there is its place in the discharge.
+  const position = discharge.shifts.findIndex((candidate) => candidate.id === shift.id) + 1
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <SheetHeader className="shrink-0 border-b">
         {/* A shift is known to users by its planned period, never by an internal number. */}
-        <SheetTitle>Shift {formatShiftPeriod(shift)}</SheetTitle>
+        <SheetTitle>{formatShiftPeriod(shift)}</SheetTitle>
         <SheetDescription className="flex flex-wrap items-center gap-2">
           <ShiftStatusBadge status={shift.status} />
+          <span>
+            Shift {position} of {discharge.shifts.length} · {discharge.vesselName}
+          </span>
         </SheetDescription>
       </SheetHeader>
       <ResourceDetailBody>
@@ -116,6 +124,10 @@ export function ShiftDetails({ canCorrect, discharge, onEdit, shift }: ShiftDeta
             dischargeStatus={discharge.status}
             label="Trucks"
             periods={shift.trucks}
+            sharedPeriod={
+              trucksSince &&
+              `All ${allResourcesSince ? 'resources' : 'trucks'} since ${formatDateTime(trucksSince)}`
+            }
             renderResource={(truck) => (
               <ReferenceLabel name={truck.registration} status={truck.truckStatus} />
             )}
@@ -125,6 +137,14 @@ export function ShiftDetails({ canCorrect, discharge, onEdit, shift }: ShiftDeta
       {canEdit && (
         <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:justify-end">
           <Button onClick={onEdit}>Edit</Button>
+        </SheetFooter>
+      )}
+      {shift.status === 'COMPLETED' && (
+        <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-muted-foreground text-sm">A completed shift cannot be changed</p>
+          <Button onClick={onClose} variant="outline">
+            Close
+          </Button>
         </SheetFooter>
       )}
     </div>

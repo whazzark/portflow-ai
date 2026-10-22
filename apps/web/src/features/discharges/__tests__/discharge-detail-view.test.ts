@@ -15,6 +15,7 @@ import {
   lotDoorNotice,
   lotRemovalBlock,
   plannedCoverage,
+  sharedResourcePeriod,
   shiftResources,
   splitPeriods,
   sumTonnes,
@@ -311,5 +312,80 @@ describe('lotDoorCell', () => {
     expect(ids(cell.shown)).toEqual(['a', 'b'])
     expect(cell.history).toHaveLength(3)
     expect(cell.historyLabel).toBe('history')
+  })
+})
+
+describe('sharedResourcePeriod', () => {
+  const since = '2026-09-15T20:14:00.000Z'
+  const truck = (id: string, effectiveFrom = since, effectiveTo: string | null = null) => ({
+    id: `row-${id}`,
+    truckId: id,
+    registration: id,
+    truckStatus: 'AVAILABLE' as const,
+    effectiveFrom,
+    effectiveTo,
+  })
+  const area = (effectiveFrom = since) => ({
+    id: 'area-row',
+    effectiveFrom,
+    effectiveTo: null,
+    weighingArea: { id: 'area-1', name: 'Pont-bascule Nord', status: 'AVAILABLE' as const },
+  })
+
+  test('reads the instant every resource of a shift has been in effect since', () => {
+    const shift = buildShift({
+      trucks: [truck('a'), truck('b')],
+      warehouseDoors: [buildDoorPeriod({ effectiveFrom: since })],
+      weighingAreas: [area()],
+    })
+
+    expect(sharedResourcePeriod(shift, 'PLANNED')).toEqual({
+      trucksSince: since,
+      allResourcesSince: since,
+    })
+  })
+
+  test('reads it for the trucks alone when a door or a weighing area came at another time', () => {
+    const shift = buildShift({
+      trucks: [truck('a'), truck('b')],
+      warehouseDoors: [buildDoorPeriod()],
+      weighingAreas: [area()],
+    })
+
+    expect(sharedResourcePeriod(shift, 'PLANNED')).toEqual({
+      trucksSince: since,
+      allResourcesSince: null,
+    })
+  })
+
+  test('reads it for the trucks alone when the shift has no door or weighing area', () => {
+    expect(sharedResourcePeriod(buildShift({ trucks: [truck('a')] }), 'PLANNED')).toEqual({
+      trucksSince: since,
+      allResourcesSince: null,
+    })
+  })
+
+  test.each([
+    ['without a truck', []],
+    [
+      'when its trucks came at different times',
+      [truck('a'), truck('b', '2026-09-16T08:00:00.000Z')],
+    ],
+    [
+      'when one of its trucks has left it',
+      [truck('a'), truck('b', since, '2026-09-16T08:00:00.000Z')],
+    ],
+  ])('reads none %s', (_case, trucks) => {
+    expect(sharedResourcePeriod(buildShift({ trucks }), 'PLANNED')).toEqual({
+      trucksSince: null,
+      allResourcesSince: null,
+    })
+  })
+
+  test('reads none once the discharge is closed, as nothing is in effect any more', () => {
+    expect(sharedResourcePeriod(buildShift({ trucks: [truck('a')] }), 'CLOSED')).toEqual({
+      trucksSince: null,
+      allResourcesSince: null,
+    })
   })
 })

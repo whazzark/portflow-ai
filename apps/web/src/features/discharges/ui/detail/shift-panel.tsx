@@ -37,6 +37,7 @@ export function ShiftPanel({ canCorrect, discharge, onClose, shift }: ShiftPanel
             canCorrect={canCorrect}
             discharge={discharge}
             key={shift.id}
+            onClose={onClose}
             shift={shift}
           />
         )}
@@ -48,10 +49,12 @@ export function ShiftPanel({ canCorrect, discharge, onClose, shift }: ShiftPanel
 function ShiftPanelContent({
   canCorrect,
   discharge,
+  onClose,
   shift,
 }: {
   canCorrect: boolean
   discharge: DischargeDetailDto
+  onClose: () => void
   shift: Shift
 }) {
   // Not in the address, as corrections never are (GH-53): a reload returns to the details.
@@ -66,6 +69,7 @@ function ShiftPanelContent({
     <ShiftDetails
       canCorrect={canCorrect}
       discharge={discharge}
+      onClose={onClose}
       onEdit={() => setView('edit')}
       shift={shift}
     />
