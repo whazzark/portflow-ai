@@ -231,3 +231,28 @@ test('draws no timeline for a discharge without shifts, and counts none', async 
   expect(summary).toHaveTextContent('0 shifts')
   expect(screen.queryByRole('region', { name: /Dock timeline/ })).not.toBeInTheDocument()
 })
+
+test('keeps the truck pool a read-only record, even for a preparer', async () => {
+  mockDischargeDetail({ user: ACTIVE_OPERATIONS_LEAD, details: [CLOSED] })
+
+  renderDischargeTab(CLOSED.id, 'truck-pool')
+
+  const pool = await screen.findByRole('region', { name: 'Truck pool' })
+  expect(screen.getByRole('tab', { name: 'Truck pool' })).toBeInTheDocument()
+  expect(pool).toHaveTextContent(formatDateTime('2026-08-16T22:00:00.000Z'))
+  expect(within(pool).queryByRole('checkbox')).not.toBeInTheDocument()
+  expect(within(pool).queryByRole('button')).not.toBeInTheDocument()
+})
+
+test('keeps the shifts a read-only record, even for a preparer', async () => {
+  mockDischargeDetail({ user: ACTIVE_OPERATIONS_LEAD, details: [CLOSED] })
+
+  renderDischargeTab(CLOSED.id, 'shifts', '?shiftId=shift-1')
+
+  const panel = await screen.findByRole('dialog')
+  expect(within(panel).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+  const region = screen.getByRole('region', { name: 'Shifts', hidden: true })
+  expect(
+    within(region).queryByRole('button', { name: 'Add shift', hidden: true }),
+  ).not.toBeInTheDocument()
+})

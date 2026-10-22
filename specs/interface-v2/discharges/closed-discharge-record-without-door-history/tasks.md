@@ -74,13 +74,13 @@ its own. All paths are relative to the repository root; `web/` below abbreviates
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T015 [P] [US2] In `apps/web/src/features/discharges/__tests__/discharge-detail-view.test.ts`, change the closed `lotDoorCell` case to expect `shown` = `['a', 'b']`, `history` empty, and no `'history'` label; keep the planned/active `ended` cases
-- [ ] T016 [P] [US2] In `apps/web/src/features/discharges/__tests__/detail/product-lots.test.tsx`, replace the test "shows a closed discharge's door left without an end as ended, not as held" with failing tests: a closed lot assigned A, then B, then A shows chips A and B once each; no button named `History` or `/ended/` and no dialog named `Door history` or `Ended assignments` on the tab; the `+N` button on a closed lot opens `Warehouse doors` listing doors without `Since`/`Ended`; no `Add product lots`, customer `Edit`, or row actions. Keep the active `Ended assignments` test (FR-016)
+- [X] T015 [P] [US2] In `apps/web/src/features/discharges/__tests__/discharge-detail-view.test.ts`, change the closed `lotDoorCell` case to expect `shown` = `['a', 'b']`, `history` empty, and no `'history'` label; keep the planned/active `ended` cases
+- [X] T016 [P] [US2] In `apps/web/src/features/discharges/__tests__/detail/product-lots.test.tsx`, replace the test "shows a closed discharge's door left without an end as ended, not as held" with failing tests: a closed lot assigned A, then B, then A shows chips A and B once each; no button named `History` or `/ended/` and no dialog named `Door history` or `Ended assignments` on the tab; the `+N` button on a closed lot opens `Warehouse doors` listing doors without `Since`/`Ended`; no `Add product lots`, customer `Edit`, or row actions. Keep the active `Ended assignments` test (FR-016)
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] In `apps/web/src/features/discharges/discharge-detail-view.ts`, make `lotDoorCell` return `history: []` for a closed discharge and remove the `historyLabel` `'history'` variant (only `'ended'` remains); update its doc comment; T015 passes
-- [ ] T018 [US2] In `apps/web/src/features/discharges/ui/detail/lot-door-chips.tsx`, drop the `label` prop and the `Door history`/`History` branch of `HistoryPopover`, so it only renders `N ended` / `Ended assignments`; T016 passes
+- [X] T017 [US2] In `apps/web/src/features/discharges/discharge-detail-view.ts`, make `lotDoorCell` return `history: []` for a closed discharge and remove the `historyLabel` `'history'` variant (only `'ended'` remains); update its doc comment; T015 passes
+- [X] T018 [US2] In `apps/web/src/features/discharges/ui/detail/lot-door-chips.tsx`, drop the `label` prop and the `Door history`/`History` branch of `HistoryPopover`, so it only renders `N ended` / `Ended assignments`; T016 passes
 
 **Checkpoint**: US2 removes the closed door history while planned/active keep `N ended`.
 
@@ -94,7 +94,7 @@ its own. All paths are relative to the repository root; `web/` below abbreviates
 
 ### Tests for User Story 3
 
-- [ ] T019 [P] [US3] Add to `apps/web/src/features/discharges/__tests__/detail/closed-record.test.tsx` regression tests as a preparer (`ACTIVE_OPERATIONS_LEAD` or the fixture used by `truck-pool.test.tsx`): the `Truck pool` tab label has no count; the table lists reserved and released times with no checkbox, bulk action bar, `Add trucks`, withdraw or release button; the Shifts tab offers no `Add shift`, opening a shift shows its panel without `Edit`. These are expected to pass without production change; if one fails, fix the gating in `apps/web/src/features/discharges/discharge-permissions.ts` or the card concerned
+- [X] T019 [P] [US3] Add to `apps/web/src/features/discharges/__tests__/detail/closed-record.test.tsx` regression tests as a preparer (`ACTIVE_OPERATIONS_LEAD` or the fixture used by `truck-pool.test.tsx`): the `Truck pool` tab label has no count; the table lists reserved and released times with no checkbox, bulk action bar, `Add trucks`, withdraw or release button; the Shifts tab offers no `Add shift`, opening a shift shows its panel without `Edit`. These are expected to pass without production change; if one fails, fix the gating in `apps/web/src/features/discharges/discharge-permissions.ts` or the card concerned
 
 **Checkpoint**: US3 is pinned by tests.
 
