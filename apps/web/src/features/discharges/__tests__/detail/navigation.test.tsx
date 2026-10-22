@@ -136,8 +136,33 @@ test.each([
 
   const { router } = renderDischargeDetail(id)
 
-  expect(await screen.findByText('Discharge not found')).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'Back to discharges' })).toBeInTheDocument()
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'Discharge not found' }),
+  ).toBeInTheDocument()
+  expect(screen.getByText(/link may be mistyped or incomplete/)).toBeInTheDocument()
+  const breadcrumb = screen.getByRole('navigation', { name: 'breadcrumb' })
+  expect(within(breadcrumb).getByRole('link', { name: 'Discharges' })).toBeInTheDocument()
+  expect(within(breadcrumb).getByText('Discharge')).toHaveAttribute('aria-current', 'page')
+  // One way back, the centered primary action, rather than a second one above it.
+  expect(screen.getAllByRole('link', { name: 'Back to discharges' })).toHaveLength(1)
   expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument()
   expect(router.state.location.pathname).toBe(`/discharges/${id}`)
+})
+
+test('returns from a missing discharge to the collection it was opened from', async () => {
+  const user = userEvent.setup()
+  mockDischarges()
+  mockDischargeDetail()
+
+  const { router } = renderDischargeDetail(
+    '00000000-0000-4000-8000-000000000999',
+    // biome-ignore lint/security/noSecrets: a shared consultation address, not a credential
+    '?status=closed&search=Cargill',
+  )
+  await user.click(await screen.findByRole('link', { name: 'Back to discharges' }))
+
+  await screen.findByRole('table', { name: 'Discharges' }, { timeout: 3000 })
+  expect(router.state.location.pathname).toBe('/discharges')
+  expect(dischargeTab(/Closed/)).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('textbox', { name: 'Search discharges' })).toHaveValue('Cargill')
 })

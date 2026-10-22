@@ -9,13 +9,20 @@ import { buttonVariants } from '@/components/ui/button'
  */
 export function BackToDischargesLink({
   from = '/discharges/$dischargeId',
+  primary = false,
 }: {
   /** The page the link leaves; both keep the list's status and search. */
   from?: '/discharges/$dischargeId' | '/discharges/new'
+  /** The page's one action, as on a missing discharge, rather than a quiet link above it. */
+  primary?: boolean
 }) {
   return (
     <Link
-      className={buttonVariants({ className: 'self-start', size: 'sm', variant: 'ghost' })}
+      className={
+        primary
+          ? buttonVariants({ className: 'font-semibold', size: 'lg' })
+          : buttonVariants({ className: 'self-start', size: 'sm', variant: 'ghost' })
+      }
       from={from}
       search={(previous) => previous}
       to="/discharges"
