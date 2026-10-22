@@ -193,9 +193,9 @@ keeping only the additive extensions. If not, create them to #320's planned API
 
 - [X] T058 Delete `features/warehouses/ui/warehouse-map-controls.tsx` and `features/warehouses/ui/warehouse-details.tsx` once unused; delete `ResourceMapControls`/`ResourceMapCreateControl` only if no consumer remains (Checkpoints may still use them)
 - [X] T059 [P] Update the map rules in `apps/web/AGENTS.md` (maps: anchored `ResourceMapCard` instead of a `Sheet`; status filter as toggle pills instead of the dropdown), reconciling with #320's wording if already merged
-- [ ] T060 Run `pnpm check`, `pnpm typecheck`, and `pnpm test` from the repository root; fix every failure
+- [X] T060 Run `pnpm check`, `pnpm typecheck`, and `pnpm test` from the repository root; fix every failure
 - [ ] T061 Run the [quickstart.md](./quickstart.md) browser journeys (dark, light, 375 px, administrator and operator) and compare each state with its *Retenue* board; record results in the PR
-- [ ] T062 Obtain a fresh read-only Claude Code review of the final diff (`/code-review` in a new session or a read-only subagent), resolve or justify every confirmed finding, then open/update the Draft PR linked to #321
+- [X] T062 Obtain a fresh read-only Claude Code review of the final diff (`/code-review` in a new session or a read-only subagent), resolve or justify every confirmed finding, then open/update the Draft PR linked to #321
 
 ---
 
