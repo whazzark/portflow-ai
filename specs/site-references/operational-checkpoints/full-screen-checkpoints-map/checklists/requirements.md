@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -32,9 +32,8 @@
 ## Notes
 
 - Q1 resolved 2026-10-22: the V2 "Discharges" section is deferred to a follow-up issue.
-- One clarification marker remains, a scope decision for the human spec review:
-  - Q2 (User Story 7 / FR-030): keep and restyle bulk archive/reactivate, absent from the V2
-    artboards, or remove it?
+- Q2 resolved 2026-10-22: bulk archive/reactivate is kept and restyled for the V2 map.
+- All items pass; the spec is ready for human review, then `/speckit-plan`.
 - "URL", "API" and "basemap" are named only as observable product concepts (shareable state,
   server-side enforcement, map background), not as implementation choices.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.

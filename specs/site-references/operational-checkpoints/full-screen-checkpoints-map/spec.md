@@ -250,12 +250,41 @@ placement mode and the archive dialog, checking legibility and contrast.
 
 ### User Story 7 - Archive or reactivate several checkpoints at once (Priority: P3)
 
-[NEEDS CLARIFICATION: Today an administrator can enter a select mode on the map (also by
-shift-clicking a marker), check several docks or several weighing areas of the same status, and
-archive or reactivate them together with partial-success feedback. The retained V2 artboards show
-no affordance for this. Should the full-screen map keep bulk archive and reactivate (restyled to
-the V2 toolbar, e.g. as a floating selection bar), or is it removed from the Checkpoints screen in
-this issue?]
+An administrator keeps today's ability to archive or reactivate several docks, or several
+weighing areas, in one action, restyled for the V2 map. A Select action in the floating toolbar
+(or shift-clicking a marker) enters select mode for one checkpoint type; markers become checkable,
+and a floating selection bar over the map shows how many are checked with the bulk action
+(Archive or Reactivate, according to the checked checkpoints' status), Clear and Done. Confirming
+asks for an optional comment, then reports which checkpoints were changed and which were refused,
+and why.
+
+**Why this priority**: The capability exists today and must not regress (clarified 2026-10-22),
+but the retained V2 artboards do not feature it, so it comes after the flows they do show.
+
+**Independent Test**: Enter select mode for docks, check three available docks of which one serves
+an active discharge, archive them, and verify the partial-success report and that only the refused
+dock stays checked; then reactivate two archived weighing areas together.
+
+**Acceptance Scenarios**:
+
+1. **Given** the toolbar, **When** the administrator chooses Select and a checkpoint type, or
+   shift-clicks a marker, **Then** select mode starts for that type, the floating selection bar
+   appears, and markers of other types or of the other status cannot be checked.
+2. **Given** select mode, **When** the administrator clicks markers, **Then** each toggles between
+   checked and unchecked and the bar shows the checked count; the existing keyboard shortcuts to
+   check all eligible visible checkpoints and to clear the selection keep working.
+3. **Given** the first checked checkpoint is available, **Then** only available checkpoints of that
+   type can be added and the bar offers Archive; **given** it is archived, only archived ones can
+   be added and the bar offers Reactivate.
+4. **Given** checked checkpoints, **When** the administrator confirms the bulk action with an
+   optional comment, **Then** the eligible checkpoints change status, a summary reports how many
+   succeeded and lists each refused one with its reason.
+5. **Given** a bulk archive where some docks were refused because they are in use, **Then** those
+   docks stay checked so the action can be retried, and the others are unchecked; **given** a bulk
+   reactivation with refusals, **then** the selection is cleared.
+6. **Given** select mode, **When** the administrator uses Done or presses Escape with nothing
+   checked, **Then** select mode ends; select mode, placement mode and move mode are mutually
+   exclusive, and a detail card is not opened by a marker click while selecting.
 
 ---
 
@@ -376,8 +405,16 @@ this issue?]
 
 **Bulk lifecycle**
 
-- **FR-030**: Bulk archive and reactivate of checkpoints MUST be handled as decided in User Story
-  7 (open question Q2).
+- **FR-030**: The screen MUST keep bulk archive and bulk reactivate for docks and for weighing
+  areas, restyled as a select mode entered from the floating toolbar or by shift-click, with a
+  floating selection bar showing the checked count, the bulk action matching the selection's
+  status, Clear and Done.
+- **FR-030a**: A selection MUST contain checkpoints of a single type and a single status; the
+  bulk confirmation MUST accept an optional comment and report per-checkpoint successes and
+  refusals with their reasons; archive refusals for in-use checkpoints MUST stay checked, while a
+  reactivation clears the selection.
+- **FR-030b**: The selection state MUST be reflected in the URL as today, and select mode MUST be
+  exclusive with placement and move modes.
 
 **Theme, accessibility, states**
 
@@ -416,7 +453,7 @@ this issue?]
 - **SC-004**: An administrator can create a dock (open menu, place, name, submit) in under 30
   seconds with no page change.
 - **SC-005**: No existing capability of the Checkpoints screen regresses: create, edit, archive and
-  reactivate of both kinds, URL-restorable state and legacy links, and the error and empty states
+  reactivate of both kinds (individually and in bulk), URL-restorable state and legacy links, and the error and empty states
   keep passing their existing scenarios (adapted to the new presentation).
 - **SC-006**: Automated accessibility checks of the map, a detail card, placement mode and the
   archive dialog report no serious or critical violations in either theme.
@@ -427,6 +464,8 @@ this issue?]
 
 - Q: Is the V2 "Discharges" section of the detail cards in scope? → A: No, deferred to a
   follow-up issue (User Story 2 scenario 7, FR-017).
+- Q: Does the full-screen map keep bulk archive and reactivate, which the V2 artboards omit? → A:
+  Yes, kept and restyled for the V2 map (User Story 7, FR-030 to FR-030b).
 
 ## Assumptions
 
