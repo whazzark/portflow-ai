@@ -44,7 +44,7 @@ export function StepIndicator({ current, reached, onSelect }: StepIndicatorProps
                   className={classnames(
                     'flex size-6 shrink-0 items-center justify-center rounded-full border text-xs tabular-nums',
                     isCurrent && 'border-primary bg-primary text-primary-foreground',
-                    isDone && 'border-primary text-primary',
+                    isDone && 'border-primary text-indicator',
                   )}
                 >
                   {isDone ? <CheckIcon className="size-3.5" /> : index + 1}

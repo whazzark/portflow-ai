@@ -1,20 +1,19 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, expect, test } from 'vitest'
 
-import { SidebarProvider } from '@/components/ui/sidebar'
-import { TooltipProvider } from '@/components/ui/tooltip'
+import { DropdownMenu, DropdownMenuContent } from '@/components/ui/dropdown-menu'
 import { ThemeProvider } from '@/libraries/theme/theme-provider'
 import { ThemeToggle } from '@/libraries/theme/theme-toggle'
 
 function renderThemeToggle() {
   return render(
-    <TooltipProvider>
-      <ThemeProvider>
-        <SidebarProvider>
+    <ThemeProvider>
+      <DropdownMenu open={true}>
+        <DropdownMenuContent>
           <ThemeToggle />
-        </SidebarProvider>
-      </ThemeProvider>
-    </TooltipProvider>,
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </ThemeProvider>,
   )
 }
 
@@ -28,21 +27,19 @@ afterEach(() => {
   document.documentElement.classList.remove('dark')
 })
 
-test('exposes the current appearance and toggles the theme', () => {
+test('exposes the current appearance and switches the theme', async () => {
   renderThemeToggle()
 
-  const toggle = screen.getByRole('switch', { name: 'Switch to light theme' })
+  const appearance = await screen.findByRole('group', { name: 'Appearance' })
+  const dark = within(appearance).getByRole('menuitemradio', { name: 'Dark' })
+  const light = within(appearance).getByRole('menuitemradio', { name: 'Light' })
 
-  expect(toggle).toHaveAttribute('aria-checked', 'true')
-  expect(screen.getByText('Appearance')).toBeInTheDocument()
-  expect(screen.getByText('Dark')).toBeInTheDocument()
+  expect(dark).toHaveAttribute('aria-checked', 'true')
+  expect(light).toHaveAttribute('aria-checked', 'false')
 
-  fireEvent.click(toggle)
+  fireEvent.click(light)
 
-  expect(screen.getByRole('switch', { name: 'Switch to dark theme' })).toHaveAttribute(
-    'aria-checked',
-    'false',
-  )
-  expect(screen.getByText('Light')).toBeInTheDocument()
+  expect(light).toHaveAttribute('aria-checked', 'true')
+  expect(dark).toHaveAttribute('aria-checked', 'false')
   expect(document.documentElement).not.toHaveClass('dark')
 })

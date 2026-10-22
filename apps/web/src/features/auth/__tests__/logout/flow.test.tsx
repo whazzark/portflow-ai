@@ -3,6 +3,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
+import { findUserMenuTrigger } from '@/test/user-menu'
 import {
   ACTIVE_USER,
   API_BASE_URL,
@@ -22,7 +23,7 @@ test('cancels logout without ending the session', async () => {
   mockAuthenticatedSession()
 
   const { router } = renderApp('/')
-  await screen.findByText(ACTIVE_USER.email)
+  await findUserMenuTrigger(ACTIVE_USER)
 
   const dialog = await openLogoutConfirmation()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))

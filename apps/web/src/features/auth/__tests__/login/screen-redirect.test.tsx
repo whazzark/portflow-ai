@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
+import { findUserMenuTrigger } from '@/test/user-menu'
 import { ACTIVE_USER, API_BASE_URL, renderLogin, submitLogin } from './helpers'
 
 test('redirects to home after logging in directly from the login screen', async () => {
@@ -26,7 +27,7 @@ test('redirects to home after logging in directly from the login screen', async 
   )
   await renderLogin('/login')
   await submitLogin(user)
-  expect(await screen.findByText(ACTIVE_USER.email)).toBeInTheDocument()
+  expect(await findUserMenuTrigger(ACTIVE_USER)).toBeInTheDocument()
   expect(
     screen.queryByRole('heading', { name: 'Keep every handoff on track' }),
   ).not.toBeInTheDocument()

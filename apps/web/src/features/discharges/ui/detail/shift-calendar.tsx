@@ -318,7 +318,7 @@ export function ShiftCalendar({
                   className="absolute w-(--column-width) border-primary border-t-2 border-dashed"
                   style={placement(calendar.expectedStart.column, calendar.expectedStart.pct)}
                 >
-                  <span className="absolute right-1 bottom-0.5 rounded-sm bg-card px-1 text-primary text-xs">
+                  <span className="absolute right-1 bottom-0.5 rounded-sm bg-card px-1 text-indicator text-xs">
                     Expected start
                   </span>
                 </div>
@@ -450,7 +450,7 @@ export function ShiftCalendar({
                     key={piece.column}
                     style={placement(piece.column, piece.topPct, piece.heightPct)}
                   >
-                    <div className="size-full overflow-hidden rounded-md border-2 border-primary border-dashed bg-[color-mix(in_oklab,var(--color-primary)_8%,var(--color-card))] p-2 font-medium text-primary text-xs tabular-nums">
+                    <div className="size-full overflow-hidden rounded-md border-2 border-primary border-dashed bg-[color-mix(in_oklab,var(--color-primary)_8%,var(--color-card))] p-2 font-medium text-indicator text-xs tabular-nums">
                       {index === 0 && formatTimes(draftPeriod.start, draftPeriod.end)}
                     </div>
                   </div>

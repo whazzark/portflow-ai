@@ -29,7 +29,7 @@ export function EditablePolygonPlacement({
   onInsertPoint,
   onRemovePoint,
   minimumPoints = 3,
-  fillColor = '#2563eb',
+  fillColor = '#2c7f9a',
 }: {
   points: LatLng[]
   onMovePoint: (index: number, point: LatLng) => void
@@ -75,7 +75,7 @@ export function EditablePolygonPlacement({
               />
               <button
                 aria-label={`Remove boundary point ${index + 1}`}
-                className="absolute -top-2 -right-2 hidden size-4 items-center justify-center rounded-full border border-white bg-destructive text-[10px] text-white leading-none shadow disabled:cursor-not-allowed disabled:opacity-50 group-focus-within:flex group-hover:flex dark:border-neutral-900"
+                className="absolute -top-2 -right-2 hidden size-4 items-center justify-center rounded-full border border-white bg-destructive text-[10px] text-background leading-none shadow disabled:cursor-not-allowed disabled:opacity-50 group-focus-within:flex group-hover:flex dark:border-neutral-900"
                 disabled={!canRemove}
                 onClick={() => onRemovePoint(index)}
                 type="button"

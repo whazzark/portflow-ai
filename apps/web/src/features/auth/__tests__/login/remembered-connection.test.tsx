@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
+import { findUserMenuTrigger } from '@/test/user-menu'
 import { ACTIVE_USER, API_BASE_URL, renderLogin, submitLogin } from './helpers'
 
 test('lets a user request a remembered connection', async () => {
@@ -30,5 +31,5 @@ test('lets a user request a remembered connection', async () => {
   expect(rememberMe).not.toBeChecked()
   await user.click(rememberMe)
   await submitLogin(user)
-  expect(await screen.findByText(ACTIVE_USER.email)).toBeInTheDocument()
+  expect(await findUserMenuTrigger(ACTIVE_USER)).toBeInTheDocument()
 })

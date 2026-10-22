@@ -8,6 +8,6 @@ export const WAREHOUSE_STATUS_COLORS: Record<
   PresentedWarehouse['status'],
   { fill: string; line: string }
 > = {
-  AVAILABLE: { fill: '#0f6e8c', line: '#0b4f63' },
-  ARCHIVED: { fill: '#f5f7f8', line: '#5b6b7a' },
+  AVAILABLE: { fill: '#1f6f8b', line: '#164f63' },
+  ARCHIVED: { fill: '#f2f4f5', line: '#5d6c77' },
 }

@@ -4,6 +4,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
+import { findUserMenuTrigger } from '@/test/user-menu'
 import {
   API_BASE_URL,
   CONFINED_USER,
@@ -47,7 +48,7 @@ test('reaches the application in the same session after a valid renewal', async 
   await findRenewalHeading()
   await submitRenewal(user, VALID_PASSWORD)
 
-  expect(await screen.findByText(RENEWED_USER.email)).toBeInTheDocument()
+  expect(await findUserMenuTrigger(RENEWED_USER)).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/')
   expect(screen.queryByRole('heading', { name: 'Choose a new password' })).not.toBeInTheDocument()
 })

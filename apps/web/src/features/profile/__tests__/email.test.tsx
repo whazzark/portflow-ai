@@ -1,6 +1,8 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
+import { findUserMenuTrigger } from '@/test/user-menu'
+
 import { fill, findForm, mockRefusal, mockSession, renderProfile, save } from './support'
 
 const NEW_ADDRESS = 'camille.renard@portflow.test'
@@ -97,7 +99,9 @@ test('applies a confirmed address change and carries it to the session', async (
   await waitFor(() =>
     expect(within(form).queryByLabelText(/Current password/)).not.toBeInTheDocument(),
   )
-  expect(screen.getAllByText(NEW_ADDRESS).length).toBeGreaterThan(0)
+  // The session carries it: the user menu now shows the new address.
+  fireEvent.mouseDown(await findUserMenuTrigger({ firstName: 'Claire', lastName: 'Martin' }))
+  expect(within(await screen.findByRole('menu')).getByText(NEW_ADDRESS)).toBeInTheDocument()
 }, 15000)
 
 /**

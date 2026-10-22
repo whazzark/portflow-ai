@@ -50,15 +50,15 @@ describe('warehouse polygon selection', () => {
     expect(mapGeoJsonMock).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        fillPaint: expect.objectContaining({ 'fill-color': '#0f6e8c' }),
-        linePaint: expect.objectContaining({ 'line-color': '#0b4f63' }),
+        fillPaint: expect.objectContaining({ 'fill-color': '#1f6f8b' }),
+        linePaint: expect.objectContaining({ 'line-color': '#164f63' }),
       }),
     )
     expect(mapGeoJsonMock).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        fillPaint: expect.objectContaining({ 'fill-color': '#f5f7f8' }),
-        linePaint: expect.objectContaining({ 'line-color': '#5b6b7a' }),
+        fillPaint: expect.objectContaining({ 'fill-color': '#f2f4f5' }),
+        linePaint: expect.objectContaining({ 'line-color': '#5d6c77' }),
       }),
     )
   })

@@ -10,5 +10,11 @@ test('restores an authenticated session on load', async () => {
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: ACTIVE_USER })),
   )
   renderApp('/')
-  expect(await screen.findByText(ACTIVE_USER.email, {}, { timeout: 3_000 })).toBeInTheDocument()
+  expect(
+    await screen.findByRole(
+      'button',
+      { name: 'Open user menu for Claire Martin' },
+      { timeout: 3_000 },
+    ),
+  ).toBeInTheDocument()
 })
