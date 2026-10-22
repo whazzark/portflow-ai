@@ -23,11 +23,18 @@ export function useDischargeMutations() {
   /**
    * Every discharge write answers with the whole detail, so the detail cache takes the answer as
    * it is — its expected tonnage and lot order included — and only the list, which summarizes
-   * every discharge, is asked again.
+   * every discharge, is asked again. A discharge still planned has its start check asked again
+   * too: what the change fixed or broke shows on its lots without a reload.
    */
   const applyDetail = async (response: { data: DischargeDetailDto }) => {
     queryClient.setQueryData(dischargeQueries.detail(response.data.id).queryKey, response)
-    await queryClient.invalidateQueries({ exact: true, queryKey: dischargeQueries.all().queryKey })
+    await Promise.all([
+      queryClient.invalidateQueries({ exact: true, queryKey: dischargeQueries.all().queryKey }),
+      response.data.status === 'PLANNED' &&
+        queryClient.invalidateQueries({
+          queryKey: dischargeQueries.startCheck(response.data.id).queryKey,
+        }),
+    ])
   }
 
   /**

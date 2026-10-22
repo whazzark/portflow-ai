@@ -6,8 +6,12 @@ import type { DischargeDetailDto, PlanningDoorDto } from '@/features/discharges/
 import { ShiftLink } from '@/features/discharges/ui/detail/discharge-tab-link'
 import { classnames } from '@/libraries/shadcn/helpers'
 
-/** Why a door a planned shift uses cannot be let go of from the lot. */
-export const REMOVE_FROM_SHIFT_FIRST = 'Remove it from the shift first'
+/** Why a door the planned shifts use cannot be let go of from the lot. */
+export function removeFromShiftsFirst(shiftCount: number) {
+  const shifts = shiftCount === 1 ? '1 shift' : `${shiftCount} shifts`
+
+  return `Used by ${shifts}. Remove it from them before removing it from the lot.`
+}
 
 /** A door as both columns of the transfer know it. */
 export type TransferDoor = {

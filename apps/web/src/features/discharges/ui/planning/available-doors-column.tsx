@@ -12,7 +12,7 @@ import { DoorHoldings, doorHoldingHints } from '@/features/discharges/ui/plannin
 import {
   type DoorNote,
   DoorTransferRow,
-  REMOVE_FROM_SHIFT_FIRST,
+  removeFromShiftsFirst,
   type TransferDoor,
 } from '@/features/discharges/ui/planning/door-transfer-row'
 
@@ -105,7 +105,7 @@ export function AvailableDoorsColumn({
                   [
                     held && !locked ? { text: 'Will be removed', tone: 'muted' } : null,
                     // A shift took the door after it was let go of: the save is refused until it is back.
-                    locked ? { text: REMOVE_FROM_SHIFT_FIRST, tone: 'destructive' } : null,
+                    locked ? { text: removeFromShiftsFirst(shifts.length), tone: 'destructive' } : null,
                     !held && holder ? { text: `Held by ${lotLabel(holder)}`, tone: 'muted' } : null,
                     refusal ? { text: refusal, tone: 'destructive' } : null,
                     ...doorHoldingHints(door.otherDischargeAssignments).map(

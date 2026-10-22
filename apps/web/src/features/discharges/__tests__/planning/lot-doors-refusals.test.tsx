@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
 import { formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
-import { REMOVE_FROM_SHIFT_FIRST } from '@/features/discharges/ui/planning/door-transfer-row'
+import { removeFromShiftsFirst } from '@/features/discharges/ui/planning/door-transfer-row'
 import {
   DOORS_NOT_REMOVABLE_MESSAGE,
   DOORS_NOT_SELECTABLE_MESSAGE,
@@ -69,7 +69,11 @@ test('locks a door a planned shift uses in the lot’s column, naming the shift'
 
   expect(within(row).getByRole('link', { name: SHIFT_NAME })).toBeInTheDocument()
   expect(within(row).queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument()
-  expect(within(row).getByText(REMOVE_FROM_SHIFT_FIRST)).toHaveClass('sr-only')
+  // Said on the row, since a locked door has no button to carry it.
+  expect(within(row).getByText(removeFromShiftsFirst(1))).not.toHaveClass('sr-only')
+  expect(removeFromShiftsFirst(1)).toBe(
+    'Used by 1 shift. Remove it from them before removing it from the lot.',
+  )
 })
 
 test('opens the shift using a door from its lock, leaving the doors dialog', async () => {
@@ -109,7 +113,7 @@ test('locks a door the API says a shift took meanwhile, and saves once it is tak
   await waitFor(() => expect(alert).toHaveFocus())
   const back = await within(available(dialog)).findByRole('button', {
     name: 'Add',
-    description: `Door A1 ${SHIFT_NAME} ${REMOVE_FROM_SHIFT_FIRST}`,
+    description: `Door A1 ${SHIFT_NAME} ${removeFromShiftsFirst(1)}`,
   })
 
   fireEvent.click(back)

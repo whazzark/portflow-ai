@@ -1,14 +1,25 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 
-import type { DischargeDetailDto } from '@/features/discharges/types'
+import type { DischargeDetailDto, StartProblemDto } from '@/features/discharges/types'
+import { server } from '@/test/msw/server'
 import {
+  ACTIVE_OBSERVER,
+  API_BASE_URL,
   buildDischargeDetail,
   buildDoorPeriod,
   buildLot,
+  buildStartProblem,
   listedDischarge,
+  PLANNING_DOORS,
 } from '../support/fixtures'
-import { mockDischargeDetail, renderDischargeTab } from '../support/test-helpers'
+import {
+  mockDischargeDetail,
+  mockDischargePlanning,
+  openLotMenu,
+  renderDischargeTab,
+} from '../support/test-helpers'
 
 const OCEAN_CEDAR = listedDischarge('MV Ocean Cedar', 'ACTIVE')
 
@@ -187,4 +198,210 @@ test("shows a closed discharge's door left without an end as ended, not as held"
   expect(door).toHaveTextContent('Ended')
   expect(door).toHaveTextContent('end not recorded')
   expect(door).not.toHaveTextContent('Since')
+})
+
+// A planned discharge: Soufflet's lot has no door, Cargill's wheat holds Door A1, which an active
+// discharge holds too, and Door B1, which nobody else does; Cargill's barley holds Door A2.
+const ATLANTIC_DAWN = listedDischarge('MV Atlantic Dawn', 'PLANNED')
+const SOUFFLET = { id: 'customer-soufflet', name: 'Soufflet Négoce', status: 'AVAILABLE' } as const
+const PLANNED_LOTS = buildDischargeDetail(ATLANTIC_DAWN, {
+  expectedTonnage: '3000.000',
+  productLots: [
+    buildLot({
+      id: 'lot-wheat',
+      productName: 'Blé tendre',
+      doorAssignments: [
+        buildDoorPeriod({ id: 'wheat-a1' }),
+        buildDoorPeriod({
+          id: 'wheat-b1',
+          warehouseDoor: { id: 'door-b1', name: 'Door B1', status: 'AVAILABLE' },
+          warehouse: { id: 'warehouse-b', name: 'Magasin B', status: 'AVAILABLE' },
+        }),
+      ],
+    }),
+    buildLot({
+      id: 'lot-barley',
+      productName: 'Orge',
+      doorAssignments: [
+        buildDoorPeriod({
+          id: 'barley-a2',
+          warehouseDoor: { id: 'door-a2', name: 'Door A2', status: 'AVAILABLE' },
+        }),
+      ],
+    }),
+    buildLot({ id: 'lot-peas', productName: 'Pois', customer: SOUFFLET }),
+  ],
+})
+const HELD_A1 = buildStartProblem({
+  family: 'ACTIVE_DISCHARGE_CONFLICT',
+  code: 'WAREHOUSE_DOOR_HELD',
+  subject: { type: 'WAREHOUSE_DOOR', id: 'door-a1' },
+  context: { type: 'PRODUCT_LOT', id: 'lot-wheat' },
+  holder: { dischargeId: 'discharge-ocean-cedar', vesselName: 'MV Ocean Cedar' },
+})
+const NO_DOOR_PEAS = buildStartProblem({ subject: { type: 'PRODUCT_LOT', id: 'lot-peas' } })
+
+/** The start check of any discharge, answering what `problems` says at the time it is read. */
+function mockStartCheck(problems: () => StartProblemDto[] | 'error') {
+  const state = { requests: 0 }
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id/start-check`, ({ params }) => {
+      state.requests += 1
+      const answer = problems()
+
+      return answer === 'error'
+        ? new HttpResponse(null, { status: 500 })
+        : HttpResponse.json({
+            data: { dischargeId: String(params.id), shiftId: null, problems: answer },
+          })
+    }),
+  )
+
+  return state
+}
+
+const lotRow = (region: HTMLElement, product: string) => {
+  const row = within(region)
+    .getAllByRole('row')
+    .find((candidate) => within(candidate).queryByText(product, { exact: true }))
+
+  if (!row) {
+    throw new Error(`No lot row for ${product}`)
+  }
+
+  return row
+}
+
+test('marks a lot without a door and a door held by an active discharge, and counts them', async () => {
+  mockDischargePlanning({ detail: PLANNED_LOTS })
+  mockStartCheck(() => [NO_DOOR_PEAS, HELD_A1])
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  const peas = lotRow(region, 'Pois')
+  expect(within(peas).getByText('No door')).toBeInTheDocument()
+
+  const wheat = lotRow(region, 'Blé tendre')
+  const doors = within(within(wheat).getByRole('list', { name: 'Warehouse doors' })).getAllByRole(
+    'listitem',
+  )
+  await waitFor(() => expect(doors[0]).toHaveTextContent('Held by MV Ocean Cedar'))
+  // Only the door the active discharge holds is marked; the lot's other door reads as usual.
+  expect(doors[1]).toHaveTextContent(/^Magasin B › Door B1$/)
+  expect(lotRow(region, 'Orge')).not.toHaveTextContent('Held by')
+  expect(lotRow(region, 'Orge')).not.toHaveTextContent('No door')
+
+  expect(region).toHaveTextContent('3 lots · 2 customers · 3,000.000 t')
+  expect(within(region).getByText('1 lot without a door')).toBeInTheDocument()
+  expect(within(region).getByText('1 door held by another discharge')).toBeInTheDocument()
+})
+
+test('counts nothing amiss when every lot has a door nobody holds', async () => {
+  const clean = { ...PLANNED_LOTS, productLots: PLANNED_LOTS.productLots.slice(0, 2) }
+  const check = mockStartCheck(() => [])
+  mockDischargePlanning({ detail: clean })
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  await waitFor(() => expect(check.requests).toBeGreaterThan(0))
+  expect(region).toHaveTextContent('2 lots · 1 customer · 3,000.000 t')
+  expect(region).not.toHaveTextContent('without a door')
+  expect(region).not.toHaveTextContent('held by another discharge')
+  expect(region).not.toHaveTextContent('No door')
+})
+
+test('clears a lot’s problem once a door is assigned to it, without a reload', async () => {
+  const state = mockDischargePlanning({
+    detail: PLANNED_LOTS,
+    doors: [
+      ...PLANNING_DOORS,
+      {
+        id: 'door-c1',
+        name: 'Door C1',
+        warehouse: { id: 'warehouse-c', name: 'Magasin C' },
+        otherDischargeAssignments: [],
+      },
+    ],
+  })
+  const check = mockStartCheck(() =>
+    state.lotDoorRequests.length > 0 ? [HELD_A1] : [NO_DOOR_PEAS, HELD_A1],
+  )
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+  await within(region).findByText('1 door held by another discharge')
+  const checksBefore = check.requests
+
+  const menu = await openLotMenu('Soufflet Négoce · Pois')
+  fireEvent.click(within(menu).getByRole('menuitem', { name: 'Assign doors' }))
+  const dialog = await screen.findByRole('dialog', { name: 'Warehouse doors' })
+  fireEvent.click(
+    await within(dialog).findByRole('button', { name: 'Add', description: /^Door C1/ }),
+  )
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+
+  await waitFor(() => expect(within(region).queryByText('No door')).not.toBeInTheDocument())
+  expect(within(region).queryByText('1 lot without a door')).not.toBeInTheDocument()
+  expect(check.requests).toBeGreaterThan(checksBefore)
+})
+
+test('still shows the lots and the ones without a door when the start check fails', async () => {
+  mockDischargePlanning({ detail: PLANNED_LOTS })
+  const check = mockStartCheck(() => 'error')
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  await waitFor(() => expect(check.requests).toBeGreaterThan(0))
+  expect(within(lotRow(region, 'Pois')).getByText('No door')).toBeInTheDocument()
+  expect(within(region).getByText('1 lot without a door')).toBeInTheDocument()
+  // Held doors are unknown, not absent: nothing says either way.
+  expect(region).not.toHaveTextContent('Held by')
+  expect(region).not.toHaveTextContent('held by another discharge')
+})
+
+test('shows an observer the lots without a door, but not who holds a door', async () => {
+  mockDischargePlanning({ detail: PLANNED_LOTS, user: ACTIVE_OBSERVER })
+  const check = mockStartCheck(() => [NO_DOOR_PEAS, HELD_A1])
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  expect(within(lotRow(region, 'Pois')).getByText('No door')).toBeInTheDocument()
+  expect(within(region).getByText('1 lot without a door')).toBeInTheDocument()
+  expect(region).not.toHaveTextContent('Held by')
+  expect(check.requests).toBe(0)
+})
+
+test('offers Assign doors beside each door problem, opening that lot’s doors', async () => {
+  mockDischargePlanning({ detail: PLANNED_LOTS })
+  mockStartCheck(() => [NO_DOOR_PEAS, HELD_A1])
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  const held = await within(region).findByRole('button', {
+    name: 'Assign doors for Cargill France · Blé tendre',
+  })
+  expect(lotRow(region, 'Blé tendre')).toContainElement(held)
+  // A lot whose doors are fine has nothing to fix.
+  expect(
+    within(region).queryByRole('button', { name: 'Assign doors for Cargill France · Orge' }),
+  ).not.toBeInTheDocument()
+
+  fireEvent.click(
+    within(lotRow(region, 'Pois')).getByRole('button', {
+      name: 'Assign doors for Soufflet Négoce · Pois',
+    }),
+  )
+
+  expect(await screen.findByRole('dialog', { name: 'Warehouse doors' })).toHaveAccessibleDescription(
+    'Soufflet Négoce · Pois · 1,000.000 t',
+  )
+})
+
+test('offers no Assign doors to an observer', async () => {
+  mockDischargePlanning({ detail: PLANNED_LOTS, user: ACTIVE_OBSERVER })
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  expect(within(lotRow(region, 'Pois')).getByText('No door')).toBeInTheDocument()
+  expect(within(region).queryByRole('button', { name: /^Assign doors/ })).not.toBeInTheDocument()
 })

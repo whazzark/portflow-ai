@@ -9,7 +9,7 @@ import { DoorHoldings, doorHoldingHints } from '@/features/discharges/ui/plannin
 import {
   type DoorNote,
   DoorTransferRow,
-  REMOVE_FROM_SHIFT_FIRST,
+  removeFromShiftsFirst,
   type TransferDoor,
 } from '@/features/discharges/ui/planning/door-transfer-row'
 
@@ -21,6 +21,8 @@ type AssignedDoorsColumnProps = {
   /** In the order they were chosen, so a door added lands last and nothing listed moves. */
   doors: TransferDoor[]
   heldIds: ReadonlySet<string>
+  /** The lot's doors an active discharge holds, each with the holder's vessel. */
+  heldBy?: ReadonlyMap<string, string>
   chosen: ReadonlySet<string>
   refusals: ReadonlyMap<string, string>
   /** Where the focus goes once the last removable door has left. */
@@ -36,6 +38,7 @@ export function AssignedDoorsColumn({
   discharge,
   doors,
   headingId,
+  heldBy,
   heldIds,
   lot,
   onRemove,
@@ -66,13 +69,23 @@ export function AssignedDoorsColumn({
       {doors.map((door) => {
         const held = heldIds.has(door.id)
         const locked = lockedIds.has(door.id)
-        const { holder } = offeredDoorRowState(discharge, lot, door.id, chosen)
+        const shifts = locked ? heldDoorRowState(discharge, door.id, chosen).shifts : []
+        const holder = heldBy?.get(door.id)
+        const { holder: lotHolder } = offeredDoorRowState(discharge, lot, door.id, chosen)
         const refusal = refusals.get(door.id)
         const notes = (
           [
+            held && holder
+              ? {
+                  text: `Held by ${holder} (Active). It blocks this discharge's start until ${holder} releases it.`,
+                  tone: 'warning',
+                }
+              : null,
             // Said with the row, since a locked door has no button to carry it.
-            locked ? { text: REMOVE_FROM_SHIFT_FIRST, tone: 'hidden' } : null,
-            !held && holder ? { text: `Moves from ${lotLabel(holder)}`, tone: 'warning' } : null,
+            locked ? { text: removeFromShiftsFirst(shifts.length), tone: 'muted' } : null,
+            !held && lotHolder
+              ? { text: `Moves from ${lotLabel(lotHolder)}`, tone: 'warning' }
+              : null,
             refusal ? { text: refusal, tone: 'destructive' } : null,
             ...doorHoldingHints(door.otherDischargeAssignments).map(
               (hint): DoorNote => ({ text: hint.text, tone: 'hidden' }),
@@ -99,7 +112,7 @@ export function AssignedDoorsColumn({
             key={door.id}
             name={`${door.warehouse.name} › ${door.name}`}
             notes={notes}
-            shifts={locked ? heldDoorRowState(discharge, door.id, chosen).shifts : []}
+            shifts={shifts}
           />
         )
       })}

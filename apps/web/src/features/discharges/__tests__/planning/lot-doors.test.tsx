@@ -1,10 +1,14 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
 
+import { server } from '@/test/msw/server'
 import {
+  API_BASE_URL,
   buildDischargeDetail,
   buildDoorPeriod,
   buildLot,
+  buildStartProblem,
   listedDischarge,
 } from '../support/fixtures'
 import {
@@ -280,4 +284,67 @@ test('shows the two columns as tabs on a phone', async () => {
   fireEvent.click(assignedTab)
 
   expect(await findAction(assigned(dialog), 'Remove', 'Magasin A › Door A2')).toBeVisible()
+})
+
+test('names the lot with its quantity, and says nothing changed yet', async () => {
+  mockDischargePlanning({ detail: PLANNED })
+
+  renderDischargeTab(PLANNED.id, 'product-lots')
+  const dialog = await openWheatDoors()
+
+  expect(dialog).toHaveAccessibleDescription('Cargill France · Blé tendre · 1,000.000 t')
+  expect(within(dialog).getByText('No change yet')).toBeInTheDocument()
+  expect(
+    within(dialog).getByText(
+      'A door serves one lot of a discharge at a time. Several planned discharges may share it: the one that starts first uses it.',
+    ),
+  ).toBeInTheDocument()
+
+  fireEvent.click(await findAction(available(dialog), 'Add', 'Door A2'))
+
+  expect(within(dialog).queryByText('No change yet')).not.toBeInTheDocument()
+})
+
+test('says how many other discharges an available door is also planned on', async () => {
+  mockDischargePlanning({ detail: PLANNED })
+
+  renderDischargeTab(PLANNED.id, 'product-lots')
+  const dialog = await openWheatDoors()
+  const doorA2 = await findAction(available(dialog), 'Add', 'Door A2')
+
+  expect(doorA2.closest('li')).toHaveTextContent('Also on 1 discharge')
+})
+
+test('explains that a door of the lot an active discharge holds blocks the start', async () => {
+  mockDischargePlanning({ detail: PLANNED })
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id/start-check`, ({ params }) =>
+      HttpResponse.json({
+        data: {
+          dischargeId: String(params.id),
+          shiftId: null,
+          problems: [
+            buildStartProblem({
+              family: 'ACTIVE_DISCHARGE_CONFLICT',
+              code: 'WAREHOUSE_DOOR_HELD',
+              subject: { type: 'WAREHOUSE_DOOR', id: 'door-a1' },
+              context: { type: 'PRODUCT_LOT', id: 'lot-wheat' },
+              holder: { dischargeId: 'discharge-ocean-cedar', vesselName: 'MV Ocean Cedar' },
+            }),
+          ],
+        },
+      }),
+    ),
+  )
+
+  renderDischargeTab(PLANNED.id, 'product-lots')
+  const lots = await screen.findByRole('region', { name: 'Product lots' })
+  await within(lots).findByText('Held by MV Ocean Cedar')
+  const dialog = await openWheatDoors()
+
+  expect(
+    within(assigned(dialog)).getByText(
+      "Held by MV Ocean Cedar (Active). It blocks this discharge's start until MV Ocean Cedar releases it.",
+    ),
+  ).toBeInTheDocument()
 })

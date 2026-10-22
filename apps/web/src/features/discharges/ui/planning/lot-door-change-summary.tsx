@@ -39,6 +39,9 @@ export function LotDoorChangeSummary({
       className="grid min-w-0 basis-full gap-0.5 text-sm sm:mr-auto sm:flex-1 sm:basis-auto"
     >
       {changes.length > 0 && <p>{changes.join(' · ')}</p>}
+      {changes.length === 0 && moves.length === 0 && (
+        <p className="text-muted-foreground">No change yet</p>
+      )}
       {[...bySource].map(([source, doors]) => (
         <p className="text-warning" key={source}>
           {doors.join(', ')} {doors.length === 1 ? 'moves' : 'move'} from {source}

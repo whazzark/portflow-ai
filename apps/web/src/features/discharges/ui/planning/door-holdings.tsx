@@ -43,7 +43,7 @@ export function DoorHoldings({ assignments }: DoorHoldingsProps) {
         type="button"
       >
         <TriangleAlertIcon aria-hidden="true" className="size-4" />
-        {assignments.length}
+        Also on {assignments.length} {assignments.length === 1 ? 'discharge' : 'discharges'}
       </TooltipTrigger>
       <TooltipContent className="flex-col items-start">
         <span className="font-medium">Also assigned to</span>
