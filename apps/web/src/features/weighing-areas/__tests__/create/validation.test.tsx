@@ -5,7 +5,11 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { API_BASE_URL } from '@/features/docks/__tests__/support/fixtures'
 import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixtures'
 import { server } from '@/test/msw/server'
-import { mockDocks, renderCheckpoints } from '../../../checkpoints/__tests__/support/test-helpers'
+import {
+  mockDocks,
+  renderCheckpoints,
+  startCreating,
+} from '../../../checkpoints/__tests__/support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -21,7 +25,7 @@ test('blocks submission with a clear message until a location has been placed', 
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
 
   expect(
     screen.getByText('A location must be placed before this weighing area can be created.'),
@@ -34,7 +38,7 @@ test('rejects a blank weighing area name with an inline field error and keeps th
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
 
   await user.click(screen.getByRole('button', { name: 'Create weighing area' }))
@@ -61,7 +65,7 @@ test('rejects a duplicate weighing area name inline on the name field and keeps 
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(
     screen.getByRole('textbox', { name: 'Weighing area name' }),
@@ -94,7 +98,7 @@ test('rejects a duplicate weighing area name matching an archived fixture', asyn
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(
     screen.getByRole('textbox', { name: 'Weighing area name' }),
@@ -134,7 +138,7 @@ test('creates successfully when the submitted name matches an existing dock name
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), 'North Dock')
   await user.click(screen.getByRole('button', { name: 'Create weighing area' }))
@@ -147,7 +151,7 @@ test('rejects a manually edited out-of-range coordinate and disables submission'
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), 'South Scale')
 
@@ -174,7 +178,7 @@ test('shows an error toast and preserves the pending marker on a server failure'
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), 'South Scale')
   await user.click(screen.getByRole('button', { name: 'Create weighing area' }))

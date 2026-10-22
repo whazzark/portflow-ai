@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test, vi } from 'vitest'
@@ -79,8 +79,9 @@ test('saves a rename without touching position, status, identity, or creation ti
 
   expect(await screen.findByText(`Dock “${updated.name}” updated`)).toBeInTheDocument()
   expect(await screen.findByRole('heading', { name: updated.name })).toBeInTheDocument()
-  expect(screen.getByText(String(NORTH_DOCK.latitude))).toBeInTheDocument()
-  expect(screen.getByText(String(NORTH_DOCK.longitude))).toBeInTheDocument()
+  expect(
+    screen.getByText(`${NORTH_DOCK.latitude.toFixed(4)}, ${NORTH_DOCK.longitude.toFixed(4)}`),
+  ).toBeInTheDocument()
 })
 
 test('applies a combined name and position change together', async () => {
@@ -143,4 +144,29 @@ test('allows saving with no changes and does not report a duplicate', async () =
 
   expect(await screen.findByText(`Dock “${NORTH_DOCK.name}” updated`)).toBeInTheDocument()
   expect(screen.queryByText(/already in use/i)).not.toBeInTheDocument()
+})
+
+test('moves the dock in move mode: banner, previous position and edit card', async () => {
+  const user = userEvent.setup()
+  const { router } = renderCheckpoints()
+
+  await openEditDock(user)
+
+  expect(router.state.location.search).toMatchObject({ edit: 'dock' })
+  expect(screen.getByText(`Drag the pin to move ${NORTH_DOCK.name}`)).toBeInTheDocument()
+  expect(screen.queryByRole('combobox', { name: 'Search checkpoints' })).not.toBeInTheDocument()
+  expect(
+    screen.getByRole('img', { name: `Previous position of ${NORTH_DOCK.name}` }),
+  ).toBeInTheDocument()
+  const card = screen.getByRole('complementary', { name: 'Edit dock' })
+  expect(card).toHaveTextContent(
+    `Previous position${NORTH_DOCK.latitude.toFixed(4)}, ${NORTH_DOCK.longitude.toFixed(4)}`,
+  )
+  expect(within(card).getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: 'Simulate dragging pending marker' }))
+  await user.click(within(card).getByRole('button', { name: 'Cancel' }))
+
+  expect(router.state.location.search).not.toHaveProperty('edit')
+  expect(await screen.findByRole('complementary', { name: NORTH_DOCK.name })).toBeInTheDocument()
 })

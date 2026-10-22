@@ -1,3 +1,4 @@
+import { screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { API_BASE_URL, DOCK_ADMIN, DOCKS } from '@/features/docks/__tests__/support/fixtures'
 import type { DockDto } from '@/features/docks/types'
@@ -27,4 +28,13 @@ export function renderCheckpoints(initialPath = '/checkpoints') {
     return renderApp(initialPath)
   }
   return renderApp(`${initialPath}${initialPath.includes('?') ? '&' : '?'}status=all`)
+}
+
+/** Starts a placement from the toolbar's Create menu, as an administrator would. */
+export async function startCreating(
+  user: { click: (element: Element) => Promise<void> },
+  item: 'New dock' | 'New weighing area',
+) {
+  await user.click(await screen.findByRole('button', { name: 'Create' }))
+  await user.click(await screen.findByRole('menuitem', { name: new RegExp(`^${item}`) }))
 }

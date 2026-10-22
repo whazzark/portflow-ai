@@ -6,7 +6,11 @@ import { API_BASE_URL } from '@/features/docks/__tests__/support/fixtures'
 import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixtures'
 import type { WeighingAreaDto } from '@/features/weighing-areas/types'
 import { server } from '@/test/msw/server'
-import { mockDocks, renderCheckpoints } from '../../../checkpoints/__tests__/support/test-helpers'
+import {
+  mockDocks,
+  renderCheckpoints,
+  startCreating,
+} from '../../../checkpoints/__tests__/support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -22,7 +26,7 @@ test('arms placement, drops a pending marker, and syncs coordinate fields on cli
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
 
   expect(
     screen.getByRole('button', { name: 'View weighing area Alpha Scale (Available)' }),
@@ -71,7 +75,7 @@ test('places, names, and creates a weighing area, then shows it as the selected 
   const { router } = renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
 
   await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), created.name)
@@ -124,7 +128,7 @@ test('reveals the new weighing area even when the active filters would hide it',
   const hidingFilters = new URLSearchParams({ status: 'archived', kinds: 'dock' })
   const { router } = renderCheckpoints(`/checkpoints?${hidingFilters}`)
 
-  await user.click(await screen.findByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(screen.getByRole('textbox', { name: 'Weighing area name' }), created.name)
   await user.click(screen.getByRole('button', { name: 'Create weighing area' }))
@@ -164,7 +168,7 @@ test('creates a weighing area by typing coordinates directly, without any map cl
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New weighing area' }))
+  await startCreating(user, 'New weighing area')
 
   expect(screen.getByRole('button', { name: 'Create weighing area' })).toBeDisabled()
 

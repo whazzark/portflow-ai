@@ -7,6 +7,7 @@ import {
   useSelectAllShortcut,
 } from '@/components/lifecycle/use-bulk-selection-shortcuts'
 import type { ResourceMapAnchor } from '@/components/resource-map/resource-map-anchor'
+import { ResourceMapModeBanner } from '@/components/resource-map/resource-map-mode-banner'
 import { ResourceMapNoMatch } from '@/components/resource-map/resource-map-no-match'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
@@ -44,7 +45,7 @@ import {
   type SelectedCheckpoint,
 } from '@/features/checkpoints/ui/checkpoint-detail-card'
 import { CheckpointMapToolbar } from '@/features/checkpoints/ui/checkpoint-map-toolbar'
-import { CheckpointSheet } from '@/features/checkpoints/ui/checkpoint-sheet'
+import { CheckpointCreateMenu } from '@/features/checkpoints/ui/checkpoint-toolbar-menus'
 import { CreateCheckpointPanel } from '@/features/checkpoints/ui/create-checkpoint-panel'
 import { EditCheckpointPanel } from '@/features/checkpoints/ui/edit-checkpoint-panel'
 import {
@@ -87,6 +88,11 @@ const BULK_LIFECYCLE_CAPABLE_KINDS: CheckpointKind[] = ['DOCK', 'WEIGHING_AREA']
 const OPPOSITE_KIND_FILTER: Record<CheckpointKind, CheckpointKindFilter> = {
   DOCK: 'weighing-area',
   WEIGHING_AREA: 'dock',
+}
+
+const PLACEMENT_BANNER_BY_KIND: Record<CheckpointKind, string> = {
+  DOCK: 'Placing a new dock · click the map where trucks are loaded',
+  WEIGHING_AREA: 'Placing a new weighing area · click the weighbridge position',
 }
 
 const CREATE_LABEL_BY_KIND: Record<CheckpointKind, string> = {
@@ -655,7 +661,7 @@ export function CheckpointsPage() {
   // creation flows may still replace one another — switching between them is deliberate, and
   // `startCreating` discards the abandoned placement (spec FR-016, FR-017).
   const createActions =
-    canManageCheckpoints && !isEditing && !selectingKind
+    canManageCheckpoints && !isEditing && !selectingKind && !creationKind
       ? CHECKPOINT_KINDS.map((kind) => ({
           key: kind,
           label: CREATE_LABEL_BY_KIND[kind],
@@ -668,6 +674,7 @@ export function CheckpointsPage() {
     creationKind === 'DOCK' ? (
       <CreateCheckpointPanel
         kind="DOCK"
+        anchor={pendingPlacement ? cardAnchor : null}
         onCancel={cancelCreating}
         onCreate={createDock}
         onPendingChange={setPendingPlacement}
@@ -677,6 +684,7 @@ export function CheckpointsPage() {
     ) : creationKind === 'WEIGHING_AREA' ? (
       <CreateCheckpointPanel
         kind="WEIGHING_AREA"
+        anchor={pendingPlacement ? cardAnchor : null}
         onCancel={cancelCreating}
         onCreate={createWeighingArea}
         onPendingChange={setPendingPlacement}
@@ -710,6 +718,7 @@ export function CheckpointsPage() {
   const editPanel =
     editing && draft && editSession ? (
       <EditCheckpointPanel
+        anchor={cardAnchor}
         draft={draft}
         kind={editing.kind}
         onCancel={cancelEditing}
@@ -769,7 +778,23 @@ export function CheckpointsPage() {
     })
   }
   const isViewing = Boolean(selectedResource) && !creationKind && !isEditing && !selectingKind
-  const anchorPoint: LatLng | undefined = isViewing ? selectedCheckpoint : undefined
+  const anchorPoint: LatLng | undefined = creationKind
+    ? (pendingPlacement ?? undefined)
+    : isEditing
+      ? (draft ?? undefined)
+      : isViewing
+        ? selectedCheckpoint
+        : undefined
+  // Placement and move modes replace the toolbar with a banner that says what a map click does.
+  const modeBanner = creationKind ? (
+    <ResourceMapModeBanner actionLabel="Cancel" onAction={cancelCreating}>
+      {PLACEMENT_BANNER_BY_KIND[creationKind]}
+    </ResourceMapModeBanner>
+  ) : editing ? (
+    <ResourceMapModeBanner actionLabel="Cancel" onAction={cancelEditing}>
+      Drag the pin to move {editing.resource.name}
+    </ResourceMapModeBanner>
+  ) : undefined
 
   return (
     <>
@@ -788,6 +813,11 @@ export function CheckpointsPage() {
             searchFooter={`${searchMatches.length} of ${searchTotal} ${
               status === 'all' ? 'checkpoints' : status
             } · Enter to zoom to all matches`}
+            actions={
+              createActions.length > 0 ? (
+                <CheckpointCreateMenu onCreate={startCreating} />
+              ) : undefined
+            }
             statusCounts={statusCounts}
             statuses={selectedStatuses}
           />
@@ -833,9 +863,17 @@ export function CheckpointsPage() {
             checkableIds={canManageCheckpoints ? checkableIds : undefined}
             checkedIds={selectingKind ? checkedIds : undefined}
             checkpoints={mapCheckpoints}
-            createActions={createActions}
             anchorPoint={anchorPoint}
             fitRequest={fitRequest}
+            ghost={
+              editing && editSession
+                ? {
+                    position: editSession.origin,
+                    label: `Previous position of ${editing.resource.name}`,
+                    icon: <CheckpointKindIcon className="size-3.5" kind={editing.kind} />,
+                  }
+                : undefined
+            }
             onAnchorChange={setCardAnchor}
             onMapClick={isViewing ? closeDetails : undefined}
             onError={onMapError}
@@ -873,8 +911,11 @@ export function CheckpointsPage() {
             selected={selectedCheckpoint}
           />
         )}
+        banner={modeBanner}
         card={
-          isViewing && selectedResource ? (
+          createPanel ??
+          editPanel ??
+          (isViewing && selectedResource ? (
             <CheckpointDetailCard
               anchor={cardAnchor}
               canManage={canManageCheckpoints}
@@ -883,7 +924,7 @@ export function CheckpointsPage() {
               onClose={closeDetails}
               onEdit={startEditing}
             />
-          ) : undefined
+          ) : undefined)
         }
         onRetrySource={() => void weighingAreasQuery.refetch()}
         resourceLabel="Checkpoints"
@@ -907,28 +948,6 @@ export function CheckpointsPage() {
           submit={submitBulkLifecycle}
         />
       )}
-      <CheckpointSheet
-        canEditCheckpoint={canManageCheckpoints}
-        checkpoint={creationKind || isEditing ? selectedResource : undefined}
-        createPanel={createPanel}
-        editPanel={editPanel}
-        mode={creationKind ? 'create' : isEditing ? 'edit' : 'view'}
-        onClose={() => {
-          if (creationKind) {
-            cancelCreating()
-            return
-          }
-          if (isEditing) {
-            cancelEditing()
-            return
-          }
-          void navigate({
-            replace: true,
-            search: (previous) => ({ ...previous, checkpointId: undefined, edit: undefined }),
-          })
-        }}
-        onEditCheckpoint={startEditing}
-      />
     </>
   )
 }

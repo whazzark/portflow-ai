@@ -39,8 +39,8 @@ test('activating select mode sets the URL and hides create actions', async () =>
   await user.click(await screen.findByRole('button', { name: 'Select docks' }))
 
   expect(router.state.location.search).toMatchObject({ selecting: 'docks' })
-  expect(screen.queryByRole('button', { name: 'New dock' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'New weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Stop selecting docks' })).toBeInTheDocument()
 })
 
@@ -121,8 +121,8 @@ test('activating weighing-area select mode sets the URL and hides create actions
   await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
 
   expect(router.state.location.search).toMatchObject({ selecting: 'weighing-areas' })
-  expect(screen.queryByRole('button', { name: 'New dock' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'New weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Stop selecting weighing areas' })).toBeInTheDocument()
 })
 
