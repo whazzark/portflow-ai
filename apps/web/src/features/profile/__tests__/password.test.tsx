@@ -3,6 +3,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 
 import { server } from '@/test/msw/server'
+import { renderApp } from '@/test/render-app'
 
 import {
   ME_URL,
@@ -17,10 +18,11 @@ import {
 const CURRENT = 'Password!234'
 const NEW = 'correct-horse-battery-staple'
 
+/** The password form sits on its own tab, beside the identity. */
 async function findPasswordForm() {
-  await screen.findByRole('heading', { name: 'Password' }, { timeout: 5000 })
+  fireEvent.click(await screen.findByRole('tab', { name: 'Password' }, { timeout: 5000 }))
 
-  return screen.getByRole('form', { name: 'Password' })
+  return screen.findByRole('form', { name: 'Password' })
 }
 
 /**
@@ -51,8 +53,25 @@ test('is offered on the profile page, beside the identity', async () => {
   expect(within(form).getByLabelText(CURRENT_FIELD)).toHaveAttribute('type', 'password')
   expect(within(form).getByLabelText(NEW_FIELD)).toHaveAttribute('autocomplete', 'new-password')
   expect(within(form).getByLabelText(CONFIRM_FIELD)).toBeInTheDocument()
-  // The identity form is still there, on the same page.
-  expect(screen.getByRole('form', { name: 'Identity' })).toBeInTheDocument()
+  // The identity is one tab away, on the same page.
+  expect(screen.getByRole('tab', { name: 'Identity' })).toHaveAttribute('aria-selected', 'false')
+})
+
+test('opens on the password tab from its address', async () => {
+  mockSession()
+
+  // biome-ignore lint/security/noSecrets: a page address, not a credential.
+  const { router } = renderApp('/profile?tab=password')
+
+  expect(
+    await screen.findByRole('form', { name: 'Password' }, { timeout: 5000 }),
+  ).toBeInTheDocument()
+  expect(screen.queryByRole('form', { name: 'Identity' })).not.toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('tab', { name: 'Identity' }))
+
+  expect(await screen.findByRole('form', { name: 'Identity' })).toBeInTheDocument()
+  expect(router.state.location.search).toEqual({ tab: 'identity' })
 })
 
 test('sends the current and the new password, then empties the form', async () => {

@@ -127,10 +127,8 @@ export function renderProfile() {
   return renderApp('/profile')
 }
 
-export async function findForm() {
-  await screen.findByRole('heading', { name: 'Identity' }, { timeout: 5000 })
-
-  return screen.getByRole('form', { name: 'Identity' })
+export function findForm() {
+  return screen.findByRole('form', { name: 'Identity' }, { timeout: 5000 })
 }
 
 export const fill = (label: string, value: string) =>
