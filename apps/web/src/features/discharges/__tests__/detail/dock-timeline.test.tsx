@@ -28,7 +28,7 @@ const HOLDER = buildDockOccupation({
   dischargeId: 'discharge-cedar',
   vesselName: 'MV Ocean Cedar',
   startedAt: '2026-10-03T06:00:00.000Z',
-  plannedEndAt: '2026-10-04T10:00:00.000Z',
+  plannedEndAt: '2026-10-04T12:00:00.000Z',
 })
 const COMPETITOR = buildDockOccupation({
   dischargeId: 'discharge-loire',
@@ -163,3 +163,25 @@ test.each(DISCHARGE_DETAIL_TABS.filter((tab) => tab !== 'overview'))(
     expect(screen.queryByRole('region', { name: 'Dock Quai Nord' })).not.toBeInTheDocument()
   },
 )
+
+test('names the active discharge holding the dock now, even when it ends before the period', async () => {
+  renderOverview({
+    dockOccupations: [
+      { ...HOLDER, startedAt: '2026-09-28T06:00:00.000Z', plannedEndAt: '2026-10-04T20:00:00.000Z' },
+    ],
+    shifts: [
+      buildShift({
+        plannedStartAt: '2026-10-08T06:00:00.000Z',
+        plannedEndAt: '2026-10-08T14:00:00.000Z',
+      }),
+    ],
+  })
+
+  const region = await timeline()
+  expect(region).toHaveTextContent('The dock is free over this period.')
+  const holder = within(
+    within(region).getByRole('list', { name: 'Other discharges on this dock' }),
+  ).getByRole('listitem')
+  expect(holder).toHaveTextContent('MV Ocean Cedar')
+  expect(holder).toHaveTextContent('Ends before this period')
+})

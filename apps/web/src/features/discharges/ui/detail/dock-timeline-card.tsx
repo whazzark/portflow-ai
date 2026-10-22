@@ -50,23 +50,25 @@ function Strip({ timeline }: { timeline: DockTimeline }) {
     <div aria-hidden="true" className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
       <div className="relative grid min-w-[36rem] gap-2 py-6">
         <div className="relative h-7 rounded-md bg-muted">
-          {timeline.occupations.map((occupation) => (
-            <div
-              className={classnames(
-                'absolute inset-y-0 truncate rounded-md border px-2 text-xs leading-7',
-                occupation.pointOnly && 'min-w-1 px-0',
-                occupation.overlapsPlannedPeriod
-                  ? 'border-warning bg-warning/15 text-foreground'
-                  : 'border-border bg-background text-muted-foreground',
-                occupation.clippedStart && 'rounded-l-none',
-                occupation.clippedEnd && 'rounded-r-none',
-              )}
-              key={occupation.dischargeId}
-              style={placed(occupation.from, occupation.to)}
-            >
-              {occupation.pointOnly ? null : occupation.vesselName}
-            </div>
-          ))}
+          {timeline.occupations
+            .filter((occupation) => !occupation.outsideSpan)
+            .map((occupation) => (
+              <div
+                className={classnames(
+                  'absolute inset-y-0 truncate rounded-md border px-2 text-xs leading-7',
+                  occupation.pointOnly && 'min-w-1 px-0',
+                  occupation.overlapsPlannedPeriod
+                    ? 'border-warning bg-warning/15 text-foreground'
+                    : 'border-border bg-background text-muted-foreground',
+                  occupation.clippedStart && 'rounded-l-none',
+                  occupation.clippedEnd && 'rounded-r-none',
+                )}
+                key={occupation.dischargeId}
+                style={placed(occupation.from, occupation.to)}
+              >
+                {occupation.pointOnly ? null : occupation.vesselName}
+              </div>
+            ))}
         </div>
         <div className="relative h-7">
           {timeline.gaps.map((gap) => (
@@ -138,9 +140,10 @@ export function DockTimelineCard({
       <div className="grid gap-4">
         <Strip timeline={timeline} />
 
-        {timeline.dockFree ? (
+        {timeline.dockFree && (
           <p className="text-muted-foreground">The dock is free over this period.</p>
-        ) : (
+        )}
+        {timeline.occupations.length > 0 && (
           <ul aria-label="Other discharges on this dock" className="grid gap-2">
             {timeline.occupations.map((occupation) => (
               <li
@@ -159,6 +162,9 @@ export function DockTimelineCard({
                 </Link>
                 <DischargeStatusBadge status={occupation.status} />
                 <span className="text-muted-foreground">{occupationPeriod(occupation)}</span>
+                {occupation.outsideSpan && (
+                  <span className="text-muted-foreground">Ends before this period</span>
+                )}
                 {occupation.overlapsPlannedPeriod && (
                   <span className="inline-flex items-center gap-1.5">
                     <TriangleAlertIcon

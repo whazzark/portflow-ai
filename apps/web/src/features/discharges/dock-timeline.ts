@@ -28,6 +28,11 @@ export type TimelineOccupation = {
   /** A planned discharge with no shift has only its expected start. */
   pointOnly: boolean
   overlapsPlannedPeriod: boolean
+  /**
+   * An active discharge ending before the span: kept, since it holds the dock now and is why a
+   * start would be refused, but not drawn and not counted against the period.
+   */
+  outsideSpan: boolean
 }
 
 export type DockTimeline = {
@@ -101,10 +106,11 @@ export function dockTimeline(detail: DischargeDetailDto, now: number): DockTimel
   }
 
   const occupations = detail.dockOccupations.flatMap((occupation): TimelineOccupation[] => {
-    const interval = occupationInterval(occupation)
+    const interval = occupationInterval(occupation, now)
     // An open end runs on past the span: that is what holding the dock with no end planned means.
     const end = interval.endAt ?? Math.max(span.endAt, interval.startAt)
-    if (!intersects([interval.startAt, end], [span.startAt, span.endAt])) {
+    const inSpan = intersects([interval.startAt, end], [span.startAt, span.endAt])
+    if (!inSpan && occupation.status !== 'ACTIVE') {
       return []
     }
 
@@ -125,6 +131,7 @@ export function dockTimeline(detail: DischargeDetailDto, now: number): DockTimel
           [interval.startAt, interval.endAt ?? Number.POSITIVE_INFINITY],
           plan,
         ),
+        outsideSpan: !inSpan,
       },
     ]
   })
@@ -141,16 +148,16 @@ export function dockTimeline(detail: DischargeDetailDto, now: number): DockTimel
     shifts,
     gaps,
     occupations,
-    dockFree: occupations.length === 0,
+    dockFree: occupations.every((occupation) => occupation.outsideSpan),
   }
 }
 
 /**
  * The time another discharge holds the dock for: an active one from its start to its planned end,
- * or with no end while none comes later; a planned one over its planned period, or at its expected
- * start while it has no shift.
+ * or with no end once that end has passed, since it holds the dock until it is closed; a planned one
+ * over its planned period, or at its expected start while it has no shift.
  */
-function occupationInterval(occupation: Occupation) {
+function occupationInterval(occupation: Occupation, now: number) {
   const plannedStart = occupation.plannedStartAt ? Date.parse(occupation.plannedStartAt) : null
   const plannedEnd = occupation.plannedEndAt ? Date.parse(occupation.plannedEndAt) : null
 
@@ -159,7 +166,7 @@ function occupationInterval(occupation: Occupation) {
 
     return {
       startAt,
-      endAt: plannedEnd !== null && plannedEnd > startAt ? plannedEnd : null,
+      endAt: plannedEnd !== null && plannedEnd > Math.max(startAt, now) ? plannedEnd : null,
       pointOnly: false,
     }
   }

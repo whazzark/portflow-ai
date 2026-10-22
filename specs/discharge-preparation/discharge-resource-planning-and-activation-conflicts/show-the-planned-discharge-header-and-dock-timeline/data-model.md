@@ -44,12 +44,16 @@ Input: the detail, `now`. Output:
 | `shifts` | `[{ id, startAt, endAt, from, to }]` in planned-start order; `from`/`to` are 0–1 positions |
 | `gaps` | `[{ startAt, endAt, durationMinutes, from, to }]` between consecutive shifts with no shift planned (touching or overlapping shifts produce none) |
 | `occupations` | `[{ dischargeId, vesselName, status, startAt, endAt \| null, from, to, clippedStart, clippedEnd, openEnded, pointOnly, overlapsPlannedPeriod }]` filtered to those intersecting the span |
-| `dockFree` | `true` when `occupations` is empty |
+| `dockFree` | `true` when no occupation falls within the span |
 
 Rules:
 
-- Active occupation: `startAt = startedAt`; `endAt = plannedEndAt` if later than `startedAt`, else
-  `null` (`openEnded`, drawn to the span's end).
+- Active occupation: `startAt = startedAt`; `endAt = plannedEndAt` if later than both `startedAt`
+  and now, else `null` (`openEnded`, drawn to the span's end): an active discharge that overran its
+  plan still holds the dock until it is closed.
+- An active occupation ending before the span is kept with `outsideSpan: true`: listed (it holds the
+  dock now and is why a start is refused), not drawn, and not counted against `dockFree`. Planned
+  occupations outside the span are dropped.
 - Planned occupation with shifts: `plannedStartAt → plannedEndAt`; without shifts: `pointOnly` at
   `expectedStartAt`.
 - `overlapsPlannedPeriod`: the occupation's interval intersects this discharge's planned period (or,

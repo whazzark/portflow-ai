@@ -153,7 +153,7 @@ describe('occupations', () => {
         dockOccupations: [
           buildDockOccupation({
             startedAt: '2026-10-03T06:00:00.000Z',
-            plannedEndAt: '2026-10-04T10:00:00.000Z',
+            plannedEndAt: '2026-10-04T12:00:00.000Z',
           }),
         ],
       }),
@@ -166,7 +166,7 @@ describe('occupations', () => {
         dischargeId: 'discharge-holder',
         status: 'ACTIVE',
         startAt: at('2026-10-03T06:00:00.000Z'),
-        endAt: at('2026-10-04T10:00:00.000Z'),
+        endAt: at('2026-10-04T12:00:00.000Z'),
         from: 0,
         clippedStart: true,
         clippedEnd: false,
@@ -197,6 +197,31 @@ describe('occupations', () => {
         }),
       )
     }
+  })
+
+  test('keeps an active discharge that overran its plan on the dock, with no end', () => {
+    const [occupation] = dockTimeline(
+      detail({
+        dockOccupations: [
+          buildDockOccupation({
+            startedAt: '2026-09-20T06:00:00.000Z',
+            plannedEndAt: '2026-09-25T18:00:00.000Z',
+          }),
+        ],
+      }),
+      // Now is past its planned end, and it is still active: it holds the dock until it closes.
+      at('2026-10-01T00:00:00.000Z'),
+    ).occupations
+
+    expect(occupation).toEqual(
+      expect.objectContaining({
+        endAt: null,
+        openEnded: true,
+        from: 0,
+        to: 1,
+        overlapsPlannedPeriod: true,
+      }),
+    )
   })
 
   test('draws a planned discharge over its planned period, or at its expected start without one', () => {
@@ -237,6 +262,30 @@ describe('occupations', () => {
         overlapsPlannedPeriod: true,
       }),
     ])
+  })
+
+  test('keeps the active discharge holding the dock now, even when it ends before the span', () => {
+    const timeline = dockTimeline(
+      detail({
+        dockOccupations: [
+          buildDockOccupation({
+            startedAt: '2026-09-28T06:00:00.000Z',
+            plannedEndAt: '2026-10-02T18:00:00.000Z',
+          }),
+        ],
+      }),
+      at('2026-09-30T00:00:00.000Z'),
+    )
+
+    expect(timeline.occupations).toEqual([
+      expect.objectContaining({
+        status: 'ACTIVE',
+        outsideSpan: true,
+        overlapsPlannedPeriod: false,
+      }),
+    ])
+    // Nothing is promised the dock over this discharge's own period.
+    expect(timeline.dockFree).toBe(true)
   })
 
   test('drops the discharges that fall outside the span', () => {
