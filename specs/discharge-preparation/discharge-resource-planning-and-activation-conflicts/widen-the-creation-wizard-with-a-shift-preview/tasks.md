@@ -331,7 +331,7 @@ clearance (spec US3, and quickstart step 5).
   during implementation, so #324 reuses it as built. If nothing changed, skip this task.
 - [ ] T027 Run `pnpm check`, `pnpm typecheck`, and `pnpm test` at the repository root, and fix every
   failure.
-- [ ] T028 Walk `quickstart.md` « Browser walk » steps 1–9 against a seeded local stack.
+- [X] T028 Walk `quickstart.md` « Browser walk » steps 1–9 against a seeded local stack.
   - Use `pnpm --filter @portflow/api db:fresh`, then the API and web dev servers.
   - Check light and dark themes and phone width.
   - Record any deviation in the PR.
