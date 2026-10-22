@@ -112,13 +112,9 @@ deep-linking to a selected checkpoint.
 6. **Given** a link to Checkpoints naming a selected checkpoint (including the legacy parameter
    name still accepted today), **When** it is opened, **Then** the map centers on that checkpoint
    and its card is open.
-7. **Given** a dock, **When** its card is open, **Then** the card shows the discharges that use
-   the dock [NEEDS CLARIFICATION: The V2 detail cards show a "Discharges" section (vessel name
-   with Active/Planned status, linking to the discharge, plus the rule "A dock serves at most one
-   active discharge at a time" / "A weighing area may serve several active discharges"). The
-   checkpoint data the screen loads today does not include related discharges. Is that section
-   in scope for this issue (requiring the API to expose a checkpoint's current and planned
-   discharges), or deferred to a follow-up issue?]
+7. **Given** any checkpoint, **When** its card is open, **Then** the card shows no "Discharges"
+   section: the V2 section listing a checkpoint's active and planned discharges is deferred to a
+   follow-up issue (clarified 2026-10-22).
 
 ---
 
@@ -336,8 +332,8 @@ this issue?]
   clearing the selection.
 - **FR-016**: The card MUST remain fully visible within the map area regardless of the marker's
   position.
-- **FR-017**: The card MUST show a checkpoint's related discharges as described in User Story 2,
-  scenario 7, if that scenario is confirmed in scope (open question Q1).
+- **FR-017**: The card MUST NOT show a checkpoint's related discharges in this feature; that V2
+  section is deferred to a follow-up issue.
 
 **Creation**
 
@@ -425,12 +421,20 @@ this issue?]
 - **SC-006**: Automated accessibility checks of the map, a detail card, placement mode and the
   archive dialog report no serious or critical violations in either theme.
 
+## Clarifications
+
+### Session 2026-10-22
+
+- Q: Is the V2 "Discharges" section of the detail cards in scope? → A: No, deferred to a
+  follow-up issue (User Story 2 scenario 7, FR-017).
+
 ## Assumptions
 
 - The V2 palette, theme switch and authenticated shell from #314 are available on `master` and
   are reused, not redefined.
-- No API change is required except possibly for the discharges section of User Story 2,
-  scenario 7, pending clarification.
+- No API change is required: the detail cards use only the checkpoint data the screen already
+  loads. The V2 "Discharges" section (a checkpoint's active and planned discharges, with the dock
+  and weighing-area concurrency rule) is out of scope and will be specified in a follow-up issue.
 - The archive and reactivation dialogs keep today's optional comment field even though the V2
   artboard omits it, because the comment is part of the recorded lifecycle history.
 - Weighing areas get the same Edit-by-moving flow as docks: the V2 shows Edit on the weighing-area
