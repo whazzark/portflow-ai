@@ -10,6 +10,7 @@ import {
   type DischargeDetailDto,
   type DischargeDetailTab,
 } from '@/features/discharges/types'
+import { ActiveOverview } from '@/features/discharges/ui/detail/active-overview'
 import { DischargeIdentityCard } from '@/features/discharges/ui/detail/discharge-identity-card'
 import { DischargePreparationCard } from '@/features/discharges/ui/detail/discharge-preparation-card'
 import { DischargeProductLotsCard } from '@/features/discharges/ui/detail/discharge-product-lots-card'
@@ -84,8 +85,14 @@ export function DischargeDetailTabs({
         </TabsList>
       </div>
       <TabsContent className="grid gap-6" value="overview">
-        <DischargeIdentityCard discharge={discharge} />
-        {discharge.status === 'PLANNED' && <DischargePreparationCard discharge={discharge} />}
+        {discharge.status === 'ACTIVE' ? (
+          <ActiveOverview canAddShifts={canAddShifts} discharge={discharge} />
+        ) : (
+          <>
+            <DischargeIdentityCard discharge={discharge} />
+            {discharge.status === 'PLANNED' && <DischargePreparationCard discharge={discharge} />}
+          </>
+        )}
       </TabsContent>
       <TabsContent value="product-lots">
         <DischargeProductLotsCard canCorrect={canCorrect} discharge={discharge} />

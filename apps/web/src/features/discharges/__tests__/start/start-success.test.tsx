@@ -39,8 +39,9 @@ test('starts the discharge and its first shift, then shows them started', async 
   await waitFor(() =>
     expect(screen.getByRole('heading', { level: 1, name: 'MV Atlantic Dawn' })).toHaveFocus(),
   )
-  expect(screen.getByText(/Started/).closest('div')).toHaveTextContent(
-    `Started${formatDateTime(STARTED_AT)} by Olivia Observer`,
+  // The active overview tells who started the discharge, on its dock timeline.
+  expect(await screen.findByRole('region', { name: /^Dock timeline/ })).toHaveTextContent(
+    `Started ${formatDateTime(STARTED_AT)} by Olivia Observer`,
   )
   expect(screen.getAllByText('Active').length).toBeGreaterThan(0)
   expect(screen.queryByRole('button', { name: 'Start' })).not.toBeInTheDocument()

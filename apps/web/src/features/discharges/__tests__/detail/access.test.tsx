@@ -104,9 +104,10 @@ test('tells who started an active discharge and when, or only when nobody is rec
   mockDischargeDetail({ user: ACTIVE_OBSERVER, details: [startedBy] })
 
   const view = renderDischargeDetail(OCEAN_CEDAR.id)
-  await screen.findByRole('heading', { level: 1, name: OCEAN_CEDAR.vesselName })
-  expect(screen.getByText(/Started/).closest('div')).toHaveTextContent(
-    `Started${formatDateTime('2026-10-04T05:47:00.000Z')} by Léa Martin`,
+  // Told where the discharge is placed on its dock, from the moment it started.
+  const timeline = await screen.findByRole('region', { name: /^Dock timeline/ })
+  expect(timeline).toHaveTextContent(
+    `Started ${formatDateTime('2026-10-04T05:47:00.000Z')} by Léa Martin`,
   )
   view.unmount()
 
@@ -115,6 +116,7 @@ test('tells who started an active discharge and when, or only when nobody is rec
     details: [{ ...startedBy, startedBy: null }],
   })
   renderDischargeDetail(OCEAN_CEDAR.id)
-  await screen.findByRole('heading', { level: 1, name: OCEAN_CEDAR.vesselName })
-  expect(screen.getByText(/Started/).closest('div')).not.toHaveTextContent(' by ')
+  const unattributed = await screen.findByRole('region', { name: /^Dock timeline/ })
+  expect(unattributed).toHaveTextContent(`Started ${formatDateTime('2026-10-04T05:47:00.000Z')}`)
+  expect(unattributed).not.toHaveTextContent(' by ')
 })

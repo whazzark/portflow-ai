@@ -1,14 +1,16 @@
 import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
-
 import CreatePlannedDischargeUseCase from '#discharges/create/create_planned_discharge_use_case'
 import { createPlannedDischargeValidator } from '#discharges/create/create_planned_discharge_validator'
+import { dockOccupancyValidator } from '#discharges/dock_occupancy/dock_occupancy_validator'
+import ListDockOccupancyUseCase from '#discharges/dock_occupancy/list_dock_occupancy_use_case'
 import ListDischargesUseCase from '#discharges/list/list_discharges_use_case'
 import ListPlanningOptionsUseCase from '#discharges/planning_options/list_planning_options_use_case'
 import DischargeDetailTransformer from '#discharges/shared/discharge_detail_transformer'
 import DischargePlanningOptionsTransformer from '#discharges/shared/discharge_planning_options_transformer'
 import DischargePolicy from '#discharges/shared/discharge_policy'
 import DischargeTransformer from '#discharges/shared/discharge_transformer'
+import DockOccupancyTransformer from '#discharges/shared/dock_occupancy_transformer'
 import ShowDischargeUseCase from '#discharges/show/show_discharge_use_case'
 import CorrectDischargeIdentityUseCase from '#discharges/update/correct_discharge_identity_use_case'
 import { correctDischargeIdentityValidator } from '#discharges/update/discharge_identity_validator'
@@ -22,6 +24,7 @@ export default class DischargesController {
     private createPlannedDischargeUseCase: CreatePlannedDischargeUseCase,
     private correctDischargeIdentityUseCase: CorrectDischargeIdentityUseCase,
     private listPlanningOptionsUseCase: ListPlanningOptionsUseCase,
+    private listDockOccupancyUseCase: ListDockOccupancyUseCase,
   ) {}
 
   async index({ bouncer, serialize }: HttpContext) {
@@ -30,6 +33,19 @@ export default class DischargesController {
     const discharges = await this.listDischargesUseCase.handle()
 
     return serialize(DischargeTransformer.transform(discharges))
+  }
+
+  /**
+   * Every role that browses discharges may see which of them hold a dock and when: the periods are
+   * the ones each discharge's detail already shows the same roles.
+   */
+  async dockOccupancy({ bouncer, request, serialize }: HttpContext) {
+    await bouncer.with(DischargePolicy).authorize('list')
+
+    const { dockId } = await request.validateUsing(dockOccupancyValidator)
+    const occupancy = await this.listDockOccupancyUseCase.handle({ dockId })
+
+    return serialize(DockOccupancyTransformer.transform(occupancy))
   }
 
   async show({ bouncer, params, serialize }: HttpContext) {
