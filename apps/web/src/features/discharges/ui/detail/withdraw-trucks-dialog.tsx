@@ -44,6 +44,7 @@ export function WithdrawTrucksDialog({
     .filter((entry) => truckIds.includes(entry.truckId))
     .map((entry) => entry.registration)
   const affectedShifts = shiftsSelectingTrucks(discharge, truckIds)
+  const single = truckIds.length === 1
 
   const submit = async () => {
     try {
@@ -74,15 +75,22 @@ export function WithdrawTrucksDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {truckIds.length === 1 ? 'Withdraw truck?' : `Withdraw ${truckIds.length} trucks?`}
+            {truckIds.length === 1
+              ? `Withdraw ${registrations[0]}?`
+              : `Withdraw ${truckIds.length} trucks?`}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {registrations.join(', ')} will be removed from this discharge's pool.
+            {registrations.join(', ')} {single ? 'leaves' : 'leave'} the pool of{' '}
+            {discharge.vesselName}.
           </AlertDialogDescription>
         </AlertDialogHeader>
         {affectedShifts.length > 0 && (
           <div className="grid gap-1 text-sm">
-            <p>They will also be removed from these shifts:</p>
+            <p>
+              {single ? 'It is' : 'They are'} also removed from the {affectedShifts.length}{' '}
+              {affectedShifts.length === 1 ? 'shift that uses' : 'shifts that use'}{' '}
+              {single ? 'it' : 'them'}:
+            </p>
             <ul className="list-disc pl-5">
               {affectedShifts.map((shift) => (
                 <li key={shift.id}>{formatShiftPeriod(shift)}</li>
