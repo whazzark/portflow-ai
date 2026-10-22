@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ContactIcon } from 'lucide-react'
+import { ContactIcon, TriangleAlertIcon } from 'lucide-react'
 import { useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -71,6 +71,7 @@ function ProductLotsSummary({
   discharge: DischargeDetailDto
   problems: LotDoorProblems
 }) {
+  const readOnly = discharge.status === 'ACTIVE'
   const summary = productLotsSummary(discharge, problems)
   const warnings = [
     summary.lotsWithoutDoor > 0
@@ -86,19 +87,27 @@ function ProductLotsSummary({
   ].filter((warning) => warning !== null)
 
   return (
-    <p className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground text-sm">
-      <span>
+    <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground text-sm">
+      <p>
         {counted(summary.lotCount, 'lot', 'lots')} ·{' '}
         {counted(summary.customerCount, 'customer', 'customers')} ·{' '}
         <span className="tabular-nums">{formatTonnes(summary.expectedTonnage)}</span>
-      </span>
-      {warnings.map((warning) => (
-        <span className="inline-flex items-center gap-2" key={warning}>
-          <span aria-hidden="true">·</span>
-          <span className="font-medium text-warning">{warning}</span>
-        </span>
-      ))}
-    </p>
+      </p>
+      {(warnings.length > 0 || readOnly) && (
+        <ul className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:ml-auto">
+          {warnings.map((warning, index) => (
+            <li className="inline-flex items-center gap-2" key={warning}>
+              {index > 0 && <span aria-hidden="true">·</span>}
+              <span className="inline-flex items-center gap-1.5 text-warning">
+                <TriangleAlertIcon aria-hidden="true" className="size-4" />
+                {warning}
+              </span>
+            </li>
+          ))}
+          {readOnly && <li>Read-only while the discharge is active</li>}
+        </ul>
+      )}
+    </div>
   )
 }
 
@@ -166,8 +175,8 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
                             status={group.customer.status}
                           />
                         </span>
-                        <span className="font-normal text-muted-foreground">
-                          · {group.lots.length} {group.lots.length === 1 ? 'lot' : 'lots'}
+                        <span className="font-normal text-muted-foreground text-sm">
+                          {counted(group.lots.length, 'lot', 'lots')}
                         </span>
                       </span>
                     </th>
@@ -198,7 +207,7 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
                           <span className="grid gap-0.5">
                             <span className="font-medium">{lot.productName}</span>
                             {lot.description && (
-                              <span className="text-muted-foreground italic">
+                              <span className="text-muted-foreground text-sm">
                                 {lot.description}
                               </span>
                             )}
@@ -275,6 +284,11 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
         <ProductLotSheet
           discharge={discharge}
           lot={editing ?? undefined}
+          onAssignDoors={(lot) => {
+            setEditing(null)
+            setPlanningDoors(lot)
+          }}
+          problems={editing ? rowProblems(problems, editing.id) : undefined}
           onOpenChange={(open) => !open && setEditing(null)}
           open={editing !== null}
         />

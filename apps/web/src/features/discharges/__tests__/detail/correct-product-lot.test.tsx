@@ -1,11 +1,21 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 
-import { buildDischargeDetail, buildLot, listedDischarge } from '../support/fixtures'
+import { server } from '@/test/msw/server'
+import {
+  API_BASE_URL,
+  buildDischargeDetail,
+  buildDoorPeriod,
+  buildLot,
+  buildStartProblem,
+  listedDischarge,
+} from '../support/fixtures'
 import {
   allowFormJourneyTime,
   change,
   mockDischargeCorrections,
+  mockPlanningOptions,
   openLotMenu,
   renderDischargeTab,
 } from '../support/test-helpers'
@@ -132,5 +142,53 @@ test('leaves the lot untouched when the sheet is cancelled', async () => {
   await waitFor(() =>
     expect(screen.queryByRole('dialog', { name: 'Edit product lot' })).not.toBeInTheDocument(),
   )
+  expect(state.lotRequests).toEqual([])
+})
+
+test('shows the lot’s doors in its sheet, changed from Assign doors only', async () => {
+  const held = buildDischargeDetail(listedDischarge('MV Atlantic Dawn', 'PLANNED'), {
+    productLots: [{ ...WHEAT, doorAssignments: [buildDoorPeriod()] }, BARLEY],
+    expectedTonnage: '1500.000',
+  })
+  const state = mockDischargeCorrections({ detail: held })
+  mockPlanningOptions()
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id/start-check`, ({ params }) =>
+      HttpResponse.json({
+        data: {
+          dischargeId: String(params.id),
+          shiftId: null,
+          problems: [
+            buildStartProblem({
+              family: 'ACTIVE_DISCHARGE_CONFLICT',
+              code: 'WAREHOUSE_DOOR_HELD',
+              subject: { type: 'WAREHOUSE_DOOR', id: 'door-a1' },
+              context: { type: 'PRODUCT_LOT', id: 'lot-wheat' },
+              holder: { dischargeId: 'discharge-ocean-cedar', vesselName: 'MV Ocean Cedar' },
+            }),
+          ],
+        },
+      }),
+    ),
+  )
+
+  renderDischargeTab(held.id, 'product-lots')
+  const lots = await screen.findByRole('region', { name: 'Product lots' })
+  await within(lots).findByText('Held by MV Ocean Cedar')
+  const sheet = await openEdit()
+
+  const doors = within(sheet).getByRole('group', { name: 'Warehouse doors' })
+  expect(doors).toHaveTextContent('Magasin A › Door A1')
+  expect(doors).toHaveTextContent('Held by MV Ocean Cedar')
+  expect(
+    within(doors).getByText('Doors are changed from Assign doors, not from this form.'),
+  ).toBeInTheDocument()
+
+  change(within(sheet).getByRole('textbox', { name: 'Expected quantity (t)' }), '900')
+  fireEvent.click(within(doors).getByRole('button', { name: 'Assign doors' }))
+
+  const dialog = await screen.findByRole('dialog', { name: 'Warehouse doors' })
+  expect(dialog).toHaveAccessibleDescription('Cargill France · Blé tendre · 1,000.000 t')
+  expect(screen.queryByRole('dialog', { name: 'Edit product lot' })).not.toBeInTheDocument()
   expect(state.lotRequests).toEqual([])
 })

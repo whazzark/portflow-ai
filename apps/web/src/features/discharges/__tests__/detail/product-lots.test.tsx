@@ -405,3 +405,53 @@ test('offers no Assign doors to an observer', async () => {
   expect(within(lotRow(region, 'Pois')).getByText('No door')).toBeInTheDocument()
   expect(within(region).queryByRole('button', { name: /^Assign doors/ })).not.toBeInTheDocument()
 })
+
+test('offers a preparer every change of a planned discharge’s lots', async () => {
+  mockDischargePlanning({ detail: PLANNED_LOTS })
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  expect(within(region).getByRole('button', { name: 'Add product lots' })).toBeInTheDocument()
+  expect(within(region).getByRole('button', { name: 'Edit Cargill France' })).toBeInTheDocument()
+  expect(
+    within(region).getByRole('button', { name: 'Actions for Cargill France · Blé tendre' }),
+  ).toBeInTheDocument()
+  expect(region).not.toHaveTextContent('Read-only while the discharge is active')
+})
+
+test('offers no change to an observer of a planned discharge', async () => {
+  mockDischargePlanning({ detail: PLANNED_LOTS, user: ACTIVE_OBSERVER })
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  expect(within(region).queryByRole('button', { name: 'Add product lots' })).not.toBeInTheDocument()
+  expect(within(region).queryByRole('button', { name: /^Edit / })).not.toBeInTheDocument()
+  expect(within(region).queryByRole('button', { name: /^Actions for / })).not.toBeInTheDocument()
+})
+
+test('reads an active discharge’s lots as read-only, without door problems', async () => {
+  const active = buildDischargeDetail(OCEAN_CEDAR, {
+    productLots: PLANNED_LOTS.productLots,
+    expectedTonnage: '3000.000',
+  })
+  mockDischargePlanning({ detail: active })
+  renderDischargeTab(OCEAN_CEDAR.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  expect(within(region).getByText('Read-only while the discharge is active')).toBeInTheDocument()
+  expect(region).toHaveTextContent('3 lots · 2 customers · 3,000.000 t')
+  expect(region).not.toHaveTextContent('without a door')
+  expect(within(region).queryByText('No door')).not.toBeInTheDocument()
+  expect(within(region).queryByRole('button', { name: 'Add product lots' })).not.toBeInTheDocument()
+  expect(within(region).queryByRole('button', { name: /^Actions for / })).not.toBeInTheDocument()
+})
+
+test('offers a preparer to add lots to a planned discharge without any', async () => {
+  mockDischargePlanning({ detail: { ...PLANNED_LOTS, productLots: [], expectedTonnage: '0.000' } })
+  renderDischargeTab(ATLANTIC_DAWN.id, 'product-lots')
+  const region = await screen.findByRole('region', { name: 'Product lots' })
+
+  expect(within(region).getByText('No product lots')).toBeInTheDocument()
+  expect(within(region).getAllByRole('button', { name: 'Add product lots' }).length).toBeGreaterThan(0)
+  expect(region).not.toHaveTextContent('0 lots')
+})

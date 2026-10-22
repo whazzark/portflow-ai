@@ -1,4 +1,5 @@
-import { ArchiveIcon } from 'lucide-react'
+import { ArchiveIcon, TriangleAlertIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
@@ -26,13 +27,23 @@ export type LotDoorRowProblems = {
   heldBy: ReadonlyMap<string, string>
 }
 
+/** A door problem in words, so it reads without its amber tone. */
+function WarningText({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm text-warning">
+      <TriangleAlertIcon aria-hidden="true" className="size-3.5" />
+      {children}
+    </span>
+  )
+}
+
 /** A door by its own name; its warehouse is read with it and shown on hover. */
-function DoorChip({ assignment, held = false }: { assignment: DoorAssignment; held?: boolean }) {
+function DoorChip({ assignment }: { assignment: DoorAssignment }) {
   const archived = isArchived(assignment)
 
   return (
     <Badge
-      className={classnames('max-w-48', held && 'border-warning text-warning')}
+      className="max-w-48"
       title={archived ? `${fullName(assignment)} (Archived)` : fullName(assignment)}
       variant="outline"
     >
@@ -159,8 +170,8 @@ export function LotDoorChips({
 
             return (
               <li className="inline-flex flex-wrap items-center gap-x-1.5" key={assignment.id}>
-                <DoorChip assignment={assignment} held={holder !== undefined} />
-                {holder && <span className="text-warning text-xs">Held by {holder}</span>}
+                <DoorChip assignment={assignment} />
+                {holder && <WarningText>Held by {holder}</WarningText>}
               </li>
             )
           })}
@@ -174,7 +185,7 @@ export function LotDoorChips({
         </ul>
       ) : problems?.noDoor ? (
         // On a planned discharge a lot without a door keeps it from starting: said, not hinted.
-        <span className="font-medium text-warning text-sm">No door</span>
+        <WarningText>No door</WarningText>
       ) : lot.doorAssignments.length === 0 ? (
         // Elsewhere no door is a quiet dash, said in words to assistive technologies.
         <span className="text-muted-foreground">

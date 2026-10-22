@@ -185,5 +185,6 @@ test('offers to add lots from the empty section of a planned discharge', async (
   renderDischargeTab(PLANNED.id, 'product-lots')
 
   const { sheet } = await openAddSheet()
-  expect(sheet).toBeInTheDocument()
+  // No quantity yet: the total is a dash, not zero.
+  expect(sheet).toHaveTextContent('1 lot · —')
 })

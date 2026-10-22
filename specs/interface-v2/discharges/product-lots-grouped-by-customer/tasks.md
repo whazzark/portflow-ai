@@ -105,12 +105,12 @@ actions.
 
 ### Tests for User Story 3 ⚠️ (write first, must fail)
 
-- [ ] T017 [US3] Add failing feature tests in `apps/web/src/features/discharges/__tests__/detail/product-lots.test.tsx`: customer rowgroups named by the customer with `N lot(s)` and subtotal, lot rows with product, description and quantity, Expected total equal to the sum of subtotals (US3-AS1–AS4, SC-004); administrator on planned sees customer `Edit <customer>`, lot menu (Edit, Assign doors, Remove) and Add product lots (AS5); observer, and administrator on active/closed, see none of them (AS6); active discharge shows `Read-only while the discharge is active` and no amber indicator (AS7, FR-012); empty state with Add product lots for a preparer (AS8). Keep tests that already cover these and only add the missing assertions
+- [X] T017 [US3] Add failing feature tests in `apps/web/src/features/discharges/__tests__/detail/product-lots.test.tsx`: customer rowgroups named by the customer with `N lot(s)` and subtotal, lot rows with product, description and quantity, Expected total equal to the sum of subtotals (US3-AS1–AS4, SC-004); administrator on planned sees customer `Edit <customer>`, lot menu (Edit, Assign doors, Remove) and Add product lots (AS5); observer, and administrator on active/closed, see none of them (AS6); active discharge shows `Read-only while the discharge is active` and no amber indicator (AS7, FR-012); empty state with Add product lots for a preparer (AS8). Keep tests that already cover these and only add the missing assertions
 
 ### Implementation for User Story 3
 
-- [ ] T018 [US3] In `apps/web/src/features/discharges/ui/detail/discharge-product-lots-card.tsx`, add the `Read-only while the discharge is active` note beside the summary for `discharge.status === 'ACTIVE'`, and restyle the table to the V2 *Retenue* `planned-product-lots` artboard (customer row, lot rows with description beneath the product, footer) using existing tokens only; long names and descriptions wrap without pushing quantity and doors out of view
-- [ ] T019 [US3] Run T017 and the existing `__tests__/detail/remove-product-lot.test.tsx` green; refactor
+- [X] T018 [US3] In `apps/web/src/features/discharges/ui/detail/discharge-product-lots-card.tsx`, add the `Read-only while the discharge is active` note beside the summary for `discharge.status === 'ACTIVE'`, and restyle the table to the V2 *Retenue* `planned-product-lots` artboard (customer row, lot rows with description beneath the product, footer) using existing tokens only; long names and descriptions wrap without pushing quantity and doors out of view
+- [X] T019 [US3] Run T017 and the existing `__tests__/detail/remove-product-lot.test.tsx` green; refactor
 
 ---
 
@@ -124,14 +124,14 @@ doors opens the dialog, no door field in the form.
 
 ### Tests for User Story 4 ⚠️ (write first, must fail)
 
-- [ ] T020 [P] [US4] Add failing feature tests in `apps/web/src/features/discharges/__tests__/detail/correct-product-lot.test.tsx`: the Edit product lot sheet shows a « Warehouse doors » group with the lot's chips and their indicators, the note `Doors are changed from Assign doors, not from this form.`, and an « Assign doors » button that closes the sheet and opens the lot's Assign doors dialog (US4-AS1, AS2); saving the form still sends only customer, product, quantity and description
-- [ ] T021 [P] [US4] Add failing assertions in `apps/web/src/features/discharges/__tests__/detail/correct-customer-product-lots.test.tsx` and `apps/web/src/features/discharges/__tests__/detail/add-product-lots.test.tsx` for the running footer `N lot(s) · total` that follows edits, the `—` total while no quantity is entered (add), and the customer's current subtotal shown with the customer (customer correction) (AS3, AS4); if the current UI already satisfies an assertion, keep it as a regression test
+- [X] T020 [P] [US4] Add failing feature tests in `apps/web/src/features/discharges/__tests__/detail/correct-product-lot.test.tsx`: the Edit product lot sheet shows a « Warehouse doors » group with the lot's chips and their indicators, the note `Doors are changed from Assign doors, not from this form.`, and an « Assign doors » button that closes the sheet and opens the lot's Assign doors dialog (US4-AS1, AS2); saving the form still sends only customer, product, quantity and description
+- [X] T021 [P] [US4] Add failing assertions in `apps/web/src/features/discharges/__tests__/detail/correct-customer-product-lots.test.tsx` and `apps/web/src/features/discharges/__tests__/detail/add-product-lots.test.tsx` for the running footer `N lot(s) · total` that follows edits, the `—` total while no quantity is entered (add), and the customer's current subtotal shown with the customer (customer correction) (AS3, AS4); if the current UI already satisfies an assertion, keep it as a regression test
 
 ### Implementation for User Story 4
 
-- [ ] T022 [US4] In `apps/web/src/features/discharges/ui/detail/product-lot-sheet.tsx`, add the read-only « Warehouse doors » group (reusing `LotDoorChips` with the lot's problems), the note, and an « Assign doors » button calling a new `onAssignDoors(lot)` prop; in `apps/web/src/features/discharges/ui/detail/discharge-product-lots-card.tsx`, pass `onAssignDoors` that clears `editing` and sets `planningDoors`, and pass the lot's problems
-- [ ] T023 [P] [US4] Adjust only the copy that differs from the V2 artboards in `apps/web/src/features/discharges/ui/detail/customer-product-lots-sheet.tsx`, `apps/web/src/features/discharges/ui/detail/add-product-lots-sheet.tsx` and `apps/web/src/features/discharges/ui/preparation/product-lot-group-fields.tsx` until T021 passes; no validation or submission change (FR-028)
-- [ ] T024 [US4] Run T020, T021 green; refactor
+- [X] T022 [US4] In `apps/web/src/features/discharges/ui/detail/product-lot-sheet.tsx`, add the read-only « Warehouse doors » group (reusing `LotDoorChips` with the lot's problems), the note, and an « Assign doors » button calling a new `onAssignDoors(lot)` prop; in `apps/web/src/features/discharges/ui/detail/discharge-product-lots-card.tsx`, pass `onAssignDoors` that clears `editing` and sets `planningDoors`, and pass the lot's problems
+- [X] T023 [P] [US4] Adjust only the copy that differs from the V2 artboards in `apps/web/src/features/discharges/ui/detail/customer-product-lots-sheet.tsx`, `apps/web/src/features/discharges/ui/detail/add-product-lots-sheet.tsx` and `apps/web/src/features/discharges/ui/preparation/product-lot-group-fields.tsx` until T021 passes; no validation or submission change (FR-028)
+- [X] T024 [US4] Run T020, T021 green; refactor
 
 ---
 
