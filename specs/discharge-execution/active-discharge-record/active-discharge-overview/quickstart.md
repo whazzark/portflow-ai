@@ -3,15 +3,18 @@
 ## Automated
 
 ```bash
-pnpm --filter @portflow/web test -- src/features/discharges/__tests__/active-discharge-view.test.ts
-pnpm --filter @portflow/web test -- src/features/discharges/__tests__/detail/active-overview.test.tsx
+cd apps/web && pnpm exec vitest run src/features/discharges/__tests__/active-discharge-view.test.ts \
+  src/features/discharges/__tests__/dock-timeline.test.ts \
+  src/features/discharges/__tests__/detail/active-header.test.tsx \
+  src/features/discharges/__tests__/detail/active-overview.test.tsx \
+  src/features/discharges/__tests__/detail/active-read-only.test.tsx && cd ../..
 pnpm check
 pnpm typecheck
 pnpm test
 ```
 
-If the dock occupancy read is implemented in this branch (research D2), also run its API tests
-(see `apps/api` Japa conventions and the `api-test-runner-quirks` notes).
+The dock occupancy read is cherry-picked from #323 in this branch (research D2); run its API tests
+from `apps/api` with `PORT=3398 node --import tsx ace.js test --files="consultation/dock_occupancy.spec.ts"`.
 
 ## Browser flow
 

@@ -62,7 +62,12 @@ export function activeShiftSummary(
     }
   }
 
-  const lastIndex = shifts.findLastIndex((shift) => shift.status === 'COMPLETED')
+  let lastIndex = -1
+  shifts.forEach((shift, index) => {
+    if (shift.status === 'COMPLETED') {
+      lastIndex = index
+    }
+  })
 
   return {
     state: 'BETWEEN',
@@ -78,7 +83,13 @@ export function activeShiftSummary(
 export function dischargeProgress(
   discharge: Pick<
     DischargeDetailDto,
-    'status' | 'expectedTonnage' | 'productLots' | 'truckPool' | 'shifts'
+    | 'status'
+    | 'expectedStartAt'
+    | 'startedAt'
+    | 'expectedTonnage'
+    | 'productLots'
+    | 'truckPool'
+    | 'shifts'
   >,
 ) {
   const { shifts, productLots, truckPool } = discharge

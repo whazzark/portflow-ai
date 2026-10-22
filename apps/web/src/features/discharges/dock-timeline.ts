@@ -48,7 +48,7 @@ const nextLocalDay = (time: number) => {
   return startOfLocalDay(date.getTime())
 }
 
-function shiftBlock(shift: Shift, now: number): TimelineBlock | null {
+function shiftBlock(shift: Shift, now: number | null): TimelineBlock | null {
   const start = shift.actualStartAt ?? shift.plannedStartAt
   const end = shift.plannedEndAt
   if (!start || !end) {
@@ -57,14 +57,14 @@ function shiftBlock(shift: Shift, now: number): TimelineBlock | null {
 
   if (shift.status === 'ACTIVE') {
     // Under way for as long as it has not been completed, whatever its plan said.
-    const overrun = now > Date.parse(end)
+    const overrunTo = now !== null && now > Date.parse(end) ? new Date(now).toISOString() : null
 
     return {
       shiftId: shift.id,
       from: start,
-      to: overrun ? new Date(now).toISOString() : end,
+      to: overrunTo ?? end,
       state: 'ACTIVE',
-      overrun,
+      overrun: overrunTo !== null,
     }
   }
 
@@ -75,14 +75,15 @@ function shiftBlock(shift: Shift, now: number): TimelineBlock | null {
 /**
  * The dock as a started discharge sees it: its own shifts, completed, active, and planned, and the
  * other discharges holding the dock, over whole days from its start to its last planned end — or
- * to now, if it runs later.
+ * to now, if it runs later. Now is `null` until the page knows it, as it does not while rendered on
+ * the server.
  */
 export function activeDockTimeline(
   discharge: Pick<DischargeDetailDto, 'id' | 'vesselName' | 'status' | 'startedAt' | 'shifts'>,
   occupancy: DockOccupancyDto[],
-  nowDate: Date,
+  nowDate: Date | null,
 ): DockTimeline {
-  const now = nowDate.getTime()
+  const now = nowDate?.getTime() ?? null
   const blocks = discharge.shifts
     .map((shift) => shiftBlock(shift, now))
     .filter((block): block is TimelineBlock => block !== null)
@@ -108,7 +109,7 @@ export function activeDockTimeline(
     ...(discharge.startedAt ? [Date.parse(discharge.startedAt)] : []),
     ...blocks.flatMap((block) => [Date.parse(block.from), Date.parse(block.to)]),
     ...others.flatMap((lane) => [Date.parse(lane.blocks[0].from), Date.parse(lane.blocks[0].to)]),
-    now,
+    ...(now === null ? [] : [now]),
   ]
   const from = startOfLocalDay(Math.min(...instants))
   const latest = Math.max(...instants)
@@ -122,7 +123,7 @@ export function activeDockTimeline(
   return {
     window: { from: new Date(from).toISOString(), to: new Date(to).toISOString() },
     days,
-    now: now >= from && now <= to ? new Date(now).toISOString() : null,
+    now: now !== null && now >= from && now <= to ? new Date(now).toISOString() : null,
     lanes: [
       {
         discharge: {

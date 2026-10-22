@@ -131,3 +131,10 @@ describe('activeDockTimeline', () => {
     expect(timeline.offset(timeline.window.to)).toBe(100)
   })
 })
+
+test('draws the active shift to its planned end before now is known', () => {
+  const timeline = activeDockTimeline(discharge, [], null)
+
+  expect(timeline.now).toBeNull()
+  expect(timeline.lanes[0].blocks[5]).toMatchObject({ to: shift(5).plannedEndAt, overrun: false })
+})

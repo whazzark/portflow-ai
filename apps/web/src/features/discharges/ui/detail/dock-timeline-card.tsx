@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import type { CSSProperties } from 'react'
+import { type CSSProperties, useEffect, useState } from 'react'
 
 import { dischargePeriod, formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
 import {
@@ -18,7 +18,7 @@ type DockTimelineCardProps = {
 }
 
 /** Wide enough per day for a shift's hours to read, so a long discharge scrolls inside the card. */
-const DAY_MIN_WIDTH_PX = 120
+const DAY_MIN_WIDTH_PX = 168
 
 const STATE_LABELS = {
   COMPLETED: 'Completed',
@@ -54,6 +54,19 @@ function blockName(block: TimelineBlock, period: string) {
 }
 
 /**
+ * The current time once the page runs in the browser, and `null` while it is rendered on the server,
+ * so the two renderings agree before now is drawn.
+ */
+function useNow() {
+  const [now, setNow] = useState<Date | null>(null)
+  useEffect(() => {
+    setNow(new Date())
+  }, [])
+
+  return now
+}
+
+/**
  * Where a started discharge stands on its dock: its shifts behind and ahead of now, the breaks
  * between them, and the other discharges holding the same dock. Read-only.
  */
@@ -61,7 +74,8 @@ export function DockTimelineCard({ discharge }: DockTimelineCardProps) {
   const occupancyQuery = useQuery(dischargeQueries.dockOccupancy(discharge.dock.id))
   // Without the dock's occupancy, the discharge's own lane still says where it stands.
   const occupancy = occupancyQuery.data?.data ?? []
-  const timeline = activeDockTimeline(discharge, occupancy, new Date())
+  const now = useNow()
+  const timeline = activeDockTimeline(discharge, occupancy, now)
   const span = (from: string, to: string): CSSProperties => {
     const left = Math.max(0, timeline.offset(from))
     const right = Math.min(100, timeline.offset(to))
