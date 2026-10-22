@@ -61,6 +61,10 @@ export function ShiftPreview({
   })
   const name = vesselName.trim()
   const unscheduledLabels = preview.unscheduled.map((number) => `Shift ${number} · no period yet`)
+  // With no shift placed yet, the unplaced ones wait at the expected start, where they will begin;
+  // otherwise they are named under the timeline.
+  const inlineUnscheduled =
+    unscheduledLabels.length > 0 && preview.shifts.length === 0 && preview.expectedStart !== null
 
   return (
     <section
@@ -193,20 +197,18 @@ export function ShiftPreview({
                     <span aria-hidden="true">{block.number}</span>
                   </li>
                 ))}
-                {preview.shifts.length === 0 &&
-                  preview.expectedStart &&
-                  unscheduledLabels.length > 0 && (
-                    <li
-                      className="absolute top-2.5 flex h-7 items-center gap-2 whitespace-nowrap text-xs"
-                      style={{ left: `${preview.expectedStart.leftPct}%` }}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="h-7 w-8 rounded-sm border-[1.5px] border-primary border-dashed bg-primary/10"
-                      />
-                      {unscheduledLabels.join(', ')}
-                    </li>
-                  )}
+                {inlineUnscheduled && preview.expectedStart && (
+                  <li
+                    className="absolute top-2.5 flex h-7 items-center gap-2 whitespace-nowrap text-xs"
+                    style={{ left: `${preview.expectedStart.leftPct}%` }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="h-7 w-8 rounded-sm border-[1.5px] border-primary border-dashed bg-primary/10"
+                    />
+                    {unscheduledLabels.join(', ')}
+                  </li>
+                )}
               </ul>
             </div>
 
@@ -227,7 +229,7 @@ export function ShiftPreview({
         </div>
       </div>
 
-      {preview.shifts.length > 0 && unscheduledLabels.length > 0 && (
+      {unscheduledLabels.length > 0 && !inlineUnscheduled && (
         <p className="text-muted-foreground text-xs">{unscheduledLabels.join(', ')}</p>
       )}
     </section>

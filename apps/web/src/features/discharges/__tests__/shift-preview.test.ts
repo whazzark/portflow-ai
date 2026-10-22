@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 
 import { type PreviewOccupancy, shiftPreview } from '@/features/discharges/shift-preview'
 
@@ -99,6 +99,28 @@ describe('shiftPreview period', () => {
   })
 })
 
+describe('shiftPreview across a change of clocks', () => {
+  const zone = process.env.TZ
+  afterEach(() => {
+    process.env.TZ = zone
+  })
+
+  test('places each instant by its clock within its day, as the equal day columns read it', () => {
+    // Clocks go back in Paris during the night of 25 October 2026: that day lasts 25 hours.
+    process.env.TZ = 'Europe/Paris'
+    const preview = shiftPreview({
+      expectedStartAt: local(24, 6, 10),
+      shifts: [shift(local(26, 0, 10), local(26, 8, 10))],
+      occupancy: [],
+    })
+
+    const [block] = preview.shifts
+    expect(rounded(block.leftPct)).toBe(rounded((2 / 7) * 100))
+    expect(rounded(block.widthPct)).toBe(rounded((8 / 24 / 7) * 100))
+    expect(rounded(preview.expectedStart?.leftPct ?? -1)).toBe(rounded((6 / 24 / 7) * 100))
+  })
+})
+
 describe('shiftPreview occupancy', () => {
   test('frees the dock from the latest end among occupancies starting before the expected start', () => {
     const preview = shiftPreview({
@@ -113,6 +135,19 @@ describe('shiftPreview occupancy', () => {
     })
 
     expect(preview.freeFrom).toBe(instant(22, 12))
+  })
+
+  test('reaches back a week at most, however long ago a discharge left open last planned', () => {
+    const preview = shiftPreview({
+      expectedStartAt: local(22, 6),
+      shifts: [],
+      occupancy: [occupancy('MV Overrun', instant(1, 6, 8), instant(10, 14, 8))],
+    })
+
+    expect(preview.freeFrom).toBe(instant(10, 14, 8))
+    expect(preview.days[0].label).toBe('Tue 15')
+    expect(preview.days.at(-1)?.label).toBe('Tue 22')
+    expect(preview.occupancies).toEqual([])
   })
 
   test('clips occupancies to the period and drops those outside it', () => {

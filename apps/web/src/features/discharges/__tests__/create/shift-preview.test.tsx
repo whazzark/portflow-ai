@@ -122,6 +122,17 @@ test('reads the occupancy of the dock chosen again on the first step', async () 
   ).toBeInTheDocument()
 })
 
+test('reads the occupancy again each time the step opens, on the same dock too', async () => {
+  const { requested } = arrange()
+  await reachShiftsStep()
+  await waitFor(() => expect(requested).toHaveLength(1))
+
+  await goToStep('Product lots')
+  await goToStep('Planned shifts')
+
+  await waitFor(() => expect(requested).toEqual([AVAILABLE_DOCKS[0].id, AVAILABLE_DOCKS[0].id]))
+})
+
 test('reads a dock nobody holds as free, with no moment it frees up', async () => {
   arrange({ occupancy: [] })
   const preview = await reachShiftsStep()

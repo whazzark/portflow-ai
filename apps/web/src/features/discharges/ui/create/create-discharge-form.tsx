@@ -97,8 +97,9 @@ function DockShiftPreview({
       dockName={docks.options.find((dock) => dock.id === dockId)?.name ?? ''}
       occupancy={{
         data: query.data?.data,
-        loading: query.isPending,
-        onRetry: query.isError ? () => void query.refetch() : undefined,
+        // A retry under way reads as loading, rather than leaving the failure on screen.
+        loading: query.isPending || (query.isError && query.isFetching),
+        onRetry: query.isError && !query.isFetching ? () => void query.refetch() : undefined,
       }}
     />
   )
