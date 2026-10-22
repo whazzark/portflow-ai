@@ -107,7 +107,7 @@ export function ShiftPreview({
 
       <div className="overflow-x-auto">
         <div className="grid grid-cols-[minmax(7rem,11rem)_1fr]">
-          <div className="flex flex-col pt-6">
+          <div className="flex flex-col pt-11">
             <div className="flex h-12 flex-col justify-center gap-0.5 border-t pr-3">
               <span className="font-semibold text-sm">Dock</span>
               <span className="truncate text-muted-foreground text-xs">{dockName}</span>
@@ -122,7 +122,11 @@ export function ShiftPreview({
             </div>
           </div>
 
-          <div className="relative" style={{ minWidth: `${preview.days.length * MIN_DAY_REM}rem` }}>
+          {/* The top band holds the Expected start label, clear of the day labels below it. */}
+          <div
+            className="relative pt-5"
+            style={{ minWidth: `${preview.days.length * MIN_DAY_REM}rem` }}
+          >
             <div aria-hidden="true" className="flex h-6 items-center">
               {preview.days.map((day) => (
                 <span className="flex-1 pl-2 text-muted-foreground text-xs" key={day.start}>
