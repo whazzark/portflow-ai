@@ -41,7 +41,7 @@ export const CUSTOMERS: CustomerDto[] = [
     archivedByUserId: null,
     archivedBy: null,
     archiveComment: null,
-    reactivatedAt: null,
+    reactivatedAt: '2026-01-04T00:00:00.000Z',
     reactivatedByUserId: 'admin-1',
     reactivatedBy: {
       id: 'admin-1',

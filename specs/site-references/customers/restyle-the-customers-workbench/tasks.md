@@ -42,7 +42,7 @@ implemented and verified on its own.
 
 **Purpose**: Establish a green baseline before changing anything.
 
-- [ ] T001 Run `pnpm --filter @portflow/web test` and `pnpm typecheck` on `feat/318-restyle-customers-workbench`; record any pre-existing failure in this file under "Notes" before starting (no source change)
+- [X] T001 Run `pnpm --filter @portflow/web test` and `pnpm typecheck` on `feat/318-restyle-customers-workbench`; record any pre-existing failure in this file under "Notes" before starting (no source change)
 
 ---
 
@@ -50,9 +50,9 @@ implemented and verified on its own.
 
 **Purpose**: Shared helpers used by several stories (lists and detail).
 
-- [ ] T002 [P] Add failing unit tests for `formatShortDate` ("14 Aug 2026" for `2026-08-14T10:00:00Z`, `''` for `null`) in apps/web/src/helpers/dates.test.ts
-- [ ] T003 Implement `formatShortDate(value: string | null): string` (en-GB, day numeric, month short, year numeric) in apps/web/src/helpers/dates.ts (depends on T002)
-- [ ] T004 [P] Create `ResourceActor` (`actor` | null → "—"; `UserAvatar size="sm" aria-hidden` + `formatFullName`; optional muted `at` via `formatShortDate`; `separator` '·' default or ' ') per contracts/shared-lifecycle-seams.md in apps/web/src/components/resource/resource-actor.tsx (depends on T003)
+- [X] T002 [P] Add failing unit tests for `formatShortDate` ("14 Aug 2026" for `2026-08-14T10:00:00Z`, `''` for `null`) in apps/web/src/helpers/dates.test.ts
+- [X] T003 Implement `formatShortDate(value: string | null): string` (en-GB, day numeric, month short, year numeric) in apps/web/src/helpers/dates.ts (depends on T002)
+- [X] T004 [P] Create `ResourceActor` (`actor` | null → "—"; `UserAvatar size="sm" aria-hidden` + `formatFullName`; optional muted `at` via `formatShortDate`; `separator` '·' default or ' ') per contracts/shared-lifecycle-seams.md in apps/web/src/components/resource/resource-actor.tsx (depends on T003)
 
 **Checkpoint**: Helpers ready; user stories can start.
 
@@ -67,16 +67,16 @@ matches nothing in the active tab, and compare with the Available, Archived and 
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T005 [P] [US1] Update apps/web/src/features/customers/__tests__/list/list.test.tsx: search placeholder "Search by code, company name or comment"; Available headers Customer code · Company name · Reactivation comment · Reactivated · Actions (visible text) and Archived headers with Archive comment · Archived; Reactivated/Archived cells show "{First Last} · {d MMM yyyy}" / "{First Last} {d MMM yyyy}" or "—"; code link named "View customer {code}"; tab names "Available {n}" / "Archived {n}"; sort direction still reflected by `aria-sort`
-- [ ] T006 [P] [US1] Create apps/web/src/features/customers/__tests__/list/no-match.test.tsx: a term matching only an archived customer on Available shows "No available customer matches “{term}”", the explanation "Search looks in customer codes, company names and lifecycle comments.", "1 archived customer matches.", "Clear search" (empties the search box and URL `search`) and "Show archived" (switches to Archived, keeps the term, rows shown); a term matching nothing anywhere shows no cross-tab line nor Show button; a lifecycle-comment fragment finds its customer
-- [ ] T007 [US1] Add to apps/web/src/features/customers/__tests__/list/list.test.tsx empty-state cases: no customers at all → "No available customers" / "No customers have been added yet." with a "Create customer" action for an administrator only; empty Archived tab → "No archived customers" / "No customer has been archived."
+- [X] T005 [P] [US1] Update apps/web/src/features/customers/__tests__/list/list.test.tsx: search placeholder "Search by code, company name or comment"; Available headers Customer code · Company name · Reactivation comment · Reactivated · Actions (visible text) and Archived headers with Archive comment · Archived; Reactivated/Archived cells show "{First Last} · {d MMM yyyy}" / "{First Last} {d MMM yyyy}" or "—"; code link named "View customer {code}"; tab names "Available {n}" / "Archived {n}"; sort direction still reflected by `aria-sort`
+- [X] T006 [P] [US1] Create apps/web/src/features/customers/__tests__/list/no-match.test.tsx: a term matching only an archived customer on Available shows "No available customer matches “{term}”", the explanation "Search looks in customer codes, company names and lifecycle comments.", "1 archived customer matches.", "Clear search" (empties the search box and URL `search`) and "Show archived" (switches to Archived, keeps the term, rows shown); a term matching nothing anywhere shows no cross-tab line nor Show button; a lifecycle-comment fragment finds its customer
+- [X] T007 [US1] Add to apps/web/src/features/customers/__tests__/list/list.test.tsx empty-state cases: no customers at all → "No available customers" / "No customers have been added yet." with a "Create customer" action for an administrator only; empty Archived tab → "No archived customers" / "No customer has been archived."
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Restyle apps/web/src/features/customers/ui/customer-table.tsx per research R10: card-surface rounded bordered frame, muted 13px semibold headers, 52px rows, monospaced code link, visible "Actions" header (not sortable), lifecycle actor cells via `ResourceActor` with the tab's transition date (replace private `lifecycleUserCell`; "—" when no transition), archived rows no longer dimmed, neutral `SortIcon` on unsorted sortable headers; keep column ids, sort keys, row ids, selection indicator and click behavior (depends on T004)
-- [ ] T009 [P] [US1] Create apps/web/src/features/customers/ui/customer-no-match.tsx: `Empty` with `EmptyMedia` search icon, title, explanation, optional cross-tab count sentence ("{n} archived customer(s) match." / "{n} available customer(s) match."), "Clear search" (outline) and "Show archived"/"Show available" (ghost) buttons; props `{ term, tab, otherTabMatchCount, onClearSearch, onShowOtherTab }`
-- [ ] T010 [US1] Update apps/web/src/features/customers/ui/customer-section.tsx: render `CustomerNoMatch` instead of the table when a search is active and the tab has no match; keep the table's `Empty` for an empty tab without search with the copy from T007 and a "Create customer" action for administrators on Available; accept `otherTabMatchCount`, `onClearSearch`, `onShowOtherTab`, `onCreate` props (depends on T009)
-- [ ] T011 [US1] Update apps/web/src/features/customers/ui/customers-page.tsx: search placeholder, "Create customer" button with `PlusIcon`, tab counts styled as muted numbers, compute `otherTabMatchCount` with `customerMatchesSearch` over the loaded list, wire clear-search (`updateSearch('')`) and show-other-tab (`updateStatus(other)` keeping `search`), V2 spacing; keep URL handling, selection clearing and shortcuts unchanged (depends on T010)
+- [X] T008 [US1] Restyle apps/web/src/features/customers/ui/customer-table.tsx per research R10: card-surface rounded bordered frame, muted 13px semibold headers, 52px rows, monospaced code link, visible "Actions" header (not sortable), lifecycle actor cells via `ResourceActor` with the tab's transition date (replace private `lifecycleUserCell`; "—" when no transition), archived rows no longer dimmed, neutral `SortIcon` on unsorted sortable headers; keep column ids, sort keys, row ids, selection indicator and click behavior (depends on T004)
+- [X] T009 [P] [US1] Create apps/web/src/features/customers/ui/customer-no-match.tsx: `Empty` with `EmptyMedia` search icon, title, explanation, optional cross-tab count sentence ("{n} archived customer(s) match." / "{n} available customer(s) match."), "Clear search" (outline) and "Show archived"/"Show available" (ghost) buttons; props `{ term, tab, otherTabMatchCount, onClearSearch, onShowOtherTab }`
+- [X] T010 [US1] Update apps/web/src/features/customers/ui/customer-section.tsx: render `CustomerNoMatch` instead of the table when a search is active and the tab has no match; keep the table's `Empty` for an empty tab without search with the copy from T007 and a "Create customer" action for administrators on Available; accept `otherTabMatchCount`, `onClearSearch`, `onShowOtherTab`, `onCreate` props (depends on T009)
+- [X] T011 [US1] Update apps/web/src/features/customers/ui/customers-page.tsx: search placeholder, "Create customer" button with `PlusIcon`, tab counts styled as muted numbers, compute `otherTabMatchCount` with `customerMatchesSearch` over the loaded list, wire clear-search (`updateSearch('')`) and show-other-tab (`updateStatus(other)` keeping `search`), V2 spacing; keep URL handling, selection clearing and shortcuts unchanged (depends on T010)
 
 **Checkpoint**: T005–T007 green; US1 matches its boards in dark theme.
 

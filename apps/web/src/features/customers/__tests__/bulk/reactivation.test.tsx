@@ -30,7 +30,7 @@ test('reactivates selected archived customers', async () => {
 
   renderCustomers()
   await screen.findByRole('table', { name: 'Available customers' })
-  fireEvent.click(screen.getByRole('tab', { name: /Archived \(1\)/ }))
+  fireEvent.click(screen.getByRole('tab', { name: 'Archived 1' }))
 
   const table = await screen.findByRole('table', { name: 'Archived customers' })
   fireEvent.click(within(table).getByRole('checkbox', { name: 'Select all archived customers' }))
@@ -43,6 +43,6 @@ test('reactivates selected archived customers', async () => {
   )
 
   await waitFor(() => expect(requestBody).toEqual({ ids: ['archived-1'], comment: null }))
-  await waitFor(() => expect(screen.getByRole('tab', { name: 'Archived (0)' })).toBeInTheDocument())
-  expect(screen.getByRole('tab', { name: 'Available (3)' })).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('tab', { name: 'Archived 0' })).toBeInTheDocument())
+  expect(screen.getByRole('tab', { name: 'Available 3' })).toBeInTheDocument()
 })
