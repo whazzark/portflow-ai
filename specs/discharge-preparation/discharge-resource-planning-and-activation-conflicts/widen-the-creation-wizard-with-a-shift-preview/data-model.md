@@ -55,12 +55,15 @@ Computed by `shift-preview.ts` from the form values (`dockId`, `vesselName`, `ex
 ### Period sizing (research.md Decision 4)
 
 - **First day**:
-  - when `freeFrom` exists, the day before it;
+  - when `freeFrom` exists, the day before it, but never more than 7 days before the expected
+    start's day (a discharge left open long after its planned shifts must not stretch the period
+    over weeks; older occupancy is clipped);
   - otherwise, the day of the earlier of the expected start and the first valid shift start.
 - **Last day**: the day of the latest of the expected start and the last valid shift end. An end
   exactly at midnight belongs to the previous day.
 - **Padding**: when the span is shorter than 7 days, days are appended until it is 7.
 - **Day boundaries**: days are counted on the calendar, as in `shiftCalendar`, so a clock change
   never moves a column off midnight.
-- **Positions**: positions are percentages of the period's total duration. On a clock-change day
-  this is a few minutes off the column boundary, which is acceptable at day granularity.
+- **Positions**: an instant is placed by its day's index plus its clock time within that day, as
+  a share of the period's days. Every day column is equal, so on a clock-change day the hour the
+  clocks skip or repeat never shifts what comes after it.
