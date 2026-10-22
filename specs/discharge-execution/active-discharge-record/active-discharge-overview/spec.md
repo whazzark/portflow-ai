@@ -48,8 +48,8 @@ matching the persisted shifts.
    **Then** the card says no further shift is planned instead of naming a next shift.
 4. **Given** an active discharge with no Active Shift, because its last shift was completed and the
    next one has not started, **When** the Overview is shown, **Then** the card says no shift is
-   active, names the last Completed Shift with its actual end, and names the next Planned Shift, or
-   says none is planned.
+   active, names the last Completed Shift by its period, and names the next Planned Shift, or says
+   none is planned.
 5. **Given** a resource or responsible shown on the card has been archived or has lost eligibility
    since the shift started, **When** the card is shown, **Then** it is still listed with the same
    archived or ineligible marking the rest of the record uses.
@@ -107,7 +107,7 @@ the current time, with the Active Shift distinguished from the others.
 1. **Given** an active discharge, **When** the Overview is shown, **Then** the dock timeline comes
    right after the Active Shift card and before the Progress card.
 2. **Given** the timeline is shown, **When** the user reads it, **Then** it shows the discharge's
-   Completed Shifts at their actual periods, the Active Shift from its actual start, the Planned
+   Completed Shifts from their actual start, the Active Shift from its actual start, the Planned
    Shifts at their planned periods, the Inter-Shift Breaks between them, the other discharges holding
    the same dock during the shown window, and a Now line at the current time.
 3. **Given** the Active Shift has run past its planned end, **When** the timeline is shown, **Then**
@@ -135,8 +135,9 @@ only.
 **Acceptance Scenarios**:
 
 1. **Given** an active discharge, **When** the Overview is shown, **Then** its last card is a
-   Progress card that states the discharge's expected tonnage and its shifts completed out of its
-   total shifts, and says that unloaded quantities are not available yet.
+   Progress card summarising its shifts (completed, active, and planned out of the total, and the
+   planned end), its product lots (count, customers, expected tonnage, lots with and without a
+   warehouse door), and its truck pool (trucks held, trucks released), each linking to its tab.
 2. **Given** an active discharge, **When** the Shifts tab is open, **Then** the Active Shift is
    highlighted in the calendar and distinguishable from Completed and Planned Shifts without relying
    on colour alone.
@@ -193,18 +194,20 @@ only.
 - **FR-007**: The Active Shift card MUST name the next Planned Shift, by its planned period and its
   responsible, or state that no further shift is planned.
 - **FR-008**: When the discharge has no Active Shift, the card MUST say so, name the last Completed
-  Shift with its actual end when there is one, and name the next Planned Shift or state that none is
+  Shift by its period when there is one, and name the next Planned Shift or state that none is
   planned.
 - **FR-009**: The Active Shift card MUST mark archived resources and an ineligible responsible the
   same way the rest of the discharge record does.
-- **FR-010**: The dock timeline MUST show the discharge's Completed Shifts at their actual periods,
+- **FR-010**: The dock timeline MUST show the discharge's Completed Shifts from their actual start,
   the Active Shift from its actual start to its planned end or to Now if later, its Planned Shifts at
   their planned periods, its Inter-Shift Breaks, the other discharges holding the same dock in the
   shown window, and a Now line.
 - **FR-011**: The dock timeline MUST distinguish the Active Shift from Completed and Planned Shifts
   without relying on colour alone, and MUST NOT be repeated on another tab.
-- **FR-012**: The Progress card MUST show the expected tonnage and the number of Completed Shifts out
-  of the discharge's shifts, and MUST state that unloaded quantities are not available yet.
+- **FR-012**: The Progress card MUST summarise the discharge's shifts (total, completed, active,
+  planned, planned end), its product lots (count, customers, expected tonnage, lots with and without
+  a warehouse door now), and its truck pool (trucks held, trucks released with their release time),
+  each row linking to its tab.
 
 **Other tabs**
 
@@ -258,14 +261,16 @@ only.
   lands first provides the shared piece and the others adopt it.
 - **Vocabulary**: The issue calls the first card "Current shift". `CONTEXT.md` lists "current
   shift" as a term to avoid in favour of **Active Shift**, so the spec uses Active Shift. The card's
-  visible title is taken from the design reference; *to confirm at spec review*.
+  visible title is « Current shift », as in the design reference (confirmed at plan review).
 - **Period on an active discharge**: Assumed to run from the discharge's actual start to the planned
   end of its last shift, as the planned record's Planned period runs from its expected start to the
-  same end; *to confirm at spec review against the design reference*.
+  same end (matches the design reference; confirmed at plan review).
 - **Progress card content**: Progress figures and live updates are out of scope (#111, #113). The
-  card is assumed to show only what the record already knows (expected tonnage, completed shifts out
-  of total) and to state that unloaded quantities are not available yet, so that #111 later fills it
-  in place; *to confirm at spec review*.
+  card shows only what the record already knows, as the design's three rows (Shifts, Product lots,
+  Truck pool), so that #111 later adds figures in place (confirmed at plan review, 2026-10-22).
+- **Completed Shift end**: Shifts have no recorded actual end until shift completion ships; a
+  Completed Shift is drawn and named to its planned end until then (confirmed at plan review,
+  2026-10-22).
 - **Now line**: Positioned at the time the page was loaded or last refetched; it does not move by
   itself and the record is not pushed updates in this feature.
 - **No shift lifecycle actions**: Starting, completing, or adjusting shifts from this record belong

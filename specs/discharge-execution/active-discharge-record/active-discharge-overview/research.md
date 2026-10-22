@@ -61,7 +61,7 @@ sibling plans for #323 (dock occupancy read) and #324 (planned header and dock t
 - **Rationale**: FR-012 asks for expected tonnage and completed shifts out of total; the design shows
   both and more, all from the show payload. The spec's extra sentence « unloaded quantities are not
   available yet » does not appear in the retained design.
-- **Spec deviation to confirm at plan review**: drop the « unloaded quantities are not available
+- **Spec deviation, confirmed at plan review (2026-10-22) and applied to spec.md**: drop the « unloaded quantities are not available
   yet » sentence from FR-012 / US4-1, so the card matches the design until #111 adds figures.
 
 ## Decision 6 — A Completed Shift's actual end is not available yet
@@ -73,7 +73,7 @@ sibling plans for #323 (dock occupancy read) and #324 (planned header and dock t
   `actualEndAt` so the later feature only has to add the field.
 - **Rationale**: FR-017 forbids adding the field here; the "between shifts" state cannot occur in
   real data until shift completion ships, but the view must still be correct when it does.
-- **Spec deviation to confirm at plan review**: accepted as a documented limitation.
+- **Spec deviation, confirmed at plan review (2026-10-22) and applied to spec.md**: accepted as a documented limitation.
 
 ## Decision 7 — The Shifts calendar already highlights the Active Shift
 
