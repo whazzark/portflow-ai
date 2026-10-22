@@ -25,25 +25,28 @@ nothing.
 |---|---|---|
 | Map region | `region` | `Warehouses locations` (existing) |
 | Map canvas | — | `Warehouses map` |
-| Warehouse outline/label | `button` | `<name>, warehouse` · `<name>, warehouse, archived` |
-| Door marker | `button` | `<name>, warehouse door` |
+| Warehouse outline/label | `button` | `View warehouse <name> (Available)` · `View warehouse <name> (Archived)` — existing names kept |
+| Door marker | `button` | `View warehouse door <name> (<status>)` — existing name kept |
 | Search input | `combobox` (`ResourceMapSearch`) | `Search warehouses` |
 | Results popup | `listbox` | `Search results`, groups `Warehouses`, `Doors` |
 | Search hint | text | `Enter opens the highlighted result. Archived results appear when Archived is on.` |
 | No-match panel | `status` | text `No warehouse or door matches “<text>”` |
 | Status filter | `group` | `Filter by warehouse status`; pills `button[aria-pressed]` `Available, <n> warehouses` / `Archived, <n> warehouses` |
 | Create | `button` | `Create warehouse` (administrators) |
-| Legend | `region` | `Map legend`, entries Warehouse, Door, Archived |
+| Legend | `region` | `Warehouse legend`, types Warehouse, Door; statuses Available, Archived |
 | Map controls | `button` | `Zoom in`, `Zoom out`, `Fit all warehouses` |
-| Detail card | `region` (non-modal `aside`) | the warehouse name |
+| Detail card | `complementary` (non-modal `aside`) | the warehouse name |
 | Card close | `button` | `Close` |
 | Centre copy | `button` | `Copy centre coordinates` |
 | Door filter | `group` | `Door status` |
 | Door actions | `button` | `Actions for <door>` → menu `Edit`, `Show on map`, `Copy coordinates`, `Archive` / `Reactivate` |
 | Mode banner | `status` | banner text (data-model), with `Cancel` button |
-| Mode card | `region` (non-modal `aside`) | `New warehouse` · `Edit warehouse` · `New door` · `Edit door` |
+| Mode card | `complementary` (non-modal `aside`) | `New warehouse` · `Edit warehouse` · `New door` · `Edit door` |
 | Archive dialog | `alertdialog` | `Archive <name>?` |
 | Archive toast | `status` | `<name> archived`, action `View` |
+
+Implementation note: the marker names the V2 boards' `aria-label`s suggest (`<name>, warehouse`) were
+not adopted; the existing names are kept so the feature-test seam across ~50 suites is unchanged.
 
 ## Keyboard
 

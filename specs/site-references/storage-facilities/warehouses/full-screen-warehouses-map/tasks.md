@@ -36,8 +36,8 @@ keeping only the additive extensions. If not, create them to #320's planned API
 
 **Purpose**: Baseline before changing anything
 
-- [ ] T001 Run `pnpm --filter @portflow/web test` and `pnpm typecheck` on the branch and record the baseline (all warehouse and door suites green) in the PR description draft
-- [ ] T002 Check `origin/master` for #320's merge and, if merged, sync this worktree with the base branch (ccd `sync_with_base_branch`) and re-read `apps/web/src/components/resource-map/` before Phase 2
+- [X] T001 Run `pnpm --filter @portflow/web test` and `pnpm typecheck` on the branch and record the baseline (all warehouse and door suites green) in the PR description draft
+- [X] T002 Check `origin/master` for #320's merge and, if merged, sync this worktree with the base branch (ccd `sync_with_base_branch`) and re-read `apps/web/src/components/resource-map/` before Phase 2
 
 ---
 
@@ -49,32 +49,32 @@ keeping only the additive extensions. If not, create them to #320's planned API
 
 ### Tests (RED first)
 
-- [ ] T003 [P] Unit tests for `searchWarehousesAndDoors` (case/diacritic-insensitive, status scoping of warehouses and of doors through their warehouse, name ordering, `isEmpty`, blank text) and `describeDoorSummary` (`No doors`, `1 door`, `4 doors`, `2 doors · 1 archived`) in `features/warehouses/__tests__/warehouse-search.test.ts`
-- [ ] T004 [P] Unit tests for `statusSelectionFromFilter` / `filterFromStatusSelection` (`available`/`archived`/`all` round trip, last pressed pill cannot be released) in `features/warehouses/__tests__/status-selection.test.ts`
-- [ ] T005 [P] Unit tests for `footprintCentre` (square, L-shape centroid vs bounds centre, degenerate collinear fallback to vertex mean, 4-decimal formatting via `formatCoordinates`) in `features/warehouses/__tests__/footprint-centre.test.ts`
-- [ ] T006 [P] Unit tests for the edit-history reducer (`move`/`insert`/`remove` push, `undo` pops and no-ops when empty, `restore` resets to origin, history bounded at 50, `movedCount` for moved/removed/inserted points) in `features/warehouses/__tests__/edit-history.test.ts`
-- [ ] T007 [P] Unit tests for `resource-map-anchor.ts` placement (beside a point anchor, beside a rect anchor without overlapping it, flip side on overflow, clamp to map area, bottom dock below `md`, fixed top-right fallback with no anchor) in `components/resource-map/__tests__/resource-map-anchor.test.ts`
-- [ ] T008 [P] Feature test proving `ResourceLifecycleDialog` keeps today's title and toast for a resource that does not set `describeTitle`, `successAction`, or `describeSuccessDetail`, and uses them when set, in `components/lifecycle/__tests__/resource-lifecycle-dialog.test.tsx`
-- [ ] T009 [P] Feature test for `ResourceRowActions` `items`: entries render for a non-administrator row with no lifecycle action, and sit above `Edit`/lifecycle entries for an administrator, in `components/lifecycle/__tests__/resource-row-actions.test.tsx`
-- [ ] T010 [P] Unit test for `copyText` (success toast with label; clipboard rejection or absence → failure toast, never a success) in `helpers/__tests__/copy-text.test.ts`
+- [X] T003 [P] Unit tests for `searchWarehousesAndDoors` (case/diacritic-insensitive, status scoping of warehouses and of doors through their warehouse, name ordering, `isEmpty`, blank text) and `describeDoorSummary` (`No doors`, `1 door`, `4 doors`, `2 doors · 1 archived`) in `features/warehouses/__tests__/warehouse-search.test.ts`
+- [X] T004 [P] Unit tests for `statusSelectionFromFilter` / `filterFromStatusSelection` (`available`/`archived`/`all` round trip, last pressed pill cannot be released) in `features/warehouses/__tests__/status-selection.test.ts`
+- [X] T005 [P] Unit tests for `footprintCentre` (square, L-shape centroid vs bounds centre, degenerate collinear fallback to vertex mean, 4-decimal formatting via `formatCoordinates`) in `features/warehouses/__tests__/footprint-centre.test.ts`
+- [X] T006 [P] Unit tests for the edit-history reducer (`move`/`insert`/`remove` push, `undo` pops and no-ops when empty, `restore` resets to origin, history bounded at 50, `movedCount` for moved/removed/inserted points) in `features/warehouses/__tests__/edit-history.test.ts`
+- [X] T007 [P] Unit tests for `resource-map-anchor.ts` placement (beside a point anchor, beside a rect anchor without overlapping it, flip side on overflow, clamp to map area, bottom dock below `md`, fixed top-right fallback with no anchor) in `components/resource-map/__tests__/resource-map-anchor.test.ts`
+- [X] T008 [P] Feature test proving `ResourceLifecycleDialog` keeps today's title and toast for a resource that does not set `describeTitle`, `successAction`, or `describeSuccessDetail`, and uses them when set, in `components/lifecycle/__tests__/resource-lifecycle-dialog.test.tsx`
+- [X] T009 [P] Feature test for `ResourceRowActions` `items`: entries render for a non-administrator row with no lifecycle action, and sit above `Edit`/lifecycle entries for an administrator, in `components/lifecycle/__tests__/resource-row-actions.test.tsx`
+- [X] T010 [P] Unit test for `copyText` (success toast with label; clipboard rejection or absence → failure toast, never a success) in `helpers/__tests__/copy-text.test.ts`
 
 ### Implementation (GREEN)
 
-- [ ] T011 [P] Implement `searchWarehousesAndDoors` and `describeDoorSummary` in `features/warehouses/warehouse-search.ts` (reuse `normalizeResourceSearch`; keep `presentWarehouses`/`isSearchMatch` unchanged)
-- [ ] T012 [P] Implement the status selection mapping in `features/warehouses/status-selection.ts`
-- [ ] T013 [P] Implement `footprintCentre` and `formatCoordinates` in `features/warehouses/geometry/footprint-centre.ts`
-- [ ] T014 [P] Implement the pure edit-history reducer in `features/warehouses/edit-history.ts`
-- [ ] T015 [P] Create or adopt `components/resource-map/resource-map-anchor.ts` (#320 API) and add rect anchors (a point is a zero-size rect)
-- [ ] T016 [P] Add optional `describeTitle`, `successAction`, and `describeSuccessDetail` to `ResourceLifecycleConfig` and use them in `ResourceLifecycleDialog` in `components/lifecycle/resource-lifecycle-actions.tsx`
-- [ ] T017 [P] Add optional non-lifecycle `items` to `components/lifecycle/resource-row-actions.tsx`, rendering the trigger when only `items` exist
-- [ ] T018 [P] Implement `copyText(text, label)` in `helpers/copy-text.ts` (sonner toasts, copy from `helpers/resource-copy` where a phrase exists)
-- [ ] T019 Create or adopt `ResourceMapCard` (non-modal `aside` labelled by its heading, Close, Escape, focus to heading on open and back to a supplied return target on close, positioned by `resource-map-anchor.ts`) in `components/resource-map/resource-map-card.tsx`
-- [ ] T020 [P] Create or adopt `ResourceMapToolbar` shell and its toggle group (`aria-pressed` buttons with counts, last pressed disabled) in `components/resource-map/resource-map-toolbar.tsx`
-- [ ] T021 [P] Create or adopt `ResourceMapModeBanner` (`role="status"` text + `Cancel`) in `components/resource-map/resource-map-mode-banner.tsx`
-- [ ] T022 [P] Create or adopt `ResourceMapNoMatch` (`role="status"`, message, action slot) in `components/resource-map/resource-map-no-match.tsx`
-- [ ] T023 Create or adopt `ResourceMapSearch` on `@base-ui/react/autocomplete` and add grouped options (group heading with count) and a hint footer, keeping `InputSearch` styling, in `components/resource-map/resource-map-search.tsx`
-- [ ] T024 Add the toolbar | banner, card, and no-match slots to `components/resource-map/resource-map-workspace.tsx`, keeping the map-unavailable, source-error, empty, and legend behavior; existing consumers (Checkpoints) unchanged
-- [ ] T025 Add `onAnchorChange` (projected bounds of the selected outline, the outline being drawn or edited, or the door pin being placed or moved; recomputed on `move`/`resize`) and a `fitAllRequest` to `features/warehouses/map/warehouse-map.tsx`, and mirror the props (anchor reported as `undefined`) in `features/warehouses/__tests__/support/mock-warehouse-map.tsx`
+- [X] T011 [P] Implement `searchWarehousesAndDoors` and `describeDoorSummary` in `features/warehouses/warehouse-search.ts` (reuse `normalizeResourceSearch`; keep `presentWarehouses`/`isSearchMatch` unchanged)
+- [X] T012 [P] Implement the status selection mapping in `features/warehouses/status-selection.ts`
+- [X] T013 [P] Implement `footprintCentre` and `formatCoordinates` in `features/warehouses/geometry/footprint-centre.ts`
+- [X] T014 [P] Implement the pure edit-history reducer in `features/warehouses/edit-history.ts`
+- [X] T015 [P] Create or adopt `components/resource-map/resource-map-anchor.ts` (#320 API) and add rect anchors (a point is a zero-size rect)
+- [X] T016 [P] Add optional `describeTitle`, `successAction`, and `describeSuccessDetail` to `ResourceLifecycleConfig` and use them in `ResourceLifecycleDialog` in `components/lifecycle/resource-lifecycle-actions.tsx`
+- [X] T017 [P] Add optional non-lifecycle `items` to `components/lifecycle/resource-row-actions.tsx`, rendering the trigger when only `items` exist
+- [X] T018 [P] Implement `copyText(text, label)` in `helpers/copy-text.ts` (sonner toasts, copy from `helpers/resource-copy` where a phrase exists)
+- [X] T019 Create or adopt `ResourceMapCard` (non-modal `aside` labelled by its heading, Close, Escape, focus to heading on open and back to a supplied return target on close, positioned by `resource-map-anchor.ts`) in `components/resource-map/resource-map-card.tsx`
+- [X] T020 [P] Create or adopt `ResourceMapToolbar` shell and its toggle group (`aria-pressed` buttons with counts, last pressed disabled) in `components/resource-map/resource-map-toolbar.tsx`
+- [X] T021 [P] Create or adopt `ResourceMapModeBanner` (`role="status"` text + `Cancel`) in `components/resource-map/resource-map-mode-banner.tsx`
+- [X] T022 [P] Create or adopt `ResourceMapNoMatch` (`role="status"`, message, action slot) in `components/resource-map/resource-map-no-match.tsx`
+- [X] T023 Create or adopt `ResourceMapSearch` on `@base-ui/react/autocomplete` and add grouped options (group heading with count) and a hint footer, keeping `InputSearch` styling, in `components/resource-map/resource-map-search.tsx`
+- [X] T024 Add the toolbar | banner, card, and no-match slots to `components/resource-map/resource-map-workspace.tsx`, keeping the map-unavailable, source-error, empty, and legend behavior; existing consumers (Checkpoints) unchanged
+- [X] T025 Add `onAnchorChange` (projected bounds of the selected outline, the outline being drawn or edited, or the door pin being placed or moved; recomputed on `move`/`resize`) and a `fitAllRequest` to `features/warehouses/map/warehouse-map.tsx`, and mirror the props (anchor reported as `undefined`) in `features/warehouses/__tests__/support/mock-warehouse-map.tsx`
 
 **Checkpoint**: Foundational unit/feature tests green; existing warehouse, door, and checkpoint suites still green.
 
@@ -88,18 +88,18 @@ keeping only the additive extensions. If not, create them to #320's planned API
 
 ### Tests (RED first)
 
-- [ ] T026 [P] [US1] Feature tests for toolbar and pills (default `Available` pressed with counts, toggling writes `status`, both → `all`, last pill disabled, legend entries Warehouse/Door/Archived visible, `Zoom in`/`Zoom out`/`Fit all warehouses` present) in `features/warehouses/__tests__/consultation.test.tsx`
-- [ ] T027 [P] [US1] Feature tests for the detail card (`region` named after the warehouse; `Warehouse · Available`; `<n> boundary points · centre <lat>, <lng>`; `Copy centre coordinates` toasts; door pills `Door status` with counts; door rows with coordinates; selecting a door sets `doorId`; `Updated … · created …`; Close and Escape clear `warehouseId` and return focus) in `features/warehouses/__tests__/warehouse-card.test.tsx`
-- [ ] T028 [P] [US1] Feature tests for operator gating (no `Create warehouse`, `Create door`, `Edit`, `Archive`, `Reactivate`, door management entries — absent, not disabled) in `features/warehouses/__tests__/authorization.test.tsx`
+- [X] T026 [P] [US1] Feature tests for toolbar and pills (default `Available` pressed with counts, toggling writes `status`, both → `all`, last pill disabled, legend entries Warehouse/Door/Archived visible, `Zoom in`/`Zoom out`/`Fit all warehouses` present) in `features/warehouses/__tests__/consultation.test.tsx`
+- [X] T027 [P] [US1] Feature tests for the detail card (`region` named after the warehouse; `Warehouse · Available`; `<n> boundary points · centre <lat>, <lng>`; `Copy centre coordinates` toasts; door pills `Door status` with counts; door rows with coordinates; selecting a door sets `doorId`; `Updated … · created …`; Close and Escape clear `warehouseId` and return focus) in `features/warehouses/__tests__/warehouse-card.test.tsx`
+- [X] T028 [P] [US1] Feature tests for operator gating (no `Create warehouse`, `Create door`, `Edit`, `Archive`, `Reactivate`, door management entries — absent, not disabled) in `features/warehouses/__tests__/authorization.test.tsx`
 
 ### Implementation (GREEN)
 
-- [ ] T029 [P] [US1] Create `WarehouseToolbar` (search field slot, status toggle group bound to `status` via `status-selection.ts`, `Create warehouse` for administrators, existing Select entry for bulk) in `features/warehouses/ui/warehouse-toolbar.tsx`
-- [ ] T030 [P] [US1] Create `WarehouseCard` (header with name, kind, status, Close; footprint summary with centre via `footprintCentre` and `copyText`; doors section slot; timestamps; footer slot) in `features/warehouses/ui/warehouse-card.tsx`
-- [ ] T031 [P] [US1] Restyle `features/warehouse-doors/ui/warehouse-doors-panel.tsx` as the card's Doors section: `Create door` beside the heading, door pills (`Door status`) bound to `doorStatus`, rows with name + coordinates + actions trigger, hint `Select a door to highlight its unloading point on the map.`, existing door bulk selection kept
-- [ ] T032 [US1] Make `features/warehouses/map/warehouse-legend.tsx` always list Warehouse, Door, and Archived, and add the `Fit all warehouses` control in `features/warehouses/map/warehouse-map.tsx`
-- [ ] T033 [US1] Replace the `Sheet` and `WarehouseMapControls` in `features/warehouses/ui/warehouses-page.tsx` with `WarehouseToolbar` + `ResourceMapCard`/`WarehouseCard` in the workspace slots; anchor from `onAnchorChange`; footer `Edit` + `WarehouseLifecycleActions` for administrators as today
-- [ ] T034 [US1] Migrate existing suites that queried the sheet, the filter dropdown, or the "Showing" badge (`features/warehouses/__tests__/warehouses-page.test.tsx`, `select-mode.test.tsx`, `selection-scope.test.tsx`, `features/warehouse-doors/__tests__/consultation.test.tsx`, `markers.test.tsx`, and any other failing suite) to the card region and pills, keeping every assertion's intent
+- [X] T029 [P] [US1] Create `WarehouseToolbar` (search field slot, status toggle group bound to `status` via `status-selection.ts`, `Create warehouse` for administrators, existing Select entry for bulk) in `features/warehouses/ui/warehouse-toolbar.tsx`
+- [X] T030 [P] [US1] Create `WarehouseCard` (header with name, kind, status, Close; footprint summary with centre via `footprintCentre` and `copyText`; doors section slot; timestamps; footer slot) in `features/warehouses/ui/warehouse-card.tsx`
+- [X] T031 [P] [US1] Restyle `features/warehouse-doors/ui/warehouse-doors-panel.tsx` as the card's Doors section: `Create door` beside the heading, door pills (`Door status`) bound to `doorStatus`, rows with name + coordinates + actions trigger, hint `Select a door to highlight its unloading point on the map.`, existing door bulk selection kept
+- [X] T032 [US1] Make `features/warehouses/map/warehouse-legend.tsx` always list Warehouse, Door, and Archived, and add the `Fit all warehouses` control in `features/warehouses/map/warehouse-map.tsx`
+- [X] T033 [US1] Replace the `Sheet` and `WarehouseMapControls` in `features/warehouses/ui/warehouses-page.tsx` with `WarehouseToolbar` + `ResourceMapCard`/`WarehouseCard` in the workspace slots; anchor from `onAnchorChange`; footer `Edit` + `WarehouseLifecycleActions` for administrators as today
+- [X] T034 [US1] Migrate existing suites that queried the sheet, the filter dropdown, or the "Showing" badge (`features/warehouses/__tests__/warehouses-page.test.tsx`, `select-mode.test.tsx`, `selection-scope.test.tsx`, `features/warehouse-doors/__tests__/consultation.test.tsx`, `markers.test.tsx`, and any other failing suite) to the card region and pills, keeping every assertion's intent
 
 **Checkpoint**: US1 independently demonstrable; all pre-existing suites green.
 
@@ -113,13 +113,13 @@ keeping only the additive extensions. If not, create them to #320's planned API
 
 ### Tests (RED first)
 
-- [ ] T035 [P] [US2] Feature tests for grouped results (`Search results` listbox, `Warehouses`/`Doors` groups with counts, door summary, `In <warehouse>`, hint text, scoping by status, matching warehouses still emphasised on the map) and opening (Enter/click on a warehouse → `warehouseId`; on a door → `warehouseId`, `doorId`, `doorStatus`; Escape closes the popup keeping the text) in `features/warehouses/__tests__/search.test.tsx`
-- [ ] T036 [P] [US2] Feature tests for the no-match state (message names the text; `Include archived` shown only when `status=available` and sets `status=all`; `Clear search` empties `search`) in `features/warehouses/__tests__/search-no-match.test.tsx`
+- [X] T035 [P] [US2] Feature tests for grouped results (`Search results` listbox, `Warehouses`/`Doors` groups with counts, door summary, `In <warehouse>`, hint text, scoping by status, matching warehouses still emphasised on the map) and opening (Enter/click on a warehouse → `warehouseId`; on a door → `warehouseId`, `doorId`, `doorStatus`; Escape closes the popup keeping the text) in `features/warehouses/__tests__/search.test.tsx`
+- [X] T036 [P] [US2] Feature tests for the no-match state (message names the text; `Include archived` shown only when `status=available` and sets `status=all`; `Clear search` empties `search`) in `features/warehouses/__tests__/search-no-match.test.tsx`
 
 ### Implementation (GREEN)
 
-- [ ] T037 [US2] Create `WarehouseSearch` composing `ResourceMapSearch` with `searchWarehousesAndDoors`, navigation on open, and the hint `Enter opens the highlighted result. Archived results appear when Archived is on.` in `features/warehouses/ui/warehouse-search.tsx`, and mount it in `WarehouseToolbar`
-- [ ] T038 [US2] Render `ResourceMapNoMatch` with `No warehouse or door matches “<text>”`, the explanation, `Clear search`, and conditional `Include archived` from `features/warehouses/ui/warehouses-page.tsx`
+- [X] T037 [US2] Create `WarehouseSearch` composing `ResourceMapSearch` with `searchWarehousesAndDoors`, navigation on open, and the hint `Enter opens the highlighted result. Archived results appear when Archived is on.` in `features/warehouses/ui/warehouse-search.tsx`, and mount it in `WarehouseToolbar`
+- [X] T038 [US2] Render `ResourceMapNoMatch` with `No warehouse or door matches “<text>”`, the explanation, `Clear search`, and conditional `Include archived` from `features/warehouses/ui/warehouses-page.tsx`
 
 **Checkpoint**: US1 + US2 green — the P1 MVP is complete.
 
@@ -131,9 +131,9 @@ keeping only the additive extensions. If not, create them to #320's planned API
 
 **Independent Test**: As an administrator, start `Create warehouse`, place points, `Remove last point`, close the outline, name, create; repeat and cancel (spec US3).
 
-- [ ] T039 [P] [US3] Feature tests: banner `Drawing a new warehouse · click the first point to close the outline` replaces the toolbar; `New warehouse` region with `Click the map to add corners.`, required name, `<n> points placed`, `Remove last point`, `Coordinates (advanced)`, `Close the outline to create the warehouse.` until closed; create selects the new warehouse with a success toast; banner/card `Cancel` and Escape create nothing; validation and server refusals keep the drawing — in `features/warehouses/__tests__/create/drawing.test.tsx` and `create/create.test.tsx` (migrate existing assertions)
-- [ ] T040 [US3] Render the draw-mode `ResourceMapModeBanner` and host the panel in `ResourceMapCard` from `features/warehouses/ui/warehouses-page.tsx`; Escape cancels the mode
-- [ ] T041 [US3] Restyle `features/warehouses/ui/create-warehouse-panel.tsx` as the `New warehouse` card body with the V2 copy, points counter, `Remove last point`, collapsible `Coordinates (advanced)`, and `Cancel`/`Create warehouse`
+- [X] T039 [P] [US3] Feature tests: banner `Drawing a new warehouse · click the first point to close the outline` replaces the toolbar; `New warehouse` region with `Click the map to add corners.`, required name, `<n> points placed`, `Remove last point`, `Coordinates (advanced)`, `Close the outline to create the warehouse.` until closed; create selects the new warehouse with a success toast; banner/card `Cancel` and Escape create nothing; validation and server refusals keep the drawing — in `features/warehouses/__tests__/create/drawing.test.tsx` and `create/create.test.tsx` (migrate existing assertions)
+- [X] T040 [US3] Render the draw-mode `ResourceMapModeBanner` and host the panel in `ResourceMapCard` from `features/warehouses/ui/warehouses-page.tsx`; Escape cancels the mode
+- [X] T041 [US3] Restyle `features/warehouses/ui/create-warehouse-panel.tsx` as the `New warehouse` card body with the V2 copy, points counter, `Remove last point`, collapsible `Coordinates (advanced)`, and `Cancel`/`Create warehouse`
 
 ---
 
@@ -143,9 +143,9 @@ keeping only the additive extensions. If not, create them to #320's planned API
 
 **Independent Test**: Edit an available warehouse, move a point, add a midpoint, `Undo`, rename, save; repeat and cancel; try leaving a door outside (spec US4).
 
-- [ ] T042 [P] [US4] Feature tests: banner `Drag a point to reshape <name> · click a midpoint to add one`; `Edit warehouse` region with `Previous outline shown dashed.`, `<n> boundary points · <m> moved`, `Undo` reverting one change at a time, `Save changes` updating with a toast, cancel/Escape keeping the original, door-outside refusal keeping the edit — in `features/warehouses/__tests__/update/reshape.test.tsx`, `update/save.test.tsx`, `update/session.test.tsx` (migrate existing assertions)
-- [ ] T043 [US4] Wire `edit-history.ts` into `features/warehouses/use-warehouse-edit-session.ts` (undo stack, `movedCount`; restore kept)
-- [ ] T044 [US4] Restyle `features/warehouses/ui/edit-warehouse-panel.tsx` as the `Edit warehouse` card body with the counter, `Undo`, `Coordinates (advanced)`, `Cancel`/`Save changes`, and render its banner from `features/warehouses/ui/warehouses-page.tsx`
+- [X] T042 [P] [US4] Feature tests: banner `Drag a point to reshape <name> · click a midpoint to add one`; `Edit warehouse` region with `Previous outline shown dashed.`, `<n> boundary points · <m> moved`, `Undo` reverting one change at a time, `Save changes` updating with a toast, cancel/Escape keeping the original, door-outside refusal keeping the edit — in `features/warehouses/__tests__/update/reshape.test.tsx`, `update/save.test.tsx`, `update/session.test.tsx` (migrate existing assertions)
+- [X] T043 [US4] Wire `edit-history.ts` into `features/warehouses/use-warehouse-edit-session.ts` (undo stack, `movedCount`; restore kept)
+- [X] T044 [US4] Restyle `features/warehouses/ui/edit-warehouse-panel.tsx` as the `Edit warehouse` card body with the counter, `Undo`, `Coordinates (advanced)`, `Cancel`/`Save changes`, and render its banner from `features/warehouses/ui/warehouses-page.tsx`
 
 ---
 
@@ -155,13 +155,13 @@ keeping only the additive extensions. If not, create them to #320's planned API
 
 **Independent Test**: Create a door by clicking inside and dragging the pin, use each menu entry, move a door, and try outside positions (spec US5).
 
-- [ ] T045 [P] [US5] Feature tests for placement: banner `Placing a new door · click inside <warehouse>`; `New door` region with `In <warehouse> · drag the pin to adjust.`, name, latitude, longitude; outside refusal; success toast and door listed — in `features/warehouse-doors/__tests__/create/placement.test.tsx` and `create/create.test.tsx` (migrate existing assertions)
-- [ ] T046 [P] [US5] Feature tests for the door menu (`Actions for <door>`: `Show on map` selects and highlights the door, `Copy coordinates` toasts, for everyone; `Edit`/`Archive` on available doors and `Reactivate` on archived ones for administrators; no management entry under an archived warehouse) in `features/warehouse-doors/__tests__/door-menu.test.tsx`
-- [ ] T047 [P] [US5] Feature tests for move: banner `Drag the pin to move <door> · it must stay inside <warehouse>`; `Edit door` region with `Previous position <lat>, <lng>`; save toast; outside refusal — in `features/warehouse-doors/__tests__/update/reposition.test.tsx` and `update/entry.test.tsx` (migrate existing assertions)
-- [ ] T048 [P] [US5] Pass `Show on map` and `Copy coordinates` as `items` in `features/warehouse-doors/ui/warehouse-door-row-actions.tsx` (with `onShowOnMap` from the page)
-- [ ] T049 [P] [US5] Restyle `features/warehouse-doors/ui/create-warehouse-door-panel.tsx` as the `New door` card body with the V2 copy
-- [ ] T050 [P] [US5] Restyle `features/warehouse-doors/ui/edit-warehouse-door-panel.tsx` as the `Edit door` card body with `Previous position`
-- [ ] T051 [US5] Render the placement and move banners, host both door cards in `ResourceMapCard` (anchored to the pin), and implement `Show on map` (select door, fly to its point) in `features/warehouses/ui/warehouses-page.tsx`
+- [X] T045 [P] [US5] Feature tests for placement: banner `Placing a new door · click inside <warehouse>`; `New door` region with `In <warehouse> · drag the pin to adjust.`, name, latitude, longitude; outside refusal; success toast and door listed — in `features/warehouse-doors/__tests__/create/placement.test.tsx` and `create/create.test.tsx` (migrate existing assertions)
+- [X] T046 [P] [US5] Feature tests for the door menu (`Actions for <door>`: `Show on map` selects and highlights the door, `Copy coordinates` toasts, for everyone; `Edit`/`Archive` on available doors and `Reactivate` on archived ones for administrators; no management entry under an archived warehouse) in `features/warehouse-doors/__tests__/door-menu.test.tsx`
+- [X] T047 [P] [US5] Feature tests for move: banner `Drag the pin to move <door> · it must stay inside <warehouse>`; `Edit door` region with `Previous position <lat>, <lng>`; save toast; outside refusal — in `features/warehouse-doors/__tests__/update/reposition.test.tsx` and `update/entry.test.tsx` (migrate existing assertions)
+- [X] T048 [P] [US5] Pass `Show on map` and `Copy coordinates` as `items` in `features/warehouse-doors/ui/warehouse-door-row-actions.tsx` (with `onShowOnMap` from the page)
+- [X] T049 [P] [US5] Restyle `features/warehouse-doors/ui/create-warehouse-door-panel.tsx` as the `New door` card body with the V2 copy
+- [X] T050 [P] [US5] Restyle `features/warehouse-doors/ui/edit-warehouse-door-panel.tsx` as the `Edit door` card body with `Previous position`
+- [X] T051 [US5] Render the placement and move banners, host both door cards in `ResourceMapCard` (anchored to the pin), and implement `Show on map` (select door, fly to its point) in `features/warehouses/ui/warehouses-page.tsx`
 
 ---
 
@@ -171,10 +171,10 @@ keeping only the additive extensions. If not, create them to #320's planned API
 
 **Independent Test**: Archive a warehouse with doors, check dialog copy, confirm, use `View`, reactivate; try one whose door is in use (spec US6).
 
-- [ ] T052 [P] [US6] Unit tests for the V2 archive copy (`Archive <name>?`; effect sentence with 0/1/n available doors; toast detail `Its <n> doors are archived with it. Find it under Archived to reactivate it.` with singular/zero variants) in `features/warehouses/__tests__/warehouse-lifecycle.test.ts`
-- [ ] T053 [P] [US6] Feature tests: dialog title and copy, optional comment kept, confirm archives, card closes, toast title/detail/`View` → `status=all` + `warehouseId` with the archived card (`Warehouse · Archived`, `Archived on <date, time>. It and its doors can’t be selected for new discharges; past discharges keep them.`, `Reactivate`; no `Edit`/`Archive`/`Create door`); IN_USE refusal unchanged; reactivation toast — in `features/warehouses/__tests__/archive.test.tsx`, `feedback-archive.test.tsx`, `reactivate.test.tsx`, `feedback-reactivate.test.tsx` (migrate existing assertions)
-- [ ] T054 [US6] Set `describeTitle`, the V2 `describeEffect`, `describeSuccessDetail`, and `successAction` (`View`, via a navigate callback) in `features/warehouses/warehouse-lifecycle.tsx`
-- [ ] T055 [US6] Render the archived state of `WarehouseCard` (archive time + consequence statement, `Reactivate` footer for administrators) in `features/warehouses/ui/warehouse-card.tsx`
+- [X] T052 [P] [US6] Unit tests for the V2 archive copy (`Archive <name>?`; effect sentence with 0/1/n available doors; toast detail `Its <n> doors are archived with it. Find it under Archived to reactivate it.` with singular/zero variants) in `features/warehouses/__tests__/warehouse-lifecycle.test.ts`
+- [X] T053 [P] [US6] Feature tests: dialog title and copy, optional comment kept, confirm archives, card closes, toast title/detail/`View` → `status=all` + `warehouseId` with the archived card (`Warehouse · Archived`, `Archived on <date, time>. It and its doors can’t be selected for new discharges; past discharges keep them.`, `Reactivate`; no `Edit`/`Archive`/`Create door`); IN_USE refusal unchanged; reactivation toast — in `features/warehouses/__tests__/archive.test.tsx`, `feedback-archive.test.tsx`, `reactivate.test.tsx`, `feedback-reactivate.test.tsx` (migrate existing assertions)
+- [X] T054 [US6] Set `describeTitle`, the V2 `describeEffect`, `describeSuccessDetail`, and `successAction` (`View`, via a navigate callback) in `features/warehouses/warehouse-lifecycle.tsx`
+- [X] T055 [US6] Render the archived state of `WarehouseCard` (archive time + consequence statement, `Reactivate` footer for administrators) in `features/warehouses/ui/warehouse-card.tsx`
 
 ---
 
@@ -184,20 +184,36 @@ keeping only the additive extensions. If not, create them to #320's planned API
 
 **Independent Test**: Switch theme on `/warehouses` across consultation, search, card, a mode, dialog, toast; repeat at 375 px (spec US7).
 
-- [ ] T056 [P] [US7] Feature test: below `md` the card docks at the bottom and the toolbar wraps, every action reachable; a theme change keeps selection, filter, search, and mode — in `features/warehouses/__tests__/responsive-theme.test.tsx`
-- [ ] T057 [US7] Audit `features/warehouses/ui/*`, `features/warehouse-doors/ui/*`, `features/warehouses/map/*`, and the new `components/resource-map/*` files for hardcoded colors; use « Marine sobre » tokens only (MapLibre paint keeps its light-palette steel blue) and fix contrast below 4.5:1
+- [X] T056 [P] [US7] Feature test: below `md` the card docks at the bottom and the toolbar wraps, every action reachable; a theme change keeps selection, filter, search, and mode — in `features/warehouses/__tests__/responsive-theme.test.tsx`
+- [X] T057 [US7] Audit `features/warehouses/ui/*`, `features/warehouse-doors/ui/*`, `features/warehouses/map/*`, and the new `components/resource-map/*` files for hardcoded colors; use « Marine sobre » tokens only (MapLibre paint keeps its light-palette steel blue) and fix contrast below 4.5:1
 
 ---
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T058 Delete `features/warehouses/ui/warehouse-map-controls.tsx` and `features/warehouses/ui/warehouse-details.tsx` once unused; delete `ResourceMapControls`/`ResourceMapCreateControl` only if no consumer remains (Checkpoints may still use them)
-- [ ] T059 [P] Update the map rules in `apps/web/AGENTS.md` (maps: anchored `ResourceMapCard` instead of a `Sheet`; status filter as toggle pills instead of the dropdown), reconciling with #320's wording if already merged
+- [X] T058 Delete `features/warehouses/ui/warehouse-map-controls.tsx` and `features/warehouses/ui/warehouse-details.tsx` once unused; delete `ResourceMapControls`/`ResourceMapCreateControl` only if no consumer remains (Checkpoints may still use them)
+- [X] T059 [P] Update the map rules in `apps/web/AGENTS.md` (maps: anchored `ResourceMapCard` instead of a `Sheet`; status filter as toggle pills instead of the dropdown), reconciling with #320's wording if already merged
 - [ ] T060 Run `pnpm check`, `pnpm typecheck`, and `pnpm test` from the repository root; fix every failure
 - [ ] T061 Run the [quickstart.md](./quickstart.md) browser journeys (dark, light, 375 px, administrator and operator) and compare each state with its *Retenue* board; record results in the PR
 - [ ] T062 Obtain a fresh read-only Claude Code review of the final diff (`/code-review` in a new session or a read-only subagent), resolve or justify every confirmed finding, then open/update the Draft PR linked to #321
 
 ---
+
+## Implementation notes
+
+- Story tests landed in fewer files than listed: draw, outline-editing, placement and move banners
+  and cards are covered together in `features/warehouses/__tests__/modes.test.tsx`; the door menu
+  in `features/warehouse-doors/__tests__/door-menu.test.tsx`; existing suites were migrated in place.
+- T056: jsdom has no layout, so the narrow-viewport dock is covered by the `resource-map-anchor`
+  unit tests and the page unit test (`warehouses-page.test.tsx`), not by a feature test.
+- The shared search primitive lives in `resource-map-search-field.tsx`: a `resource-map-search.tsx`
+  would be shadowed by the existing `resource-map-search.ts`.
+- Map markers keep their existing accessible names (`View warehouse <name> (<status>)`), see the
+  UI contract note.
+- Creation stays possible from a valid footprint typed in `Coordinates (advanced)` without closing
+  it on the map — the keyboard path has no "first point" to click — so `Create warehouse` is gated
+  on a valid footprint, and the card says `Close the outline to create the warehouse.` while the
+  drawn outline is open.
 
 ## Dependencies & Execution Order
 

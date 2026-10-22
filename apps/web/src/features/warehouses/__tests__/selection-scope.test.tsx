@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { BULK_WAREHOUSES } from './support/fixtures'
@@ -28,7 +28,7 @@ test('a search term narrows what is displayed without pruning the selection', as
   await checkWarehouses(user, NORTH.name, EAST.name)
   expect(screen.getByText('2 selected')).toBeInTheDocument()
 
-  await user.type(screen.getByRole('textbox', { name: 'Search warehouses' }), EAST.name)
+  await user.type(screen.getByRole('combobox', { name: 'Search warehouses' }), EAST.name)
 
   // North Shed is no longer emphasised by the search, but it remains chosen.
   expect(await screen.findByText('2 selected')).toBeInTheDocument()
@@ -42,8 +42,12 @@ test('switching to the archived view drops warehouses no longer listed', async (
   await checkWarehouses(user, NORTH.name, EAST.name)
   expect(screen.getByText('2 selected')).toBeInTheDocument()
 
-  await user.click(screen.getByRole('button', { name: /Filter warehouses/ }))
-  await user.click(await screen.findByRole('menuitemradio', { name: /^Archived/ }))
+  // Releasing Available leaves Archived alone in the filter.
+  await user.click(
+    within(screen.getByRole('group', { name: 'Filter by warehouse status' })).getByRole('button', {
+      name: /^Available/,
+    }),
+  )
 
   expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()
 })
@@ -114,7 +118,7 @@ test('a search term does not prune an archived selection either', async () => {
   renderWarehouses()
 
   await checkWarehouses(user, ARCHIVED.name)
-  await user.type(screen.getByRole('textbox', { name: 'Search warehouses' }), NORTH.name)
+  await user.type(screen.getByRole('combobox', { name: 'Search warehouses' }), NORTH.name)
 
   expect(await screen.findByText('1 selected')).toBeInTheDocument()
 })

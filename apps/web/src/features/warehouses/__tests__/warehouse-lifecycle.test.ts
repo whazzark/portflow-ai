@@ -6,6 +6,9 @@ import {
   describeBulkWarehouseEffect,
   describeDoorCascade,
   describeDoorRestore,
+  describeWarehouseArchiveDetail,
+  describeWarehouseArchiveEffect,
+  describeWarehouseLifecycleTitle,
   toBulkWarehouseLifecycleOutcome,
 } from '@/features/warehouses/warehouse-lifecycle'
 import { TWO_DOOR_ARCHIVED_WAREHOUSE, WAREHOUSES } from './support/fixtures'
@@ -125,5 +128,36 @@ describe('door restore counting', () => {
     expect(describeBulkWarehouseEffect('reactivate', 2, 5)).toBe(
       'These 2 warehouses become available again for new operations. Their 5 doors return to service.',
     )
+  })
+})
+
+describe('V2 archive copy', () => {
+  test('names the warehouse in the dialog title', () => {
+    expect(describeWarehouseLifecycleTitle('archive', 'SICA Atlantique')).toBe(
+      'Archive SICA Atlantique?',
+    )
+    expect(describeWarehouseLifecycleTitle('reactivate', 'Hangar 7')).toBe('Reactivate Hangar 7?')
+  })
+
+  test('states what the archival takes out of new discharges', () => {
+    expect(describeWarehouseArchiveEffect(2)).toBe(
+      'The warehouse and its 2 available doors can no longer be selected for new discharges. Past discharges keep them. You can reactivate it later from Archived.',
+    )
+    expect(describeWarehouseArchiveEffect(1)).toBe(
+      'The warehouse and its available door can no longer be selected for new discharges. Past discharges keep them. You can reactivate it later from Archived.',
+    )
+    expect(describeWarehouseArchiveEffect(0)).toBe(
+      'The warehouse can no longer be selected for new discharges. Past discharges keep it. You can reactivate it later from Archived.',
+    )
+  })
+
+  test('tells where to find the archived warehouse again', () => {
+    expect(describeWarehouseArchiveDetail(2)).toBe(
+      'Its 2 doors are archived with it. Find it under Archived to reactivate it.',
+    )
+    expect(describeWarehouseArchiveDetail(1)).toBe(
+      'Its door is archived with it. Find it under Archived to reactivate it.',
+    )
+    expect(describeWarehouseArchiveDetail(0)).toBe('Find it under Archived to reactivate it.')
   })
 })

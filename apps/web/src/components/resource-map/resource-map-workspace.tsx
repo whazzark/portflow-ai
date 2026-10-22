@@ -12,10 +12,22 @@ export function ResourceMapWorkspace({
   sourceError = false,
   onRetrySource,
   mapUnavailableActions,
+  toolbar,
+  banner,
+  card,
+  overlay,
 }: {
   resourceLabel: string
   map: (onMapError: () => void) => ReactNode
-  controls: ReactNode
+  /** The pre-V2 control cluster, kept for maps that have not moved to `toolbar`. */
+  controls?: ReactNode
+  /** The floating toolbar, top-left. A `banner` takes its place while a map mode is active. */
+  toolbar?: ReactNode
+  banner?: ReactNode
+  /** One anchored card (`ResourceMapCard`), positioned against this workspace. */
+  card?: ReactNode
+  /** Centred over the map, for a state that replaces what the map shows — a search with no match. */
+  overlay?: ReactNode
   legend?: ReactNode
   emptyMessage?: string
   sourceMessage?: string
@@ -53,8 +65,14 @@ export function ResourceMapWorkspace({
         </div>
       )}
       <div className="absolute top-4 left-4 z-10 max-w-[calc(100%-2rem)] md:top-6 md:left-6 md:max-w-[calc(100%-3rem)]">
-        {controls}
+        {banner ?? toolbar ?? controls}
       </div>
+      {overlay && (
+        <div className="absolute top-1/3 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+          {overlay}
+        </div>
+      )}
+      {card}
       {(hasMapError || sourceMessage) && (
         <div className="absolute top-3 right-3 z-10 flex max-w-sm flex-col gap-2">
           {hasMapError && (

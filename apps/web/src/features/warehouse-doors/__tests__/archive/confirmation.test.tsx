@@ -109,7 +109,7 @@ test('shows the archived door under the Archived view, retired on its own', asyn
   await user.click(within(dialog).getByRole('button', { name: 'Archive' }))
   await screen.findByText(`Door “${DOOR.name}” archived`)
 
-  await user.click(await screen.findByRole('tab', { name: /Archived/ }))
+  await user.click(await screen.findByRole('button', { name: /^Archived, \d+ doors/ }))
 
   const archivedList = await screen.findByRole('list', { name: 'Archived warehouse doors' })
   const row = within(archivedList).getByText(DOOR.name).closest('li')

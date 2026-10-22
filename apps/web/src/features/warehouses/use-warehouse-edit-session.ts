@@ -1,5 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
+import {
+  countMovedPoints,
+  editHistoryReducer,
+  startEditHistory,
+} from '@/features/warehouses/edit-history'
 import type { WarehouseDto } from '@/features/warehouses/types'
 
 export type WarehouseEditSession = {
@@ -34,13 +39,26 @@ export function useWarehouseEditSession(input: {
 }) {
   const { requested, selected } = input
   const [session, setSession] = useState<WarehouseEditSession | null>(null)
-  const [draftPoints, setDraftPoints] = useState<LatLng[]>([])
+  // Every change is a step Undo can take back, so the history replaces a bare draft. `reset` starts
+  // a fresh one — a new session, or none.
+  const [history, dispatch] = useReducer(
+    (
+      current: ReturnType<typeof startEditHistory>,
+      action: Parameters<typeof editHistoryReducer>[1] | { type: 'reset'; origin: LatLng[] },
+    ) =>
+      action.type === 'reset'
+        ? startEditHistory(action.origin)
+        : editHistoryReducer(current, action),
+    [],
+    startEditHistory,
+  )
+  const draftPoints = history.draft
 
   useEffect(() => {
     if (!requested || !selected) {
       if (session) {
         setSession(null)
-        setDraftPoints([])
+        dispatch({ type: 'reset', origin: [] })
       }
       return
     }
@@ -53,7 +71,7 @@ export function useWarehouseEditSession(input: {
         originName: selected.name,
         originPoints,
       })
-      setDraftPoints(originPoints)
+      dispatch({ type: 'reset', origin: originPoints })
     }
   }, [requested, selected, session])
 
@@ -64,27 +82,20 @@ export function useWarehouseEditSession(input: {
     session.warehouseId === selected.id &&
     session.editable
 
-  const movePoint = (index: number, point: LatLng) =>
-    setDraftPoints((current) =>
-      current.map((existing, position) => (position === index ? point : existing)),
-    )
+  const movePoint = (index: number, point: LatLng) => dispatch({ type: 'move', index, point })
 
   /** `index` is the position the new point takes in the resulting ring, never an arbitrary end. */
-  const insertPoint = (index: number, point: LatLng) =>
-    setDraftPoints((current) => [...current.slice(0, index), point, ...current.slice(index)])
+  const insertPoint = (index: number, point: LatLng) => dispatch({ type: 'insert', index, point })
 
-  const removePoint = (index: number) =>
-    setDraftPoints((current) => current.filter((_, position) => position !== index))
+  const removePoint = (index: number) => dispatch({ type: 'remove', index })
 
-  const restoreOrigin = () => {
-    if (session) {
-      setDraftPoints(session.originPoints)
-    }
-  }
+  const restoreOrigin = () => dispatch({ type: 'restore' })
+
+  const undo = () => dispatch({ type: 'undo' })
 
   const clear = () => {
     setSession(null)
-    setDraftPoints([])
+    dispatch({ type: 'reset', origin: [] })
   }
 
   return {
@@ -95,6 +106,9 @@ export function useWarehouseEditSession(input: {
     insertPoint,
     removePoint,
     restoreOrigin,
+    undo,
+    canUndo: history.past.length > 0,
+    movedCount: countMovedPoints(history.origin, history.draft),
     clear,
   }
 }

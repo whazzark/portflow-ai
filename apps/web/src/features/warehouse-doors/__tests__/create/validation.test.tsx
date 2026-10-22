@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
@@ -195,7 +195,11 @@ test('does not offer the creation handler when nothing was submitted', async () 
   const { router } = renderWarehouses(path)
 
   await openMode(user)
-  await user.click(screen.getByRole('button', { name: 'Cancel' }))
+  await user.click(
+    within(screen.getByRole('complementary', { name: 'New door' })).getByRole('button', {
+      name: 'Cancel',
+    }),
+  )
 
   await waitFor(() => expect(router.state.location.search).not.toHaveProperty('create'))
   expect(router.state.location.search).not.toHaveProperty('doorId')

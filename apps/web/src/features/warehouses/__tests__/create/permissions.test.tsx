@@ -27,7 +27,7 @@ test('keeps a directly requested creation mode inert for an unpermitted user', a
     name: 'View warehouse North Shed (Available)',
   })
 
-  expect(screen.queryByRole('heading', { name: 'Create warehouse' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New warehouse' })).not.toBeInTheDocument()
   expect(
     screen.queryByRole('button', { name: 'Simulate map click to add footprint point' }),
   ).not.toBeInTheDocument()

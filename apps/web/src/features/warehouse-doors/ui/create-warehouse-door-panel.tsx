@@ -7,7 +7,6 @@ import {
 } from '@/components/resource-map/resource-placement-fields'
 import { Button } from '@/components/ui/button'
 import { FieldDescription, FieldGroup } from '@/components/ui/field'
-import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { DOOR_SINGULAR } from '@/features/warehouse-doors/warehouse-door-presentation'
 import { isInsideFootprint } from '@/features/warehouses/geometry/footprint-validation'
 import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
@@ -109,13 +108,10 @@ export function CreateWarehouseDoorPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <SheetHeader>
-        <SheetTitle>Create door</SheetTitle>
-        <SheetDescription>
-          Click a point inside {warehouse.name} to place the new door, then name it.
-        </SheetDescription>
-      </SheetHeader>
-      <div className="px-4 pb-4">
+      <div className="p-4">
+        <p className="mb-4 text-muted-foreground text-sm">
+          In {warehouse.name} · drag the pin to adjust.
+        </p>
         <form.AppForm>
           <form.Form className="flex flex-col gap-6">
             <FieldGroup>

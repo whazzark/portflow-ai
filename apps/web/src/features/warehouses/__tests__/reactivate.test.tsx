@@ -67,7 +67,9 @@ test('states how many doors return to service with the warehouse', async () => {
 
   const dialog = await openReactivateDialog(user)
 
-  expect(within(dialog).getByRole('heading', { name: 'Reactivate warehouse?' })).toBeInTheDocument()
+  expect(
+    within(dialog).getByRole('heading', { name: `Reactivate ${RIVERSIDE.name}?` }),
+  ).toBeInTheDocument()
   // Riverside Shed holds two archived doors, and both come back with it.
   expect(dialog).toHaveTextContent('Its 2 doors return to service')
   expect(dialog).toHaveTextContent('becomes available again for new operations')

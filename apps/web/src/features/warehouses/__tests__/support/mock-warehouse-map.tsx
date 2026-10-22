@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react'
-import type { ResourceMapCreateAction } from '@/components/resource-map/resource-map-create-control'
+import type { ResourceMapAnchor } from '@/components/resource-map/resource-map-anchor'
+import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import type { WarehouseDoorDto } from '@/features/warehouse-doors/types'
 import type {
   WarehouseMapDoorPlacement,
@@ -41,7 +42,6 @@ export function WarehouseMap({
   placement,
   doorPlacement,
   editing,
-  createActions = [],
   selectMode = false,
   checkedIds,
   checkableIds,
@@ -63,7 +63,9 @@ export function WarehouseMap({
   placement?: WarehouseMapPlacement
   doorPlacement?: WarehouseMapDoorPlacement
   editing?: WarehouseMapEditing
-  createActions?: ResourceMapCreateAction[]
+  /** Accepted for parity; jsdom has no projection, so the card always takes its fallback place. */
+  anchorPoints?: LatLng[]
+  onAnchorChange?: (anchor: ResourceMapAnchor | null) => void
   selectMode?: boolean
   checkedIds?: Set<string>
   checkableIds?: Set<string>
@@ -91,11 +93,15 @@ export function WarehouseMap({
 
   return (
     <section aria-label="Warehouse map">
-      {createActions.map((action) => (
-        <button key={action.key} onClick={action.onSelect} type="button">
-          {action.label}
-        </button>
-      ))}
+      <button onClick={() => {}} type="button">
+        Zoom in
+      </button>
+      <button onClick={() => {}} type="button">
+        Zoom out
+      </button>
+      <button disabled={warehouses.length === 0} onClick={() => {}} type="button">
+        Fit all warehouses
+      </button>
       {onToggleSelectMode && (
         <button aria-pressed={selectMode} onClick={onToggleSelectMode} type="button">
           {selectMode ? 'Stop selecting warehouses' : 'Select warehouses'}
