@@ -191,16 +191,16 @@ transport companies and transport resources suites green without edits.
 
 **Independent Test**: Switch to light and walk the quickstart states.
 
-- [ ] T035 [US7] Audit every file touched in Phases 2–8 for hard-coded colors or opacity-based text dimming; replace them with theme tokens (`muted-foreground`, `card`, `popover`, `border`, `primary`, `indicator`, `destructive`, status tokens) in the touched files under apps/web/src/features/customers/ui/ and apps/web/src/components/
-- [ ] T036 [US7] Walk quickstart steps 1–9 in the light theme in the browser; for any new text/background pair not already validated by #333, check the contrast ratio is ≥ 4.5:1 and fix the token choice in the offending file
+- [X] T035 [US7] Audit every file touched in Phases 2–8 for hard-coded colors or opacity-based text dimming; replace them with theme tokens (`muted-foreground`, `card`, `popover`, `border`, `primary`, `indicator`, `destructive`, status tokens) in the touched files under apps/web/src/features/customers/ui/ and apps/web/src/components/
+- [X] T036 [US7] Walk quickstart steps 1–9 in the light theme in the browser; for any new text/background pair not already validated by #333, check the contrast ratio is ≥ 4.5:1 and fix the token choice in the offending file
 
 ---
 
 ## Phase 10: Polish & cross-cutting
 
-- [ ] T037 Run `pnpm check`, `pnpm typecheck`, `pnpm test`; fix failures (no edits to other features' tests are expected — if one is needed, stop and re-check the R1/R2 rule)
-- [ ] T038 Walk the full [quickstart.md](quickstart.md) in dark and light themes and at ≈ 390px width, comparing with the 16 *Retenue* boards; note any intentional deviation beyond those in plan.md
-- [ ] T039 Update the shared notes file `/Users/romain.petit/Library/Application Support/Claude/side-session-notes/local_a3463a0e-9a8b-4962-98cd-19a16b011eef/issue-318-notes.md` with the final shared component names and props as merged
+- [X] T037 Run `pnpm check`, `pnpm typecheck`, `pnpm test`; fix failures (no edits to other features' tests are expected — if one is needed, stop and re-check the R1/R2 rule)
+- [X] T038 Walk the full [quickstart.md](quickstart.md) in dark and light themes and at ≈ 390px width, comparing with the 16 *Retenue* boards; note any intentional deviation beyond those in plan.md
+- [X] T039 Update the shared notes file `/Users/romain.petit/Library/Application Support/Claude/side-session-notes/local_a3463a0e-9a8b-4962-98cd-19a16b011eef/issue-318-notes.md` with the final shared component names and props as merged
 - [ ] T040 Obtain a fresh read-only Claude Code review of the final diff (`/code-review` in a new session or a read-only subagent), resolve or justify every confirmed finding, then mark the Draft PR ready
 
 ---
@@ -267,4 +267,5 @@ T009 Create customer-no-match.tsx
 - [P] = different files, no dependency on an incomplete task.
 - Shared lifecycle defaults stay as they are (R1, R2); any temptation to change them belongs to a
   later cross-resource cleanup, not this PR.
-- Baseline failures found in T001: _none recorded yet_.
+- Baseline failures found in T001: none; the suite only times out under heavy machine load (repo's 3 s asyncUtilTimeout).
+- T040 review (read-only subagent) found three low-severity items, still open: ResourceActor drops the date when the actor is null; the row-menu separator applies to every directory but is not listed in contracts/shared-lifecycle-seams.md; the bulk dialog list filters to loaded customers while the confirm counts every selected id.
