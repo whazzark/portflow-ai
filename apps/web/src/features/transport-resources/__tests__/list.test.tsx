@@ -10,6 +10,7 @@ import {
   findFleetTable,
   fleetTable,
   groupHeader,
+  JOURNEY,
   listedRegistrations,
   mockFleet,
   queryTruckRow,
@@ -18,7 +19,7 @@ import {
   truckRow,
 } from './support/fleet-test-helpers'
 
-test('groups the fleet by transport company in one table', async () => {
+test('groups the fleet by transport company in one table', JOURNEY, async () => {
   mockFleet()
   renderFleet()
 
@@ -49,7 +50,7 @@ test('groups the fleet by transport company in one table', async () => {
   expect(queryTruckRow('QR-234-ST')).not.toBeInTheDocument()
 })
 
-test('summarises each company with its truck counts and contact details', async () => {
+test('summarises each company with its truck counts and contact details', JOURNEY, async () => {
   mockFleet()
   renderFleet()
   await findFleetTable()
@@ -65,37 +66,45 @@ test('summarises each company with its truck counts and contact details', async 
   expect(within(groupHeader('Bretagne Vrac')).getByText('2 available')).toBeInTheDocument()
 })
 
-test('shows each truck with its model, capacity, suspension context and status', async () => {
-  mockFleet()
-  renderFleet()
-  await findFleetTable()
+test(
+  'shows each truck with its model, capacity, suspension context and status',
+  JOURNEY,
+  async () => {
+    mockFleet()
+    renderFleet()
+    await findFleetTable()
 
-  const available = within(truckRow('AB-123-CD'))
-  expect(available.getByText('Volvo FMX')).toBeInTheDocument()
-  expect(available.getByText('32.5 t')).toBeInTheDocument()
-  expect(available.getByText('—')).toBeInTheDocument()
-  expect(available.getByText('Available')).toBeInTheDocument()
+    const available = within(truckRow('AB-123-CD'))
+    expect(available.getByText('Volvo FMX')).toBeInTheDocument()
+    expect(available.getByText('32.5 t')).toBeInTheDocument()
+    expect(available.getByText('—')).toBeInTheDocument()
+    expect(available.getByText('Available')).toBeInTheDocument()
 
-  const suspended = within(truckRow(GH_012_JK.registration))
-  expect(suspended.getByText('Brake inspection after a warning light')).toBeInTheDocument()
-  expect(suspended.getByText('Thomas Bernard, 22/09/2026', { exact: false })).toBeInTheDocument()
-  expect(suspended.getByText('Suspended')).toBeInTheDocument()
-})
+    const suspended = within(truckRow(GH_012_JK.registration))
+    expect(suspended.getByText('Brake inspection after a warning light')).toBeInTheDocument()
+    expect(suspended.getByText('Thomas Bernard, 22/09/2026', { exact: false })).toBeInTheDocument()
+    expect(suspended.getByText('Suspended')).toBeInTheDocument()
+  },
+)
 
-test('selects available and suspended trucks by default and counts every status', async () => {
-  mockFleet()
-  renderFleet()
-  await findFleetTable()
+test(
+  'selects available and suspended trucks by default and counts every status',
+  JOURNEY,
+  async () => {
+    mockFleet()
+    renderFleet()
+    await findFleetTable()
 
-  expect(statusPill('Available')).toHaveAttribute('aria-pressed', 'true')
-  expect(statusPill('Available')).toHaveTextContent('5')
-  expect(statusPill('Suspended')).toHaveAttribute('aria-pressed', 'true')
-  expect(statusPill('Suspended')).toHaveTextContent('2')
-  expect(statusPill('Archived')).toHaveAttribute('aria-pressed', 'false')
-  expect(statusPill('Archived')).toHaveTextContent('1')
-})
+    expect(statusPill('Available')).toHaveAttribute('aria-pressed', 'true')
+    expect(statusPill('Available')).toHaveTextContent('5')
+    expect(statusPill('Suspended')).toHaveAttribute('aria-pressed', 'true')
+    expect(statusPill('Suspended')).toHaveTextContent('2')
+    expect(statusPill('Archived')).toHaveAttribute('aria-pressed', 'false')
+    expect(statusPill('Archived')).toHaveTextContent('1')
+  },
+)
 
-test('collapses and expands a company group', async () => {
+test('collapses and expands a company group', JOURNEY, async () => {
   const user = userEvent.setup()
   mockFleet()
   renderFleet()
@@ -115,7 +124,7 @@ test('collapses and expands a company group', async () => {
   expect(truckRow(NP_901_QR.registration)).toBeInTheDocument()
 })
 
-test('sorts trucks within each group and keeps the sort in the address', async () => {
+test('sorts trucks within each group and keeps the sort in the address', JOURNEY, async () => {
   const user = userEvent.setup()
   mockFleet()
   const { router } = renderFleet()
@@ -148,7 +157,7 @@ test('sorts trucks within each group and keeps the sort in the address', async (
   expect(listedRegistrations().slice(0, 3)).toEqual(['AB-123-CD', 'CD-456-EF', 'NP-901-QR'])
 })
 
-test('restores the sort from the address', async () => {
+test('restores the sort from the address', JOURNEY, async () => {
   mockFleet()
   renderFleet('/transport-resources?sort=vehicleModel')
   await findFleetTable()
@@ -156,7 +165,7 @@ test('restores the sort from the address', async () => {
   expect(listedRegistrations().slice(0, 3)).toEqual(['NP-901-QR', 'CD-456-EF', 'AB-123-CD'])
 })
 
-test('says so when the site has no transport resource yet', async () => {
+test('says so when the site has no transport resource yet', JOURNEY, async () => {
   mockFleet({ companies: [], trucks: [] })
   renderFleet()
 
@@ -165,7 +174,7 @@ test('says so when the site has no transport resource yet', async () => {
   ).toBeInTheDocument()
 })
 
-test('retries a failed load and renders the recovered fleet', async () => {
+test('retries a failed load and renders the recovered fleet', JOURNEY, async () => {
   const user = userEvent.setup()
   let requests = 0
   mockFleet()

@@ -8,6 +8,7 @@ import {
   fleetPath,
   fleetTable,
   groupHeader,
+  JOURNEY,
   listedRegistrations,
   mockFleet,
   queryGroupHeader,
@@ -15,7 +16,7 @@ import {
   statusPill,
 } from './support/fleet-test-helpers'
 
-test('lists only suspended trucks, under the companies that have one', async () => {
+test('lists only suspended trucks, under the companies that have one', JOURNEY, async () => {
   const user = userEvent.setup()
   mockFleet()
   const { router } = renderFleet()
@@ -29,11 +30,12 @@ test('lists only suspended trucks, under the companies that have one', async () 
   await expect.poll(() => router.state.location.search).toMatchObject({ status: ['suspended'] })
 })
 
-test('keeps at least one status selected', async () => {
+test('keeps at least one status selected', JOURNEY, async () => {
   const user = userEvent.setup()
   mockFleet()
   renderFleet(fleetPath({ status: ['suspended'] }))
   await findFleetTable()
+  await expectListed(['NP-901-QR', 'GH-012-JK'])
 
   await user.click(statusPill('Suspended'))
 
@@ -41,7 +43,7 @@ test('keeps at least one status selected', async () => {
   expect(listedRegistrations()).toEqual(['NP-901-QR', 'GH-012-JK'])
 })
 
-test('lists archived companies and trucks with their archive context', async () => {
+test('lists archived companies and trucks with their archive context', JOURNEY, async () => {
   const user = userEvent.setup()
   mockFleet()
   renderFleet()
@@ -61,7 +63,7 @@ test('lists archived companies and trucks with their archive context', async () 
   ).toBeInTheDocument()
 })
 
-test('shows a single company and says how many others it hides', async () => {
+test('shows a single company and says how many others it hides', JOURNEY, async () => {
   const user = userEvent.setup()
   mockFleet()
   const { router } = renderFleet()
@@ -86,7 +88,7 @@ test('shows a single company and says how many others it hides', async () => {
   expect(listedRegistrations()).toHaveLength(7)
 })
 
-test('searches registrations, vehicle models and company names', { timeout: 20000 }, async () => {
+test('searches registrations, vehicle models and company names', JOURNEY, async () => {
   const user = userEvent.setup()
   mockFleet()
   renderFleet()
@@ -105,7 +107,7 @@ test('searches registrations, vehicle models and company names', { timeout: 2000
   await expectListed(['JK-345-LM', 'LM-678-NP'])
 })
 
-test('explains a search that matches nothing and offers ways out', { timeout: 20000 }, async () => {
+test('explains a search that matches nothing and offers ways out', JOURNEY, async () => {
   const user = userEvent.setup()
   mockFleet()
   renderFleet()
@@ -137,7 +139,7 @@ test('explains a search that matches nothing and offers ways out', { timeout: 20
   await waitFor(() => expect(listedRegistrations()).toContain('QR-234-ST'))
 })
 
-test('restores a filtered and searched view from the address', async () => {
+test('restores a filtered and searched view from the address', JOURNEY, async () => {
   mockFleet()
   renderFleet(fleetPath({ status: ['suspended'], search: 'man' }))
   await findFleetTable()
@@ -146,7 +148,7 @@ test('restores a filtered and searched view from the address', async () => {
   expect(listedRegistrations()).toEqual(['GH-012-JK'])
 })
 
-test('opens a former Transport companies address on the equivalent view', async () => {
+test('opens a former Transport companies address on the equivalent view', JOURNEY, async () => {
   mockFleet()
   const { router } = renderFleet(
     `/transport-companies?${new URLSearchParams({ status: 'archived', search: 'Morvan' })}`,
@@ -159,7 +161,7 @@ test('opens a former Transport companies address on the equivalent view', async 
   expect(groupHeader('Transports Morvan')).toBeInTheDocument()
 })
 
-test('opens a former truck-status address on the equivalent view', async () => {
+test('opens a former truck-status address on the equivalent view', JOURNEY, async () => {
   mockFleet()
   renderFleet(fleetPath({ truckStatus: 'suspended' }))
   await findFleetTable()

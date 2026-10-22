@@ -9,6 +9,7 @@ import {
   fleetPath,
   fleetTable,
   groupHeader,
+  JOURNEY,
   listedRegistrations,
   mockFleet,
   renderFleet,
@@ -16,7 +17,7 @@ import {
   truckRow,
 } from './support/fleet-test-helpers'
 
-test('shows the fleet without any creation, editing or lifecycle control', async () => {
+test('shows the fleet without any creation, editing or lifecycle control', JOURNEY, async () => {
   let completeRequests = 0
   mockFleet({
     user: ACTIVE_OPERATIONS_LEAD,
@@ -39,7 +40,7 @@ test('shows the fleet without any creation, editing or lifecycle control', async
   expect(completeRequests).toBe(0)
 })
 
-test('shows the suspension comment and date without who suspended the truck', async () => {
+test('shows the suspension comment and date without who suspended the truck', JOURNEY, async () => {
   mockFleet({ user: ACTIVE_OPERATIONS_LEAD })
   renderFleet()
   await findFleetTable()
@@ -50,7 +51,7 @@ test('shows the suspension comment and date without who suspended the truck', as
   expect(suspended.queryByText(/Thomas Bernard/)).not.toBeInTheDocument()
 })
 
-test('lists archived companies only under the Archived filter', async () => {
+test('lists archived companies only under the Archived filter', JOURNEY, async () => {
   const user = userEvent.setup()
   mockFleet({ user: ACTIVE_OPERATIONS_LEAD })
   renderFleet()
@@ -75,7 +76,7 @@ test('lists archived companies only under the Archived filter', async () => {
   ).not.toBeInTheDocument()
 })
 
-test('opens no creation or editing form from a hand-typed address', async () => {
+test('opens no creation or editing form from a hand-typed address', JOURNEY, async () => {
   mockFleet({ user: ACTIVE_OPERATIONS_LEAD })
   const { router } = renderFleet(fleetPath({ truckMode: 'create', companyDetailsMode: 'edit' }))
   await findFleetTable()

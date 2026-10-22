@@ -70,6 +70,13 @@ export function fleetTable() {
   return screen.getByRole('table', { name: 'Trucks by transport company' })
 }
 
+/**
+ * Every story journey renders the whole app through the route loader and the session read, then
+ * waits for the refetches its actions cause: it gets the repository's multi-step test timeout
+ * (`discharges/__tests__/detail/tabs`), which also bounds the first-render wait below.
+ */
+export const JOURNEY = { timeout: 15000 }
+
 /** The first render goes through the route loader and the session read, which takes a while. */
 export function findFleetTable() {
   return screen.findByRole('table', { name: 'Trucks by transport company' }, { timeout: 10000 })

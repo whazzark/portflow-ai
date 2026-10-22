@@ -22,14 +22,12 @@ import {
   findFleetTable,
   fleetPath,
   groupHeader,
+  JOURNEY,
   mockFleet,
   renderFleet,
   statusPill,
   truckRow,
 } from './support/fleet-test-helpers'
-
-/** Each journey opens a menu and a confirmation, then waits for the refetch it causes. */
-const JOURNEY = { timeout: 15000 }
 
 const OPERATIONS_ADMIN = { id: 'operations-admin-1', firstName: 'Olivia', lastName: 'Observer' }
 const NOW = '2026-09-24T09:00:00.000Z'
