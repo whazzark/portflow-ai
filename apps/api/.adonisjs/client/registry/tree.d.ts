@@ -59,6 +59,7 @@ export interface ApiDefinition {
   discharges: {
     index: typeof routes['discharges.index']
     store: typeof routes['discharges.store']
+    dockOccupancy: typeof routes['discharges.dock_occupancy']
     show: typeof routes['discharges.show']
     update: typeof routes['discharges.update']
     planningOptions: typeof routes['discharges.planning_options']
