@@ -25,11 +25,7 @@ tmp/
 .claude/skills/*
 !.claude/skills/speckit-*/
 !.claude/skills/speckit-*/**
-.agents/*
-!.agents/skills/
-.agents/skills/*
-!.agents/skills/speckit-*/
-!.agents/skills/speckit-*/**
+.agents/
 .specify/workflows/runs/
 .specify/migration-backup/
 .specify/feature.json

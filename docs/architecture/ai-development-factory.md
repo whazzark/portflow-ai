@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Portflow uses upstream Spec Kit with Codex to turn one selected GitHub issue into reviewed feature
+Portflow uses upstream Spec Kit with Claude Code to turn one selected GitHub issue into reviewed feature
 artifacts and tested code. Product decisions, final validation, and merge remain human
 responsibilities.
 
@@ -14,7 +14,7 @@ GitHub Issue / Project
 Vanilla Spec Kit
         ↓ spec → plan → tasks → implement
 Code and tests
-        ↓ deterministic CI + fresh Codex review
+        ↓ deterministic CI + fresh Claude Code review
 Draft PR
         ↓ human review and merge
 Delivered feature
@@ -37,7 +37,7 @@ Use the [Spec Kit operator guide](../agents/spec-kit.md) for commands and mainte
 ## Automation boundaries
 
 - Spec Kit owns feature artifacts and its internal workflow state.
-- Codex owns AI-assisted specification, planning, implementation, and review work.
+- Claude Code owns AI-assisted specification, planning, implementation, and review work.
 - GitHub Actions owns deterministic CI.
 - GitHub Issues and Project own intake and operational status.
 - GitHub pull requests own review and delivery evidence.

@@ -21,8 +21,8 @@
 
 ## Vanilla Spec Kit lifecycle
 
-Follow `docs/agents/spec-kit.md`. Portflow uses the upstream Spec Kit assets and Codex skills
-without a repository-owned delivery orchestrator.
+Follow `docs/agents/spec-kit.md`. Portflow uses the upstream Spec Kit assets and Claude Code
+skills without a repository-owned delivery orchestrator.
 
 For a selected behavior-changing issue, use:
 
@@ -44,8 +44,10 @@ from an issue directly to implementation and PR without creating Spec Kit featur
 - Use TDD for business behavior: failing observable test, minimal implementation, green tests,
   then refactor.
 - Open a Draft PR once the initial reviewable artifacts or implementation are available.
-- Before a PR is ready, obtain a fresh read-only Codex review, resolve every confirmed finding,
-  run `pnpm check`, `pnpm typecheck`, `pnpm test`, and affected browser flows when relevant.
+- Before a PR is ready, obtain a fresh read-only Claude Code review of the final diff (for example
+  `/code-review` in a new session or a read-only review subagent), resolve every confirmed
+  finding, run `pnpm check`, `pnpm typecheck`, `pnpm test`, and affected browser flows when
+  relevant.
 - Human product approval and merge remain mandatory.
 
 ## Git and commits
