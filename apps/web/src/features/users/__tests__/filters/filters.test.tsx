@@ -94,7 +94,7 @@ test('distinguishes a no-match result from a status view holding no user', async
 
   expect(screen.getByText('No matching users')).toBeInTheDocument()
 
-  await user.click(screen.getByRole('tab', { name: /Cancelled 0/ }))
+  await user.click(screen.getByRole('tab', { name: /^Cancelled 0$/ }))
 
   expect(await screen.findByText('No cancelled users')).toBeInTheDocument()
   expect(screen.queryByText('No matching users')).not.toBeInTheDocument()
@@ -128,7 +128,7 @@ test('keeps the visible set consistent when switching access status views', asyn
   await screen.findByRole('table', { name: 'Active users' })
   await user.type(searchBox(), 'e')
 
-  await user.click(screen.getByRole('tab', { name: /Pending 1/ }))
+  await user.click(screen.getByRole('tab', { name: /^Pending 1$/ }))
 
   const pending = await screen.findByRole('table', { name: 'Pending users' })
 

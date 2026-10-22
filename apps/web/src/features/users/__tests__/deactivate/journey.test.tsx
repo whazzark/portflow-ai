@@ -64,18 +64,18 @@ test('moves the user to the deactivated view and follows both counts without a r
   mockUsersWithDeactivation()
 
   renderUsers()
-  expect(await screen.findByRole('tab', { name: /Active 2/ })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Deactivated 1/ })).toBeInTheDocument()
+  expect(await screen.findByRole('tab', { name: /^Active 2$/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Deactivated 1$/ })).toBeInTheDocument()
 
   const record = await openActiveRecord(user, 'Amélie Bernard')
   await user.click(within(record).getByRole('button', { name: 'Deactivate' }))
   await screen.findByRole('heading', { name: 'Deactivate user?' })
   await user.click(screen.getByRole('button', { name: 'Deactivate' }))
 
-  await waitFor(() => expect(screen.getByRole('tab', { name: /Active 1/ })).toBeInTheDocument())
-  expect(screen.getByRole('tab', { name: /Deactivated 2/ })).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Active 1$/ })).toBeInTheDocument())
+  expect(screen.getByRole('tab', { name: /^Deactivated 2$/ })).toBeInTheDocument()
 
-  await user.click(screen.getByRole('tab', { name: /Deactivated 2/ }))
+  await user.click(screen.getByRole('tab', { name: /^Deactivated 2$/ }))
   const deactivated = await screen.findByRole('table', { name: 'Deactivated users' })
   expect(within(deactivated).getByText('Amélie Bernard')).toBeInTheDocument()
 })
@@ -104,9 +104,9 @@ test('records the deactivation in the access history the reopened record shows',
   await user.click(screen.getByRole('button', { name: 'Deactivate' }))
 
   await waitFor(() =>
-    expect(screen.getByRole('tab', { name: /Deactivated 2/ })).toBeInTheDocument(),
+    expect(screen.getByRole('tab', { name: /^Deactivated 2$/ })).toBeInTheDocument(),
   )
-  await user.click(screen.getByRole('tab', { name: /Deactivated 2/ }))
+  await user.click(screen.getByRole('tab', { name: /^Deactivated 2$/ }))
   const table = await screen.findByRole('table', { name: 'Deactivated users' })
   await user.click(within(table).getByRole('button', { name: 'View user Amélie Bernard' }))
 

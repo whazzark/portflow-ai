@@ -34,7 +34,7 @@ export function UserRoleFilterChips({
             aria-pressed={isPressed}
             className={classnames(
               'h-[30px] rounded-full border px-3 font-medium text-[13px] text-foreground/80 outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
-              isPressed && 'border-indicator bg-accent font-semibold text-foreground',
+              isPressed && 'border-primary bg-accent font-semibold text-foreground',
             )}
             key={option.value}
             onClick={() => onValueChange(option.value)}

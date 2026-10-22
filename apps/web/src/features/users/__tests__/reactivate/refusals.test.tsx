@@ -61,7 +61,7 @@ test('closes the record on a refusal whose collection has moved on', async () =>
   expect(await screen.findByText(/already active/i)).toBeInTheDocument()
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Deactivated 0/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Deactivated 0$/ })).toBeInTheDocument()
 })
 
 test('refreshes the collection on a refusal, not only on a success', async () => {

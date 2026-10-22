@@ -56,7 +56,7 @@ test('restores from the row menu with the same confirmation, and the link outliv
   expect(screen.getByTestId('activation-link')).toHaveTextContent(NEW_LINK)
 
   await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Done' }))
-  await user.click(screen.getByRole('tab', { name: /Pending 2/ }))
+  await user.click(screen.getByRole('tab', { name: /^Pending 2$/ }))
   const pending = await screen.findByRole('table', { name: 'Pending users' })
   expect(within(pending).getByText(CANCELLED_USER)).toBeInTheDocument()
 })

@@ -37,18 +37,18 @@ test('closes the record and moves the user to the active view without a reload',
   mockUsersWithReactivation()
 
   renderUsers()
-  expect(await screen.findByRole('tab', { name: /Active 2/ })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Deactivated 1/ })).toBeInTheDocument()
+  expect(await screen.findByRole('tab', { name: /^Active 2$/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Deactivated 1$/ })).toBeInTheDocument()
 
   const record = await openDeactivatedRecord(user, 'David Évrard')
   await user.click(within(record).getByRole('button', { name: 'Reactivate' }))
   await confirmReactivation(user)
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  expect(screen.getByRole('tab', { name: /Deactivated 0/ })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Active 3/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Deactivated 0$/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Active 3$/ })).toBeInTheDocument()
 
-  await user.click(screen.getByRole('tab', { name: /Active 3/ }))
+  await user.click(screen.getByRole('tab', { name: /^Active 3$/ }))
   const active = await screen.findByRole('table', { name: 'Active users' })
   expect(within(active).getByText('David Évrard')).toBeInTheDocument()
 })
@@ -130,8 +130,8 @@ test('shows the outstanding renewal in the active view once reactivated', async 
   await user.click(within(record).getByRole('button', { name: 'Reactivate' }))
   await confirmReactivation(user)
 
-  await waitFor(() => expect(screen.getByRole('tab', { name: /Active 3/ })).toBeInTheDocument())
-  await user.click(screen.getByRole('tab', { name: /Active 3/ }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Active 3$/ })).toBeInTheDocument())
+  await user.click(screen.getByRole('tab', { name: /^Active 3$/ }))
   const active = await screen.findByRole('table', { name: 'Active users' })
   const row = within(active).getByText('David Évrard').closest('tr')
 
@@ -150,8 +150,8 @@ test('records the reactivation after the deactivation in the reopened record', a
   await user.click(within(record).getByRole('button', { name: 'Reactivate' }))
   await confirmReactivation(user)
 
-  await waitFor(() => expect(screen.getByRole('tab', { name: /Active 3/ })).toBeInTheDocument())
-  await user.click(screen.getByRole('tab', { name: /Active 3/ }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Active 3$/ })).toBeInTheDocument())
+  await user.click(screen.getByRole('tab', { name: /^Active 3$/ }))
   const active = await screen.findByRole('table', { name: 'Active users' })
   await user.click(within(active).getByRole('button', { name: 'View user David Évrard' }))
 

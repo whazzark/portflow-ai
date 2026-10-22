@@ -38,18 +38,18 @@ test('stays on the pending view, closes the record, and follows both counts', as
   mockUsersWithCancellation()
 
   renderUsers('/users?status=pending')
-  expect(await screen.findByRole('tab', { name: /Pending 1/ })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Cancelled 1/ })).toBeInTheDocument()
+  expect(await screen.findByRole('tab', { name: /^Pending 1$/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Cancelled 1$/ })).toBeInTheDocument()
 
   await cancelFromRecord(user)
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  await waitFor(() => expect(screen.getByRole('tab', { name: /Pending 0/ })).toBeInTheDocument())
-  expect(screen.getByRole('tab', { name: /Cancelled 2/ })).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Pending 0$/ })).toBeInTheDocument())
+  expect(screen.getByRole('tab', { name: /^Cancelled 2$/ })).toBeInTheDocument()
   // No navigation: the view the administrator was working through is still the selected one.
-  expect(screen.getByRole('tab', { name: /Pending 0/ })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('tab', { name: /^Pending 0$/ })).toHaveAttribute('aria-selected', 'true')
 
-  await user.click(screen.getByRole('tab', { name: /Cancelled 2/ }))
+  await user.click(screen.getByRole('tab', { name: /^Cancelled 2$/ }))
   const cancelled = await screen.findByRole('table', { name: 'Cancelled users' })
   expect(within(cancelled).getByText(PENDING_USER)).toBeInTheDocument()
 })
@@ -61,8 +61,8 @@ test('records the cancellation in the access history the reopened record shows',
   renderUsers('/users?status=pending')
   await cancelFromRecord(user)
 
-  await waitFor(() => expect(screen.getByRole('tab', { name: /Cancelled 2/ })).toBeInTheDocument())
-  await user.click(screen.getByRole('tab', { name: /Cancelled 2/ }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Cancelled 2$/ })).toBeInTheDocument())
+  await user.click(screen.getByRole('tab', { name: /^Cancelled 2$/ }))
   const table = await screen.findByRole('table', { name: 'Cancelled users' })
   await user.click(within(table).getByRole('button', { name: `View user ${PENDING_USER}` }))
 
@@ -78,8 +78,8 @@ test('records the cancellation in the access history the reopened record shows',
 })
 
 const reopenFromCancelledView = async (user: ReturnType<typeof userEvent.setup>) => {
-  await waitFor(() => expect(screen.getByRole('tab', { name: /Cancelled 2/ })).toBeInTheDocument())
-  await user.click(screen.getByRole('tab', { name: /Cancelled 2/ }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Cancelled 2$/ })).toBeInTheDocument())
+  await user.click(screen.getByRole('tab', { name: /^Cancelled 2$/ }))
   const table = await screen.findByRole('table', { name: 'Cancelled users' })
   await user.click(within(table).getByRole('button', { name: `View user ${PENDING_USER}` }))
 

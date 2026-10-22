@@ -97,7 +97,7 @@ test('closes the record and drops the user from the view and its count without a
   mockUsersWithRemoval()
 
   renderUsers()
-  expect(await screen.findByRole('tab', { name: /Pending 1/ })).toBeInTheDocument()
+  expect(await screen.findByRole('tab', { name: /^Pending 1$/ })).toBeInTheDocument()
 
   const record = await openRecord(user, 'Pending', 'Chloé Durand')
   await user.click(within(record).getByRole('button', { name: 'Remove' }))
@@ -105,6 +105,6 @@ test('closes the record and drops the user from the view and its count without a
   await user.click(screen.getByRole('button', { name: 'Remove' }))
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  expect(screen.getByRole('tab', { name: /Pending 0/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Pending 0$/ })).toBeInTheDocument()
   expect(screen.queryByText('Chloé Durand')).not.toBeInTheDocument()
 })

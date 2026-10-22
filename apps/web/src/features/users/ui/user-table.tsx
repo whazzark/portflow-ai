@@ -93,7 +93,7 @@ const identityColumns: ColumnDef<UserDto>[] = [
               value={formatFullName(row.original)}
             />
           </Button>
-          <span className="truncate text-[13px] text-muted-foreground">
+          <span className="text-[13px] text-muted-foreground">
             <HighlightedText
               search={table.getState().globalFilter as string}
               value={row.original.email}

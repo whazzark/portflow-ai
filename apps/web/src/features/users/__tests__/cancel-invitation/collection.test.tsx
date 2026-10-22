@@ -67,8 +67,8 @@ test('lists a just-cancelled user with the comment they were cancelled with', as
   await user.type(within(dialog).getByRole('textbox', { name: 'Comment (optional)' }), 'No show.')
   await user.click(within(dialog).getByRole('button', { name: 'Cancel invitation' }))
 
-  await waitFor(() => expect(screen.getByRole('tab', { name: /Cancelled 2/ })).toBeInTheDocument())
-  await user.click(screen.getByRole('tab', { name: /Cancelled 2/ }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Cancelled 2$/ })).toBeInTheDocument())
+  await user.click(screen.getByRole('tab', { name: /^Cancelled 2$/ }))
   const cancelled = await screen.findByRole('table', { name: 'Cancelled users' })
   const row = within(cancelled).getByRole('row', { name: /Chloé Durand/ })
   expect(within(row).getByText('No show.')).toBeInTheDocument()
