@@ -6,6 +6,7 @@ import {
   useClearSelectionShortcut,
   useSelectAllShortcut,
 } from '@/components/lifecycle/use-bulk-selection-shortcuts'
+import type { ResourceMapAnchor } from '@/components/resource-map/resource-map-anchor'
 import { ResourceMapNoMatch } from '@/components/resource-map/resource-map-no-match'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
@@ -38,11 +39,12 @@ import {
   BulkCheckpointLifecycleActions,
   type BulkLifecycleOutcome,
 } from '@/features/checkpoints/ui/bulk-checkpoint-lifecycle-actions'
-import { CheckpointMapToolbar } from '@/features/checkpoints/ui/checkpoint-map-toolbar'
 import {
-  CheckpointSheet,
+  CheckpointDetailCard,
   type SelectedCheckpoint,
-} from '@/features/checkpoints/ui/checkpoint-sheet'
+} from '@/features/checkpoints/ui/checkpoint-detail-card'
+import { CheckpointMapToolbar } from '@/features/checkpoints/ui/checkpoint-map-toolbar'
+import { CheckpointSheet } from '@/features/checkpoints/ui/checkpoint-sheet'
 import { CreateCheckpointPanel } from '@/features/checkpoints/ui/create-checkpoint-panel'
 import { EditCheckpointPanel } from '@/features/checkpoints/ui/edit-checkpoint-panel'
 import {
@@ -163,6 +165,9 @@ export function CheckpointsPage() {
   const { matches: searchMatches, total: searchTotal } = searchCheckpoints(checkpoints, search)
   const isSearching = search.trim().length > 0
   const [fitRequest, setFitRequest] = useState<{ key: number; ids: string[] } | undefined>()
+  // Where the card's anchor — the selected checkpoint, or a pin being placed or moved — currently
+  // sits on screen, as the map reports it while it pans and zooms.
+  const [cardAnchor, setCardAnchor] = useState<ResourceMapAnchor | null>(null)
   // The status of any currently checked checkpoint fixes what a selection is for — Available means
   // an archive is in progress, Archived means a reactivation is — since the selection is
   // homogeneous by construction (see checkableIds below). Undefined while nothing is checked, so
@@ -757,6 +762,14 @@ export function CheckpointsPage() {
         )
       : searchMatches
   const editingLabel = editing?.resource.name
+  const closeDetails = () => {
+    void navigate({
+      replace: true,
+      search: (previous) => ({ ...previous, checkpointId: undefined, edit: undefined }),
+    })
+  }
+  const isViewing = Boolean(selectedResource) && !creationKind && !isEditing && !selectingKind
+  const anchorPoint: LatLng | undefined = isViewing ? selectedCheckpoint : undefined
 
   return (
     <>
@@ -821,7 +834,10 @@ export function CheckpointsPage() {
             checkedIds={selectingKind ? checkedIds : undefined}
             checkpoints={mapCheckpoints}
             createActions={createActions}
+            anchorPoint={anchorPoint}
             fitRequest={fitRequest}
+            onAnchorChange={setCardAnchor}
+            onMapClick={isViewing ? closeDetails : undefined}
             onError={onMapError}
             onSelect={selectCheckpoint}
             onShiftSelect={canManageCheckpoints ? handleShiftSelect : undefined}
@@ -857,6 +873,18 @@ export function CheckpointsPage() {
             selected={selectedCheckpoint}
           />
         )}
+        card={
+          isViewing && selectedResource ? (
+            <CheckpointDetailCard
+              anchor={cardAnchor}
+              canManage={canManageCheckpoints}
+              checkpoint={selectedResource}
+              key={serializeCheckpointSelection(selectedResource.selection)}
+              onClose={closeDetails}
+              onEdit={startEditing}
+            />
+          ) : undefined
+        }
         onRetrySource={() => void weighingAreasQuery.refetch()}
         resourceLabel="Checkpoints"
         sourceError={layerVisibility.WEIGHING_AREA && weighingAreasQuery.isError}
@@ -881,7 +909,7 @@ export function CheckpointsPage() {
       )}
       <CheckpointSheet
         canEditCheckpoint={canManageCheckpoints}
-        checkpoint={selectedResource}
+        checkpoint={creationKind || isEditing ? selectedResource : undefined}
         createPanel={createPanel}
         editPanel={editPanel}
         mode={creationKind ? 'create' : isEditing ? 'edit' : 'view'}

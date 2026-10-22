@@ -1,21 +1,8 @@
 import type { ReactNode } from 'react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
-import type { CheckpointSelection } from '@/features/checkpoints/checkpoint-selection'
-import type { DockDto } from '@/features/docks/types'
+import type { SelectedCheckpoint } from '@/features/checkpoints/ui/checkpoint-detail-card'
 import { DockDetails } from '@/features/docks/ui/dock-details'
-import type { WeighingAreaDto } from '@/features/weighing-areas/types'
 import { WeighingAreaDetails } from '@/features/weighing-areas/ui/weighing-area-details'
-
-export type SelectedCheckpoint =
-  | {
-      selection: CheckpointSelection & { kind: 'DOCK' }
-      resource: DockDto
-    }
-  | {
-      selection: CheckpointSelection & { kind: 'WEIGHING_AREA' }
-      resource: WeighingAreaDto
-    }
-  | undefined
 
 export function CheckpointSheet({
   checkpoint,
