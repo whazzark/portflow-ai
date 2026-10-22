@@ -8,6 +8,7 @@ import type {
   DischargeDetailDto,
   DischargeDetailTab,
   DischargeDto,
+  DockOccupancyDto,
   StartCheckDto,
   TruckCandidateDto,
 } from '@/features/discharges/types'
@@ -186,6 +187,37 @@ export function mockPreparationOptions({
       return HttpResponse.json({ data: responsibles })
     }),
   )
+  // The Planned shifts step reads the dock's occupancy; a free dock unless a test says otherwise.
+  mockDockOccupancy()
+}
+
+type MockDockOccupancyOptions = {
+  occupancy?: DockOccupancyDto[]
+  /** Fail this many reads before answering. */
+  failTimes?: number
+  onRequest?: (dockId: string | null) => void
+}
+
+/** Which other discharges hold the dock the creation chose, read by its shift preview. */
+export function mockDockOccupancy({
+  occupancy = [],
+  failTimes = 0,
+  onRequest,
+}: MockDockOccupancyOptions = {}) {
+  let remainingFailures = failTimes
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/discharges/dock-occupancy`, ({ request }) => {
+      onRequest?.(new URL(request.url).searchParams.get('dockId'))
+      if (remainingFailures > 0) {
+        remainingFailures -= 1
+
+        return new HttpResponse(null, { status: 500 })
+      }
+
+      return HttpResponse.json({ data: occupancy })
+    }),
+  )
 }
 
 type CreateDischargeBody = {
@@ -307,6 +339,11 @@ export function mockCreateDischarge({
       return HttpResponse.json(answer.body as object, { status: answer.status })
     }),
     http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
+
       const detail = created.get(String(params.id))
 
       if (!detail) {

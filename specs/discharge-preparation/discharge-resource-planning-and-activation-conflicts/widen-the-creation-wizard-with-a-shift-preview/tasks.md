@@ -53,7 +53,7 @@ this phase.
 
 ### Tests (write first, must fail)
 
-- [ ] T002 [P] Write the API integration spec in
+- [X] T002 [P] Write the API integration spec in
   `apps/api/tests/integration/discharges/consultation/dock_occupancy.spec.ts`. Use the existing
   `consultation/list.spec.ts` for fixtures and sign-in helpers. It must cover
   `GET /api/v1/discharges/dock-occupancy`:
@@ -72,7 +72,7 @@ this phase.
   - **Shape**: items are ordered by `startAt`, then discharge id. Each item has exactly
     `discharge { id, vesselName, status }`, `startAt`, and `endAt`, as in
     `contracts/dock-occupancy.openapi.yaml`.
-- [ ] T003 [P] Write an API unit spec in
+- [X] T003 [P] Write an API unit spec in
   `apps/api/tests/unit/discharges/consultation/dock_occupancy.spec.ts`.
   - `ListDockOccupancyUseCase` delegates to a stubbed `DischargeRepository.listDockOccupancy` with
     the given dock id.
@@ -81,12 +81,12 @@ this phase.
 
 ### Implementation
 
-- [ ] T004 Add `abstract listDockOccupancy(dockId: string): Promise<DockOccupancyRead[]>` to
+- [X] T004 Add `abstract listDockOccupancy(dockId: string): Promise<DockOccupancyRead[]>` to
   `apps/api/app/discharges/shared/repositories/discharge_repository.ts`.
   - Export the `DockOccupancyRead` type: `{ discharge: { id, vesselName, status: 'PLANNED' |
     'ACTIVE' }, startAt: DateTime, endAt: DateTime }`.
   - Give it a doc comment that states the rules of data-model.md « Dock occupancy ».
-- [ ] T005 Implement `listDockOccupancy` in
+- [X] T005 Implement `listDockOccupancy` in
   `apps/api/app/discharges/shared/repositories/lucid_discharge_repository.ts`.
   - Use one aggregate query: `discharges` joined to `shifts`, with
     `where dock_id = ? and status in ('PLANNED','ACTIVE')`, grouped by discharge, selecting
@@ -95,32 +95,32 @@ this phase.
   - Order by start, then id.
   - Map the rows to `DockOccupancyRead`, converting instants to Luxon `DateTime`. The SQL must work
     on both SQLite (tests) and PostgreSQL.
-- [ ] T006 [P] Create `apps/api/app/discharges/dock_occupancy/dock_occupancy_validator.ts`, a VineJS
+- [X] T006 [P] Create `apps/api/app/discharges/dock_occupancy/dock_occupancy_validator.ts`, a VineJS
   validator for the query string: `dockId` is a required uuid.
-- [ ] T007 [P] Create `apps/api/app/discharges/shared/dock_occupancy_transformer.ts`, a
+- [X] T007 [P] Create `apps/api/app/discharges/shared/dock_occupancy_transformer.ts`, a
   `BaseTransformer` producing the contract shape: discharge `{ id, vesselName, status }`, plus
   `startAt` and `endAt` as ISO strings.
-- [ ] T008 Create `apps/api/app/discharges/dock_occupancy/list_dock_occupancy_use_case.ts`, an
+- [X] T008 Create `apps/api/app/discharges/dock_occupancy/list_dock_occupancy_use_case.ts`, an
   `@inject()` use case whose `handle({ dockId })` returns
   `dischargeRepository.listDockOccupancy(dockId)`. It depends on T004.
-- [ ] T009 Add a `dockOccupancy({ bouncer, request, serialize })` action to
+- [X] T009 Add a `dockOccupancy({ bouncer, request, serialize })` action to
   `apps/api/app/controllers/discharges_controller.ts`.
   - Authorize with `DischargePolicy` `list`.
   - Validate the query string with the T006 validator.
   - Call the T008 use case and serialize through the T007 transformer.
-- [ ] T010 Register `router.get('/dock-occupancy', [controllers.Discharges, 'dockOccupancy'])
+- [X] T010 Register `router.get('/dock-occupancy', [controllers.Discharges, 'dockOccupancy'])
   .as('dock_occupancy')` in `apps/api/start/routes.ts`, inside the `/discharges` group and before
   `router.get('/:id', …)`. Add a short comment saying why it is declared first.
   - Regenerate the Tuyau registry under `apps/api/.adonisjs/` with a short `node --import tsx
     ace.js serve` boot.
   - Run T002 and T003 to green.
-- [ ] T011 Add `dockOccupancy: (dockId: string) =>
+- [X] T011 Add `dockOccupancy: (dockId: string) =>
   tuyauQuery.discharges.dockOccupancy.queryOptions({ query: { dockId } }, { staleTime: 0 })` to
   `apps/web/src/features/discharges/queries/discharge-queries.ts`.
   - Add a comment explaining the refetch on every opening, as for `planningOptions`.
   - Export the item type, derived from the registry like the other DTOs, from
     `apps/web/src/features/discharges/types.ts`.
-- [ ] T012 Add occupancy fixtures and a handler to the web test support.
+- [X] T012 Add occupancy fixtures and a handler to the web test support.
   - **Fixtures**: an active and a planned occupancy on the fixture dock, in
     `apps/web/src/features/discharges/__tests__/support/fixtures.ts`.
   - **Handler**: `mockDockOccupancy({ occupancy, fail, onRequest })`, an MSW handler for
@@ -149,7 +149,7 @@ blocks with a gap, and follows edits (spec US1).
 
 ### Tests for User Story 1 (write first, must fail)
 
-- [ ] T013 [P] [US1] Write pure unit tests for the layout in
+- [X] T013 [P] [US1] Write pure unit tests for the layout in
   `apps/web/src/features/discharges/__tests__/shift-preview.test.ts`. Pin `TZ` as
   `shift-calendar.test.ts` does. They cover the data-model.md « Shift preview » rules:
   - **Period**:
@@ -175,7 +175,7 @@ blocks with a gap, and follows edits (spec US1).
   - **Clock change**: on a DST day, column boundaries stay on midnight.
   - **Loading**: an occupancy of `null` (loading or error) still yields days, the expected start,
     and shifts.
-- [ ] T014 [P] [US1] Write feature tests in
+- [X] T014 [P] [US1] Write feature tests in
   `apps/web/src/features/discharges/__tests__/create/shift-preview.test.tsx`. Use
   `mockDischarges`, `mockPreparationOptions`, `mockDockOccupancy`, `openCreationFromList`,
   `fillVesselStep`, `continueTo`, and `fillLotsStep`. They cover:
@@ -200,7 +200,7 @@ blocks with a gap, and follows edits (spec US1).
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Implement the pure layout `shiftPreview({ expectedStartAt, shifts, occupancy })` in
+- [X] T015 [US1] Implement the pure layout `shiftPreview({ expectedStartAt, shifts, occupancy })` in
   `apps/web/src/features/discharges/shift-preview.ts`.
   - It returns `days`, `freeFrom`, `occupancies`, `freeGaps`, `expectedStart`, `shifts`, `breaks`,
     `unscheduled`, and `summary`, per data-model.md and research.md Decisions 4–5.
@@ -208,7 +208,7 @@ blocks with a gap, and follows edits (spec US1).
     or `formatShiftDuration` from `discharge-detail-view.ts` where they fit.
   - Count days on the calendar, as `shiftCalendar` does.
   - Run T013 to green.
-- [ ] T016 [US1] Create the `ShiftPreview` component in
+- [X] T016 [US1] Create the `ShiftPreview` component in
   `apps/web/src/features/discharges/ui/create/shift-preview.tsx`. It takes the form values (dock
   name, vessel name, expected start, shifts) and the occupancy query result and renders
   `contracts/ui-state.md` « Shift preview states ». Structure:
@@ -227,7 +227,7 @@ blocks with a gap, and follows edits (spec US1).
     - use V2 palette tokens only;
     - decorative day lines are `aria-hidden`;
     - the track has `min-w` per day inside `overflow-x-auto`.
-- [ ] T017 [US1] Mount the preview in
+- [X] T017 [US1] Mount the preview in
   `apps/web/src/features/discharges/ui/create/create-discharge-form.tsx`.
   - In the `step === 'shifts'` branch, render `ShiftPreview` before the Planned shifts
     `SectionCard`, in a fragment or wrapper that keeps both in normal flow.
@@ -253,7 +253,7 @@ of 3 ». The footer shows the totals with Cancel, Back, and Next or Create (spec
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T018 [P] [US2] Add stepper and description assertions to
+- [X] T018 [P] [US2] Add stepper and description assertions to
   `apps/web/src/features/discharges/__tests__/create/steps.test.tsx`, updating any existing
   assertion on the « Step X of 3 » text:
   - On each step, the « Discharge preparation steps » navigation contains no text matching
@@ -262,19 +262,19 @@ of 3 ». The footer shows the totals with Cancel, Back, and Next or Create (spec
   - The Planned shifts card description is exactly « The periods the discharge will be worked, each
     with its responsible. ».
   - No text « A new shift starts when the last one ends » remains on the page.
-- [ ] T019 [P] [US2] Add footer assertions to
+- [X] T019 [P] [US2] Add footer assertions to
   `apps/web/src/features/discharges/__tests__/create/layout.test.tsx`. The « Discharge summary »
   region shows lots · tonnage · shifts · period and offers Cancel, Back from step 2, and « Next:
   … » or « Create discharge ». Keep the existing behavior assertions unchanged (SC-005).
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Remove the `md:hidden` « Step {n} of {total} · {label} » paragraph from
+- [X] T020 [P] [US2] Remove the `md:hidden` « Step {n} of {total} · {label} » paragraph from
   `apps/web/src/features/discharges/ui/create/step-indicator.tsx`.
   - Keep the numbers, completed marks, `aria-current`, the visually hidden names below `md`, and the
     navigation rules.
   - Simplify the outer wrapper if it no longer needs a column.
-- [ ] T021 [US2] Widen the form in
+- [X] T021 [US2] Widen the form in
   `apps/web/src/features/discharges/ui/create/create-discharge-form.tsx`.
   - Drop `mx-auto` and `max-w-5xl` from the body container and from the footer's inner row, keeping
     their padding.
@@ -282,7 +282,7 @@ of 3 ». The footer shows the totals with Cancel, Back, and Next or Create (spec
     worked, each with its responsible. ».
   - Update the footer comment if it mentions the column.
   - Run T018 and T019 to green.
-- [ ] T022 [P] [US2] Drop `mx-auto` and `max-w-5xl` from the skeleton container in
+- [X] T022 [P] [US2] Drop `mx-auto` and `max-w-5xl` from the skeleton container in
   `apps/web/src/features/discharges/ui/create/create-discharge-pending.tsx`, so the pending state
   matches the full width.
 
@@ -300,7 +300,7 @@ clearance (spec US3, and quickstart step 5).
 
 ### Tests for User Story 3 (write first, must fail where behavior is new)
 
-- [ ] T023 [P] [US3] Add a many-shifts case to
+- [X] T023 [P] [US3] Add a many-shifts case to
   `apps/web/src/features/discharges/__tests__/create/shift-preview.test.tsx`:
   - **Setup**: eight consecutive 8 h shifts with 8 h breaks.
   - **Blocks**: the preview draws eight blocks named « Shift 1, … » to « Shift 8, … ».
@@ -308,14 +308,14 @@ clearance (spec US3, and quickstart step 5).
   - **Order**: the « Shift preview » region is still the first element of the step, before
     « Planned shifts ».
   - **Not pinned**: the preview's section has no `sticky` or `fixed` positioning class.
-- [ ] T024 [P] [US3] Add a unit case to
+- [X] T024 [P] [US3] Add a unit case to
   `apps/web/src/features/discharges/__tests__/shift-preview.test.ts` with eight shifts spanning more
   than 7 days. The period covers the last end, every block has a non-zero width, and the blocks are
   ordered.
 
 ### Implementation for User Story 3
 
-- [ ] T025 [US3] Adjust `apps/web/src/features/discharges/ui/create/shift-preview.tsx` and
+- [X] T025 [US3] Adjust `apps/web/src/features/discharges/ui/create/shift-preview.tsx` and
   `create-discharge-form.tsx` only if T023 or T024 fail.
   - Keep block numbers readable at small widths (a minimum block width, with the number visible).
   - Ensure the bottom padding of the form body clears the sticky footer.
@@ -327,7 +327,7 @@ clearance (spec US3, and quickstart step 5).
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T026 [P] Update the shared note in the session notes folder if the endpoint shape changed
+- [X] T026 [P] Update the shared note in the session notes folder if the endpoint shape changed
   during implementation, so #324 reuses it as built. If nothing changed, skip this task.
 - [ ] T027 Run `pnpm check`, `pnpm typecheck`, and `pnpm test` at the repository root, and fix every
   failure.

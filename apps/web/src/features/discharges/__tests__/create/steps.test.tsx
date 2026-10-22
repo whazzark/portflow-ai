@@ -120,3 +120,19 @@ test('returns to the step holding a value the API refused', async () => {
     expect(within(secondLot).getByRole('combobox', { name: 'Customer' })).toHaveFocus(),
   )
 })
+
+test('names each step by its number and name only, never as « Step X of 3 »', async () => {
+  arrange()
+  await openCreationFromList()
+  const steps = screen.getByRole('navigation', { name: 'Discharge preparation steps' })
+
+  expect(steps).not.toHaveTextContent(/Step \d of \d/)
+  await fillValidPreparation()
+
+  expect(steps).not.toHaveTextContent(/Step \d of \d/)
+  expect(stepButton(/Planned shifts/)).toHaveAttribute('aria-current', 'step')
+  expect(
+    screen.getByText('The periods the discharge will be worked, each with its responsible.'),
+  ).toBeInTheDocument()
+  expect(screen.queryByText(/A new shift starts when the last one ends/)).not.toBeInTheDocument()
+})
