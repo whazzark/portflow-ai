@@ -68,7 +68,7 @@ and compare it with the *Transport resources · Retenue* artboard.
 4. **Given** a suspended truck, **When** its row is displayed, **Then** the Suspension column shows
    the suspension comment followed by who suspended it and the date (for example "Tyre
    replacement, back on Friday · Claire Martin, 23/09/2026"); for an available truck the column
-   shows a dash.
+   shows a dash. Lifecycle author names are shown to administrators only.
 5. **Given** the default view, **When** the screen opens, **Then** the Available and Suspended pills
    are pressed, the Archived pill is not, every pill shows its count, and the rows are sorted by
    registration ascending within each group.
@@ -177,11 +177,11 @@ with the *Create transport company*, *Create truck* and *Edit truck (en ligne)* 
    inline form, **Then** registration, vehicle model and capacity become editable, Save and Cancel
    are offered, and Escape cancels.
 6. **Given** an available truck used by a planned or active discharge, **When** it is edited inline,
-   **Then** its transport company cannot be changed and the row explains why.
-   [NEEDS CLARIFICATION: the V2 shows the lock up front ("Company locked: used by planned discharge
-   «MV Nordic Star»"), but today the system only reports it when the change is submitted. Should
-   this slice expose the lock and the blocking discharge before editing, or keep the submit-time
-   error and show it inline?]
+   **And** the administrator changes its transport company and saves, **Then** the change is
+   refused, the row stays in edit mode with the typed values, and the edit row explains that the
+   company cannot change while the truck is used by a planned or active discharge. The lock is not
+   shown before saving (the V2 "Company locked: used by planned discharge «…»" up-front notice is
+   not adopted in this slice).
 7. **Given** a creation or edit is rejected (duplicate name or registration, invalid value,
    archived company), **When** the response arrives, **Then** the error is shown on the related
    field or row and the typed values are kept.
@@ -256,12 +256,10 @@ d'administration)* artboard.
    detail views remain.
 2. **Given** such a user, **When** they open a truck's or a company's details, **Then** no Edit,
    Suspend, Return to service, Archive or Reactivate action is shown.
-3. **Given** such a user, **When** they view suspended trucks or the Archived pill, **Then** what
-   they see matches what they are already authorized to read. [NEEDS CLARIFICATION: the read-only
-   artboard shows the Archived pill and the suspending administrator's name to non-administrators,
-   but today archived trucks and lifecycle authors are visible to administrators only. Keep
-   today's visibility (Archived limited to archived companies or hidden, no author names), or
-   widen read access as drawn?]
+3. **Given** such a user, **When** they view suspended trucks or the Archived pill, **Then** read access
+   stays as today: the Archived pill lists archived companies only (never archived trucks, and its
+   count covers archived companies), and the Suspension column and details show the suspension
+   comment and date without the name of the administrator who acted.
 
 ---
 
@@ -356,8 +354,9 @@ artboard.
   registration, vehicle model (optional) and capacity in tonnes.
 - **FR-016**: Truck editing MUST happen inline on the truck's row, only for available trucks, with
   Save, Cancel and Escape to cancel.
-- **FR-017**: The transport-company lock of a truck used by a planned or active discharge MUST be
-  shown on the inline edit row (timing per the clarification in User Story 4).
+- **FR-017**: When a change of transport company is refused because the truck is used by a
+  planned or active discharge, the refusal MUST be shown on the inline edit row after saving; no
+  up-front lock signal is added.
 - **FR-018**: Validation and conflict errors MUST be shown next to the affected field or row while
   keeping the entered values.
 
@@ -376,9 +375,9 @@ artboard.
   stays in its current discharges; other successful actions MUST show a confirmation message.
 - **FR-023**: After any successful action, the affected rows, group summaries and pill counts MUST
   reflect the new state without a manual reload.
-- **FR-024**: Bulk selection and bulk archive/reactivate of the current directories are not drawn
-  in the V2. [NEEDS CLARIFICATION: remove bulk selection, bulk actions and their select-all
-  keyboard shortcut from this screen, or keep them in a V2 form?]
+- **FR-024**: The screen MUST no longer offer row selection, bulk archive or bulk reactivate, nor
+  the select-all and clear-selection keyboard shortcuts; the system's bulk capabilities are left
+  unchanged.
 
 **Access and theme**
 
@@ -417,6 +416,17 @@ artboard.
 - **SC-006**: Every existing transport-company and truck business rule (validation, uniqueness,
   lifecycle gates, authorization) behaves exactly as before; no existing rule test changes its
   expectation.
+
+## Clarifications
+
+### Session 2026-10-22
+
+- Q: How should the company lock of a truck used by a planned/active discharge appear on inline
+  edit? → A: At save time, inline in the edit row, using the existing refusal; no API change.
+- Q: What may users without administration rights see? → A: Today's access: no archived trucks,
+  no lifecycle author names; the Archived pill shows archived companies only.
+- Q: Bulk selection, bulk archive/reactivate and select-all on this screen? → A: Removed, matching
+  the V2; the bulk API stays untouched.
 
 ## Assumptions
 

@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,9 +31,8 @@
 
 ## Notes
 
-- Three [NEEDS CLARIFICATION] markers await the product owner: Q1 up-front company lock on inline
-  truck edit (US4 #6 / FR-017), Q2 read-only visibility of archived trucks and lifecycle authors
-  (US6 #3), Q3 fate of bulk selection and bulk actions (FR-024).
+- The three open questions (company lock timing, read-only visibility, bulk actions) were
+  answered on 2026-10-22 and recorded in the spec's Clarifications section.
 - Design deviations decided by assumption (not questions): company contact phone and email stay
   required; truck History lists the latest recorded lifecycle events; "Search customers" label is
   a design copy error.
