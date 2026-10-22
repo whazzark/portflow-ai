@@ -7,7 +7,7 @@ import { ensureSessionUser } from '@/libraries/tuyau/session'
 /**
  * A third pathless layout rather than a branch inside `_authenticated`: the renewal step stands
  * *instead of* the application frame, so nothing of the shell may render behind it. It reuses
- * `GuestLayout` so the renewal lands on the same split-screen surface as sign-in.
+ * `GuestLayout` so the renewal lands on the same guest surface as sign-in.
  *
  * The guard is `_guest`'s inverted: that one exists to push an authenticated user out, this one
  * exists to keep a confined user in.

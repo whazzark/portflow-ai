@@ -3,7 +3,7 @@ import { expect, test } from 'vitest'
 
 import { renderApp } from '@/test/render-app'
 
-test('renders a decorative port chart on desktop', async () => {
+test('renders a decorative port background behind the guest card at every width', async () => {
   renderApp('/login')
 
   await screen.findByRole('heading', { name: 'Keep every handoff on track' })
@@ -18,14 +18,21 @@ test('renders a decorative port chart on desktop', async () => {
   expect(lightChart).toHaveClass('dark:hidden')
   expect(themeVisibility).toHaveTextContent('#guest-background-dark{display:none}')
   expect(themeVisibility).toHaveTextContent('html.dark #guest-background-dark{display:block}')
-  expect(chart?.parentElement).toHaveClass('hidden', 'lg:flex', 'lg:min-h-screen')
+  // No breakpoint hides the background any more: the card sits over it on a phone too.
+  expect(chart?.parentElement?.className).not.toMatch(/(^|\s)hidden(\s|$)/)
   expect(screen.getByText('Port operations')).toBeInTheDocument()
-  expect(
-    screen.getByRole('heading', { name: 'Every movement, in one operational view' }),
-  ).toBeInTheDocument()
-  expect(
-    screen.getByText(
-      'Follow vessels, trucks, weighbridges and terminal activity before a handoff becomes a delay.',
-    ),
-  ).toBeInTheDocument()
+  expect(screen.getByText('Every movement, in one operational view')).toBeInTheDocument()
+})
+
+test('renders the guest screen in a centered card', async () => {
+  renderApp('/login')
+
+  const heading = await screen.findByRole('heading', { name: 'Keep every handoff on track' })
+  const card = heading.closest('[data-slot="guest-card"]')
+
+  expect(card).toBeInTheDocument()
+  expect(card).toContainElement(screen.getByRole('button', { name: 'Log in' }))
+  expect(card).toContainElement(
+    screen.getByRole('img', { name: 'Portflow — Steer. Coordinate. Advance.' }),
+  )
 })

@@ -83,12 +83,19 @@ export function ActivationForm({
         <FieldGroup>
           <Field>
             <FieldLabel htmlFor="activation-email">Email</FieldLabel>
-            <Input autoComplete="username" id="activation-email" readOnly={true} value={email} />
+            <Input
+              autoComplete="username"
+              className="h-10 bg-background dark:bg-background"
+              id="activation-email"
+              readOnly={true}
+              value={email}
+            />
           </Field>
 
           <form.AppField name="password">
             {(field) => (
               <field.TextField
+                className="h-10"
                 autoComplete="new-password"
                 description="At least 12 characters."
                 label="Password"
@@ -102,6 +109,7 @@ export function ActivationForm({
           <form.AppField name="passwordConfirmation">
             {(field) => (
               <field.TextField
+                className="h-10"
                 autoComplete="new-password"
                 label="Confirm password"
                 placeholder="**********"
