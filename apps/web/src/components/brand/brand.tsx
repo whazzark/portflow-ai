@@ -1,5 +1,4 @@
 import { classnames } from '@/libraries/shadcn/helpers'
-import { useTheme } from '@/libraries/theme/use-theme'
 
 type BrandProps = {
   className?: string
@@ -18,18 +17,36 @@ const logoSources = {
   },
 }
 
+/**
+ * Both themes' assets are rendered and the `dark` class on the document picks one, like the guest
+ * background does. Choosing the source from the theme in React would not survive hydration: the
+ * server renders the default theme, and React keeps that `src` when the stored theme differs.
+ */
 export function Brand({ className, tone = 'auto', variant = 'full' }: BrandProps) {
-  const { theme } = useTheme()
-
   const isMarkOnly = variant === 'mark'
-  const logoTheme = tone === 'inverse' ? (theme === 'dark' ? 'light' : 'dark') : theme
-  const source = logoSources[variant][logoTheme]
+  const sources = logoSources[variant]
+  const lightThemeSource = tone === 'inverse' ? sources.dark : sources.light
+  const darkThemeSource = tone === 'inverse' ? sources.light : sources.dark
+  const imageClassName = isMarkOnly ? 'size-full object-contain' : 'h-auto w-full'
 
   return (
-    <img
-      src={source}
-      alt={isMarkOnly ? 'Portflow' : 'Portflow — Steer. Coordinate. Advance.'}
-      className={classnames(isMarkOnly ? 'size-8 shrink-0' : 'h-auto w-40', className)}
-    />
+    <span
+      role="img"
+      aria-label={isMarkOnly ? 'Portflow' : 'Portflow — Steer. Coordinate. Advance.'}
+      className={classnames('block', isMarkOnly ? 'size-8 shrink-0' : 'w-40', className)}
+    >
+      <img
+        src={lightThemeSource}
+        alt=""
+        data-theme-asset="light"
+        className={classnames(imageClassName, 'dark:hidden')}
+      />
+      <img
+        src={darkThemeSource}
+        alt=""
+        data-theme-asset="dark"
+        className={classnames(imageClassName, 'hidden dark:block')}
+      />
+    </span>
   )
 }

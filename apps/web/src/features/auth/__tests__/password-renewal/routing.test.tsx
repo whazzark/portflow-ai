@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { renderApp } from '@/test/render-app'
+import { findUserMenuTrigger } from '@/test/user-menu'
 import { findRenewalHeading, mockSession, RENEWED_USER } from './helpers'
 
 test('returns a confined session to the renewal step from an application route', async () => {
@@ -26,7 +27,7 @@ test('sends a session owing nothing from the renewal step to the application', a
 
   const { router } = renderApp('/password-renewal')
 
-  expect(await screen.findByText(RENEWED_USER.email)).toBeInTheDocument()
+  expect(await findUserMenuTrigger(RENEWED_USER)).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/')
 })
 

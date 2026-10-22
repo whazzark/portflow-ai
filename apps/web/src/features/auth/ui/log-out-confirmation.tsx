@@ -24,14 +24,14 @@ export function LogOutConfirmation({
 }: LogOutConfirmationProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent size="sm">
+      <AlertDialogContent size="sm" className="max-w-100 gap-5 p-5">
         <AlertDialogHeader>
           <AlertDialogTitle>Log out?</AlertDialogTitle>
           <AlertDialogDescription>
             You’ll need to log in again to access Portflow.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="group-data-[size=sm]/alert-dialog-content:flex">
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             type="button"

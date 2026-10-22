@@ -25,8 +25,10 @@ test('renders the protected frame with navigation for an authenticated user', as
   const sidebar = screen.getByRole('complementary', { name: 'Application sidebar' })
   const header = screen.getByRole('banner')
 
+  // The sidebar names the role; the email waits in the menu.
   expect(screen.getByText('Claire Martin')).toBeInTheDocument()
-  expect(screen.getByText('active.user@portflow.test')).toBeInTheDocument()
+  expect(within(sidebar).getByText('Organization admin')).toBeInTheDocument()
+  expect(within(sidebar).queryByText('active.user@portflow.test')).not.toBeInTheDocument()
   expect(nav).toHaveAccessibleName('Primary')
   expect(sidebar).toContainElement(nav)
   expect(within(header).getByRole('navigation', { name: 'breadcrumb' })).toHaveTextContent(
@@ -58,21 +60,13 @@ test('renders the protected frame with navigation for an authenticated user', as
   )
   expect(within(nav).getByRole('link', { name: /Users/ })).toHaveAttribute('href', '/users')
   // Only Rotation validation remains unbuilt: Discharges gained its workbench in GH-61.
-  expect(within(nav).getAllByText('Coming soon')).toHaveLength(1)
-  const themeToggle = screen.getByRole('switch', { name: 'Switch to light theme' })
+  expect(within(nav).getAllByText('Soon')).toHaveLength(1)
   const profileTrigger = screen.getByRole('button', {
     name: 'Open user menu for Claire Martin',
   })
-  const accountSeparator = within(sidebar).getAllByRole('separator').at(-1)
 
-  expect(themeToggle).toHaveAttribute('aria-checked', 'true')
-  expect(accountSeparator).toBeDefined()
-  expect(themeToggle.compareDocumentPosition(accountSeparator as HTMLElement)).toBe(
-    Node.DOCUMENT_POSITION_FOLLOWING,
-  )
-  expect((accountSeparator as HTMLElement).compareDocumentPosition(profileTrigger)).toBe(
-    Node.DOCUMENT_POSITION_FOLLOWING,
-  )
+  // The appearance switch lives in the user menu now, not in the sidebar.
+  expect(within(sidebar).queryByText('Appearance')).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Operations overview' })).toBeInTheDocument()
   expect(screen.getByText('Rotation progress')).toBeInTheDocument()
   expect(screen.getByRole('table', { name: 'Recent rotations' })).toBeInTheDocument()
@@ -96,8 +90,22 @@ test('renders the protected frame with navigation for an authenticated user', as
   expect(within(menu).getByText('active.user@portflow.test')).toBeInTheDocument()
   const profileEntry = within(menu).getByRole('menuitem', { name: 'Profile' })
   expect(profileEntry).not.toHaveAttribute('aria-disabled', 'true')
-  expect(within(menu).queryByText('Coming soon')).not.toBeInTheDocument()
+  expect(within(menu).queryByText('Soon')).not.toBeInTheDocument()
+  const appearance = within(menu).getByRole('group', { name: 'Appearance' })
+  expect(within(appearance).getByRole('menuitemradio', { name: 'Dark' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
   expect(within(menu).getByRole('menuitem', { name: 'Log out' })).toBeInTheDocument()
+
+  // Picking a theme applies it and leaves the menu open.
+  fireEvent.click(within(appearance).getByRole('menuitemradio', { name: 'Light' }))
+  expect(document.documentElement).not.toHaveClass('dark')
+  expect(within(appearance).getByRole('menuitemradio', { name: 'Light' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
+  expect(screen.getByRole('menu')).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/')
 
   fireEvent.click(profileEntry)

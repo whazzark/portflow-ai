@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse } from 'msw'
 import { expect, test } from 'vitest'
+import { findUserMenuTrigger } from '@/test/user-menu'
 import {
   ACTIVATED_USER,
   findActivationHeading,
@@ -43,7 +44,7 @@ test('keeps the form and what was typed after a failure, and succeeds on a retry
 
   await user.click(screen.getByRole('button', { name: 'Activate' }))
 
-  expect(await screen.findByText(ACTIVATED_USER.email)).toBeInTheDocument()
+  expect(await findUserMenuTrigger(ACTIVATED_USER)).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/')
 })
 

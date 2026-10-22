@@ -1,53 +1,45 @@
+import { Menu as MenuPrimitive } from '@base-ui/react/menu'
 import { Moon, Sun } from 'lucide-react'
-
-import { Button } from '@/components/ui/button'
-import { useSidebar } from '@/components/ui/sidebar'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useId } from 'react'
+import type { Theme } from '@/libraries/theme/theme-provider'
 import { useTheme } from '@/libraries/theme/use-theme'
 
-function ThemeToggle() {
-  const { isMobile, state } = useSidebar()
-  const { theme, setTheme } = useTheme()
-  const isDark = theme === 'dark'
-  const currentThemeLabel = isDark ? 'Dark' : 'Light'
-  const nextThemeLabel = isDark ? 'light' : 'dark'
+const APPEARANCES: { value: Theme; label: string; icon: typeof Sun }[] = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+]
 
-  function toggleTheme() {
-    setTheme(isDark ? 'light' : 'dark')
-  }
+/**
+ * The appearance switch of the user menu: a row of two menu radio items rather than a toggle, so
+ * each theme is named and reachable with the menu's own arrow keys. It must render inside a
+ * `DropdownMenu`, whose radio group it borrows; choosing a theme keeps the menu open.
+ */
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+  const labelId = useId()
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <Button
-            variant="ghost"
-            role="switch"
-            aria-checked={isDark}
-            aria-label={`Switch to ${nextThemeLabel} theme`}
-            onClick={toggleTheme}
-            className="h-10 w-full justify-start gap-2 rounded-lg px-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2!"
-          />
-        }
+    <div className="flex items-center justify-between gap-3 px-2 py-1.5 text-sm">
+      <span id={labelId}>Appearance</span>
+      <MenuPrimitive.RadioGroup
+        aria-labelledby={labelId}
+        value={theme}
+        onValueChange={(value: Theme) => setTheme(value)}
+        className="flex gap-0.5 rounded-md border bg-background p-0.5"
       >
-        {isDark ? <Moon /> : <Sun />}
-        <span className="flex min-w-0 flex-1 items-center justify-between gap-2 group-data-[collapsible=icon]:hidden">
-          <span>Appearance</span>
-          <span className="text-sidebar-foreground/65 text-xs">{currentThemeLabel}</span>
-        </span>
-        <span
-          aria-hidden="true"
-          className="relative ml-auto h-5 w-9 shrink-0 rounded-full bg-sidebar-accent p-0.5 transition-colors group-data-[collapsible=icon]:hidden"
-        >
-          <span
-            className={`block size-4 rounded-full bg-sidebar-primary shadow-sm transition-transform motion-reduce:transition-none ${isDark ? 'translate-x-4' : 'translate-x-0'}`}
-          />
-        </span>
-      </TooltipTrigger>
-      <TooltipContent side="right" hidden={state !== 'collapsed' || isMobile}>
-        {`Switch to ${nextThemeLabel} theme`}
-      </TooltipContent>
-    </Tooltip>
+        {APPEARANCES.map(({ value, label, icon: Icon }) => (
+          <MenuPrimitive.RadioItem
+            key={value}
+            value={value}
+            closeOnClick={false}
+            aria-label={label}
+            className="flex h-7 w-8.5 cursor-default items-center justify-center rounded-sm text-muted-foreground outline-hidden transition-colors data-checked:bg-accent data-checked:text-foreground data-highlighted:text-foreground data-highlighted:ring-1 data-highlighted:ring-ring [&_svg]:size-4"
+          >
+            <Icon aria-hidden={true} />
+          </MenuPrimitive.RadioItem>
+        ))}
+      </MenuPrimitive.RadioGroup>
+    </div>
   )
 }
 

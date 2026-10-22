@@ -4,6 +4,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
+import { findUserMenuTrigger } from '@/test/user-menu'
 import {
   API_BASE_URL,
   findRenewalHeading,
@@ -37,7 +38,7 @@ test('takes the user into the application when another submission already cleare
   await findRenewalHeading()
   await submitRenewal(user, VALID_PASSWORD)
 
-  expect(await screen.findByText(RENEWED_USER.email)).toBeInTheDocument()
+  expect(await findUserMenuTrigger(RENEWED_USER)).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/')
   expect(screen.queryByText('Unable to save your new password')).not.toBeInTheDocument()
 })

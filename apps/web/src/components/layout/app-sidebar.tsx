@@ -12,16 +12,9 @@ import { Brand } from '@/components/brand/brand'
 import { NavigationGroup } from '@/components/layout/navigation-group'
 import type { NavigationGroup as NavigationGroupType } from '@/components/layout/navigation-types'
 import { UserMenu } from '@/components/layout/user-menu'
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarSeparator,
-} from '@/components/ui/sidebar'
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar'
 import type { SessionUser } from '@/features/auth/context/session-context'
 import { isAdministrator } from '@/features/auth/policies/permissions'
-import { ThemeToggle } from '@/libraries/theme/theme-toggle'
 
 const NAVIGATION_GROUPS: NavigationGroupType[] = [
   {
@@ -59,21 +52,20 @@ export function AppSidebar({ user }: { user: SessionUser }) {
 
   return (
     <Sidebar collapsible="icon" aria-label="Application sidebar">
-      <SidebarHeader>
-        <div className="flex h-10 items-center justify-center px-2 group-data-[collapsible=icon]:px-0">
-          <Brand tone="inverse" className="w-32 group-data-[collapsible=icon]:hidden" />
-          <Brand
-            tone="inverse"
-            variant="mark"
-            className="hidden group-data-[collapsible=icon]:block"
-          />
-        </div>
+      <SidebarHeader className="h-16 justify-center py-0 pr-4 pl-4.5 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
+        <Brand tone="inverse" className="w-29.5 group-data-[collapsible=icon]:hidden" />
+        <Brand
+          tone="inverse"
+          variant="mark"
+          className="hidden size-7.5 object-contain group-data-[collapsible=icon]:block"
+        />
       </SidebarHeader>
 
-      <SidebarSeparator />
-
       <SidebarContent>
-        <nav aria-label="Primary">
+        <nav
+          aria-label="Primary"
+          className="flex flex-col gap-3.5 py-1 group-data-[collapsible=icon]:gap-3 group-data-[collapsible=icon]:py-2"
+        >
           {navigationGroups.map((group) => (
             <NavigationGroup key={group.label} group={group} />
           ))}
@@ -89,9 +81,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
         </nav>
       </SidebarContent>
 
-      <SidebarFooter>
-        <ThemeToggle />
-        <SidebarSeparator className="mx-0 data-horizontal:w-full" />
+      <SidebarFooter className="border-sidebar-border border-t p-2.5 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-3">
         <UserMenu user={user} />
       </SidebarFooter>
     </Sidebar>

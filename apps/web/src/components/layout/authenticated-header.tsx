@@ -35,7 +35,7 @@ export function AuthenticatedHeader() {
       : 'Expand sidebar'
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b px-3">
+    <header className="flex h-16 shrink-0 items-center gap-3 border-b pr-8 pl-3">
       <Tooltip>
         <TooltipTrigger render={<span className="inline-flex" />}>
           <SidebarTrigger aria-label={toggleLabel} className="size-10" />
@@ -48,8 +48,8 @@ export function AuthenticatedHeader() {
       {matches.length > 0 && (
         <>
           <Separator orientation="vertical" className="self-center! h-4!" />
-          <Breadcrumb className="min-w-0">
-            <BreadcrumbList className="flex-nowrap overflow-hidden">
+          <Breadcrumb className="min-w-0 pl-1">
+            <BreadcrumbList className="flex-nowrap gap-2 overflow-hidden text-base leading-6">
               {matches.map((match, index) => {
                 const isCurrentPage = index === matches.length - 1
                 const Crumb = match.breadcrumb
@@ -60,12 +60,15 @@ export function AuthenticatedHeader() {
                     {index > 0 && <BreadcrumbSeparator />}
                     <BreadcrumbItem className="min-w-0">
                       {isCurrentPage ? (
-                        <BreadcrumbPage className="truncate">{label}</BreadcrumbPage>
+                        <BreadcrumbPage className="truncate font-semibold">{label}</BreadcrumbPage>
                       ) : (
                         // Only a nested page has a crumb above its own, and its parent owns
                         // the state it was opened from — a list's status and search. Keeping
                         // the search returns the user to that list, not to its defaults.
-                        <BreadcrumbLink render={<Link search={true} to={match.href} />}>
+                        <BreadcrumbLink
+                          className="font-medium"
+                          render={<Link search={true} to={match.href} />}
+                        >
                           {label}
                         </BreadcrumbLink>
                       )}

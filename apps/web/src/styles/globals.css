@@ -33,6 +33,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-indicator: var(--indicator);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -53,80 +54,88 @@
 }
 
 :root {
-  --background: #f5f7f8;
-  --foreground: #10233b;
+  /* « Marine sobre », light. Neutrals carry every surface and text; steel blue is the one accent
+     (primary action, active navigation item, active tab, links); amber, red and green are kept
+     for statuses. Every text pair below holds at least 4.5:1. */
+  --background: #f2f4f5;
+  --foreground: #12202a;
   --card: #ffffff;
-  --card-foreground: #10233b;
+  --card-foreground: #12202a;
   --popover: #ffffff;
-  --popover-foreground: #10233b;
-  --primary: #0f6e8c;
-  --primary-foreground: #f5f7f8;
-  --secondary: #e4eaec;
-  --secondary-foreground: #10233b;
-  --muted: #e9edef;
-  --muted-foreground: #5b6b7a;
-  --accent: #dceaee;
-  --accent-foreground: #0b4f63;
-  --destructive: #b3402a;
-  --success: #3a7d5c;
-  --success-foreground: #f5f7f8;
-  --warning: #c97a22;
-  --warning-foreground: #10233b;
-  --border: #d8dee2;
-  --input: #d8dee2;
-  --ring: #0f6e8c;
-  --chart-1: #0f6e8c;
-  --chart-2: #3a7d5c;
-  --chart-3: #c97a22;
-  --chart-4: #b3402a;
-  --chart-5: #5b6b7a;
+  --popover-foreground: #12202a;
+  --primary: #1f6f8b;
+  --primary-foreground: #ffffff;
+  /* The accent as a stroke or text on a surface: active icon, active tab, link. */
+  --indicator: #1f6f8b;
+  --secondary: #e3e8eb;
+  --secondary-foreground: #12202a;
+  --muted: #e3e8eb;
+  --muted-foreground: #56646f;
+  --accent: #dfe5e8;
+  --accent-foreground: #12202a;
+  --destructive: #b2493d;
+  --success: #357555;
+  --success-foreground: #ffffff;
+  --warning: #946420;
+  --warning-foreground: #ffffff;
+  --border: #d3dade;
+  --input: #d3dade;
+  --ring: #1f6f8b;
+  --chart-1: #1f6f8b;
+  --chart-2: #357555;
+  --chart-3: #946420;
+  --chart-4: #b2493d;
+  --chart-5: #56646f;
   --radius: 0.375rem;
-  --sidebar: #edf1f2;
-  --sidebar-foreground: #10233b;
-  --sidebar-primary: #0f6e8c;
-  --sidebar-primary-foreground: #f5f7f8;
-  --sidebar-accent: #dceaee;
-  --sidebar-accent-foreground: #0b4f63;
-  --sidebar-border: #d8dee2;
-  --sidebar-ring: #0f6e8c;
+  --sidebar: #e8ecee;
+  --sidebar-foreground: #33434e;
+  --sidebar-primary: #1f6f8b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dbe4e8;
+  --sidebar-accent-foreground: #12202a;
+  --sidebar-border: #d3dade;
+  --sidebar-ring: #1f6f8b;
 }
 
 .dark {
-  --background: #10233b;
-  --foreground: #f5f7f8;
-  --card: #16304f;
-  --card-foreground: #f5f7f8;
-  --popover: #16304f;
-  --popover-foreground: #f5f7f8;
-  --primary: #1c8cad;
-  --primary-foreground: #f5f7f8;
-  --secondary: #1e3a56;
-  --secondary-foreground: #f5f7f8;
-  --muted: #1b3350;
-  --muted-foreground: #93a6b8;
-  --accent: #1b4a5a;
-  --accent-foreground: #f5f7f8;
-  --destructive: #d2543a;
-  --success: #4c9a72;
-  --success-foreground: #10233b;
-  --warning: #d98f3c;
-  --warning-foreground: #10233b;
-  --border: #24425f;
-  --input: #24425f;
-  --ring: #1c8cad;
-  --chart-1: #1c8cad;
-  --chart-2: #4c9a72;
-  --chart-3: #d98f3c;
-  --chart-4: #d2543a;
-  --chart-5: #8da0b2;
-  --sidebar: #0c1b30;
-  --sidebar-foreground: #f5f7f8;
-  --sidebar-primary: #1c8cad;
-  --sidebar-primary-foreground: #f5f7f8;
-  --sidebar-accent: #1b4a5a;
-  --sidebar-accent-foreground: #f5f7f8;
-  --sidebar-border: #24425f;
-  --sidebar-ring: #1c8cad;
+  /* « Marine sobre », dark. The primary fill is a shade darker than the indicator so white text
+     on it stays above 4.5:1, while the indicator stays legible on the dark surfaces. */
+  --background: #0f1a22;
+  --foreground: #e8ecef;
+  --card: #15212b;
+  --card-foreground: #e8ecef;
+  --popover: #15212b;
+  --popover-foreground: #e8ecef;
+  --primary: #2c7f9a;
+  --primary-foreground: #ffffff;
+  --indicator: #79b8cb;
+  --secondary: #1d2a35;
+  --secondary-foreground: #e8ecef;
+  --muted: #1d2a35;
+  --muted-foreground: #8796a2;
+  --accent: #1d2a35;
+  --accent-foreground: #e8ecef;
+  --destructive: #e68f81;
+  --success: #5aa982;
+  --success-foreground: #0f1a22;
+  --warning: #d29f4e;
+  --warning-foreground: #0f1a22;
+  --border: #27343f;
+  --input: #27343f;
+  --ring: #2c7f9a;
+  --chart-1: #79b8cb;
+  --chart-2: #5aa982;
+  --chart-3: #d29f4e;
+  --chart-4: #e68f81;
+  --chart-5: #8796a2;
+  --sidebar: #0b141a;
+  --sidebar-foreground: #c3ccd3;
+  --sidebar-primary: #79b8cb;
+  --sidebar-primary-foreground: #0b141a;
+  --sidebar-accent: #1d2a35;
+  --sidebar-accent-foreground: #e8ecef;
+  --sidebar-border: #27343f;
+  --sidebar-ring: #2c7f9a;
 }
 
 @layer base {

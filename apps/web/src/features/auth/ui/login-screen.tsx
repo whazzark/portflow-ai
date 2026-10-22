@@ -7,7 +7,7 @@ export function LoginScreen() {
       <div className="mb-7">
         <Brand
           tone="inverse"
-          className="font-mono text-primary text-xs uppercase tracking-[0.16em]"
+          className="font-mono text-indicator text-xs uppercase tracking-[0.16em]"
         />
         <h1 className="mt-7 font-semibold text-3xl leading-tight tracking-tight">
           Keep every handoff on track

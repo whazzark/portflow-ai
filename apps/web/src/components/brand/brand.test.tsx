@@ -2,42 +2,44 @@ import { render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import { expect, test } from 'vitest'
 
-import { type Theme, ThemeContext } from '@/libraries/theme/theme-provider'
-
 import { Brand } from './brand'
 
-function renderBrand(theme: Theme, props: ComponentProps<typeof Brand> = {}) {
-  return render(
-    <ThemeContext.Provider value={{ theme, setTheme: () => undefined }}>
-      <Brand {...props} />
-    </ThemeContext.Provider>,
-  )
+function renderBrand(props: ComponentProps<typeof Brand> = {}) {
+  const { container } = render(<Brand {...props} />)
+
+  return {
+    lightThemeSource: container.querySelector('[data-theme-asset="light"]')?.getAttribute('src'),
+    darkThemeSource: container.querySelector('[data-theme-asset="dark"]')?.getAttribute('src'),
+  }
 }
 
-test('uses the light mark on the light theme', () => {
-  const { container } = renderBrand('light')
+test('names the full logo and gives each theme its own asset', () => {
+  const sources = renderBrand()
 
   expect(
     screen.getByRole('img', { name: 'Portflow — Steer. Coordinate. Advance.' }),
   ).toBeInTheDocument()
-  expect(container.querySelector('img')).toHaveAttribute('src', '/logo-full-light.png')
-})
-
-test('uses the dark mark on the dark theme', () => {
-  const { container } = renderBrand('dark')
-
-  expect(container.querySelector('img')).toHaveAttribute('src', '/logo-full-dark.png')
+  expect(sources).toEqual({
+    lightThemeSource: '/logo-full-light.png',
+    darkThemeSource: '/logo-full-dark.png',
+  })
 })
 
 test('uses the compact mark and names it', () => {
-  const { container } = renderBrand('dark', { variant: 'mark' })
+  const sources = renderBrand({ variant: 'mark' })
 
-  expect(container.querySelector('img')).toHaveAttribute('src', '/logo-dark.png')
   expect(screen.getByRole('img', { name: 'Portflow' })).toBeInTheDocument()
+  expect(sources).toEqual({
+    lightThemeSource: '/logo-light.png',
+    darkThemeSource: '/logo-dark.png',
+  })
 })
 
 test('uses the opposite asset when its tone is inverted', () => {
-  const { container } = renderBrand('dark', { tone: 'inverse' })
+  const sources = renderBrand({ tone: 'inverse' })
 
-  expect(container.querySelector('img')).toHaveAttribute('src', '/logo-full-light.png')
+  expect(sources).toEqual({
+    lightThemeSource: '/logo-full-dark.png',
+    darkThemeSource: '/logo-full-light.png',
+  })
 })

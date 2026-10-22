@@ -32,5 +32,5 @@
 - An edit panel is left through its header's "Back to details". A creation panel adds an explicit `Cancel` only where its sheet is unmodal over a map, since a click outside dismisses nothing there.
 - An empty collection renders `Empty`, and offers its create action to an administrator when no search is narrowing it.
 - Status filters: tabs for a directory, the filter dropdown for a map, a `Select` for a secondary facet such as a role. Status vocabularies are the domain's and are not harmonised across resources.
-- Preserve the Channel Marker design tokens and dark-mode provider.
+- Preserve the « Marine sobre » design tokens in `src/styles/globals.css` and the dark-mode provider. Screens use the tokens rather than hardcoded colors; MapLibre paint, which cannot read them, takes its steel blue from the light palette. Steel blue is the one accent (`primary` for fills and borders, `indicator` for accent text and icons); amber, red and green are for statuses only.
 - Test observable user behavior, accessibility states, error handling, and responsive edge cases rather than internal hook composition.

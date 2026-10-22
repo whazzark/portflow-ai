@@ -31,7 +31,7 @@ const checkpointKindStyles: Record<
   },
   WEIGHING_AREA: {
     shape: 'rounded-full',
-    available: 'border-primary bg-background/95 text-primary',
+    available: 'border-primary bg-background/95 text-indicator',
     archived: 'border-muted-foreground border-dashed bg-background/95 text-muted-foreground',
   },
 }

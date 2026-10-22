@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronUpIcon, LogOutIcon, UserRoundIcon } from 'lucide-react'
+import { ChevronsUpDownIcon, LogOutIcon, UserRoundIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -23,7 +23,9 @@ import type { SessionUser } from '@/features/auth/context/session-context'
 import { useLogout } from '@/features/auth/mutations/use-logout'
 import { LogOutConfirmation } from '@/features/auth/ui/log-out-confirmation'
 import { formatFullName } from '@/features/users/helpers/name'
+import { USER_ROLE_LABELS } from '@/features/users/helpers/user-labels'
 import { UserAvatar } from '@/features/users/ui/user-avatar'
+import { ThemeToggle } from '@/libraries/theme/theme-toggle'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
 export function UserMenu({ user }: { user: SessionUser }) {
@@ -63,23 +65,32 @@ export function UserMenu({ user }: { user: SessionUser }) {
 
   return (
     <>
-      <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none">
+      <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none group-data-[collapsible=icon]:items-center">
         <SidebarMenuItem>
           <DropdownMenu modal={false} open={isUserMenuOpen} onOpenChange={setIsUserMenuOpen}>
             <Tooltip>
-              <TooltipTrigger render={<span className="block w-full" />}>
+              <TooltipTrigger
+                render={<span className="block w-full group-data-[collapsible=icon]:w-auto" />}
+              >
                 <DropdownMenuTrigger
                   aria-label={`Open user menu for ${fullName}`}
-                  render={<SidebarMenuButton size="lg" />}
+                  render={
+                    <SidebarMenuButton
+                      size="lg"
+                      className="h-13 gap-2.5 rounded-lg px-2.5 data-popup-open:bg-sidebar-accent data-popup-open:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
+                    />
+                  }
                 >
                   <UserAvatar user={user} />
                   <span className="min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-                    <span className="block truncate font-medium">{fullName}</span>
-                    <span className="block truncate text-sidebar-foreground/70 text-xs">
-                      {user.email}
+                    <span className="block truncate font-semibold text-sidebar-accent-foreground">
+                      {fullName}
+                    </span>
+                    <span className="block truncate text-muted-foreground text-xs">
+                      {USER_ROLE_LABELS[user.role]}
                     </span>
                   </span>
-                  <ChevronUpIcon className="ml-auto group-data-[collapsible=icon]:hidden" />
+                  <ChevronsUpDownIcon className="ml-auto text-muted-foreground group-data-[collapsible=icon]:hidden" />
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent side="right" hidden={state !== 'collapsed' || isMobile}>
@@ -90,15 +101,17 @@ export function UserMenu({ user }: { user: SessionUser }) {
             {isUserMenuOpen && (
               <DropdownMenuContent
                 align="end"
-                className="min-w-56"
+                className="w-70 p-1.5"
                 side={isMobile ? 'top' : 'right'}
                 sideOffset={8}
               >
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel className="flex items-center gap-2 p-2">
+                  <DropdownMenuLabel className="flex items-center gap-2.5 p-2">
                     <UserAvatar aria-hidden={true} size="lg" user={user} />
                     <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="truncate text-foreground text-sm">{fullName}</span>
+                      <span className="truncate font-semibold text-foreground text-sm">
+                        {fullName}
+                      </span>
                       <span className="truncate font-normal">{user.email}</span>
                     </span>
                   </DropdownMenuLabel>
@@ -114,6 +127,10 @@ export function UserMenu({ user }: { user: SessionUser }) {
                     <span>Profile</span>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
+
+                <DropdownMenuSeparator />
+
+                <ThemeToggle />
 
                 <DropdownMenuSeparator />
 

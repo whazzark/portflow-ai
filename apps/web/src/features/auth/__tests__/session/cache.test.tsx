@@ -1,8 +1,8 @@
-import { screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render-app'
+import { findUserMenuTrigger } from '@/test/user-menu'
 import { ACTIVE_USER, API_BASE_URL } from './helpers'
 
 test('shares one auth.me cache entry across home and login while authenticated', async () => {
@@ -14,9 +14,9 @@ test('shares one auth.me cache entry across home and login while authenticated',
     }),
   )
   const { router } = renderApp('/')
-  await screen.findByText(ACTIVE_USER.email)
+  await findUserMenuTrigger(ACTIVE_USER)
   const countAfterHome = meRequestCount
   await router.navigate({ to: '/login' })
-  expect(await screen.findByText(ACTIVE_USER.email)).toBeInTheDocument()
+  expect(await findUserMenuTrigger(ACTIVE_USER)).toBeInTheDocument()
   expect(meRequestCount).toBe(countAfterHome)
 })

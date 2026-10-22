@@ -2,6 +2,7 @@ import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse } from 'msw'
 import { expect, test, vi } from 'vitest'
+import { findUserMenuTrigger } from '@/test/user-menu'
 import {
   ACTIVATED_USER,
   ACTIVATION_TOKEN,
@@ -57,7 +58,7 @@ test('sends the token in the body and lands in the application, leaving no way b
   await findActivationHeading()
   await submitActivation(user, VALID_PASSWORD)
 
-  expect(await screen.findByText(ACTIVATED_USER.email)).toBeInTheDocument()
+  expect(await findUserMenuTrigger(ACTIVATED_USER)).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/')
   expect(router.state.location.search).toEqual({ section: 'rotations' })
 
@@ -100,5 +101,5 @@ test('keeps the pending form, not a log-out notice, while the application is sti
   expect(screen.getByRole('button', { name: 'Activating…' })).toBeDisabled()
 
   releaseNavigation()
-  expect(await screen.findByText(ACTIVATED_USER.email)).toBeInTheDocument()
+  expect(await findUserMenuTrigger(ACTIVATED_USER)).toBeInTheDocument()
 })
