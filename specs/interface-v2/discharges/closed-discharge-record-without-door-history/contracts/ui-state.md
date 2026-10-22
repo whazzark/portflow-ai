@@ -22,7 +22,7 @@ identity card) and no `Preparation` region.
 
 | Element | Contract |
 |---|---|
-| Region `Dock timeline · <dock name>` | One labelled day tick per local day on the axis; one block per shift; a `Started` marker when the start is recorded; no `Now` text or marker; no `Expected start` |
+| Region `Dock timeline · <dock name>` | A presentational strip (hidden from assistive technologies): one labelled day tick per local day, one block per shift, a `Started` marker when the start is recorded; no `Now` text or marker; no `Expected start`. Said in words: `Started <date time>` when recorded |
 | List `Shifts on the timeline` | One item per shift, named by its usual period label |
 | Region `Summary` | Note `Closed discharges are read-only`; three rows `Shifts`, `Product lots`, `Truck pool`, each a link opening its tab |
 | Shifts row | `N shift(s)` |

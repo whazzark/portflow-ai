@@ -1,9 +1,17 @@
-import { closedDockTimeline } from '@/features/discharges/closed-discharge-record'
+import {
+  closedDockTimeline,
+  closedRecordPeriod,
+} from '@/features/discharges/closed-discharge-record'
 import { formatShiftDay } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
+import { formatDateTime } from '@/helpers/dates'
 
 const percent = (fraction: number) => `${fraction * 100}%`
+
+// Room for each day's label, so a long discharge scrolls rather than crowding its days together.
+const DAY_WIDTH_REM = 6
+const MIN_WIDTH_REM = 36
 
 /**
  * A closed discharge's shifts on the days it ran, drawn once: nothing moves, no now, no planning.
@@ -16,11 +24,14 @@ export function ClosedDockTimeline({ discharge }: { discharge: DischargeDetailDt
     return null
   }
 
+  const { startAt } = closedRecordPeriod(discharge)
+  const minWidth = `${Math.max(timeline.days.length * DAY_WIDTH_REM, MIN_WIDTH_REM)}rem`
+
   return (
     <DetailSection title={`Dock timeline · ${discharge.dock.name}`}>
       {/* Scrolls within itself on a narrow screen, so a long discharge never widens the page. */}
       <div aria-hidden="true" className="overflow-x-auto">
-        <div className="relative grid min-w-xl gap-1 pb-1">
+        <div className="relative grid gap-1 pb-1" style={{ minWidth }}>
           <div className="relative h-5 text-muted-foreground text-xs">
             {timeline.days.map((day) => (
               <span
@@ -64,6 +75,9 @@ export function ClosedDockTimeline({ discharge }: { discharge: DischargeDetailDt
           )}
         </div>
       </div>
+      {startAt && timeline.startedMarker !== null && (
+        <p className="sr-only">Started {formatDateTime(startAt)}</p>
+      )}
       <ul aria-label="Shifts on the timeline" className="sr-only">
         {timeline.blocks.map((block) => (
           <li key={block.shiftId}>Shift {block.label}</li>

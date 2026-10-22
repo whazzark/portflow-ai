@@ -21,9 +21,9 @@ type DischargeDetailHeaderProps = {
 /** A closed record's period, saying so where an end is not on record rather than inventing one. */
 function formatRecordPeriod(discharge: DischargeDetailDto) {
   const { startAt, endAt } = closedRecordPeriod(discharge)
-  const end = (value: string | null) => (value ? formatDateTime(value) : 'Not recorded')
+  const instant = (value: string | null) => (value ? formatDateTime(value) : 'Not recorded')
 
-  return `${end(startAt)} → ${end(endAt)}`
+  return `${instant(startAt)} → ${instant(endAt)}`
 }
 
 /** What stays in view whichever section is open: which discharge this is, and where it stands. */

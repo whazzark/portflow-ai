@@ -198,7 +198,11 @@ test('lays the shifts on the timeline from where the discharge started, with no 
       'listitem',
     ),
   ).toHaveLength(2)
+  // Drawn for the eye, and said in words for assistive technologies.
   expect(within(timeline).getByText('Started')).toBeInTheDocument()
+  expect(
+    within(timeline).getByText(`Started ${formatDateTime('2026-08-16T06:00:00.000Z')}`),
+  ).toBeInTheDocument()
   expect(within(timeline).queryByText(/^Now/)).not.toBeInTheDocument()
   expect(within(timeline).queryByText(/Expected start/)).not.toBeInTheDocument()
 })

@@ -28,19 +28,23 @@ const nextDay = (day: Date) => new Date(day.getFullYear(), day.getMonth(), day.g
 /**
  * A closed discharge's shifts on a strip of whole local days, as fractions of its width. Each shift
  * runs from its actual start, else its planned start, to its planned end: shifts record no actual
- * end. It is a record, so it knows nothing of now, of planning, or of other discharges.
+ * end. One started after its planned end is a mark at its start rather than a negative stretch. It
+ * is a record, so it knows nothing of now, of planning, or of other discharges.
  */
 export function closedDockTimeline(detail: ClosedDetail) {
   const shifts = detail.shifts
     .flatMap((shift) => {
       const startAt = shift.actualStartAt ?? shift.plannedStartAt
-      const endAt = shift.plannedEndAt
       // The transport types the planned period as nullable, although a shift always has one.
-      if (!startAt || !endAt) {
+      if (!startAt || !shift.plannedEndAt) {
         return []
       }
 
-      return [{ shift, startAt, endAt, start: Date.parse(startAt), end: Date.parse(endAt) }]
+      const start = Date.parse(startAt)
+      const end = Math.max(Date.parse(shift.plannedEndAt), start)
+      const endAt = end === start ? startAt : shift.plannedEndAt
+
+      return [{ shift, startAt, endAt, start, end }]
     })
     .sort((first, second) => first.start - second.start)
 
@@ -51,7 +55,8 @@ export function closedDockTimeline(detail: ClosedDetail) {
   const axisStart = startOfDay(Math.min(...shifts.map(({ start }) => start)))
   const lastEnd = Math.max(...shifts.map(({ end }) => end))
   const lastDay = startOfDay(lastEnd)
-  const axisEnd = lastDay.getTime() === lastEnd ? lastDay : nextDay(lastDay)
+  // Ending at a midnight closes on that day, unless the strip would then have no day at all.
+  const axisEnd = lastDay.getTime() === lastEnd && lastDay > axisStart ? lastDay : nextDay(lastDay)
   const span = axisEnd.getTime() - axisStart.getTime()
   const offsetOf = (instant: number) => (instant - axisStart.getTime()) / span
 
@@ -72,7 +77,7 @@ export function closedDockTimeline(detail: ClosedDetail) {
       startAt,
       endAt,
       offset: offsetOf(start),
-      width: Math.max(end - start, 0) / span,
+      width: (end - start) / span,
       label: formatShiftPeriod(shift),
     })),
     startedMarker: started !== null && started >= 0 && started <= 1 ? started : null,

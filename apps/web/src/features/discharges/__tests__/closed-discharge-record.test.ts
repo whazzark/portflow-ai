@@ -115,6 +115,23 @@ describe('closed dock timeline', () => {
     ])
   })
 
+  test('keeps a shift that started after its planned end on the axis, as a mark at its start', () => {
+    const late = buildShift({
+      id: 'late',
+      status: 'COMPLETED',
+      plannedStartAt: local(16, 22),
+      plannedEndAt: local(16, 23),
+      actualStartAt: local(17, 7),
+    })
+    const timeline = closedDockTimeline(closed({ startedAt: null, shifts: [late] }))
+
+    expect(timeline?.axisStart).toEqual(new Date(2026, 7, 17))
+    expect(timeline?.axisEnd).toEqual(new Date(2026, 7, 18))
+    expect(timeline?.blocks).toMatchObject([
+      { offset: expect.closeTo(7 / 24), width: 0, endAt: local(17, 7) },
+    ])
+  })
+
   test('marks where the discharge started, and only when that start is known', () => {
     const started = closedDockTimeline(closed({ startedAt: local(16, 6), shifts: [morning] }))
     const unknown = closedDockTimeline(
