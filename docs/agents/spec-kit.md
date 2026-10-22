@@ -1,6 +1,6 @@
 # Vanilla Spec Kit Operator Guide
 
-Portflow uses the upstream Spec Kit installation with the Codex skills integration. Spec Kit owns
+Portflow uses the upstream Spec Kit installation with the Claude Code integration. Spec Kit owns
 feature artifacts and its internal workflow state. GitHub Issues and the Roadmap own intake,
 priority, dependencies, and operational status; pull requests and CI own delivery evidence.
 
@@ -15,11 +15,12 @@ specify integration status
 specify workflow list
 ```
 
-`specify integration status` must report no modified or missing managed files. To reinstall the
-vanilla Codex skills and shared assets for the installed CLI version:
+`specify integration status` must report `claude` as the only installed integration and no
+modified or missing managed files. To reinstall the vanilla Claude Code skills (`.claude/skills/`)
+and shared assets for the installed CLI version:
 
 ```bash
-specify init --here --force --integration codex --integration-options="--skills"
+specify integration upgrade claude
 ```
 
 Do not edit managed templates or generated skills directly. Prefer an official preset or extension
@@ -37,16 +38,16 @@ Backlog issues do not need feature directories. Before generating a spec:
 
 Existing nested specs remain valid historical material. Do not bulk-migrate or regenerate them.
 
-## Interactive lifecycle with Codex skills
+## Interactive lifecycle with Claude Code skills
 
-Invoke the installed skills in order:
+Invoke the installed skills in order from a Claude Code session:
 
 ```text
-$speckit-specify <feature description and GitHub issue URL>
-$speckit-clarify
-$speckit-plan
-$speckit-tasks
-$speckit-implement
+/speckit-specify <feature description and GitHub issue URL>
+/speckit-clarify
+/speckit-plan
+/speckit-tasks
+/speckit-implement
 ```
 
 `speckit-specify` creates one feature directory under `specs/` and records the active directory in
@@ -63,10 +64,10 @@ implementing them.
 
 The following skills are optional:
 
-- `$speckit-checklist`: validate requirements-writing quality for a targeted concern;
-- `$speckit-analyze`: read-only consistency analysis after tasks are generated;
-- `$speckit-converge`: append genuinely missing work after an implementation pass;
-- `$speckit-taskstoissues`: use only when tasks are independently deliverable issues, never as the
+- `/speckit-checklist`: validate requirements-writing quality for a targeted concern;
+- `/speckit-analyze`: read-only consistency analysis after tasks are generated;
+- `/speckit-converge`: append genuinely missing work after an implementation pass;
+- `/speckit-taskstoissues`: use only when tasks are independently deliverable issues, never as the
   default task tracker.
 
 ## Automated upstream workflow
@@ -76,7 +77,7 @@ gates:
 
 ```bash
 specify workflow run speckit \
-  --input integration=codex \
+  --input integration=claude \
   --input 'spec=<feature description and GitHub issue URL>'
 ```
 
@@ -101,9 +102,10 @@ pnpm typecheck
 pnpm test
 ```
 
-Run affected browser journeys when `apps/web` changes. Then obtain a fresh read-only Codex review
-of the final diff and resolve or explicitly justify every confirmed finding. Human review and merge
-remain mandatory.
+Run affected browser journeys when `apps/web` changes. Then obtain a fresh read-only Claude Code
+review of the final diff, either by running `/code-review` in a new Claude Code session on the
+branch or by delegating the review to a read-only subagent that did not write the change. Resolve
+or explicitly justify every confirmed finding. Human review and merge remain mandatory.
 
 ## Maintenance boundary
 

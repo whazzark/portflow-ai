@@ -380,14 +380,14 @@ Pour naviguer dans le projet :
 - [apps/api/docs/adr](./apps/api/docs/adr) : ADRs spécifiques à l'API ;
 - [apps/web/docs/adr](./apps/web/docs/adr) : ADRs spécifiques au frontend ;
 - [docs/agents/issue-tracker.md](./docs/agents/issue-tracker.md) : fonctionnement du tracker (GitHub Issues) ;
-- [docs/agents/spec-kit.md](./docs/agents/spec-kit.md) : guide opératoire Codex + Spec Kit.
+- [docs/agents/spec-kit.md](./docs/agents/spec-kit.md) : guide opératoire Claude Code + Spec Kit.
 
 ## Workflow projet
 
 La source canonique de planification est GitHub :
 
 - [GitHub Issues](https://github.com/whazzark/portflow-ai/issues) : intake et coordination du delivery ;
-- [docs/architecture/ai-development-factory.md](./docs/architecture/ai-development-factory.md) : workflow Codex + Spec Kit ;
+- [docs/architecture/ai-development-factory.md](./docs/architecture/ai-development-factory.md) : workflow Claude Code + Spec Kit ;
 - [docs/agents/spec-kit.md](./docs/agents/spec-kit.md) : commandes quotidiennes, gates, maintenance et dépannage ;
 - [GitHub Project Portflow Roadmap](https://github.com/users/whazzark/projects/5) : statut, priorité et ordre de livraison.
 
