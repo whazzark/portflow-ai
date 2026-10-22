@@ -1,6 +1,6 @@
 import type { ReactNode, Ref } from 'react'
 
-import { formatTonnes } from '@/features/discharges/discharge-detail-view'
+import { formatDischargePeriod, formatTonnes } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { BackToDischargesLink } from '@/features/discharges/ui/detail/back-to-discharges-link'
 import { DischargeStatusBadge } from '@/features/discharges/ui/detail/discharge-status-badge'
@@ -21,6 +21,10 @@ export function DischargeDetailHeader({
   actions,
   headingRef,
 }: DischargeDetailHeaderProps) {
+  // An active discharge is read by the period it spans rather than by when it was expected. The
+  // closed record keeps its own layout until its overview is redone.
+  const spansPeriod = discharge.status === 'ACTIVE'
+
   return (
     <div className="flex flex-col gap-3">
       <BackToDischargesLink />
@@ -43,19 +47,26 @@ export function DischargeDetailHeader({
                 <ReferenceLabel name={discharge.dock.name} status={discharge.dock.status} />
               </dd>
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <dt>Expected start</dt>
-              <dd className="font-medium text-foreground">
-                {formatDateTime(discharge.expectedStartAt)}
-              </dd>
-            </div>
-            {discharge.startedAt && (
+            {spansPeriod ? (
+              <>
+                <div className="flex items-baseline gap-1.5">
+                  <dt>Period</dt>
+                  <dd className="font-medium text-foreground tabular-nums">
+                    {formatDischargePeriod(discharge)}
+                  </dd>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <dt>IMO</dt>
+                  <dd className="font-medium text-foreground tabular-nums">
+                    {discharge.vesselImo ?? 'Not specified'}
+                  </dd>
+                </div>
+              </>
+            ) : (
               <div className="flex items-baseline gap-1.5">
-                <dt>Started</dt>
+                <dt>Expected start</dt>
                 <dd className="font-medium text-foreground">
-                  {formatDateTime(discharge.startedAt)}
-                  {discharge.startedBy &&
-                    ` by ${discharge.startedBy.firstName} ${discharge.startedBy.lastName}`}
+                  {formatDateTime(discharge.expectedStartAt)}
                 </dd>
               </div>
             )}

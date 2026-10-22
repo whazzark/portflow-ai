@@ -6,6 +6,8 @@ import { buildDischargeDetail, listedDischarge } from '../support/fixtures'
 import { mockDischargeDetail, renderDischargeDetail } from '../support/test-helpers'
 
 const OCEAN_CEDAR = listedDischarge('MV Ocean Cedar', 'ACTIVE')
+// A planned discharge keeps the overview card; an active one reads its facts from the header alone.
+const ATLANTIC_DAWN = listedDischarge('MV Atlantic Dawn', 'PLANNED')
 
 function field(region: HTMLElement, label: string) {
   const term = within(region).getByText(label, { selector: 'dt' })
@@ -24,16 +26,16 @@ test('names the vessel and states the status of the discharge', async () => {
 
 test('labels the dock, the expected start, and the expected tonnage beside the vessel name', async () => {
   mockDischargeDetail({
-    details: [buildDischargeDetail(OCEAN_CEDAR, { expectedTonnage: '32150.750' })],
+    details: [buildDischargeDetail(ATLANTIC_DAWN, { expectedTonnage: '32150.750' })],
   })
 
-  renderDischargeDetail(OCEAN_CEDAR.id)
+  renderDischargeDetail(ATLANTIC_DAWN.id)
 
-  const heading = await screen.findByRole('heading', { level: 1, name: 'MV Ocean Cedar' })
+  const heading = await screen.findByRole('heading', { level: 1, name: 'MV Atlantic Dawn' })
   const header = heading.parentElement?.nextElementSibling as HTMLElement
-  expect(field(header, 'Dock')).toHaveTextContent('Quai Est')
+  expect(field(header, 'Dock')).toHaveTextContent('Quai Nord')
   expect(field(header, 'Expected start')).toHaveTextContent(
-    formatDateTime(OCEAN_CEDAR.expectedStartAt),
+    formatDateTime(ATLANTIC_DAWN.expectedStartAt),
   )
   expect(field(header, 'Expected tonnage')).toHaveTextContent('32,150.750 t')
 })
@@ -41,21 +43,21 @@ test('labels the dock, the expected start, and the expected tonnage beside the v
 test('shows the vessel, the dock, the expected start, and the expected tonnage', async () => {
   mockDischargeDetail({
     details: [
-      buildDischargeDetail(OCEAN_CEDAR, {
+      buildDischargeDetail(ATLANTIC_DAWN, {
         expectedTonnage: '32150.750',
         vesselComment: 'Draught restricted at low tide',
       }),
     ],
   })
 
-  renderDischargeDetail(OCEAN_CEDAR.id)
+  renderDischargeDetail(ATLANTIC_DAWN.id)
 
   const overview = await screen.findByRole('region', { name: 'Overview' })
-  expect(field(overview, 'IMO')).toHaveTextContent('9410002')
+  expect(field(overview, 'IMO')).toHaveTextContent('9410001')
   expect(field(overview, 'Vessel comment')).toHaveTextContent('Draught restricted at low tide')
-  expect(field(overview, 'Dock')).toHaveTextContent('Quai Est')
+  expect(field(overview, 'Dock')).toHaveTextContent('Quai Nord')
   expect(field(overview, 'Expected start')).toHaveTextContent(
-    formatDateTime(OCEAN_CEDAR.expectedStartAt),
+    formatDateTime(ATLANTIC_DAWN.expectedStartAt),
   )
   expect(field(overview, 'Expected tonnage')).toHaveTextContent('32,150.750 t')
 })
@@ -82,7 +84,8 @@ test('keeps an archived dock readable and says it is archived', async () => {
 
   renderDischargeDetail(OCEAN_CEDAR.id)
 
-  const overview = await screen.findByRole('region', { name: 'Overview' })
-  expect(field(overview, 'Dock')).toHaveTextContent('Quai Est')
-  expect(field(overview, 'Dock')).toHaveTextContent('Archived')
+  const heading = await screen.findByRole('heading', { level: 1, name: 'MV Ocean Cedar' })
+  const header = heading.parentElement?.nextElementSibling as HTMLElement
+  expect(field(header, 'Dock')).toHaveTextContent('Quai Est')
+  expect(field(header, 'Dock')).toHaveTextContent('Archived')
 })

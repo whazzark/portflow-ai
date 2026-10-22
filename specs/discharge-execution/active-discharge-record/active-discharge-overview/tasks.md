@@ -31,8 +31,8 @@ at the stated path to the stated contract so the sibling branch adopts it.
 
 **Purpose**: Start from current `master` and know which shared pieces exist.
 
-- [ ] T001 Rebase `feat/328-active-discharge-overview` on `origin/master` (the worktree's base sync), run `pnpm install`, and record in `specs/discharge-execution/active-discharge-record/active-discharge-overview/research.md` (under D2, "Implementation status") which of #323 (dock occupancy read), #324 (header Period/IMO, `dischargePeriod`, dock timeline), and #327 (week calendar) have merged
-- [ ] T002 Run `pnpm --filter @portflow/web test` once to confirm a green baseline before any change
+- [X] T001 Rebase `feat/328-active-discharge-overview` on `origin/master` (the worktree's base sync), run `pnpm install`, and record in `specs/discharge-execution/active-discharge-record/active-discharge-overview/research.md` (under D2, "Implementation status") which of #323 (dock occupancy read), #324 (header Period/IMO, `dischargePeriod`, dock timeline), and #327 (week calendar) have merged
+- [X] T002 Run `pnpm --filter @portflow/web test` once to confirm a green baseline before any change
 
 ---
 
@@ -40,9 +40,9 @@ at the stated path to the stated contract so the sibling branch adopts it.
 
 **Purpose**: Test fixtures and the shared period helper every story reads.
 
-- [ ] T003 [P] Add an `activeDischargeDetail()` fixture to `apps/web/src/features/discharges/__tests__/support/fixtures.ts` modelled on the design's MV Ocean Cedar: status `ACTIVE`, `startedAt` 14/09/2026 06:00, IMO `9300002`, vessel comment, 5 lots over 5 customers (2 with a door in effect, 3 without), a 10-truck pool with 1 released, and 14 shifts in planned order (5 `COMPLETED` with `actualStartAt`, shift 6 `ACTIVE` with 2 trucks / 2 doors / 1 weighing area and responsible Claire Martin, 8 `PLANNED`, next one Sophie Dubois with 6 trucks); reuse `buildDischargeDetail`, `buildShift`, `buildLot`, `buildPoolEntry`, `buildDoorPeriod`
-- [ ] T004 [P] Write failing unit tests for `dischargePeriod` in `apps/web/src/features/discharges/__tests__/discharge-detail-view.test.ts`: ACTIVE and CLOSED start at `startedAt`, PLANNED at `expectedStartAt`, `to` is the latest `plannedEndAt` and `null` without shifts **(reuse: skip if #324 shipped it with these cases)**
-- [ ] T005 Implement `dischargePeriod(discharge)` and a `formatDischargePeriod` (`dd/mm/yyyy, hh:mm → dd/mm/yyyy, hh:mm` via `helpers/dates`) in `apps/web/src/features/discharges/discharge-detail-view.ts` until T004 passes **(reuse)**
+- [X] T003 [P] Add an `activeDischargeDetail()` fixture to `apps/web/src/features/discharges/__tests__/support/fixtures.ts` modelled on the design's MV Ocean Cedar: status `ACTIVE`, `startedAt` 14/09/2026 06:00, IMO `9300002`, vessel comment, 5 lots over 5 customers (2 with a door in effect, 3 without), a 10-truck pool with 1 released, and 14 shifts in planned order (5 `COMPLETED` with `actualStartAt`, shift 6 `ACTIVE` with 2 trucks / 2 doors / 1 weighing area and responsible Claire Martin, 8 `PLANNED`, next one Sophie Dubois with 6 trucks); reuse `buildDischargeDetail`, `buildShift`, `buildLot`, `buildPoolEntry`, `buildDoorPeriod`
+- [X] T004 [P] Write failing unit tests for `dischargePeriod` in `apps/web/src/features/discharges/__tests__/discharge-detail-view.test.ts`: ACTIVE and CLOSED start at `startedAt`, PLANNED at `expectedStartAt`, `to` is the latest `plannedEndAt` and `null` without shifts **(reuse: skip if #324 shipped it with these cases)**
+- [X] T005 Implement `dischargePeriod(discharge)` and a `formatDischargePeriod` (`dd/mm/yyyy, hh:mm → dd/mm/yyyy, hh:mm` via `helpers/dates`) in `apps/web/src/features/discharges/discharge-detail-view.ts` until T004 passes **(reuse)**
 
 **Checkpoint**: Fixture and period helper ready; stories can start.
 
@@ -60,15 +60,15 @@ Delivered before US1 because US1's card sits in the Overview this phase reshapes
 
 ### Tests (write first, must fail)
 
-- [ ] T006 [P] [US2] Write `apps/web/src/features/discharges/__tests__/detail/active-header.test.tsx`: for each tab of the active fixture, the `h1` is the vessel, the badge reads `Active`, the facts list has `Dock`, `Period` (`14/09/2026, 06:00 → 18/09/2026, 22:00`), `IMO`, `Expected tonnage`; no `Edit` / `Start` button for an operations lead; `Vessel comment` shown on Overview only and absent when the comment is null; the Overview has no region named « Overview » repeating IMO / dock / tonnage
-- [ ] T007 [P] [US2] Update `apps/web/src/features/discharges/__tests__/detail/identity.test.tsx` to the new header facts (Period and IMO in the header instead of Expected start / Started) for active and closed discharges, keeping its planned-discharge expectations aligned with #324 if merged
+- [X] T006 [P] [US2] Write `apps/web/src/features/discharges/__tests__/detail/active-header.test.tsx`: for each tab of the active fixture, the `h1` is the vessel, the badge reads `Active`, the facts list has `Dock`, `Period` (`14/09/2026, 06:00 → 18/09/2026, 22:00`), `IMO`, `Expected tonnage`; no `Edit` / `Start` button for an operations lead; `Vessel comment` shown on Overview only and absent when the comment is null; the Overview has no region named « Overview » repeating IMO / dock / tonnage
+- [X] T007 [P] [US2] Update `apps/web/src/features/discharges/__tests__/detail/identity.test.tsx` to the new header facts (Period and IMO in the header instead of Expected start / Started) for active and closed discharges, keeping its planned-discharge expectations aligned with #324 if merged
 
 ### Implementation
 
-- [ ] T008 [US2] Change the facts line of `apps/web/src/features/discharges/ui/detail/discharge-detail-header.tsx` to `Dock` · `Period` (from `formatDischargePeriod`) · `IMO` (« Not specified » when null) · `Expected tonnage` **(reuse)**
-- [ ] T009 [P] [US2] Create `apps/web/src/features/discharges/ui/detail/vessel-comment.tsx`: a labelled « Vessel comment » block rendering nothing when the comment is null **(reuse)**
-- [ ] T010 [US2] In `apps/web/src/features/discharges/ui/detail/discharge-detail-tabs.tsx`, render the Overview per status: for `ACTIVE`, `VesselComment` then placeholders for the US1/US3/US4 cards, and no `DischargeIdentityCard`; keep planned/closed rendering untouched unless #324/#329 already changed it
-- [ ] T011 [US2] Confirm `apps/web/src/features/discharges/ui/detail/discharge-detail-page.tsx` passes no header actions for an `ACTIVE` discharge (Edit and Start stay planned-only); make T006 and T007 pass
+- [X] T008 [US2] Change the facts line of `apps/web/src/features/discharges/ui/detail/discharge-detail-header.tsx` to `Dock` · `Period` (from `formatDischargePeriod`) · `IMO` (« Not specified » when null) · `Expected tonnage` **(reuse)**
+- [X] T009 [P] [US2] Create `apps/web/src/features/discharges/ui/detail/vessel-comment.tsx`: a labelled « Vessel comment » block rendering nothing when the comment is null **(reuse)**
+- [X] T010 [US2] In `apps/web/src/features/discharges/ui/detail/discharge-detail-tabs.tsx`, render the Overview per status: for `ACTIVE`, `VesselComment` then placeholders for the US1/US3/US4 cards, and no `DischargeIdentityCard`; keep planned/closed rendering untouched unless #324/#329 already changed it
+- [X] T011 [US2] Confirm `apps/web/src/features/discharges/ui/detail/discharge-detail-page.tsx` passes no header actions for an `ACTIVE` discharge (Edit and Start stay planned-only); make T006 and T007 pass
 
 **Checkpoint**: US2 green; the active record shares the planned header.
 
