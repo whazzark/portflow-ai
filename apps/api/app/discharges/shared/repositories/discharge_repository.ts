@@ -41,7 +41,9 @@ export default abstract class DischargeRepository {
    * `null`, never a database error.
    *
    * Beside the graph come the other planned or active discharges holding each truck this one
-   * holds, so every role reading the pool sees which trucks another plan competes for.
+   * holds, so every role reading the pool sees which trucks another plan competes for. A planned
+   * discharge also reads the other planned or active discharges assigned to its dock, with the span
+   * their shifts are planned over, so its dock timeline shows who else the dock is promised to.
    */
   abstract findDetail(id: string): Promise<DischargeDetailRead | null>
 

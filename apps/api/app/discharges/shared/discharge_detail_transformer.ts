@@ -29,7 +29,7 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
    * go blank exactly where it was archived.
    */
   toObject() {
-    const { discharge: resource, otherHoldings } = this.resource
+    const { discharge: resource, otherHoldings, dockOccupations } = this.resource
     const discharge = this.pick(resource, [
       'id',
       'status',
@@ -140,6 +140,17 @@ export default class DischargeDetailTransformer extends BaseTransformer<Discharg
         // Derived from the eligibility of the responsible, whose role and access status stay
         // administration's: the gap says that they can no longer be responsible, never why.
         readinessGaps: plannedShiftReadinessGaps(shift, resource),
+      })),
+      // Who else the dock is promised to, drawn by a planned discharge's timeline. Only what the
+      // list already tells every role, plus the span of each one's planned shifts.
+      dockOccupations: dockOccupations.map((occupation) => ({
+        dischargeId: occupation.dischargeId,
+        vesselName: occupation.vesselName,
+        status: occupation.status,
+        expectedStartAt: occupation.expectedStartAt,
+        startedAt: occupation.startedAt,
+        plannedStartAt: occupation.plannedStartAt,
+        plannedEndAt: occupation.plannedEndAt,
       })),
     }
   }

@@ -1,7 +1,9 @@
 import db from '@adonisjs/lucid/services/db'
+import { DateTime } from 'luxon'
 
 import type {
   DischargeDetailRead,
+  DockOccupation,
   OtherHolding,
   TruckCandidatesRead,
 } from '#discharges/shared/discharge_detail_read'
@@ -108,6 +110,10 @@ export default class LucidDischargeRepository extends DischargeRepository {
     return {
       discharge,
       otherHoldings: await this.findOtherHoldings(heldTruckIds, discharge.id),
+      dockOccupations:
+        discharge.status === 'PLANNED'
+          ? await this.findDockOccupations(discharge.dockId, discharge.id)
+          : [],
     }
   }
 
@@ -200,6 +206,49 @@ export default class LucidDischargeRepository extends DischargeRepository {
     }
 
     return holdings
+  }
+
+  /**
+   * The planned and active discharges, other than `dischargeId`, assigned to this dock. Their shifts
+   * are read for their planned times only and reduced here: a dock serves a handful of discharges,
+   * and the model keeps the instants typed where a raw aggregate would hand back driver strings.
+   */
+  protected async findDockOccupations(
+    dockId: string,
+    dischargeId: string,
+  ): Promise<DockOccupation[]> {
+    const discharges = await Discharge.query()
+      .where('dockId', dockId)
+      .whereIn('status', ['PLANNED', 'ACTIVE'])
+      .whereNot('id', dischargeId)
+      .preload('shifts', (shifts) =>
+        shifts.select('id', 'dischargeId', 'plannedStartAt', 'plannedEndAt'),
+      )
+
+    const occupations = discharges.map((discharge) => {
+      return {
+        dischargeId: discharge.id,
+        vesselName: discharge.vesselName,
+        status: discharge.status as DockOccupation['status'],
+        expectedStartAt: discharge.expectedStartAt,
+        startedAt: discharge.startedAt ?? null,
+        plannedStartAt:
+          DateTime.min(...discharge.shifts.map((shift) => shift.plannedStartAt)) ?? null,
+        plannedEndAt: DateTime.max(...discharge.shifts.map((shift) => shift.plannedEndAt)) ?? null,
+      }
+    })
+
+    // Active first: it is the one holding the dock now. Then in the order they are planned to begin,
+    // the identity breaking ties so two reads never swap them.
+    const begins = (occupation: DockOccupation) =>
+      (occupation.plannedStartAt ?? occupation.expectedStartAt).toMillis()
+
+    return occupations.sort(
+      (left, right) =>
+        Number(left.status !== 'ACTIVE') - Number(right.status !== 'ACTIVE') ||
+        begins(left) - begins(right) ||
+        left.dischargeId.localeCompare(right.dischargeId),
+    )
   }
 
   /**

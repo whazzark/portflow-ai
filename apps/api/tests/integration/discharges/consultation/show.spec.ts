@@ -412,4 +412,101 @@ test.group('Discharge detail HTTP contract', (group) => {
       response.assertBodyContains({ error: { code: 'E_DISCHARGE_NOT_FOUND' } })
     }
   })
+  test('lists the other planned and active discharges on a planned discharge dock', async ({
+    assert,
+    client,
+  }) => {
+    const dock = await DockFactory.create()
+    const otherDock = await DockFactory.create()
+    const responsible = await UserFactory.apply('active')
+      .merge({ role: 'OPERATIONS_LEAD' })
+      .create()
+    const planned = await DischargeFactory.merge({
+      dockId: dock.id,
+      expectedStartAt: DateTime.utc(2026, 11, 2, 6),
+      vesselName: 'MV Planned Reader',
+    }).create()
+    const active = await DischargeFactory.apply('active')
+      .merge({
+        dockId: dock.id,
+        expectedStartAt: DateTime.utc(2026, 10, 30, 6),
+        startedAt: DateTime.utc(2026, 10, 30, 6, 12),
+        vesselName: 'MV Active Holder',
+      })
+      .create()
+    for (const [sequence, start, end] of [
+      [1, DateTime.utc(2026, 10, 30, 6), DateTime.utc(2026, 10, 30, 18)],
+      [2, DateTime.utc(2026, 11, 1, 6), DateTime.utc(2026, 11, 2, 12)],
+    ] as const) {
+      await ShiftFactory.merge({
+        dischargeId: active.id,
+        sequence,
+        plannedEndAt: end,
+        plannedStartAt: start,
+        responsibleUserId: responsible.id,
+      }).create()
+    }
+    const competitor = await DischargeFactory.merge({
+      dockId: dock.id,
+      expectedStartAt: DateTime.utc(2026, 11, 1, 6),
+      vesselName: 'MV Planned Competitor',
+    }).create()
+    await DischargeFactory.apply('closed').merge({ dockId: dock.id }).create()
+    await DischargeFactory.merge({ dockId: otherDock.id }).create()
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+
+    const response = await client.get(`/api/v1/discharges/${planned.id}`).loginAs(observer)
+
+    response.assertStatus(200)
+    // Instants compared as moments: the wire's offset notation is the serializer's, not this rule's.
+    const moment = (value: string | null) =>
+      value === null ? null : DateTime.fromISO(value).toMillis()
+    const occupations = response
+      .body()
+      .data.dockOccupations.map((occupation: Record<string, string | null>) => ({
+        ...occupation,
+        expectedStartAt: moment(occupation.expectedStartAt),
+        startedAt: moment(occupation.startedAt),
+        plannedStartAt: moment(occupation.plannedStartAt),
+        plannedEndAt: moment(occupation.plannedEndAt),
+      }))
+    assert.deepEqual(occupations, [
+      {
+        dischargeId: active.id,
+        vesselName: 'MV Active Holder',
+        status: 'ACTIVE',
+        expectedStartAt: DateTime.utc(2026, 10, 30, 6).toMillis(),
+        startedAt: DateTime.utc(2026, 10, 30, 6, 12).toMillis(),
+        plannedStartAt: DateTime.utc(2026, 10, 30, 6).toMillis(),
+        plannedEndAt: DateTime.utc(2026, 11, 2, 12).toMillis(),
+      },
+      {
+        dischargeId: competitor.id,
+        vesselName: 'MV Planned Competitor',
+        status: 'PLANNED',
+        expectedStartAt: DateTime.utc(2026, 11, 1, 6).toMillis(),
+        startedAt: null,
+        plannedStartAt: null,
+        plannedEndAt: null,
+      },
+    ])
+  })
+
+  test('lists no dock occupations for an active or closed discharge', async ({
+    assert,
+    client,
+  }) => {
+    const dock = await DockFactory.create()
+    const active = await DischargeFactory.apply('active').merge({ dockId: dock.id }).create()
+    const closed = await DischargeFactory.apply('closed').merge({ dockId: dock.id }).create()
+    await DischargeFactory.merge({ dockId: dock.id }).create()
+    const observer = await UserFactory.apply('active').merge({ role: 'OBSERVER' }).create()
+
+    for (const discharge of [active, closed]) {
+      const response = await client.get(`/api/v1/discharges/${discharge.id}`).loginAs(observer)
+
+      response.assertStatus(200)
+      assert.deepEqual(response.body().data.dockOccupations, [])
+    }
+  })
 })
