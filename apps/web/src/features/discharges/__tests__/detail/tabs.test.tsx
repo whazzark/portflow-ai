@@ -2,8 +2,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 
-import { formatTonnes } from '@/features/discharges/discharge-detail-view'
-import { formatDateTime } from '@/helpers/dates'
+import { formatShiftPeriod, formatTonnes } from '@/features/discharges/discharge-detail-view'
 import { renderApp } from '@/test/render-app'
 import {
   buildDischargeDetail,
@@ -21,6 +20,9 @@ import {
 } from '../support/test-helpers'
 
 allowFormJourneyTime()
+
+// A planned discharge's overview opens on its dock timeline, named after the dock.
+const OVERVIEW_FIRST_CARD = 'Dock Quai Nord'
 
 const PLANNED = buildDischargeDetail(listedDischarge('MV Atlantic Dawn', 'PLANNED'), {
   expectedTonnage: '2000.000',
@@ -53,7 +55,7 @@ test('opens on the overview, with the sections in preparation order and their co
     'true',
   )
   expect(tabNames()).toEqual(['Overview', 'Product lots (2)', 'Truck pool (1)', 'Shifts (2)'])
-  expect(screen.getByRole('region', { name: 'Overview' })).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: OVERVIEW_FIRST_CARD })).toBeInTheDocument()
   expect(screen.queryByRole('region', { name: 'Product lots' })).not.toBeInTheDocument()
 })
 
@@ -64,7 +66,7 @@ test('opens the section the address names', async () => {
 
   expect(await screen.findByRole('region', { name: 'Shifts' })).toBeInTheDocument()
   expect(screen.getByRole('tab', { name: 'Shifts (2)' })).toHaveAttribute('aria-selected', 'true')
-  expect(screen.queryByRole('region', { name: 'Overview' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('region', { name: OVERVIEW_FIRST_CARD })).not.toBeInTheDocument()
 })
 
 test('falls back to the overview for a section it does not know', async () => {
@@ -72,7 +74,7 @@ test('falls back to the overview for a section it does not know', async () => {
 
   renderDischargeDetail(PLANNED.id, '?tab=nope')
 
-  expect(await screen.findByRole('region', { name: 'Overview' })).toBeInTheDocument()
+  expect(await screen.findByRole('region', { name: OVERVIEW_FIRST_CARD })).toBeInTheDocument()
   expect(screen.queryByText('Discharge not found')).not.toBeInTheDocument()
 })
 
@@ -84,7 +86,7 @@ test('keeps the chosen section in the address, without reading the discharge aga
 
   // biome-ignore lint/security/noSecrets: a shared consultation address, not a credential
   const { router } = renderDischargeDetail(PLANNED.id, '?status=planned&search=Dawn')
-  await screen.findByRole('region', { name: 'Overview' })
+  await screen.findByRole('region', { name: OVERVIEW_FIRST_CARD })
   const readsBefore = state.detailRequests
 
   await user.click(screen.getByRole('tab', { name: 'Truck pool (1)' }))
@@ -98,7 +100,7 @@ test('keeps the chosen section in the address, without reading the discharge aga
   expect(state.detailRequests).toBe(readsBefore)
 
   await user.click(screen.getByRole('tab', { name: 'Overview' }))
-  await screen.findByRole('region', { name: 'Overview' })
+  await screen.findByRole('region', { name: OVERVIEW_FIRST_CARD })
   expect(router.state.location.search).not.toHaveProperty('tab')
 
   // A reload is a fresh app on the same address.
@@ -149,7 +151,7 @@ test.each(['product-lots', 'truck-pool', 'shifts'] as const)(
     // Read beside the heading: a section may repeat one of these facts, as the lots' total does.
     const facts = within(heading.parentElement?.parentElement as HTMLElement)
     expect(facts.getByText(PLANNED.dock.name)).toBeInTheDocument()
-    expect(facts.getByText(formatDateTime(PLANNED.expectedStartAt))).toBeInTheDocument()
+    expect(facts.getByText(formatShiftPeriod(PLANNED.shifts[0]))).toBeInTheDocument()
     expect(facts.getByText(formatTonnes('2000.000'))).toBeInTheDocument()
   },
 )

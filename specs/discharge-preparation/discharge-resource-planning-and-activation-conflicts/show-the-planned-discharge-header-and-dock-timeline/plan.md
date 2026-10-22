@@ -137,7 +137,8 @@ apps/web/src/features/discharges/
   active one. The web derives the occupied interval: active → from `startedAt` to `plannedEndAt`, or
   open-ended when a later end is unknown; planned → planned period, or the expected start instant when
   it has no shift.
-- **D3 Start check for the banner** (R3): the page subscribes to `dischargeQueries.startCheck(id)`
+- **D3 Start check for the banner** (R3; see its implementation note for the separate
+  `startBlockers` key adopted during implementation): the page subscribes to `dischargeQueries.startCheck(id)`
   only when `discharge.status === 'PLANNED'` and the viewer may start (`canPrepareDischarges`, which
   mirrors `DischargePolicy.start`). The dialog keeps its own subscription to the same key, so its
   mount refetch updates the banner too (SC-003). `applyDetail` and the stale-refusal refresh also

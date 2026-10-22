@@ -15,6 +15,7 @@ import { DischargePreparationCard } from '@/features/discharges/ui/detail/discha
 import { DischargeProductLotsCard } from '@/features/discharges/ui/detail/discharge-product-lots-card'
 import { DischargeShiftsCard } from '@/features/discharges/ui/detail/discharge-shifts-card'
 import { DischargeTruckPoolCard } from '@/features/discharges/ui/detail/discharge-truck-pool-card'
+import { DockTimelineCard } from '@/features/discharges/ui/detail/dock-timeline-card'
 
 const TAB_LABELS = {
   overview: 'Overview',
@@ -31,6 +32,8 @@ type DischargeDetailTabsProps = {
   canAddShifts: boolean
   tab: DischargeDetailTab
   onTabChange: (tab: DischargeDetailTab) => void
+  /** The sections the start check reports a problem in; each says so on its tab. */
+  problemTabs?: ReadonlySet<DischargeDetailTab>
 }
 
 /**
@@ -43,6 +46,7 @@ export function DischargeDetailTabs({
   canAddShifts,
   tab,
   onTabChange,
+  problemTabs = new Set(),
 }: DischargeDetailTabsProps) {
   const counts = detailTabCounts(discharge)
   const tabList = useRef<HTMLDivElement>(null)
@@ -78,14 +82,32 @@ export function DischargeDetailTabs({
                     <span className="text-muted-foreground tabular-nums">({count})</span>
                   </>
                 )}
+                {/* One dot however many problems: the start confirmation lists them. Said in words
+                    for assistive technology, so the signal never rests on colour alone. */}
+                {problemTabs.has(value) && (
+                  <>
+                    <span aria-hidden="true" className="size-1.5 rounded-full bg-warning" />
+                    <span className="sr-only">, contains a problem</span>
+                  </>
+                )}
               </TabsTrigger>
             )
           })}
         </TabsList>
       </div>
       <TabsContent className="grid gap-6" value="overview">
-        <DischargeIdentityCard discharge={discharge} />
-        {discharge.status === 'PLANNED' && <DischargePreparationCard discharge={discharge} />}
+        {/* A planned discharge's header already carries these facts; the started ones keep their
+            card until their own record is redesigned. */}
+        {discharge.status === 'PLANNED' ? (
+          <>
+            {/* Where the dock stands first, then what the plan still lacks. Only here: the other
+                sections are about their own elements, not about the dock. */}
+            <DockTimelineCard discharge={discharge} now={Date.now()} />
+            <DischargePreparationCard discharge={discharge} />
+          </>
+        ) : (
+          <DischargeIdentityCard discharge={discharge} />
+        )}
       </TabsContent>
       <TabsContent value="product-lots">
         <DischargeProductLotsCard canCorrect={canCorrect} discharge={discharge} />

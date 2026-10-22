@@ -163,6 +163,27 @@ export function formatShiftPeriod(shift: {
   return `${formatShiftDay(start)} ${formatShiftTime(plannedStartAt)} – ${sameDay ? endTime : `${formatShiftDay(end)} ${endTime}`}`
 }
 
+/**
+ * When a discharge is planned to work: from its earliest planned shift start to its latest planned
+ * shift end, whatever order the shifts come in, or `null` while no shift is planned.
+ */
+export function plannedPeriod(
+  shifts: Array<{ plannedStartAt: string | null; plannedEndAt: string | null }>,
+) {
+  const starts = shifts.flatMap((shift) => (shift.plannedStartAt ? [shift.plannedStartAt] : []))
+  const ends = shifts.flatMap((shift) => (shift.plannedEndAt ? [shift.plannedEndAt] : []))
+  if (starts.length === 0 || ends.length === 0) {
+    return null
+  }
+
+  const earliest = (left: string, right: string) =>
+    Date.parse(right) < Date.parse(left) ? right : left
+  const latest = (left: string, right: string) =>
+    Date.parse(right) > Date.parse(left) ? right : left
+
+  return { plannedStartAt: starts.reduce(earliest), plannedEndAt: ends.reduce(latest) }
+}
+
 type Named = { id: string; name: string }
 
 type ShiftResources = {

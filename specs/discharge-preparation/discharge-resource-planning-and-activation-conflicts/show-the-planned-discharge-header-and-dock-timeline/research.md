@@ -47,6 +47,14 @@
   - Embedding start problems in the detail DTO — runs the start rules on every detail read for every
     role, and leaks start-only information to observers.
 
+- **Implementation note (deviation)**: sharing the dialog's query key let the page's read consume
+  the dialog's first answer, so the dialog stopped showing its own failure and retry (caught by
+  `start/start-refusals.test.tsx`), contrary to FR-022. The banner therefore reads the same endpoint
+  under `dischargeQueries.startBlockers(id)`, a key nested under the dialog's. Plan changes
+  (`applyDetail`, stale refusals) invalidate only the banner's key, so the dialog never re-checks
+  behind the user's back (a re-check right after a successful start would report "already started").
+  Closing the dialog also refreshes the banner, which keeps the two counts aligned (SC-003).
+
 ## R4 — Mapping problems to tabs
 
 - **Decision**: `problemTabs(sections)` returns the set of `section.link.tab` from

@@ -1,6 +1,10 @@
 import type { ReactNode, Ref } from 'react'
 
-import { formatTonnes } from '@/features/discharges/discharge-detail-view'
+import {
+  formatShiftPeriod,
+  formatTonnes,
+  plannedPeriod,
+} from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { BackToDischargesLink } from '@/features/discharges/ui/detail/back-to-discharges-link'
 import { DischargeStatusBadge } from '@/features/discharges/ui/detail/discharge-status-badge'
@@ -13,6 +17,36 @@ type DischargeDetailHeaderProps = {
   actions?: ReactNode
   /** Where focus goes when an action removes itself, as starting the discharge does. */
   headingRef?: Ref<HTMLHeadingElement>
+  /** The vessel comment, under the facts; the page passes it only where the overview is open. */
+  comment?: string | null
+}
+
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <dt>{label}</dt>
+      <dd className="font-medium text-foreground">{children}</dd>
+    </div>
+  )
+}
+
+/**
+ * A planned discharge is read by when it is planned to work, not only when it is expected: the span
+ * of its shifts, or its expected start while no shift says more.
+ */
+function PlannedPeriod({ discharge }: { discharge: DischargeDetailDto }) {
+  const period = plannedPeriod(discharge.shifts)
+
+  if (!period) {
+    return (
+      <>
+        {formatDateTime(discharge.expectedStartAt)}{' '}
+        <span className="font-normal text-muted-foreground">· No shift planned</span>
+      </>
+    )
+  }
+
+  return <>{formatShiftPeriod(period)}</>
 }
 
 /** What stays in view whichever section is open: which discharge this is, and where it stands. */
@@ -20,6 +54,7 @@ export function DischargeDetailHeader({
   discharge,
   actions,
   headingRef,
+  comment,
 }: DischargeDetailHeaderProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -36,36 +71,41 @@ export function DischargeDetailHeader({
           </div>
           {/* Labelled on screen: a bare dock name or tonnage does not say what it is at a glance.
               The values carry the weight, so the eye lands on them rather than on the labels. */}
-          <dl className="flex flex-wrap gap-x-6 gap-y-1 text-muted-foreground text-sm">
-            <div className="flex items-baseline gap-1.5">
-              <dt>Dock</dt>
-              <dd className="font-medium text-foreground">
-                <ReferenceLabel name={discharge.dock.name} status={discharge.dock.status} />
-              </dd>
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <dt>Expected start</dt>
-              <dd className="font-medium text-foreground">
-                {formatDateTime(discharge.expectedStartAt)}
-              </dd>
-            </div>
-            {discharge.startedAt && (
-              <div className="flex items-baseline gap-1.5">
-                <dt>Started</dt>
-                <dd className="font-medium text-foreground">
-                  {formatDateTime(discharge.startedAt)}
-                  {discharge.startedBy &&
-                    ` by ${discharge.startedBy.firstName} ${discharge.startedBy.lastName}`}
-                </dd>
-              </div>
+          <dl
+            aria-label="Discharge facts"
+            className="flex flex-wrap gap-x-6 gap-y-1 text-muted-foreground text-sm"
+          >
+            <Fact label="Dock">
+              <ReferenceLabel name={discharge.dock.name} status={discharge.dock.status} />
+            </Fact>
+            {discharge.status === 'PLANNED' ? (
+              <>
+                <Fact label="Planned period">
+                  <PlannedPeriod discharge={discharge} />
+                </Fact>
+                <Fact label="IMO">
+                  {discharge.vesselImo ?? (
+                    <span className="font-normal text-muted-foreground italic">Not specified</span>
+                  )}
+                </Fact>
+              </>
+            ) : (
+              <>
+                <Fact label="Expected start">{formatDateTime(discharge.expectedStartAt)}</Fact>
+                {discharge.startedAt && (
+                  <Fact label="Started">
+                    {formatDateTime(discharge.startedAt)}
+                    {discharge.startedBy &&
+                      ` by ${discharge.startedBy.firstName} ${discharge.startedBy.lastName}`}
+                  </Fact>
+                )}
+              </>
             )}
-            <div className="flex items-baseline gap-1.5">
-              <dt>Expected tonnage</dt>
-              <dd className="font-medium text-foreground tabular-nums">
-                {formatTonnes(discharge.expectedTonnage)}
-              </dd>
-            </div>
+            <Fact label="Expected tonnage">
+              <span className="tabular-nums">{formatTonnes(discharge.expectedTonnage)}</span>
+            </Fact>
           </dl>
+          {comment && <p className="max-w-prose text-muted-foreground text-sm">{comment}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>

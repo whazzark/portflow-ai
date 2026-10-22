@@ -23,12 +23,26 @@ export function useDischargeMutations() {
   /**
    * Every discharge write answers with the whole detail, so the detail cache takes the answer as
    * it is — its expected tonnage and lot order included — and only the list, which summarizes
-   * every discharge, is asked again.
+   * every discharge, and what blocks this one's start, which follows its plan, are asked again.
    */
   const applyDetail = async (response: { data: DischargeDetailDto }) => {
     queryClient.setQueryData(dischargeQueries.detail(response.data.id).queryKey, response)
-    await queryClient.invalidateQueries({ exact: true, queryKey: dischargeQueries.all().queryKey })
+    await Promise.all([
+      queryClient.invalidateQueries({ exact: true, queryKey: dischargeQueries.all().queryKey }),
+      queryClient.invalidateQueries({
+        queryKey: dischargeQueries.startBlockers(response.data.id).queryKey,
+      }),
+    ])
   }
+
+  /** The detail on screen is stale, and so is what it shows of what blocks the start. */
+  const refreshDetail = (dischargeId: string) =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: dischargeQueries.detail(dischargeId).queryKey }),
+      queryClient.invalidateQueries({
+        queryKey: dischargeQueries.startBlockers(dischargeId).queryKey,
+      }),
+    ])
 
   /**
    * A refusal saying the discharge moved on — it started, or it or its lot is gone — makes the
@@ -36,9 +50,7 @@ export function useDischargeMutations() {
    */
   const refreshAfterStaleRefusal = async (error: unknown, dischargeId: string) => {
     if (STALE_DETAIL_CODES.has(parseApiError(error).code ?? '')) {
-      await queryClient.invalidateQueries({
-        queryKey: dischargeQueries.detail(dischargeId).queryKey,
-      })
+      await refreshDetail(dischargeId)
     }
   }
 
@@ -85,9 +97,7 @@ export function useDischargeMutations() {
         await refreshAfterStaleRefusal(error, dischargeId)
         // A removal refused for a door assigned meanwhile: the detail on screen is stale.
         if (parseApiError(error).code === 'E_VALIDATION_ERROR') {
-          await queryClient.invalidateQueries({
-            queryKey: dischargeQueries.detail(dischargeId).queryKey,
-          })
+          await refreshDetail(dischargeId)
         }
       },
     }),
@@ -143,9 +153,7 @@ export function useDischargeMutations() {
         // A refused truck left the pool or was suspended meanwhile, or another shift was replanned
         // over this one: the detail on screen is stale.
         if (parseApiError(error).code === 'E_VALIDATION_ERROR') {
-          await queryClient.invalidateQueries({
-            queryKey: dischargeQueries.detail(dischargeId).queryKey,
-          })
+          await refreshDetail(dischargeId)
         }
       },
     }),
@@ -160,9 +168,7 @@ export function useDischargeMutations() {
         // Another user added or started a shift in the way, or a refused resource changed
         // meanwhile: the calendar on screen is stale.
         if (parseApiError(error).code === 'E_VALIDATION_ERROR') {
-          await queryClient.invalidateQueries({
-            queryKey: dischargeQueries.detail(dischargeId).queryKey,
-          })
+          await refreshDetail(dischargeId)
         }
       },
     }),
@@ -176,9 +182,7 @@ export function useDischargeMutations() {
         await refreshAfterStaleRefusal(error, dischargeId)
         // A refused start was checked against a plan that may differ from the one on screen.
         if (parseApiError(error).code === 'E_DISCHARGE_START_REFUSED') {
-          await queryClient.invalidateQueries({
-            queryKey: dischargeQueries.detail(dischargeId).queryKey,
-          })
+          await refreshDetail(dischargeId)
         }
       },
     }),

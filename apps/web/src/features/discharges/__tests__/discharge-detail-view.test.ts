@@ -15,6 +15,7 @@ import {
   lotDoorNotice,
   lotRemovalBlock,
   plannedCoverage,
+  plannedPeriod,
   shiftResources,
   splitPeriods,
   sumTonnes,
@@ -311,5 +312,33 @@ describe('lotDoorCell', () => {
     expect(ids(cell.shown)).toEqual(['a', 'b'])
     expect(cell.history).toHaveLength(3)
     expect(cell.historyLabel).toBe('history')
+  })
+})
+
+describe('plannedPeriod', () => {
+  test('runs from the earliest planned start to the latest planned end, in any order', () => {
+    expect(
+      plannedPeriod([
+        buildShift({
+          plannedStartAt: '2026-10-05T06:00:00.000Z',
+          plannedEndAt: '2026-10-05T14:00:00.000Z',
+        }),
+        buildShift({
+          plannedStartAt: '2026-10-04T06:00:00.000Z',
+          plannedEndAt: '2026-10-04T14:00:00.000Z',
+        }),
+        buildShift({
+          plannedStartAt: '2026-10-04T10:00:00.000Z',
+          plannedEndAt: '2026-10-06T02:00:00.000Z',
+        }),
+      ]),
+    ).toEqual({
+      plannedStartAt: '2026-10-04T06:00:00.000Z',
+      plannedEndAt: '2026-10-06T02:00:00.000Z',
+    })
+  })
+
+  test('is null without a shift', () => {
+    expect(plannedPeriod([])).toBeNull()
   })
 })
