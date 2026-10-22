@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -33,7 +33,5 @@
 
 - Resolved: skipped customers in a bulk archive are reported only in the result toast (no
   pre-submission preview, no API change).
-- One clarification remains open for the human spec review:
-  - FR-007: whether search narrows to code and company name as drawn, or keeps matching lifecycle
-    comments.
-- Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
+- Resolved: search keeps matching lifecycle comments, and its copy says so (FR-007).
+- All items pass; the spec is ready for human review before `/speckit-plan`.

@@ -287,10 +287,10 @@ detail sheet, a dialog and a toast, comparing with the retained light-theme scre
   no-match panel naming the tab and the search term, describing which fields search looks in,
   offering "Clear search", and, when customers in the other tab match, stating their number and
   offering to show that tab.
-- **FR-007**: The search field's placeholder and the no-match explanation MUST describe the fields
-  search actually looks in. [NEEDS CLARIFICATION: The retained design says search looks in "code or
-  company name", while today's search also matches lifecycle comments. Should search narrow to code
-  and company name as drawn, or keep matching lifecycle comments with copy that says so?]
+- **FR-007**: Search MUST keep matching customer code, company name and lifecycle (archive and
+  reactivation) comments, and the search field's placeholder and the no-match explanation MUST say
+  so (e.g. placeholder "Search by code, company name or comment"; explanation "Search looks in
+  customer codes, company names and lifecycle comments.").
 
 **Row menu and selection (administrators)**
 
@@ -375,7 +375,8 @@ detail sheet, a dialog and a toast, comparing with the retained light-theme scre
 - **SC-001**: Each of the 16 retained Customers screens on the design canvas has a matching state in
   the application, and a side-by-side review finds no difference in layout, copy or available
   actions beyond those this specification documents (notably, no pre-submission preview of skipped
-  customers in the bulk selection bar and dialog).
+  customers in the bulk selection bar and dialog, and search copy that mentions lifecycle
+  comments).
 - **SC-002**: Every customer task available before the restyle (search, sort, switch tab, view,
   create, edit, archive, reactivate, bulk archive, bulk reactivate) can still be completed, with no
   increase in the number of steps.
@@ -396,6 +397,9 @@ detail sheet, a dialog and a toast, comparing with the retained light-theme scre
   ("NORDENG is on a planned discharge and will be skipped", "Archive 2 of 3 customers?")? → A: No.
   Skipped customers are reported only in the result toast; the restyle introduces no API change.
   The design's pre-submission preview is a documented deviation.
+- Q: Does search narrow to code and company name, as the design's copy says, or keep matching
+  lifecycle comments? → A: Keep matching lifecycle comments; the placeholder and no-match copy say
+  so. The design's "code or company name" wording is a documented deviation.
 
 ## Assumptions
 
