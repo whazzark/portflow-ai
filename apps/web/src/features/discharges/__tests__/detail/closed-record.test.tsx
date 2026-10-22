@@ -110,7 +110,7 @@ test.each(['overview', 'product-lots', 'truck-pool', 'shifts'] as const)(
         .map((term) => term.textContent),
     ).toEqual(['Dock', 'Period', 'IMO', 'Expected tonnage'])
     expect(field(facts, 'Dock')).toHaveTextContent(CLOSED.dock.name)
-    expect(field(facts, 'IMO')).toHaveTextContent(CLOSED.vesselImo)
+    expect(field(facts, 'IMO')).toHaveTextContent(CLOSED.vesselImo ?? '')
     expect(field(facts, 'Expected tonnage')).toHaveTextContent('1,510.750 t')
   },
 )
