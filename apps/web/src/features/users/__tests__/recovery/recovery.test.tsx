@@ -49,5 +49,5 @@ test('recovers the collection through the retry once the failure is resolved', a
   // The collection loads without a new sign-in: the session was never the problem.
   expect(await screen.findByRole('table', { name: 'Active users' })).toBeInTheDocument()
   expect(screen.queryByText(/Unable to load users/i)).not.toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Active \(2\)/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /Active 2/ })).toBeInTheDocument()
 })

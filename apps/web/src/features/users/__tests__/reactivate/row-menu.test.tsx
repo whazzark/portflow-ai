@@ -52,7 +52,7 @@ test('reactivates a user from its row without opening the record', async () => {
   // The record sheet was never opened: the row menu is enough on its own.
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   await waitFor(() =>
-    expect(screen.getByRole('tab', { name: /Deactivated \(0\)/ })).toBeInTheDocument(),
+    expect(screen.getByRole('tab', { name: /Deactivated 0/ })).toBeInTheDocument(),
   )
 })
 

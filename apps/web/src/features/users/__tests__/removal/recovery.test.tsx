@@ -25,7 +25,7 @@ test('reports a retryable failure and removes nothing when the API is unreachabl
   // Nothing was removed, so the confirmation is still there to retry from, over a listed user. The
   // record sheet is modal, which takes the tabs behind it out of the accessibility tree.
   expect(screen.getByRole('alertdialog')).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Pending \(1\)/, hidden: true })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /Pending 1/, hidden: true })).toBeInTheDocument()
   expect(screen.queryByText('User “Chloé Durand” removed')).not.toBeInTheDocument()
 })
 
@@ -43,8 +43,6 @@ test('removes the user exactly once when retried after the API is back', async (
   await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove' }))
 
   expect(await screen.findByText('User “Chloé Durand” removed')).toBeInTheDocument()
-  await waitFor(() =>
-    expect(screen.getByRole('tab', { name: /Pending \(0\)/ })).toBeInTheDocument(),
-  )
+  await waitFor(() => expect(screen.getByRole('tab', { name: /Pending 0/ })).toBeInTheDocument())
   expect(screen.queryByText(/no longer exists/i)).not.toBeInTheDocument()
 })

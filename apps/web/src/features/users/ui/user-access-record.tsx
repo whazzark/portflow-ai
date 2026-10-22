@@ -86,15 +86,15 @@ export function UserAccessRecord({ user, canEdit, onEdit }: UserAccessRecordProp
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <SheetHeader className="shrink-0 border-b">
-        <SheetTitle className="flex items-center gap-3">
-          <UserAvatar aria-hidden={true} size="sm" user={user} />
-          {formatFullName(user)}
-        </SheetTitle>
-        <SheetDescription>{user.email}</SheetDescription>
+      <SheetHeader className="shrink-0 flex-row items-start gap-3.5 border-b py-5 pr-14 pl-6">
+        <UserAvatar aria-hidden={true} className="size-11" user={user} />
+        <div className="grid min-w-0 gap-1">
+          <SheetTitle className="font-semibold text-lg">{formatFullName(user)}</SheetTitle>
+          <SheetDescription className="truncate">{user.email}</SheetDescription>
+        </div>
       </SheetHeader>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-5 text-sm">
+      <div className="min-h-0 flex-1 overflow-y-auto p-6">
+        <dl className="grid grid-cols-2 gap-5 text-sm">
           <ResourceDetailField label="Role" value={USER_ROLE_LABELS[user.role]} />
           <div className="grid gap-1">
             <dt className="text-muted-foreground text-sm">Access status</dt>
@@ -122,7 +122,7 @@ export function UserAccessRecord({ user, canEdit, onEdit }: UserAccessRecordProp
             </div>
           )}
         </dl>
-        <Separator className="my-6" />
+        <Separator className="my-7" />
         <UserAccessHistory user={user} />
       </div>
       {(canEdit ||
@@ -130,8 +130,12 @@ export function UserAccessRecord({ user, canEdit, onEdit }: UserAccessRecordProp
         mayResetPassword ||
         mayRenewActivationLink ||
         mayRestoreInvitation) && (
-        <SheetFooter className="shrink-0 border-t bg-popover sm:flex-row sm:items-center sm:justify-between">
-          {canEdit && <Button onClick={onEdit}>Edit</Button>}
+        <SheetFooter className="shrink-0 border-t bg-popover px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          {canEdit && (
+            <Button onClick={onEdit} size="lg">
+              Edit
+            </Button>
+          )}
           {/* Pushed right on its own too, so a record offering no correction keeps the access
               actions where they always are. */}
           <UserAccessActions

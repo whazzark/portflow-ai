@@ -1,18 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { OnChangeFn, SortingState } from '@tanstack/react-table'
-import { FilterIcon } from 'lucide-react'
+import { UserPlusIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { InputSearch } from '@/components/ui/input-search'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
@@ -22,7 +14,6 @@ import {
   statusViewLabel,
   statusViewTableLabel,
   toAccessStatus,
-  USER_ROLE_LABELS,
   USER_STATUS_VIEWS,
   type UserStatusView,
 } from '@/features/users/helpers/user-labels'
@@ -39,15 +30,11 @@ import { ActivationLinkDialog } from '@/features/users/ui/activation-link-dialog
 import type { EditUserValue } from '@/features/users/ui/edit-user-form'
 import { InviteUserPanel } from '@/features/users/ui/invite-user-panel'
 import { IssuedActivationLinkProvider } from '@/features/users/ui/issued-activation-link'
+import { UserRoleFilterChips } from '@/features/users/ui/user-role-filter'
 import { UserSheet } from '@/features/users/ui/user-sheet'
 import { UserTable } from '@/features/users/ui/user-table'
 
 const usersRoute = getRouteApi('/_authenticated/users')
-
-const ROLE_FILTER_OPTIONS = [
-  { label: 'All roles', value: 'all' },
-  ...Object.entries(USER_ROLE_LABELS).map(([value, label]) => ({ label, value })),
-]
 
 export function UsersPage() {
   const { search, status, role, sort, order, userId, mode, invitedUserId } = usersRoute.useSearch()
@@ -89,7 +76,8 @@ export function UsersPage() {
 
   // The record is a view over the collection already retrieved, so it follows every refresh and
   // closes as soon as its user leaves the visible view.
-  const visibleUsers = usersOf(consultsEveryStatus ? status : 'active')
+  const currentView = consultsEveryStatus ? status : 'active'
+  const visibleUsers = usersOf(currentView)
   const openUser = userId ? visibleUsers.find((user) => user.id === userId) : undefined
 
   const isInviting = canInvite && mode === 'create'
@@ -175,13 +163,8 @@ export function UsersPage() {
   const updateSearch = (value: string) =>
     void navigate({ search: (previous) => ({ ...previous, search: value }) })
 
-  const updateRole = (value: string | null) => {
-    if (value === null) {
-      return
-    }
-
-    void navigate({ search: (previous) => ({ ...previous, role: value as UserRoleFilter }) })
-  }
+  const updateRole = (value: UserRoleFilter) =>
+    void navigate({ search: (previous) => ({ ...previous, role: value }) })
 
   const clearFilters = () =>
     void navigate({ search: (previous) => ({ ...previous, search: '', role: 'all' }) })
@@ -238,60 +221,64 @@ export function UsersPage() {
     />
   )
 
+  // Said only while a filter narrows the view: unfiltered, the tab count already says it.
+  const isNarrowed = search.trim() !== '' || role !== 'all'
+  const roleFilter = (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <UserRoleFilterChips onValueChange={updateRole} value={role} />
+      {isNarrowed && (
+        <span className="text-[13px] text-muted-foreground tabular-nums">
+          {`${visibleUsers.length} of ${countOf(currentView)} ${statusViewTableLabel(currentView).toLowerCase()}`}
+        </span>
+      )}
+    </div>
+  )
+
   return (
     // A renewed link is presented here, at the page, so that neither the record nor the row it was
     // renewed from can take it away by disappearing under it.
     <IssuedActivationLinkProvider>
-      <div className="relative flex flex-col gap-6 p-4 md:h-[calc(100svh-3.5rem)] md:min-h-0 md:overflow-hidden md:p-6">
+      <div className="relative flex flex-col gap-4 px-4 py-6 md:h-[calc(100svh-4rem)] md:min-h-0 md:overflow-hidden md:px-8">
         <h1 className="sr-only">Users</h1>
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-end">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <InputSearch
-            fieldClassName="max-w-xl md:flex-1"
+            fieldClassName="md:w-[440px]"
             id="user-search"
             label="Search users"
             onValueChange={updateSearch}
             placeholder="Search by first name, last name, or email"
             value={search}
           />
-          <Select items={ROLE_FILTER_OPTIONS} onValueChange={updateRole} value={role}>
-            <SelectTrigger
-              aria-label="Filter by role"
-              className="text-muted-foreground data-[filtered=true]:text-foreground"
-              data-filtered={role !== 'all'}
-              id="user-role-filter"
-              size="sm"
-            >
-              <FilterIcon aria-hidden="true" />
-              <SelectValue placeholder="All roles" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {ROLE_FILTER_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
           {canInvite && (
-            <Button className="md:ml-auto" onClick={openInvitation}>
+            <Button className="md:ml-auto" onClick={openInvitation} size="lg">
+              <UserPlusIcon aria-hidden="true" />
               Invite user
             </Button>
           )}
         </div>
 
         {consultsEveryStatus ? (
-          <Tabs className="min-h-0 flex-1" onValueChange={updateStatus} value={status}>
-            <TabsList aria-label="User access status" variant="line">
+          <Tabs className="min-h-0 flex-1 gap-4" onValueChange={updateStatus} value={status}>
+            <TabsList
+              aria-label="User access status"
+              className="h-10! w-full justify-start gap-5 border-b p-0"
+              variant="line"
+            >
               {USER_STATUS_VIEWS.map((view) => (
-                <TabsTrigger key={view} value={view}>
+                <TabsTrigger
+                  className="h-full! flex-none px-1 after:bottom-[-1px]! data-active:font-semibold"
+                  key={view}
+                  value={view}
+                >
                   {statusViewLabel(view)}{' '}
-                  <span className="text-muted-foreground tabular-nums">({countOf(view)})</span>
+                  <span className="font-normal text-muted-foreground tabular-nums">
+                    {countOf(view)}
+                  </span>
                 </TabsTrigger>
               ))}
             </TabsList>
+            {roleFilter}
             {USER_STATUS_VIEWS.map((view) => (
               <TabsContent className="min-h-0 md:overflow-hidden" key={view} value={view}>
                 {status === view && tableFor(view)}
@@ -300,10 +287,13 @@ export function UsersPage() {
           </Tabs>
         ) : (
           <section className="flex min-h-0 flex-1 flex-col gap-4">
-            <h2 className="font-medium text-sm">
+            <h2 className="font-semibold text-sm">
               {statusViewTableLabel('active')}{' '}
-              <span className="text-muted-foreground tabular-nums">({countOf('active')})</span>
+              <span className="font-normal text-muted-foreground tabular-nums">
+                {countOf('active')}
+              </span>
             </h2>
+            {roleFilter}
             {tableFor('active')}
           </section>
         )}

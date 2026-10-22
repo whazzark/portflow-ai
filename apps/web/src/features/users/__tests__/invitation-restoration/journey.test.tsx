@@ -62,23 +62,18 @@ test('stays on the cancelled view after Done, and follows both counts', async ()
   mockUsersWithRestoration()
 
   renderUsers('/users?status=cancelled')
-  expect(await screen.findByRole('tab', { name: /Cancelled \(1\)/ })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Pending \(1\)/ })).toBeInTheDocument()
+  expect(await screen.findByRole('tab', { name: /Cancelled 1/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /Pending 1/ })).toBeInTheDocument()
 
   await restoreFromRecord(user)
   await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Done' }))
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
 
   expect(screen.queryByText(NEW_LINK)).not.toBeInTheDocument()
-  await waitFor(() =>
-    expect(screen.getByRole('tab', { name: /Cancelled \(0\)/ })).toBeInTheDocument(),
-  )
-  expect(screen.getByRole('tab', { name: /Pending \(2\)/ })).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('tab', { name: /Cancelled 0/ })).toBeInTheDocument())
+  expect(screen.getByRole('tab', { name: /Pending 2/ })).toBeInTheDocument()
   // No navigation: the view the administrator was working through is still the selected one.
-  expect(screen.getByRole('tab', { name: /Cancelled \(0\)/ })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  )
+  expect(screen.getByRole('tab', { name: /Cancelled 0/ })).toHaveAttribute('aria-selected', 'true')
 })
 
 test('records the restoration after the cancellation in the reopened record', async () => {
@@ -89,10 +84,8 @@ test('records the restoration after the cancellation in the reopened record', as
   await restoreFromRecord(user)
   await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Done' }))
 
-  await waitFor(() =>
-    expect(screen.getByRole('tab', { name: /Pending \(2\)/ })).toBeInTheDocument(),
-  )
-  await user.click(screen.getByRole('tab', { name: /Pending \(2\)/ }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: /Pending 2/ })).toBeInTheDocument())
+  await user.click(screen.getByRole('tab', { name: /Pending 2/ }))
   const table = await screen.findByRole('table', { name: 'Pending users' })
   await user.click(within(table).getByRole('button', { name: `View user ${CANCELLED_USER}` }))
 

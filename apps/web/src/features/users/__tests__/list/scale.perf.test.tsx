@@ -27,7 +27,7 @@ test('SC-003: presents the selected view and its count for a 200-user collection
   const started = performance.now()
   renderUsers()
   const table = await screen.findByRole('table', { name: 'Active users' })
-  await screen.findByRole('tab', { name: new RegExp(`Active \\(${activeCount}\\)`) })
+  await screen.findByRole('tab', { name: new RegExp(`Active ${activeCount}`) })
   const elapsed = performance.now() - started
 
   expect(within(table).getAllByRole('row').length).toBeGreaterThan(1)

@@ -87,8 +87,8 @@ export function ActivationLinkDialog({
         </AlertDialogHeader>
         {activationLink ? (
           <div className="flex flex-col gap-4">
-            <Alert>
-              <AlertTitle>This link is shown once</AlertTitle>
+            <Alert className="bg-background px-3.5 py-3">
+              <AlertTitle className="font-semibold">This link is shown once</AlertTitle>
               <AlertDescription>
                 {`Copy it now: it cannot be displayed again. It stops working on ${formatDateTime(activationLink.expiresAt)}.`}
               </AlertDescription>
@@ -120,7 +120,9 @@ export function ActivationLinkDialog({
           </Alert>
         )}
         <AlertDialogFooter>
-          <AlertDialogAction onClick={onAcknowledge}>Done</AlertDialogAction>
+          <AlertDialogAction onClick={onAcknowledge} size="lg">
+            Done
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

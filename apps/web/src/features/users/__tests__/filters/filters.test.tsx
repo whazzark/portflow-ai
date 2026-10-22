@@ -5,6 +5,8 @@ import { USERS } from '../support/fixtures'
 import { mockUsers, renderUsers } from '../support/test-helpers'
 
 const searchBox = () => screen.getByRole('textbox', { name: 'Search users' })
+const roleChip = (name: string) =>
+  within(screen.getByRole('group', { name: 'Filter by role' })).getByRole('button', { name })
 
 // A highlighted match splits the cell text across elements, so rows are matched on their
 // accessible name, which joins the fragments back together.
@@ -38,12 +40,12 @@ test('combines the search with the role filter inside the selected view', async 
   const { router } = renderUsers()
   await screen.findByRole('table', { name: 'Active users' })
 
-  await user.click(screen.getByRole('combobox', { name: 'Filter by role' }))
-  await user.click(await screen.findByRole('option', { name: 'Operations lead' }))
+  expect(roleChip('All roles')).toHaveAttribute('aria-pressed', 'true')
 
-  expect(screen.getByRole('combobox', { name: 'Filter by role' })).toHaveTextContent(
-    'Operations lead',
-  )
+  await user.click(roleChip('Operations lead'))
+
+  expect(roleChip('Operations lead')).toHaveAttribute('aria-pressed', 'true')
+  expect(roleChip('All roles')).toHaveAttribute('aria-pressed', 'false')
 
   const active = screen.getByRole('table', { name: 'Active users' })
 
@@ -53,7 +55,30 @@ test('combines the search with the role filter inside the selected view', async 
 
   await user.type(searchBox(), 'amelie')
 
-  expect(within(active).getByText('No matching users')).toBeInTheDocument()
+  expect(screen.getByText('No matching users')).toBeInTheDocument()
+  expect(screen.queryByRole('table', { name: 'Active users' })).not.toBeInTheDocument()
+})
+
+test('says how many users of the view the filters leave visible, only while they narrow it', async () => {
+  const user = userEvent.setup()
+  mockUsers()
+
+  renderUsers()
+  await screen.findByRole('table', { name: 'Active users' })
+  const total = USERS.filter((entry) => entry.accessStatus === 'ACTIVE').length
+
+  expect(screen.queryByText(/ of \d+ active users/)).not.toBeInTheDocument()
+
+  await user.click(roleChip('Operations lead'))
+
+  const leads = USERS.filter(
+    (entry) => entry.accessStatus === 'ACTIVE' && entry.role === 'OPERATIONS_LEAD',
+  ).length
+  expect(screen.getByText(`${leads} of ${total} active users`)).toBeInTheDocument()
+
+  await user.click(roleChip('All roles'))
+
+  expect(screen.queryByText(/ of \d+ active users/)).not.toBeInTheDocument()
 })
 
 test('distinguishes a no-match result from a status view holding no user', async () => {
@@ -67,15 +92,12 @@ test('distinguishes a no-match result from a status view holding no user', async
   await screen.findByRole('table', { name: 'Active users' })
   await user.type(searchBox(), 'zzz')
 
-  expect(
-    within(screen.getByRole('table', { name: 'Active users' })).getByText('No matching users'),
-  ).toBeInTheDocument()
+  expect(screen.getByText('No matching users')).toBeInTheDocument()
 
-  await user.click(screen.getByRole('tab', { name: /Cancelled \(0\)/ }))
+  await user.click(screen.getByRole('tab', { name: /Cancelled 0/ }))
 
-  const cancelled = await screen.findByRole('table', { name: 'Cancelled users' })
-  expect(within(cancelled).getByText('No cancelled users')).toBeInTheDocument()
-  expect(within(cancelled).queryByText('No matching users')).not.toBeInTheDocument()
+  expect(await screen.findByText('No cancelled users')).toBeInTheDocument()
+  expect(screen.queryByText('No matching users')).not.toBeInTheDocument()
 })
 
 test('clears the active filters and restores the view', async () => {
@@ -86,8 +108,7 @@ test('clears the active filters and restores the view', async () => {
   await screen.findByRole('table', { name: 'Active users' })
 
   await user.type(searchBox(), 'zzz')
-  await user.click(screen.getByRole('combobox', { name: 'Filter by role' }))
-  await user.click(await screen.findByRole('option', { name: 'Observer' }))
+  await user.click(roleChip('Observer'))
 
   expect(screen.getByText('No matching users')).toBeInTheDocument()
 
@@ -107,7 +128,7 @@ test('keeps the visible set consistent when switching access status views', asyn
   await screen.findByRole('table', { name: 'Active users' })
   await user.type(searchBox(), 'e')
 
-  await user.click(screen.getByRole('tab', { name: /Pending \(1\)/ }))
+  await user.click(screen.getByRole('tab', { name: /Pending 1/ }))
 
   const pending = await screen.findByRole('table', { name: 'Pending users' })
 
@@ -126,7 +147,7 @@ test('sorts the visible users on identity and role', async () => {
 
   expect(router.state.location.search).toMatchObject({ sort: 'role', order: 'asc' })
 
-  await user.click(within(active).getByRole('button', { name: /Name/ }))
+  await user.click(within(active).getByRole('button', { name: /User/ }))
 
   expect(router.state.location.search).toMatchObject({ sort: 'name', order: 'asc' })
 })
