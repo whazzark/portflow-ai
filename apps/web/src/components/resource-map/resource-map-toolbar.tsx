@@ -39,8 +39,12 @@ export function ResourceMapToggleGroup<Value extends string>({
   items,
   countNoun,
   onToggle,
+  exclusive = false,
   className,
 }: {
+  /** One value at a time: pressing another switches to it, and the pressed one stays enabled —
+   * it is the current choice, not an unavailable one. */
+  exclusive?: boolean
   label: string
   items: ResourceMapToggleItem<Value>[]
   countNoun?: string
@@ -63,9 +67,13 @@ export function ResourceMapToggleGroup<Value extends string>({
           }
           aria-pressed={item.pressed}
           className="flex h-8 items-center gap-1.5 rounded-md px-2.5 font-medium text-muted-foreground text-xs outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm"
-          disabled={item.pressed && pressedCount === 1}
+          disabled={!exclusive && item.pressed && pressedCount === 1}
           key={item.value}
-          onClick={() => onToggle(item.value)}
+          onClick={() => {
+            if (!(exclusive && item.pressed)) {
+              onToggle(item.value)
+            }
+          }}
           type="button"
         >
           <span aria-hidden="true">{item.label}</span>

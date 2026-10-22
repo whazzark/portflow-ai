@@ -77,7 +77,7 @@ test('outline editing counts moved points and undoes one change at a time', asyn
   ).toBeInTheDocument()
   const editCard = screen.getByRole('complementary', { name: 'Edit warehouse' })
   expect(editCard).toHaveTextContent('Previous outline shown dashed.')
-  expect(within(editCard).queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
+  expect(within(editCard).getByRole('button', { name: 'Undo' })).toBeDisabled()
 
   await user.click(screen.getByRole('button', { name: 'Simulate dragging boundary point 2' }))
   expect(editCard).toHaveTextContent('3 boundary points · 1 moved')
@@ -89,7 +89,7 @@ test('outline editing counts moved points and undoes one change at a time', asyn
   await user.click(within(editCard).getByRole('button', { name: 'Undo' }))
   expect(editCard).toHaveTextContent('3 boundary points')
   expect(editCard).not.toHaveTextContent('moved')
-  expect(within(editCard).queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
+  expect(within(editCard).getByRole('button', { name: 'Undo' })).toBeDisabled()
 })
 
 test('door placement announces its warehouse in the banner and the New door card', async () => {

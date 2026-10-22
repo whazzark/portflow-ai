@@ -109,6 +109,7 @@ export function WarehouseDoorsPanel({
       <ResourceMapToggleGroup
         className="mt-2 w-fit"
         countNoun="doors"
+        exclusive
         items={(Object.keys(labels) as WarehouseDoorStatusFilter[]).map((key) => ({
           value: key,
           label: labels[key],

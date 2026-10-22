@@ -8,10 +8,14 @@ export type EditHistory = {
   past: LatLng[][]
   /** Where the outline stood when editing started; `restore` returns to it. */
   origin: LatLng[]
+  /** The point a run of typed coordinates is changing, so the run is one Undo step, not one per
+   * keystroke. Any other change ends the run. */
+  typingIndex?: number
 }
 
 export type EditHistoryAction =
   | { type: 'move'; index: number; point: LatLng }
+  | { type: 'type'; index: number; point: LatLng }
   | { type: 'insert'; index: number; point: LatLng }
   | { type: 'remove'; index: number }
   | { type: 'restore' }
@@ -25,18 +29,24 @@ const record = (history: EditHistory, draft: LatLng[]): EditHistory => ({
   ...history,
   draft,
   past: [...history.past, history.draft].slice(-HISTORY_LIMIT),
+  typingIndex: undefined,
 })
+
+const moveIn = (draft: LatLng[], index: number, point: LatLng) =>
+  draft.map((existing, position) => (position === index ? point : existing))
 
 /** Every change to the outline is one step back for Undo, restoring the origin included. */
 export function editHistoryReducer(history: EditHistory, action: EditHistoryAction): EditHistory {
   switch (action.type) {
     case 'move':
-      return record(
-        history,
-        history.draft.map((existing, position) =>
-          position === action.index ? action.point : existing,
-        ),
-      )
+      return record(history, moveIn(history.draft, action.index, action.point))
+    case 'type':
+      return history.typingIndex === action.index
+        ? { ...history, draft: moveIn(history.draft, action.index, action.point) }
+        : {
+            ...record(history, moveIn(history.draft, action.index, action.point)),
+            typingIndex: action.index,
+          }
     case 'insert':
       return record(history, [
         ...history.draft.slice(0, action.index),
@@ -52,7 +62,9 @@ export function editHistoryReducer(history: EditHistory, action: EditHistoryActi
       return record(history, history.origin)
     case 'undo': {
       const previous = history.past.at(-1)
-      return previous ? { ...history, draft: previous, past: history.past.slice(0, -1) } : history
+      return previous
+        ? { ...history, draft: previous, past: history.past.slice(0, -1), typingIndex: undefined }
+        : history
     }
   }
 }

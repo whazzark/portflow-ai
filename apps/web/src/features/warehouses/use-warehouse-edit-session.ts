@@ -84,6 +84,9 @@ export function useWarehouseEditSession(input: {
 
   const movePoint = (index: number, point: LatLng) => dispatch({ type: 'move', index, point })
 
+  /** A coordinate typed in the advanced fields: consecutive keystrokes on one point are one step. */
+  const typePoint = (index: number, point: LatLng) => dispatch({ type: 'type', index, point })
+
   /** `index` is the position the new point takes in the resulting ring, never an arbitrary end. */
   const insertPoint = (index: number, point: LatLng) => dispatch({ type: 'insert', index, point })
 
@@ -106,6 +109,7 @@ export function useWarehouseEditSession(input: {
     insertPoint,
     removePoint,
     restoreOrigin,
+    typePoint,
     undo,
     canUndo: history.past.length > 0,
     movedCount: countMovedPoints(history.origin, history.draft),

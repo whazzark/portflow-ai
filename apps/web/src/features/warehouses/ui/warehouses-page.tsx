@@ -234,6 +234,7 @@ export function WarehousesPage() {
     insertPoint,
     removePoint,
     restoreOrigin,
+    typePoint,
     undo: undoEdit,
     canUndo,
     movedCount,
@@ -803,6 +804,7 @@ export function WarehousesPage() {
     void navigate({
       search: (previous) => ({
         ...previous,
+        selecting: undefined,
         warehouseId: id,
         doorId: undefined,
         doorStatus: undefined,
@@ -814,6 +816,7 @@ export function WarehousesPage() {
     void navigate({
       search: (previous) => ({
         ...previous,
+        selecting: undefined,
         warehouseId: door.warehouseId,
         doorId: door.id,
         doorStatus: door.status === 'ARCHIVED' ? ('archived' as const) : ('available' as const),
@@ -945,7 +948,7 @@ export function WarehousesPage() {
       <EditWarehousePanel
         onCancel={cancelUpdating}
         onInsertPoint={insertPoint}
-        onMovePoint={movePoint}
+        onMovePoint={typePoint}
         onNotFound={handleUpdateNotFound}
         onRemovePoint={removePoint}
         onRestoreOutline={restoreOrigin}

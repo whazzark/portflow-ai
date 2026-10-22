@@ -233,11 +233,16 @@ export function EditWarehousePanel({
                   {movedCount > 0 && ` · ${movedCount} moved`}
                 </p>
                 <div className="flex items-center gap-1">
-                  {canUndo && (
-                    <Button onClick={onUndo} size="sm" type="button" variant="outline">
-                      Undo
-                    </Button>
-                  )}
+                  {/* Disabled rather than removed, so pressing it to the last step keeps focus. */}
+                  <Button
+                    disabled={!canUndo}
+                    onClick={onUndo}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Undo
+                  </Button>
                   {outlineModified && (
                     <Button onClick={onRestoreOutline} size="sm" type="button" variant="link">
                       Restore original outline

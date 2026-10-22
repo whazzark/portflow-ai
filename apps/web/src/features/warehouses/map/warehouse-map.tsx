@@ -227,21 +227,37 @@ function ReportAnchor({
         return { latitude, longitude }
       }),
     )
-    const report = () => {
+    // At most once a frame, and only when the box moved by a whole pixel: each report re-renders
+    // the page around the card, and a pan fires `move` far more often than that.
+    let frame: number | undefined
+    let last = ''
+    const measure = () => {
+      frame = undefined
       const northWest = map.project([bounds.getWest(), bounds.getNorth()])
       const southEast = map.project([bounds.getEast(), bounds.getSouth()])
-      onAnchorChange({
-        x: northWest.x,
-        y: northWest.y,
-        width: southEast.x - northWest.x,
-        height: southEast.y - northWest.y,
-      })
+      const anchor = {
+        x: Math.round(northWest.x),
+        y: Math.round(northWest.y),
+        width: Math.round(southEast.x - northWest.x),
+        height: Math.round(southEast.y - northWest.y),
+      }
+      const key = `${anchor.x}:${anchor.y}:${anchor.width}:${anchor.height}`
+      if (key !== last) {
+        last = key
+        onAnchorChange(anchor)
+      }
     }
-    report()
+    const report = () => {
+      frame ??= requestAnimationFrame(measure)
+    }
+    measure()
     map.on('move', report)
     map.on('resize', report)
 
     return () => {
+      if (frame !== undefined) {
+        cancelAnimationFrame(frame)
+      }
       map.off('move', report)
       map.off('resize', report)
     }

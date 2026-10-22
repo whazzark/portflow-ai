@@ -44,6 +44,30 @@ describe('edit history', () => {
     expect(history.draft).toEqual(origin)
   })
 
+  test('makes a run of typed coordinates on one point a single step', () => {
+    let history = startEditHistory(origin)
+    for (const latitude of [0.1, 0.12, 0.123]) {
+      history = editHistoryReducer(history, {
+        type: 'type',
+        index: 0,
+        point: { latitude, longitude: 0 },
+      })
+    }
+    expect(history.past).toHaveLength(1)
+
+    // Another point, or any other change, starts a new step.
+    history = editHistoryReducer(history, {
+      type: 'type',
+      index: 1,
+      point: { latitude: 0.5, longitude: 1 },
+    })
+    expect(history.past).toHaveLength(2)
+
+    history = editHistoryReducer(history, { type: 'undo' })
+    history = editHistoryReducer(history, { type: 'undo' })
+    expect(history.draft).toEqual(origin)
+  })
+
   test('ignores an undo with nothing to undo', () => {
     const history = startEditHistory(origin)
 
