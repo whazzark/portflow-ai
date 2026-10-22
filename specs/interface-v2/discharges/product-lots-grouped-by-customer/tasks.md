@@ -137,9 +137,12 @@ doors opens the dialog, no door field in the form.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T025 Run `pnpm check`, `pnpm typecheck` and `pnpm test` at the repository root; fix every failure caused by this change
+- [X] T025 Run `pnpm check`, `pnpm typecheck` and `pnpm test` at the repository root; fix every failure caused by this change
+  - Done 2026-10-22: `pnpm check` and `pnpm typecheck` pass. Web suite (relaxed local timeouts): 1,862/1,865 pass; the 3 failures are in untouched code and fail alike in the baseline run under load ~300 (`create/access` sync query race, `trucks` and `users` scale/perf timing). API unchanged, so API tests were not run.
 - [ ] T026 Walk through quickstart.md manually (administrator, observer, active discharge) at desktop and 375 px width in the browser; check no horizontal page scroll, dialog tabs on phone, amber tone readable in light and dark mode (SC-006, FR-029)
-- [ ] T027 Obtain a fresh read-only Claude Code review of the final diff (`/code-review` in a new session or a read-only subagent), resolve or justify every confirmed finding, and mark the tasks above `[X]`
+  - Not done: no Portflow API/database was running and port 5432 belongs to another project; left to the human reviewer.
+- [X] T027 Obtain a fresh read-only Claude Code review of the final diff (`/code-review` in a new session or a read-only subagent), resolve or justify every confirmed finding, and mark the tasks above `[X]`
+  - Done: a read-only subagent reviewed the diff; all 7 findings were fixed in `fix(discharges): Address the review…` (stale start check reused by the Start dialog, held door behind +N, saves waiting on the check, label-in-name, unsaved edits on Assign doors, test absence assertions, copy).
 
 ---
 
