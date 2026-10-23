@@ -33,20 +33,16 @@ export function useTransportCompanyMutations() {
       onSuccess: () => invalidateTransportCompanies(),
     }),
   )
-  const archiveMany = useMutation(tuyauQuery.transportCompanies.archiveMany.mutationOptions())
   const reactivate = useMutation(
     tuyauQuery.transportCompanies.reactivate.mutationOptions({
       onSuccess: () => invalidateTransportCompanies(),
     }),
   )
-  const reactivateMany = useMutation(tuyauQuery.transportCompanies.reactivateMany.mutationOptions())
 
   return {
     archive,
-    archiveMany,
     create,
     reactivate,
-    reactivateMany,
     refreshTransportCompanies: invalidateTransportCompanies,
     update,
   }

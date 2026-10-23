@@ -42,9 +42,16 @@ export type ResourceLifecycleConfig<TResult = unknown> = {
   /** Replaces the canonical effect sentence where a resource genuinely says more — a warehouse
    * archives its available doors along with itself. Falls back to the canonical wording. */
   describeEffect?: (action: LifecycleAction) => string
+  /** Replaces the canonical "Archive dock?" title where a resource names the record itself —
+   * "Archive Loire Minerals?". Falls back to the canonical title. */
+  describeTitle?: (action: LifecycleAction) => string
+  /** Prompts the comment field. No placeholder when omitted. */
+  commentPlaceholder?: (action: LifecycleAction) => string
   /** Replaces the canonical success message with one that reports what the server actually did —
    * a warehouse archival names the doors it cascaded to. */
   describeSuccess?: (action: LifecycleAction, result: TResult) => string
+  /** A second line under the success toast, for what the change leaves in place. */
+  describeSuccessDetail?: (action: LifecycleAction, result: TResult) => string | undefined
 }
 
 const ACTION_VARIANTS: Record<LifecycleAction, 'default' | 'destructive' | 'outline'> = {
@@ -87,6 +94,7 @@ export function ResourceLifecycleDialog<TResult>({
       toast.success(
         config.describeSuccess?.(lifecycleAction, result) ??
           lifecycleSuccessMessage(lifecycleAction, config.singular, config.name),
+        { description: config.describeSuccessDetail?.(lifecycleAction, result) },
       )
     } catch (cause) {
       // A refusal may mean the record's authoritative state has moved on since this view loaded,
@@ -108,7 +116,9 @@ export function ResourceLifecycleDialog<TResult>({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {action ? lifecycleDialogTitle(action, config.singular) : ''}
+            {action
+              ? (config.describeTitle?.(action) ?? lifecycleDialogTitle(action, config.singular))
+              : ''}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {action
@@ -123,6 +133,7 @@ export function ResourceLifecycleDialog<TResult>({
               id={commentId}
               maxLength={1000}
               onChange={(event) => setComment(event.target.value)}
+              placeholder={action ? config.commentPlaceholder?.(action) : undefined}
               value={comment}
             />
             <FieldDescription>{LIFECYCLE_COMMENT_DESCRIPTION}</FieldDescription>

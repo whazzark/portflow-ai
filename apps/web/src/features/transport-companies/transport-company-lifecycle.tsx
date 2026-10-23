@@ -1,34 +1,13 @@
-import type {
-  BulkLifecycleBlocker,
-  BulkLifecycleOutcome,
-} from '@/components/lifecycle/bulk-resource-lifecycle-actions'
 import type { LifecycleAction } from '@/components/lifecycle/lifecycle-copy'
 import {
-  ResourceLifecycleActions,
   type ResourceLifecycleConfig,
   ResourceLifecycleDialog,
 } from '@/components/lifecycle/resource-lifecycle-actions'
 import type { LifecycleBlock } from '@/components/lifecycle/resource-lifecycle-summary'
 import { useTransportCompanyMutations } from '@/features/transport-companies/mutations/use-transport-company-mutations'
-import type {
-  BulkTransportCompanyLifecycleResult,
-  TransportCompanyDto,
-} from '@/features/transport-companies/types'
+import type { TransportCompanyDto } from '@/features/transport-companies/types'
 
 export const TRANSPORT_COMPANY_SINGULAR = 'transport company'
-export const TRANSPORT_COMPANY_PLURAL = 'transport companies'
-
-/** A company that still provides available trucks cannot be archived; the API refuses it and the
- * bulk toolbar names that reason, so the button stays offered rather than silently disappearing. */
-export const TRANSPORT_COMPANY_BLOCKER_REASON_LABELS = {
-  HAS_AVAILABLE_TRUCKS: 'still provides available trucks',
-}
-
-export function transportCompanyLifecycleActions(
-  status: TransportCompanyDto['status'],
-): LifecycleAction[] {
-  return status === 'ARCHIVED' ? ['reactivate'] : ['archive']
-}
 
 /** Every lifecycle transition this record carries, for its detail pane. The summary
  * orders them and drops the ones that never happened. */
@@ -89,39 +68,4 @@ export function TransportCompanyLifecycleDialog({
   const config = useTransportCompanyLifecycleConfig(company)
 
   return <ResourceLifecycleDialog action={action} config={config} onClose={onClose} />
-}
-
-export function TransportCompanyLifecycleActions({
-  className,
-  company,
-  onSuccess,
-}: {
-  className?: string
-  company: TransportCompanyDto
-  onSuccess?: () => void
-}) {
-  const config = useTransportCompanyLifecycleConfig(company, onSuccess)
-
-  return (
-    <ResourceLifecycleActions
-      actions={transportCompanyLifecycleActions(company.status)}
-      className={className}
-      config={config}
-    />
-  )
-}
-
-export function toBulkTransportCompanyLifecycleOutcome(
-  result: BulkTransportCompanyLifecycleResult,
-): BulkLifecycleOutcome {
-  return {
-    updatedCount: result.updatedCompanies.length,
-    blocked: result.blockedCompanies.map(
-      (blocked): BulkLifecycleBlocker => ({
-        id: blocked.id,
-        name: blocked.name ?? undefined,
-        reason: blocked.reason,
-      }),
-    ),
-  }
 }

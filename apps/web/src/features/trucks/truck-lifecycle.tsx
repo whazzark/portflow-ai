@@ -1,34 +1,48 @@
-import type {
-  BulkLifecycleBlocker,
-  BulkLifecycleOutcome,
-} from '@/components/lifecycle/bulk-resource-lifecycle-actions'
-import type { LifecycleAction } from '@/components/lifecycle/lifecycle-copy'
 import {
-  ResourceLifecycleActions,
+  LIFECYCLE_ACTION_LABELS,
+  type LifecycleAction,
+} from '@/components/lifecycle/lifecycle-copy'
+import {
   type ResourceLifecycleConfig,
   ResourceLifecycleDialog,
 } from '@/components/lifecycle/resource-lifecycle-actions'
 import type { LifecycleBlock } from '@/components/lifecycle/resource-lifecycle-summary'
 import { useTruckMutations } from '@/features/trucks/mutations/use-truck-mutations'
-import type { BulkTruckLifecycleResult, TruckDto } from '@/features/trucks/types'
+import type { TruckDto } from '@/features/trucks/types'
 
 export const TRUCK_SINGULAR = 'truck'
-export const TRUCK_PLURAL = 'trucks'
 
-/** Reasons a truck refuses a bulk transition that the shared four do not cover. */
-export const TRUCK_BLOCKER_REASON_LABELS = {
-  SUSPENDED: 'out of service',
-  TRANSPORT_COMPANY_ARCHIVED: 'archived transport company',
+/**
+ * The V2 confirmations name the truck in their title and say what the change means for the fleet
+ * in the truck's own terms — discharges, shifts and rotations — rather than the canonical
+ * site-reference sentence.
+ */
+const TRUCK_EFFECTS: Record<LifecycleAction, string> = {
+  suspend:
+    'The truck is withdrawn from new discharges, shifts and rotations. Discharges it already ' +
+    'belongs to continue unchanged. Its registration stays reserved.',
+  'return-to-service':
+    'It becomes available again for new discharges, shift assignments and rotations. The ' +
+    'suspension stays in its history.',
+  archive:
+    'The truck leaves the fleet for new discharges, shifts and rotations. Past discharges keep it ' +
+    'and its registration stays reserved. You can reactivate it later.',
+  reactivate:
+    'It becomes available again for new discharges, shifts and rotations, with its transport ' +
+    'company.',
 }
 
-// A suspended truck leaves that state only by returning to service: archiving or reactivating it
-// requires it to be available first.
-export function truckLifecycleActions(status: TruckDto['status']): LifecycleAction[] {
-  if (status === 'SUSPENDED') {
-    return ['return-to-service']
-  }
+const TRUCK_COMMENT_PLACEHOLDERS: Record<LifecycleAction, string> = {
+  suspend: 'Why is this truck suspended? (breakdown, maintenance…)',
+  'return-to-service': 'What was done? (optional)',
+  archive: 'Why is this truck archived?',
+  reactivate: 'Why is this truck reactivated?',
+}
 
-  return status === 'ARCHIVED' ? ['reactivate'] : ['suspend', 'archive']
+function truckDialogTitle(action: LifecycleAction, registration: string) {
+  return action === 'return-to-service'
+    ? `Return ${registration} to service?`
+    : `${LIFECYCLE_ACTION_LABELS[action]} ${registration}?`
 }
 
 /** Every lifecycle transition a truck carries, for its detail pane. The summary orders them and
@@ -72,6 +86,12 @@ export function useTruckLifecycleConfig(truck: TruckDto): ResourceLifecycleConfi
   return {
     singular: TRUCK_SINGULAR,
     name: truck.registration,
+    describeTitle: (action) => truckDialogTitle(action, truck.registration),
+    describeEffect: (action) => TRUCK_EFFECTS[action],
+    commentPlaceholder: (action) => TRUCK_COMMENT_PLACEHOLDERS[action],
+    // A suspension is easy to mistake for a withdrawal from the work already under way.
+    describeSuccessDetail: (action) =>
+      action === 'suspend' ? 'It stays in its current discharges.' : undefined,
     isPending:
       mutations.archive.isPending ||
       mutations.reactivate.isPending ||
@@ -112,37 +132,4 @@ export function TruckLifecycleDialog({
   const config = useTruckLifecycleConfig(truck)
 
   return <ResourceLifecycleDialog action={action} config={config} onClose={onClose} />
-}
-
-export function TruckLifecycleActions({
-  className,
-  truck,
-}: {
-  className?: string
-  truck: TruckDto
-}) {
-  const config = useTruckLifecycleConfig(truck)
-
-  return (
-    <ResourceLifecycleActions
-      actions={truckLifecycleActions(truck.status)}
-      className={className}
-      config={config}
-    />
-  )
-}
-
-export function toBulkTruckLifecycleOutcome(
-  result: BulkTruckLifecycleResult,
-): BulkLifecycleOutcome {
-  return {
-    updatedCount: result.updatedTrucks.length,
-    blocked: result.blockedTrucks.map(
-      (blocked): BulkLifecycleBlocker => ({
-        id: blocked.id,
-        name: blocked.registration ?? undefined,
-        reason: blocked.reason,
-      }),
-    ),
-  }
 }

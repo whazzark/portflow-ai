@@ -1,6 +1,8 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
 
+import { fromLegacyTransportCompanySearch } from '@/features/transport-resources/helpers/transport-resources-search'
+
 const legacyTransportCompanySearchSchema = z.object({
   status: z.enum(['available', 'archived']).catch('available'),
   search: z.string().catch(''),
@@ -13,16 +15,7 @@ export const Route = createFileRoute('/_authenticated/transport-companies')({
     throw redirect({
       to: '/transport-resources',
       replace: true,
-      search: {
-        companyStatus: search.status,
-        companySearch: search.search,
-        companyDetailsId: search.transportCompanyId,
-        companyDetailsMode: 'view',
-        transportCompanyId: search.transportCompanyId,
-        truckStatus: 'available',
-        truckSearch: '',
-        truckMode: 'view',
-      },
+      search: fromLegacyTransportCompanySearch(search),
     })
   },
 })
