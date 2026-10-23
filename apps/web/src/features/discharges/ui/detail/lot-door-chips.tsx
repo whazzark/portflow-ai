@@ -84,24 +84,22 @@ function MoreDoorsPopover({ doors, hidden }: { doors: DoorAssignment[]; hidden: 
 }
 
 /** The assignments that are over, kept out of the row but a click away. */
-function HistoryPopover({
+function EndedAssignmentsPopover({
   dischargeStatus,
-  history,
-  label,
+  ended,
 }: {
   dischargeStatus: DischargeStatus
-  history: DoorAssignment[]
-  label: 'ended' | 'history'
+  ended: DoorAssignment[]
 }) {
   return (
     <Popover>
       <PopoverTrigger className="text-muted-foreground text-xs underline underline-offset-4 hover:text-foreground">
-        {label === 'history' ? 'History' : `${history.length} ended`}
+        {`${ended.length} ended`}
       </PopoverTrigger>
       <PopoverContent>
-        <PopoverTitle>{label === 'history' ? 'Door history' : 'Ended assignments'}</PopoverTitle>
+        <PopoverTitle>Ended assignments</PopoverTitle>
         <ul className="grid gap-2">
-          {history.map((assignment) => (
+          {ended.map((assignment) => (
             <li className="grid gap-0.5" key={assignment.id}>
               <DoorReference assignment={assignment} />
               <EffectivePeriod dischargeStatus={dischargeStatus} period={assignment} />
@@ -127,7 +125,7 @@ export function LotDoorChips({
   const cell = lotDoorCell(lot.doorAssignments, dischargeStatus)
 
   return (
-    // One wrapping line: the chips, then the notice or the history link beside them.
+    // One wrapping line: the chips, then the notice or the ended assignments link beside them.
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       {cell.doors.length > 0 ? (
         <ul aria-label="Warehouse doors" className="flex flex-wrap items-center gap-1">
@@ -152,11 +150,7 @@ export function LotDoorChips({
         <p className="text-muted-foreground text-xs">No warehouse door currently assigned</p>
       )}
       {cell.history.length > 0 && (
-        <HistoryPopover
-          dischargeStatus={dischargeStatus}
-          history={cell.history}
-          label={cell.historyLabel}
-        />
+        <EndedAssignmentsPopover dischargeStatus={dischargeStatus} ended={cell.history} />
       )}
     </div>
   )

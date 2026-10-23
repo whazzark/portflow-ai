@@ -30,8 +30,8 @@ export function splitPeriods<T extends Pick<Period, 'effectiveTo'>>(
 /**
  * A lot's doors as its table cell shows them. The doors it holds are chips, all of them up to
  * `limit`, else one fewer and a `+N` for the rest, so a row stays one line high. Ended assignments
- * are history, reached apart. A closed discharge holds nothing, so its chips are the doors it used,
- * once each, and all its periods are its history.
+ * are reached apart. A closed discharge holds nothing, so its chips are the doors it used, once
+ * each, and it keeps no history apart: the discharge activity log is where its changes are read.
  */
 export function lotDoorCell<Assignment extends Period & { warehouseDoor: { id: string } }>(
   assignments: Assignment[],
@@ -54,8 +54,7 @@ export function lotDoorCell<Assignment extends Period & { warehouseDoor: { id: s
     doors,
     shown,
     hidden: doors.slice(shown.length),
-    history: ended,
-    historyLabel: closed ? ('history' as const) : ('ended' as const),
+    history: closed ? [] : ended,
   }
 }
 

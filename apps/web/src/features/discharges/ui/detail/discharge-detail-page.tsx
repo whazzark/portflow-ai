@@ -53,6 +53,10 @@ export function DischargeDetailPage() {
         }
         discharge={discharge}
         headingRef={headingRef}
+        // The other records keep their comment in the overview's details card.
+        vesselComment={
+          discharge.status === 'CLOSED' && tab === 'overview' ? discharge.vesselComment : null
+        }
       />
       <DischargeDetailTabs
         canAddShifts={canAddShifts(user, discharge)}

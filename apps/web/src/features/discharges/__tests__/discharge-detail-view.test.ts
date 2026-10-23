@@ -291,7 +291,6 @@ describe('lotDoorCell', () => {
     expect(ids(cell.shown)).toEqual(['a', 'c', 'd'])
     expect(cell.hidden).toEqual([])
     expect(ids(cell.history)).toEqual(['b'])
-    expect(cell.historyLabel).toBe('ended')
   })
 
   test('keeps one chip fewer than the limit once the rest need a +N', () => {
@@ -305,11 +304,10 @@ describe('lotDoorCell', () => {
     expect(cell.doors).toHaveLength(5)
   })
 
-  test('shows the doors a closed discharge used once each, all its periods as history', () => {
+  test('shows the doors a closed discharge used once each, with no history apart', () => {
     const cell = lotDoorCell([door('a', ENDED.effectiveTo), door('a'), door('b')], 'CLOSED')
 
     expect(ids(cell.shown)).toEqual(['a', 'b'])
-    expect(cell.history).toHaveLength(3)
-    expect(cell.historyLabel).toBe('history')
+    expect(cell.history).toEqual([])
   })
 })

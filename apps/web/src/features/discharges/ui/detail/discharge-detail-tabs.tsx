@@ -10,6 +10,8 @@ import {
   type DischargeDetailDto,
   type DischargeDetailTab,
 } from '@/features/discharges/types'
+import { ClosedDischargeSummary } from '@/features/discharges/ui/detail/closed-discharge-summary'
+import { ClosedDockTimeline } from '@/features/discharges/ui/detail/closed-dock-timeline'
 import { DischargeIdentityCard } from '@/features/discharges/ui/detail/discharge-identity-card'
 import { DischargePreparationCard } from '@/features/discharges/ui/detail/discharge-preparation-card'
 import { DischargeProductLotsCard } from '@/features/discharges/ui/detail/discharge-product-lots-card'
@@ -84,8 +86,18 @@ export function DischargeDetailTabs({
         </TabsList>
       </div>
       <TabsContent className="grid gap-6" value="overview">
-        <DischargeIdentityCard discharge={discharge} />
-        {discharge.status === 'PLANNED' && <DischargePreparationCard discharge={discharge} />}
+        {discharge.status === 'CLOSED' ? (
+          // A closed record's facts all sit in its header; its overview is what it went through.
+          <>
+            <ClosedDockTimeline discharge={discharge} />
+            <ClosedDischargeSummary discharge={discharge} />
+          </>
+        ) : (
+          <>
+            <DischargeIdentityCard discharge={discharge} />
+            {discharge.status === 'PLANNED' && <DischargePreparationCard discharge={discharge} />}
+          </>
+        )}
       </TabsContent>
       <TabsContent value="product-lots">
         <DischargeProductLotsCard canCorrect={canCorrect} discharge={discharge} />
