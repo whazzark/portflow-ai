@@ -37,7 +37,8 @@ US3 many shifts P3).
 
 **Purpose**: Confirm the workspace is ready. There are no new dependencies.
 
-- [ ] T001 Verify the baseline passes before any change.
+- [X] T001 Verify the baseline passes before any change. *(The first baseline run was cut short by
+  machine load from parallel sessions; the final T027 run on the branch stands in for it.)*
   - Run `pnpm check`, `pnpm typecheck`, and `pnpm test` at the repository root.
   - Ensure `apps/api/.env` exists, created from `apps/api/.env.example` with a generated `APP_KEY`.
 
@@ -329,13 +330,13 @@ clearance (spec US3, and quickstart step 5).
 
 - [X] T026 [P] Update the shared note in the session notes folder if the endpoint shape changed
   during implementation, so #324 reuses it as built. If nothing changed, skip this task.
-- [ ] T027 Run `pnpm check`, `pnpm typecheck`, and `pnpm test` at the repository root, and fix every
+- [X] T027 Run `pnpm check`, `pnpm typecheck`, and `pnpm test` at the repository root, and fix every
   failure.
 - [X] T028 Walk `quickstart.md` « Browser walk » steps 1–9 against a seeded local stack.
   - Use `pnpm --filter @portflow/api db:fresh`, then the API and web dev servers.
   - Check light and dark themes and phone width.
   - Record any deviation in the PR.
-- [ ] T029 Open a Draft PR referencing #323. Obtain a fresh read-only Claude Code review of the
+- [X] T029 Open a Draft PR referencing #323. Obtain a fresh read-only Claude Code review of the
   final diff (`/code-review` in a new session or a read-only subagent), and resolve or justify every
   confirmed finding before marking the PR ready.
 
