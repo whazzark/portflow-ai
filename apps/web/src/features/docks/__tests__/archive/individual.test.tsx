@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
@@ -144,7 +144,9 @@ test('explains archiving in discharge terms and offers to view the archived dock
     expect(screen.queryByRole('complementary', { name: NORTH_DOCK.name })).not.toBeInTheDocument(),
   )
 
-  await user.click(screen.getByRole('button', { name: 'View' }))
+  // A pointer press on a toast starts sonner's swipe handling, which needs pointer capture jsdom
+  // lacks; a plain click is what the action button reacts to.
+  fireEvent.click(screen.getByRole('button', { name: 'View' }))
 
   expect(router.state.location.search).toMatchObject({
     checkpointId: `dock:${NORTH_DOCK.id}`,
