@@ -30,7 +30,7 @@ test('reactivates selected archived customers', async () => {
 
   renderCustomers()
   await screen.findByRole('table', { name: 'Available customers' })
-  fireEvent.click(screen.getByRole('tab', { name: /Archived \(1\)/ }))
+  fireEvent.click(screen.getByRole('tab', { name: 'Archived 1' }))
 
   const table = await screen.findByRole('table', { name: 'Archived customers' })
   fireEvent.click(within(table).getByRole('checkbox', { name: 'Select all archived customers' }))
@@ -38,11 +38,14 @@ test('reactivates selected archived customers', async () => {
     expect(screen.getByRole('button', { name: 'Reactivate selected' })).toBeInTheDocument(),
   )
   fireEvent.click(screen.getByRole('button', { name: 'Reactivate selected' }))
-  fireEvent.click(
-    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Reactivate' }),
+  const dialog = await screen.findByRole('alertdialog')
+  expect(within(dialog).getByRole('textbox', { name: 'Comment (optional)' })).toHaveAttribute(
+    'placeholder',
+    'Why are these customers reactivated?',
   )
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Reactivate 1 customer' }))
 
   await waitFor(() => expect(requestBody).toEqual({ ids: ['archived-1'], comment: null }))
-  await waitFor(() => expect(screen.getByRole('tab', { name: 'Archived (0)' })).toBeInTheDocument())
-  expect(screen.getByRole('tab', { name: 'Available (3)' })).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('tab', { name: 'Archived 0' })).toBeInTheDocument())
+  expect(screen.getByRole('tab', { name: 'Available 3' })).toBeInTheDocument()
 })

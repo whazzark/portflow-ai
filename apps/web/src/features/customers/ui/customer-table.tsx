@@ -9,11 +9,19 @@ import {
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table'
+import type { ReactNode } from 'react'
 import { SortIcon } from '@/components/data-table/sort-icon'
 import { HighlightedText } from '@/components/highlighted-text'
+import { ResourceActor } from '@/components/resource/resource-actor'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import {
   Table,
   TableBody,
@@ -25,24 +33,7 @@ import {
 import { customerMatchesSearch } from '@/features/customers/helpers/customer-search'
 import type { CustomerDto } from '@/features/customers/types'
 import { CustomerRowActions } from '@/features/customers/ui/customer-row-actions'
-import { formatFullName } from '@/features/users/helpers/name'
-import { UserAvatar } from '@/features/users/ui/user-avatar'
 import { classnames } from '@/libraries/shadcn/helpers'
-
-type LifecycleUser = NonNullable<CustomerDto['archivedBy']>
-
-function lifecycleUserCell(user: LifecycleUser | null) {
-  if (!user) {
-    return 'Unknown'
-  }
-
-  return (
-    <div className="flex min-w-0 items-center gap-2">
-      <UserAvatar aria-hidden={true} size="sm" user={user} />
-      <span className="truncate">{formatFullName(user)}</span>
-    </div>
-  )
-}
 
 // A fixed table layout sized by these widths, so the columns hold still as the tab or the search changes what the rows
 // contain. The lifecycle comment takes whatever width remains.
@@ -50,9 +41,9 @@ const COLUMN_WIDTHS: Record<string, string> = {
   selection: 'w-10 min-w-10 max-w-10 p-0',
   code: 'w-44',
   companyName: 'w-72',
-  archivedBy: 'w-56',
-  reactivatedBy: 'w-56',
-  actions: 'w-12',
+  archivedBy: 'w-64',
+  reactivatedBy: 'w-64',
+  actions: 'w-20',
 }
 
 declare module '@tanstack/react-table' {
@@ -73,6 +64,8 @@ type CustomerTableProps = {
   onEdit: (customerId: string) => void
   emptyTitle: string
   emptyDescription: string
+  /** Offered beneath an empty directory, such as creating its first record. */
+  emptyAction?: ReactNode
   isArchived: boolean
   canAdminister: boolean
   selectedIds: ReadonlySet<string>
@@ -158,22 +151,29 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
             accessorKey: 'archiveComment',
             header: 'Archive comment',
             sortingFn: 'text' as const,
-            cell: ({ row, table }: CellContext<CustomerDto, unknown>) => (
-              <span title={row.original.archiveComment ?? undefined}>
-                <HighlightedText
-                  search={table.getState().globalFilter as string}
-                  value={row.original.archiveComment ?? '—'}
-                />
-              </span>
-            ),
+            cell: ({ row, table }: CellContext<CustomerDto, unknown>) =>
+              row.original.archiveComment ? (
+                <span title={row.original.archiveComment}>
+                  <HighlightedText
+                    search={table.getState().globalFilter as string}
+                    value={row.original.archiveComment}
+                  />
+                </span>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              ),
           } satisfies ColumnDef<CustomerDto>,
           {
             accessorKey: 'archivedBy',
-            header: 'Archived by',
+            header: 'Archived',
             enableSorting: false,
-            cell: ({ row }: { row: { original: CustomerDto } }) => {
-              return lifecycleUserCell(row.original.archivedBy)
-            },
+            cell: ({ row }: { row: { original: CustomerDto } }) => (
+              <ResourceActor
+                actor={row.original.archivedBy}
+                at={row.original.archivedAt}
+                separator=" "
+              />
+            ),
           } satisfies ColumnDef<CustomerDto>,
         ]
       : [
@@ -181,41 +181,48 @@ function createColumns(isArchived: boolean, canAdminister: boolean): ColumnDef<C
             accessorKey: 'reactivationComment',
             header: 'Reactivation comment',
             sortingFn: 'text' as const,
-            cell: ({ row, table }: CellContext<CustomerDto, unknown>) => (
-              <span title={row.original.reactivationComment ?? undefined}>
-                <HighlightedText
-                  search={table.getState().globalFilter as string}
-                  value={row.original.reactivationComment ?? '—'}
-                />
-              </span>
-            ),
+            cell: ({ row, table }: CellContext<CustomerDto, unknown>) =>
+              row.original.reactivationComment ? (
+                <span title={row.original.reactivationComment}>
+                  <HighlightedText
+                    search={table.getState().globalFilter as string}
+                    value={row.original.reactivationComment}
+                  />
+                </span>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              ),
           } satisfies ColumnDef<CustomerDto>,
           {
             accessorKey: 'reactivatedBy',
-            header: 'Reactivated by',
+            header: 'Reactivated',
             enableSorting: false,
-            cell: ({ row }: { row: { original: CustomerDto } }) =>
-              lifecycleUserCell(row.original.reactivatedBy),
+            cell: ({ row }: { row: { original: CustomerDto } }) => (
+              <ResourceActor actor={row.original.reactivatedBy} at={row.original.reactivatedAt} />
+            ),
           } satisfies ColumnDef<CustomerDto>,
         ]),
     // Last column, as in the truck and transport-company directories: the row's own administration
-    // menu, so a lifecycle change never requires opening the detail pane first.
-    {
-      id: 'actions',
-      header: () => <span className="sr-only">Actions</span>,
-      enableSorting: false,
-      cell: ({ row, table }: CellContext<CustomerDto, unknown>) => (
-        <div className="flex justify-end">
-          <CustomerRowActions
-            canAdminister={canAdminister}
-            customer={row.original}
-            onEdit={table.options.meta?.onEdit}
-            onView={table.options.meta?.onSelect}
-          />
-        </div>
-      ),
-    } satisfies ColumnDef<CustomerDto>,
+    // menu, so a lifecycle change never requires opening the detail pane first. A reader opens a
+    // customer from its code, so the column is an administrator's only.
+    ...(canAdminister ? [ACTIONS_COLUMN] : []),
   ]
+}
+
+const ACTIONS_COLUMN: ColumnDef<CustomerDto> = {
+  id: 'actions',
+  header: 'Actions',
+  enableSorting: false,
+  cell: ({ row, table }: CellContext<CustomerDto, unknown>) => (
+    <div className="flex justify-end">
+      <CustomerRowActions
+        canAdminister={true}
+        customer={row.original}
+        onEdit={table.options.meta?.onEdit}
+        onView={table.options.meta?.onSelect}
+      />
+    </div>
+  ),
 }
 
 export function CustomerTable({
@@ -227,6 +234,7 @@ export function CustomerTable({
   onEdit,
   emptyTitle,
   emptyDescription,
+  emptyAction,
   isArchived,
   canAdminister,
   selectedIds,
@@ -268,12 +276,12 @@ export function CustomerTable({
   const rows = table.getRowModel().rows
 
   return (
-    <div className="overflow-hidden rounded-lg border md:flex md:max-h-full md:min-h-0 md:flex-col md:[&_[data-slot=table-container]]:min-h-0 md:[&_[data-slot=table-container]]:overflow-auto">
+    <div className="overflow-hidden rounded-lg border bg-card md:flex md:max-h-full md:min-h-0 md:flex-col md:[&_[data-slot=table-container]]:min-h-0 md:[&_[data-slot=table-container]]:overflow-auto">
       <Table
         aria-label={isArchived ? 'Archived customers' : 'Available customers'}
         className="min-w-4xl table-fixed"
       >
-        <TableHeader className="md:sticky md:top-0 md:z-10 md:bg-background">
+        <TableHeader className="md:sticky md:top-0 md:z-10 md:bg-card">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
@@ -288,7 +296,10 @@ export function CustomerTable({
                           ? 'descending'
                           : 'none'
                     }
-                    className={COLUMN_WIDTHS[header.column.id]}
+                    className={classnames(
+                      'h-11 font-semibold text-[13px] text-muted-foreground',
+                      COLUMN_WIDTHS[header.column.id],
+                    )}
                     key={header.id}
                   >
                     {header.column.getCanSort() ? (
@@ -319,8 +330,7 @@ export function CustomerTable({
                 <TableRow
                   aria-selected={isSelected}
                   className={classnames(
-                    'cursor-pointer transition-colors aria-selected:bg-primary/5 aria-selected:hover:bg-primary/10',
-                    isArchived && 'text-muted-foreground',
+                    'h-13 cursor-pointer transition-colors aria-selected:bg-primary/5 aria-selected:hover:bg-primary/10',
                   )}
                   onClick={() => onSelect(row.original.id)}
                   key={row.id}
@@ -368,6 +378,7 @@ export function CustomerTable({
                     <EmptyTitle>{emptyTitle}</EmptyTitle>
                     <EmptyDescription>{emptyDescription}</EmptyDescription>
                   </EmptyHeader>
+                  {emptyAction && <EmptyContent>{emptyAction}</EmptyContent>}
                 </Empty>
               </TableCell>
             </TableRow>

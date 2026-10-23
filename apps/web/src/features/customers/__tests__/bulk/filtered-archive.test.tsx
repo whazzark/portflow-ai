@@ -35,7 +35,9 @@ test('keeps bulk selection scoped to filtered visible customers', async () => {
   )
   fireEvent.click(screen.getByRole('button', { name: 'Archive selected' }))
   fireEvent.click(
-    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Archive' }),
+    within(await screen.findByRole('alertdialog')).getByRole('button', {
+      name: /^Archive \d+ customers?$/,
+    }),
   )
 
   await waitFor(() => expect(requestBody).toEqual({ ids: ['available-2'], comment: null }))
