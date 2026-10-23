@@ -48,13 +48,20 @@ function useWeighingAreaLifecycleConfig(area: WeighingAreaDto): ResourceLifecycl
 }
 
 export function WeighingAreaLifecycleActions({
-  area,
   className,
+  area,
+  copy,
 }: {
-  area: WeighingAreaDto
   className?: string
+  area: WeighingAreaDto
+  /** Wording a screen supplies over the canonical lifecycle copy — the Checkpoints map names the
+   * record in its confirmation and offers to open it once archived. */
+  copy?: Pick<
+    ResourceLifecycleConfig,
+    'describeTitle' | 'describeEffect' | 'describeSuccess' | 'successToast'
+  >
 }) {
-  const config = useWeighingAreaLifecycleConfig(area)
+  const config = { ...useWeighingAreaLifecycleConfig(area), ...copy }
 
   return (
     <ResourceLifecycleActions

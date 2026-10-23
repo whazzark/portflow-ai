@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { DOCK_OBSERVER, DOCKS } from '@/features/docks/__tests__/support/fixtures'
 import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixtures'
-import { mockDocks, renderCheckpoints } from '../support/test-helpers'
+import { mockDocks, renderCheckpoints, startSelecting } from '../support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -15,11 +15,13 @@ const RETIRED_DOCK = DOCKS[2]
 const ALPHA_SCALE = WEIGHING_AREAS[0]
 const RETIRED_SCALE = WEIGHING_AREAS[1]
 
-test('offers a Select docks toggle to an administrator', async () => {
+test('offers Select docks from the toolbar Select menu to an administrator', async () => {
   mockDocks()
+  const user = userEvent.setup()
   renderCheckpoints()
 
-  expect(await screen.findByRole('button', { name: 'Select docks' })).toBeInTheDocument()
+  await user.click(await screen.findByRole('button', { name: 'Select' }))
+  expect(await screen.findByRole('menuitem', { name: 'Select docks' })).toBeInTheDocument()
 })
 
 test('does not offer the toggle to a non-administrator', async () => {
@@ -28,7 +30,7 @@ test('does not offer the toggle to a non-administrator', async () => {
 
   await screen.findByRole('button', { name: `View dock ${NORTH_DOCK.name} (Available)` })
 
-  expect(screen.queryByRole('button', { name: 'Select docks' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Select' })).not.toBeInTheDocument()
 })
 
 test('activating select mode sets the URL and hides create actions', async () => {
@@ -36,11 +38,10 @@ test('activating select mode sets the URL and hides create actions', async () =>
   const user = userEvent.setup()
   const { router } = renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
 
   expect(router.state.location.search).toMatchObject({ selecting: 'docks' })
-  expect(screen.queryByRole('button', { name: 'New dock' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'New weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Stop selecting docks' })).toBeInTheDocument()
 })
 
@@ -49,7 +50,7 @@ test('turns a dock marker click into a checked toggle instead of opening details
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
   const marker = screen.getByRole('button', { name: `Select dock ${NORTH_DOCK.name}` })
   await user.click(marker)
 
@@ -65,7 +66,7 @@ test('leaves weighing area marker clicks opening the details sheet', async () =>
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
   await user.click(
     await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' }),
   )
@@ -81,7 +82,7 @@ test('excludes an archived dock marker once an available-dock selection is in pr
   const user = userEvent.setup()
   renderCheckpoints('/checkpoints?status=all')
 
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
   await user.click(screen.getByRole('button', { name: `Select dock ${NORTH_DOCK.name}` }))
 
   expect(
@@ -95,11 +96,13 @@ test('excludes an archived dock marker once an available-dock selection is in pr
 
 // Weighing-area half of the same select mode (spec FR-038): interaction parity with docks above.
 
-test('offers a Select weighing areas toggle to an administrator', async () => {
+test('offers Select weighing areas from the toolbar Select menu to an administrator', async () => {
   mockDocks()
+  const user = userEvent.setup()
   renderCheckpoints()
 
-  expect(await screen.findByRole('button', { name: 'Select weighing areas' })).toBeInTheDocument()
+  await user.click(await screen.findByRole('button', { name: 'Select' }))
+  expect(await screen.findByRole('menuitem', { name: 'Select weighing areas' })).toBeInTheDocument()
 })
 
 test('does not offer the weighing-area toggle to a non-administrator', async () => {
@@ -110,7 +113,7 @@ test('does not offer the weighing-area toggle to a non-administrator', async () 
     name: `View weighing area ${ALPHA_SCALE.name} (Available)`,
   })
 
-  expect(screen.queryByRole('button', { name: 'Select weighing areas' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Select' })).not.toBeInTheDocument()
 })
 
 test('activating weighing-area select mode sets the URL and hides create actions', async () => {
@@ -118,11 +121,10 @@ test('activating weighing-area select mode sets the URL and hides create actions
   const user = userEvent.setup()
   const { router } = renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
 
   expect(router.state.location.search).toMatchObject({ selecting: 'weighing-areas' })
-  expect(screen.queryByRole('button', { name: 'New dock' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'New weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Stop selecting weighing areas' })).toBeInTheDocument()
 })
 
@@ -131,7 +133,7 @@ test('turns a weighing-area marker click into a checked toggle instead of openin
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   const marker = screen.getByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` })
   await user.click(marker)
 
@@ -146,7 +148,7 @@ test('leaves dock marker clicks opening the details sheet while selecting weighi
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(
     await screen.findByRole('button', { name: `View dock ${NORTH_DOCK.name} (Available)` }),
   )
@@ -162,7 +164,7 @@ test('keeps an archived weighing-area marker opening details once the selection 
   const user = userEvent.setup()
   renderCheckpoints('/checkpoints?status=all')
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(screen.getByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` }))
 
   expect(
@@ -181,19 +183,18 @@ test('a weighing area hidden by search stays checked, but changing the status fi
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(screen.getByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` }))
   expect(screen.getByText('1 selected')).toBeInTheDocument()
 
-  await user.type(screen.getByRole('textbox', { name: 'Search checkpoints' }), 'zzz-no-match')
+  await user.type(screen.getByRole('combobox', { name: 'Search checkpoints' }), 'zzz-no-match')
 
   // Search narrows what is displayed, not what was chosen (spec FR-036): the count survives even
   // though the checked marker itself is no longer a search match.
   expect(screen.getByText('1 selected')).toBeInTheDocument()
 
-  await user.clear(screen.getByRole('textbox', { name: 'Search checkpoints' }))
-  await user.click(screen.getByRole('button', { name: /Filter checkpoints:/ }))
-  await user.click(screen.getByRole('menuitemradio', { name: /Archived/ }))
+  await user.clear(screen.getByRole('combobox', { name: 'Search checkpoints' }))
+  await user.click(screen.getByRole('button', { name: /^Available/ }))
 
   // The status filter changes what is *eligible*, so it does prune the selection, unlike search.
   expect(screen.queryByText('1 selected')).not.toBeInTheDocument()

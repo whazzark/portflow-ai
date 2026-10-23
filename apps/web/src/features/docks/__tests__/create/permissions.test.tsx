@@ -14,7 +14,7 @@ test('does not offer dock creation to a non-administrator', async () => {
 
   await screen.findByRole('region', { name: 'Checkpoint map' })
 
-  expect(screen.queryByRole('button', { name: 'New dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
 })
 
 test('ignores a direct create=dock URL for a non-administrator', async () => {
@@ -23,6 +23,6 @@ test('ignores a direct create=dock URL for a non-administrator', async () => {
 
   await screen.findByRole('region', { name: 'Checkpoint map' })
 
-  expect(screen.queryByRole('heading', { name: 'Create dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New dock' })).not.toBeInTheDocument()
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })

@@ -45,6 +45,14 @@ export type ResourceLifecycleConfig<TResult = unknown> = {
   /** Replaces the canonical success message with one that reports what the server actually did —
    * a warehouse archival names the doors it cascaded to. */
   describeSuccess?: (action: LifecycleAction, result: TResult) => string
+  /** Replaces the canonical dialog title, e.g. to name the record rather than its kind. */
+  describeTitle?: (action: LifecycleAction) => string
+  /** Extra detail for the success toast: a second line and an action, such as one that opens the
+   * record where its new status put it. */
+  successToast?: (
+    action: LifecycleAction,
+    result: TResult,
+  ) => { description?: string; action?: { label: string; onClick: () => void } } | undefined
 }
 
 const ACTION_VARIANTS: Record<LifecycleAction, 'default' | 'destructive' | 'outline'> = {
@@ -87,6 +95,7 @@ export function ResourceLifecycleDialog<TResult>({
       toast.success(
         config.describeSuccess?.(lifecycleAction, result) ??
           lifecycleSuccessMessage(lifecycleAction, config.singular, config.name),
+        config.successToast?.(lifecycleAction, result),
       )
     } catch (cause) {
       // A refusal may mean the record's authoritative state has moved on since this view loaded,
@@ -108,7 +117,9 @@ export function ResourceLifecycleDialog<TResult>({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {action ? lifecycleDialogTitle(action, config.singular) : ''}
+            {action
+              ? (config.describeTitle?.(action) ?? lifecycleDialogTitle(action, config.singular))
+              : ''}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {action

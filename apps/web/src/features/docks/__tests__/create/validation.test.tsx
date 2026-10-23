@@ -4,7 +4,11 @@ import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { API_BASE_URL, DOCKS } from '@/features/docks/__tests__/support/fixtures'
 import { server } from '@/test/msw/server'
-import { mockDocks, renderCheckpoints } from '../../../checkpoints/__tests__/support/test-helpers'
+import {
+  mockDocks,
+  renderCheckpoints,
+  startCreating,
+} from '../../../checkpoints/__tests__/support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -20,7 +24,7 @@ test('blocks submission with a clear message until a location has been placed', 
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New dock' }))
+  await startCreating(user, 'New dock')
 
   expect(
     screen.getByText('A location must be placed before this dock can be created.'),
@@ -33,7 +37,7 @@ test('rejects a blank dock name with an inline field error and keeps the pending
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New dock' }))
+  await startCreating(user, 'New dock')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
 
   await user.click(screen.getByRole('button', { name: 'Create dock' }))
@@ -55,7 +59,7 @@ test('rejects a duplicate dock name inline on the name field and keeps entered v
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New dock' }))
+  await startCreating(user, 'New dock')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(screen.getByRole('textbox', { name: 'Dock name' }), DOCKS[1].name)
   await user.click(screen.getByRole('button', { name: 'Create dock' }))
@@ -70,7 +74,7 @@ test('rejects a manually edited out-of-range coordinate and disables submission'
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New dock' }))
+  await startCreating(user, 'New dock')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(screen.getByRole('textbox', { name: 'Dock name' }), 'South Dock')
 

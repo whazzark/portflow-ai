@@ -3,6 +3,7 @@ import {
   isCheckpointSearchMatch,
   normalizeCheckpointSearch,
   presentCheckpoints,
+  searchCheckpoints,
 } from '@/features/checkpoints/checkpoint-search'
 import {
   checkpointLayerVisibilityFromFilter,
@@ -53,4 +54,52 @@ test('filters presented checkpoints by visible resource kind', () => {
   expect(
     presentCheckpoints(checkpoints, 'all', '', { DOCK: false, WEIGHING_AREA: true }),
   ).toHaveLength(1)
+})
+
+test('narrows presented checkpoints to the search matches and keeps the filtered total', () => {
+  const checkpoints = presentCheckpoints(
+    [
+      {
+        id: '1',
+        kind: 'DOCK',
+        name: 'Quai Chef de Baie',
+        latitude: 1,
+        longitude: 2,
+        status: 'AVAILABLE',
+      },
+      {
+        id: '2',
+        kind: 'WEIGHING_AREA',
+        name: 'Pont-bascule Nord',
+        latitude: 1,
+        longitude: 2,
+        status: 'AVAILABLE',
+      },
+      {
+        id: '3',
+        kind: 'DOCK',
+        name: 'Chef Archived',
+        latitude: 1,
+        longitude: 2,
+        status: 'ARCHIVED',
+      },
+    ],
+    'available',
+    'chef',
+  )
+
+  expect(searchCheckpoints(checkpoints, 'chef')).toEqual({
+    matches: [expect.objectContaining({ id: '1' })],
+    total: 2,
+  })
+})
+
+test('treats an empty search as matching every presented checkpoint', () => {
+  const checkpoints = presentCheckpoints(
+    [{ id: '1', kind: 'DOCK', name: 'Quai', latitude: 1, longitude: 2, status: 'AVAILABLE' }],
+    'all',
+    '  ',
+  )
+
+  expect(searchCheckpoints(checkpoints, '  ')).toEqual({ matches: checkpoints, total: 1 })
 })

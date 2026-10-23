@@ -1,4 +1,5 @@
-import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import type { ResourceMapAnchor } from '@/components/resource-map/resource-map-anchor'
+import { ResourceMapCard } from '@/components/resource-map/resource-map-card'
 import { CHECKPOINT_KIND_LABELS, type CheckpointKind } from '@/features/checkpoints/types'
 import {
   CheckpointResourceForm,
@@ -6,8 +7,18 @@ import {
 } from '@/features/checkpoints/ui/checkpoint-resource-form'
 import { resourceFailureTitle } from '@/helpers/resource-copy'
 
+const PLACEMENT_HINT_BY_KIND: Record<CheckpointKind, string> = {
+  DOCK: 'Drag the pin to adjust its position.',
+  WEIGHING_AREA: 'Place the pin where trucks stand on the weighbridge.',
+}
+
+/**
+ * The creation card of placement mode, anchored to the pending pin once there is one. It is open
+ * from the start, so the coordinates can also be typed without ever clicking the map.
+ */
 export function CreateCheckpointPanel<TResource>({
   kind,
+  anchor,
   pending,
   onPendingChange,
   onCancel,
@@ -15,10 +26,9 @@ export function CreateCheckpointPanel<TResource>({
   onSuccess,
 }: {
   kind: CheckpointKind
+  anchor: ResourceMapAnchor | null
   pending: PendingCheckpointPlacement | null
   onPendingChange: (point: PendingCheckpointPlacement) => void
-  /** The sheet is unmodal over the map, so a click outside dismisses nothing and the placement
-   * draft has to be abandoned deliberately — as warehouse and door creation already do. */
   onCancel: () => void
   onCreate: (value: { name: string; latitude: number; longitude: number }) => Promise<TResource>
   onSuccess: (resource: TResource) => void
@@ -26,25 +36,22 @@ export function CreateCheckpointPanel<TResource>({
   const resourceNoun = CHECKPOINT_KIND_LABELS[kind].toLowerCase()
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <SheetHeader>
-        <SheetTitle>Create {resourceNoun}</SheetTitle>
-        <SheetDescription>
-          Click a point on the map to place the new {resourceNoun}, then name it.
-        </SheetDescription>
-      </SheetHeader>
-      <div className="px-4">
-        <CheckpointResourceForm
-          failureTitle={(name) => resourceFailureTitle('create', resourceNoun, name)}
-          kind={kind}
-          onCancel={onCancel}
-          onPendingChange={onPendingChange}
-          onSubmit={onCreate}
-          onSuccess={onSuccess}
-          pending={pending}
-          submitLabel={`Create ${resourceNoun}`}
-        />
-      </div>
-    </div>
+    <ResourceMapCard
+      anchor={anchor}
+      onClose={onCancel}
+      subtitle={PLACEMENT_HINT_BY_KIND[kind]}
+      title={`New ${resourceNoun}`}
+    >
+      <CheckpointResourceForm
+        failureTitle={(name) => resourceFailureTitle('create', resourceNoun, name)}
+        kind={kind}
+        onCancel={onCancel}
+        onPendingChange={onPendingChange}
+        onSubmit={onCreate}
+        onSuccess={onSuccess}
+        pending={pending}
+        submitLabel={`Create ${resourceNoun}`}
+      />
+    </ResourceMapCard>
   )
 }

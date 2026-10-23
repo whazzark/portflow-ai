@@ -43,9 +43,7 @@ test('does not offer editing an archived weighing area, even to an administrator
   await screen.findByRole('heading', { name: RETIRED_SCALE.name })
 
   expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
-  expect(
-    screen.getByText('Archived weighing areas cannot receive new operations.'),
-  ).toBeInTheDocument()
+  expect(screen.getByText(/can’t be selected for new discharges/)).toBeInTheDocument()
 })
 
 test('ignores a direct edit=weighing-area URL for a non-administrator', async () => {

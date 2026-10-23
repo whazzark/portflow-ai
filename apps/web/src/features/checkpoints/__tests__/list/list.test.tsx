@@ -53,11 +53,11 @@ test('shows all available and archived checkpoints on a full-page map by default
 
   expect(screen.queryByRole('table', { name: 'Docks' })).not.toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Docks' })).not.toBeInTheDocument()
-  expect(screen.getByRole('textbox', { name: 'Search checkpoints' })).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Search checkpoints' })).toBeInTheDocument()
   expect(
-    screen.queryByRole('button', { name: 'Clear checkpoint search input' }),
+    screen.queryByRole('button', { name: 'Clear search checkpoints input' }),
   ).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Filter checkpoints: All/ })).toBeInTheDocument()
+  expect(screen.getByRole('group', { name: 'Checkpoint types' })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({ search: '', status: 'all' })
 })
 
@@ -66,8 +66,7 @@ test('filters map membership by lifecycle status', async () => {
   const { router } = renderCheckpoints()
   await screen.findByRole('region', { name: 'Checkpoint map' })
 
-  await user.click(screen.getByRole('button', { name: /Filter checkpoints: All/ }))
-  await user.click(screen.getByRole('menuitemradio', { name: /Archived/ }))
+  await user.click(screen.getByRole('button', { name: /^Available/ }))
 
   const map = screen.getByRole('region', { name: 'Checkpoint map' })
   expect(
@@ -85,83 +84,19 @@ test('filters map membership by lifecycle status', async () => {
   expect(router.state.location.search).toMatchObject({ status: 'archived' })
 })
 
-test('emphasizes normalized name matches without removing nonmatches', async () => {
-  const user = userEvent.setup()
-  const { router } = renderCheckpoints()
-  await screen.findByRole('region', { name: 'Checkpoint map' })
-
-  await user.type(screen.getByRole('textbox', { name: 'Search checkpoints' }), 'beta')
-
-  expect(screen.getByRole('button', { name: 'View dock Bêta Dock (Available)' })).toHaveAttribute(
-    'data-search-match',
-    'true',
-  )
-  expect(screen.getByRole('button', { name: 'View dock North Dock (Available)' })).toHaveAttribute(
-    'data-search-match',
-    'false',
-  )
-  expect(router.state.location.search).toMatchObject({ search: 'beta' })
-})
-
-test('applies search across both resource kinds without removing spatial context', async () => {
-  const user = userEvent.setup()
-  renderCheckpoints()
-  await screen.findByRole('region', { name: 'Checkpoint map' })
-
-  await user.type(screen.getByRole('textbox', { name: 'Search checkpoints' }), 'alpha scale')
-
-  expect(
-    await screen.findByRole('button', { name: 'View weighing area Alpha Scale (Available)' }),
-  ).toHaveAttribute('data-search-match', 'true')
-  expect(screen.getByRole('button', { name: 'View dock North Dock (Available)' })).toHaveAttribute(
-    'data-search-match',
-    'false',
-  )
-})
-
-test('keeps context and offers to clear a zero-match search', async () => {
-  const user = userEvent.setup()
-  renderCheckpoints()
-  await screen.findByRole('region', { name: 'Checkpoint map' })
-
-  await user.type(screen.getByRole('textbox', { name: 'Search checkpoints' }), 'missing')
-
-  expect(screen.getByText('No checkpoints match “missing”.')).toBeInTheDocument()
-  expect(
-    screen.getByRole('button', { name: 'View dock North Dock (Available)' }),
-  ).toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: 'Clear search' }))
-  expect(screen.getByRole('textbox', { name: 'Search checkpoints' })).toHaveValue('')
-  expect(screen.queryByText(/No checkpoints match/)).not.toBeInTheDocument()
-})
-
-test('restores filter and search from the URL', async () => {
-  renderCheckpoints(`/checkpoints?${'status=archived'}&${'search=retired'}`)
-
-  expect(
-    await screen.findByRole('button', { name: 'View dock Retired Dock (Archived)' }),
-  ).toBeInTheDocument()
-  expect(
-    screen.queryByRole('button', { name: 'View dock North Dock (Available)' }),
-  ).not.toBeInTheDocument()
-  expect(screen.getByRole('textbox', { name: 'Search checkpoints' })).toHaveValue('retired')
-  expect(screen.getByRole('button', { name: /Filter checkpoints: Archived/ })).toBeInTheDocument()
-})
-
 test('filters docks and weighing areas independently and persists the layer in the URL', async () => {
   const user = userEvent.setup()
   const { router } = renderCheckpoints()
   await screen.findByRole('region', { name: 'Checkpoint map' })
 
-  await user.click(screen.getByRole('button', { name: /Filter checkpoints: All/ }))
-  await user.click(screen.getByRole('menuitemcheckbox', { name: 'Docks' }))
+  await user.click(screen.getByRole('button', { name: /^Docks/ }))
 
   const map = screen.getByRole('region', { name: 'Checkpoint map' })
   expect(within(map).getAllByRole('button', { name: /View weighing area/ })).not.toHaveLength(0)
   expect(within(map).queryByRole('button', { name: /View dock/ })).not.toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({ kinds: 'weighing-area' })
 
-  await user.click(screen.getByRole('menuitemcheckbox', { name: 'Docks' }))
+  await user.click(screen.getByRole('button', { name: /^Docks/ }))
   expect(router.state.location.search).not.toHaveProperty('kinds')
   expect(within(map).getAllByRole('button', { name: /View dock/ })).not.toHaveLength(0)
 })

@@ -49,8 +49,8 @@ test('separates checkpoint types and statuses in a compact legend', () => {
   const { container } = render(<CheckpointLegend />)
 
   const legend = screen.getByRole('region', { name: 'Checkpoint legend' })
-  const types = within(screen.getByRole('group', { name: 'Checkpoint types' }))
-  const statuses = within(screen.getByRole('group', { name: 'Checkpoint statuses' }))
+  const types = within(screen.getByRole('group', { name: 'Marker types' }))
+  const statuses = within(screen.getByRole('group', { name: 'Marker statuses' }))
 
   expect(legend).toHaveTextContent('Type')
   expect(legend).toHaveTextContent('Status')

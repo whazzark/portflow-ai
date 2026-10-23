@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test, vi } from 'vitest'
@@ -86,8 +86,9 @@ test('saves a rename without touching position, status, identity, or creation ti
 
   expect(await screen.findByText(`Weighing area “${updated.name}” updated`)).toBeInTheDocument()
   expect(await screen.findByRole('heading', { name: updated.name })).toBeInTheDocument()
-  expect(screen.getByText(String(ALPHA_SCALE.latitude))).toBeInTheDocument()
-  expect(screen.getByText(String(ALPHA_SCALE.longitude))).toBeInTheDocument()
+  expect(
+    screen.getByText(`${ALPHA_SCALE.latitude.toFixed(4)}, ${ALPHA_SCALE.longitude.toFixed(4)}`),
+  ).toBeInTheDocument()
 })
 
 test('applies a combined name and position change together', async () => {
@@ -171,4 +172,29 @@ test('does not widen the kinds or status filter on a successful update', async (
     kinds: 'weighing-area',
     status: 'available',
   })
+})
+
+test('moves the weighing area in move mode: banner, previous position and edit card', async () => {
+  const user = userEvent.setup()
+  const { router } = renderCheckpoints()
+
+  await openEditWeighingArea(user)
+
+  expect(router.state.location.search).toMatchObject({ edit: 'weighing-area' })
+  expect(screen.getByText(`Drag the pin to move ${ALPHA_SCALE.name}`)).toBeInTheDocument()
+  expect(screen.queryByRole('combobox', { name: 'Search checkpoints' })).not.toBeInTheDocument()
+  expect(
+    screen.getByRole('img', { name: `Previous position of ${ALPHA_SCALE.name}` }),
+  ).toBeInTheDocument()
+  const card = screen.getByRole('complementary', { name: 'Edit weighing area' })
+  expect(card).toHaveTextContent(
+    `Previous position${ALPHA_SCALE.latitude.toFixed(4)}, ${ALPHA_SCALE.longitude.toFixed(4)}`,
+  )
+  expect(within(card).getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: 'Simulate dragging pending marker' }))
+  await user.click(within(card).getByRole('button', { name: 'Cancel' }))
+
+  expect(router.state.location.search).not.toHaveProperty('edit')
+  expect(await screen.findByRole('complementary', { name: ALPHA_SCALE.name })).toBeInTheDocument()
 })

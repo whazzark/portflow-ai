@@ -6,13 +6,15 @@ import {
   useClearSelectionShortcut,
   useSelectAllShortcut,
 } from '@/components/lifecycle/use-bulk-selection-shortcuts'
+import type { ResourceMapAnchor } from '@/components/resource-map/resource-map-anchor'
+import { ResourceMapModeBanner } from '@/components/resource-map/resource-map-mode-banner'
+import { ResourceMapNoMatch } from '@/components/resource-map/resource-map-no-match'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
-import { countResources } from '@/components/resource-map/resource-map-search'
 import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
 import { Button } from '@/components/ui/button'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
-import { presentCheckpoints } from '@/features/checkpoints/checkpoint-search'
+import { presentCheckpoints, searchCheckpoints } from '@/features/checkpoints/checkpoint-search'
 import {
   parseCheckpointSelection,
   serializeCheckpointSelection,
@@ -23,24 +25,31 @@ import type { PresentedCheckpoint } from '@/features/checkpoints/types'
 import {
   BULK_LIFECYCLE_INTENTS,
   type BulkLifecycleIntent,
+  CHECKPOINT_KIND_PLURAL_LABELS,
   CHECKPOINT_KINDS,
   CHECKPOINT_PARAM_BY_KIND,
   type CheckpointKind,
   type CheckpointKindFilter,
-  type CheckpointLayerVisibility,
+  type CheckpointStatus,
   checkpointKindFilterFromVisibility,
   checkpointLayerVisibilityFromFilter,
+  checkpointStatusesFromFilter,
+  checkpointStatusFilterFromStatuses,
   STATUS_FOR_BULK_INTENT,
 } from '@/features/checkpoints/types'
 import {
   BulkCheckpointLifecycleActions,
   type BulkLifecycleOutcome,
 } from '@/features/checkpoints/ui/bulk-checkpoint-lifecycle-actions'
-import { CheckpointMapControls } from '@/features/checkpoints/ui/checkpoint-map-controls'
 import {
-  CheckpointSheet,
+  CheckpointDetailCard,
   type SelectedCheckpoint,
-} from '@/features/checkpoints/ui/checkpoint-sheet'
+} from '@/features/checkpoints/ui/checkpoint-detail-card'
+import { CheckpointMapToolbar } from '@/features/checkpoints/ui/checkpoint-map-toolbar'
+import {
+  CheckpointCreateMenu,
+  CheckpointSelectMenu,
+} from '@/features/checkpoints/ui/checkpoint-toolbar-menus'
 import { CreateCheckpointPanel } from '@/features/checkpoints/ui/create-checkpoint-panel'
 import { EditCheckpointPanel } from '@/features/checkpoints/ui/edit-checkpoint-panel'
 import {
@@ -83,6 +92,11 @@ const BULK_LIFECYCLE_CAPABLE_KINDS: CheckpointKind[] = ['DOCK', 'WEIGHING_AREA']
 const OPPOSITE_KIND_FILTER: Record<CheckpointKind, CheckpointKindFilter> = {
   DOCK: 'weighing-area',
   WEIGHING_AREA: 'dock',
+}
+
+const PLACEMENT_BANNER_BY_KIND: Record<CheckpointKind, string> = {
+  DOCK: 'Placing a new dock · click the map where trucks are loaded',
+  WEIGHING_AREA: 'Placing a new weighing area · click the weighbridge position',
 }
 
 const CREATE_LABEL_BY_KIND: Record<CheckpointKind, string> = {
@@ -137,11 +151,33 @@ export function CheckpointsPage() {
     () => [...docks.map(toDockCheckpoint), ...weighingAreas.map(toWeighingAreaCheckpoint)],
     [docks, weighingAreas],
   )
-  const counts = countResources(
-    checkpointCollection,
-    (checkpoint) => !layerVisibility || layerVisibility[checkpoint.kind],
-  )
+  const selectedStatuses = checkpointStatusesFromFilter(status)
+  const selectedKinds = CHECKPOINT_KINDS.filter((kind) => layerVisibility[kind])
+  // Each toggle counts what it would show alongside the other group's current choice: a type within
+  // the selected statuses, a status within the selected types.
+  const kindCounts = Object.fromEntries(
+    CHECKPOINT_KINDS.map((kind) => [
+      kind,
+      checkpointCollection.filter(
+        (checkpoint) => checkpoint.kind === kind && selectedStatuses.includes(checkpoint.status),
+      ).length,
+    ]),
+  ) as Record<CheckpointKind, number>
+  const statusCounts = Object.fromEntries(
+    (['AVAILABLE', 'ARCHIVED'] as const).map((checkpointStatus) => [
+      checkpointStatus,
+      checkpointCollection.filter(
+        (checkpoint) => checkpoint.status === checkpointStatus && layerVisibility[checkpoint.kind],
+      ).length,
+    ]),
+  ) as Record<CheckpointStatus, number>
   const checkpoints = presentCheckpoints(checkpointCollection, status, search, layerVisibility)
+  const { matches: searchMatches, total: searchTotal } = searchCheckpoints(checkpoints, search)
+  const isSearching = search.trim().length > 0
+  const [fitRequest, setFitRequest] = useState<{ key: number; ids: string[] } | undefined>()
+  // Where the card's anchor — the selected checkpoint, or a pin being placed or moved — currently
+  // sits on screen, as the map reports it while it pans and zooms.
+  const [cardAnchor, setCardAnchor] = useState<ResourceMapAnchor | null>(null)
   // The status of any currently checked checkpoint fixes what a selection is for — Available means
   // an archive is in progress, Archived means a reactivation is — since the selection is
   // homogeneous by construction (see checkableIds below). Undefined while nothing is checked, so
@@ -356,7 +392,6 @@ export function CheckpointsPage() {
     return null
   }
 
-  const hasMatches = checkpoints.some((checkpoint) => checkpoint.isSearchMatch)
   // Search narrows what is displayed, not what was chosen: a checked checkpoint that a search
   // term hides stays selected (spec FR-036), unlike the status and resource-kind filters below,
   // which change what is *eligible* and so do prune the selection.
@@ -387,7 +422,22 @@ export function CheckpointsPage() {
       }),
     })
   }
-  const updateLayerVisibility = (nextVisibility: CheckpointLayerVisibility) => {
+  const updateStatuses = (nextStatuses: CheckpointStatus[]) =>
+    updateStatus(checkpointStatusFilterFromStatuses(nextStatuses))
+  const updateKinds = (nextKinds: CheckpointKind[]) =>
+    updateLayerVisibility({
+      DOCK: nextKinds.includes('DOCK'),
+      WEIGHING_AREA: nextKinds.includes('WEIGHING_AREA'),
+    })
+  const pickSearchMatch = (checkpointId: string) => {
+    void navigate({ search: (previous) => ({ ...previous, checkpointId }) })
+  }
+  const frameSearchMatches = () =>
+    setFitRequest((previous) => ({
+      key: (previous?.key ?? 0) + 1,
+      ids: searchMatches.map((checkpoint) => checkpoint.id),
+    }))
+  const updateLayerVisibility = (nextVisibility: Record<CheckpointKind, boolean>) => {
     setCheckedIds(new Set())
     void navigate({
       search: (previous) => ({
@@ -493,13 +543,6 @@ export function CheckpointsPage() {
       replace: true,
       search: (previous) => ({ ...previous, selecting: undefined }),
     })
-  }
-  const toggleSelectMode = (kind: CheckpointKind) => {
-    if (selectingKind === kind) {
-      stopSelecting()
-      return
-    }
-    startSelecting(kind)
   }
   const toggleChecked = (_kind: CheckpointKind, id: string) => {
     // Eligibility already accounts for kind, status and the selection's intent.
@@ -615,7 +658,7 @@ export function CheckpointsPage() {
   // creation flows may still replace one another — switching between them is deliberate, and
   // `startCreating` discards the abandoned placement (spec FR-016, FR-017).
   const createActions =
-    canManageCheckpoints && !isEditing && !selectingKind
+    canManageCheckpoints && !isEditing && !selectingKind && !creationKind
       ? CHECKPOINT_KINDS.map((kind) => ({
           key: kind,
           label: CREATE_LABEL_BY_KIND[kind],
@@ -628,6 +671,7 @@ export function CheckpointsPage() {
     creationKind === 'DOCK' ? (
       <CreateCheckpointPanel
         kind="DOCK"
+        anchor={pendingPlacement ? cardAnchor : null}
         onCancel={cancelCreating}
         onCreate={createDock}
         onPendingChange={setPendingPlacement}
@@ -637,6 +681,7 @@ export function CheckpointsPage() {
     ) : creationKind === 'WEIGHING_AREA' ? (
       <CreateCheckpointPanel
         kind="WEIGHING_AREA"
+        anchor={pendingPlacement ? cardAnchor : null}
         onCancel={cancelCreating}
         onCreate={createWeighingArea}
         onPendingChange={setPendingPlacement}
@@ -670,6 +715,7 @@ export function CheckpointsPage() {
   const editPanel =
     editing && draft && editSession ? (
       <EditCheckpointPanel
+        anchor={cardAnchor}
         draft={draft}
         kind={editing.kind}
         onCancel={cancelEditing}
@@ -716,27 +762,113 @@ export function CheckpointsPage() {
   // under-report how many checkpoints it has while an edit is in progress.
   const mapCheckpoints =
     isEditing && editSession
-      ? checkpoints.filter(
+      ? searchMatches.filter(
           (checkpoint) =>
             !(checkpoint.kind === editSession.kind && checkpoint.id === editSession.id),
         )
-      : checkpoints
+      : searchMatches
   const editingLabel = editing?.resource.name
+  const closeDetails = () => {
+    void navigate({
+      replace: true,
+      search: (previous) => ({ ...previous, checkpointId: undefined, edit: undefined }),
+    })
+  }
+  // A just-archived checkpoint leaves the default Available view; View brings Archived in and
+  // reopens it there.
+  const viewArchived = (selection: { kind: CheckpointKind; id: string }) => {
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        checkpointId: serializeCheckpointSelection(selection),
+        status: previous.status === 'available' ? 'all' : previous.status,
+      }),
+    })
+  }
+  // Select mode leaves markers that cannot be checked — another kind, or the other status — opening
+  // their card as usual.
+  // A search that leaves the selected checkpoint off the map hides its card too, rather than leave
+  // it pointing at an empty spot; clearing the search brings it back.
+  const selectedIsOnMap =
+    selectedCheckpoint !== undefined &&
+    searchMatches.some(
+      (checkpoint) =>
+        checkpoint.kind === selectedCheckpoint.kind && checkpoint.id === selectedCheckpoint.id,
+    )
+  const isViewing = Boolean(selectedResource) && selectedIsOnMap && !creationKind && !isEditing
+  const anchorPoint: LatLng | undefined = creationKind
+    ? (pendingPlacement ?? undefined)
+    : isEditing
+      ? (draft ?? undefined)
+      : isViewing
+        ? selectedCheckpoint
+        : undefined
+  // Placement and move modes replace the toolbar with a banner that says what a map click does.
+  const modeBanner = creationKind ? (
+    <ResourceMapModeBanner actionLabel="Cancel" onAction={cancelCreating}>
+      {PLACEMENT_BANNER_BY_KIND[creationKind]}
+    </ResourceMapModeBanner>
+  ) : editing ? (
+    <ResourceMapModeBanner actionLabel="Cancel" onAction={cancelEditing}>
+      Drag the pin to move {editing.resource.name}
+    </ResourceMapModeBanner>
+  ) : undefined
 
   return (
     <>
       <ResourceMapWorkspace
-        controls={
-          <CheckpointMapControls
-            counts={counts}
-            hasMatches={hasMatches}
-            layerVisibility={layerVisibility}
-            onLayerVisibilityChange={updateLayerVisibility}
+        toolbar={
+          <CheckpointMapToolbar
+            kindCounts={kindCounts}
+            kinds={selectedKinds}
+            matches={isSearching ? searchMatches : []}
+            onKindsChange={updateKinds}
+            onPick={pickSearchMatch}
             onSearchChange={updateSearch}
-            onStatusChange={updateStatus}
+            onStatusesChange={updateStatuses}
+            onSubmitAll={frameSearchMatches}
             search={search}
-            status={status}
+            searchFooter={`${searchMatches.length} of ${searchTotal} ${
+              status === 'all' ? 'checkpoints' : status
+            } · Enter to zoom to all matches`}
+            actions={
+              !canManageCheckpoints ? undefined : selectingKind ? (
+                <Button onClick={stopSelecting} size="sm" type="button">
+                  Stop selecting {CHECKPOINT_KIND_PLURAL_LABELS[selectingKind]}
+                </Button>
+              ) : (
+                <>
+                  <CheckpointSelectMenu
+                    kinds={BULK_LIFECYCLE_CAPABLE_KINDS.filter((kind) => layerVisibility[kind])}
+                    onSelect={startSelecting}
+                  />
+                  {createActions.length > 0 && <CheckpointCreateMenu onCreate={startCreating} />}
+                </>
+              )
+            }
+            statusCounts={statusCounts}
+            statuses={selectedStatuses}
           />
+        }
+        overlay={
+          isSearching && searchMatches.length === 0 && checkpoints.length > 0 ? (
+            <ResourceMapNoMatch
+              actions={
+                <>
+                  <Button onClick={() => updateSearch('')} size="sm" variant="outline">
+                    Clear search
+                  </Button>
+                  {!selectedStatuses.includes('ARCHIVED') && (
+                    <Button onClick={() => updateStatus('all')} size="sm" variant="outline">
+                      Include archived
+                    </Button>
+                  )}
+                </>
+              }
+              explanation="Search looks at names in the selected types and status. Turn on Archived to include archived checkpoints, or clear the search."
+              title={`No checkpoint matches “${search}”`}
+            />
+          ) : undefined
         }
         emptyMessage={
           checkpoints.length === 0 && !sourceUnavailable
@@ -759,12 +891,23 @@ export function CheckpointsPage() {
             checkableIds={canManageCheckpoints ? checkableIds : undefined}
             checkedIds={selectingKind ? checkedIds : undefined}
             checkpoints={mapCheckpoints}
-            createActions={createActions}
+            anchorPoint={anchorPoint}
+            fitRequest={fitRequest}
+            ghost={
+              editing && editSession
+                ? {
+                    position: editSession.origin,
+                    label: `Previous position of ${editing.resource.name}`,
+                    icon: <CheckpointKindIcon className="size-3.5" kind={editing.kind} />,
+                  }
+                : undefined
+            }
+            onAnchorChange={setCardAnchor}
+            onMapClick={isViewing ? closeDetails : undefined}
             onError={onMapError}
             onSelect={selectCheckpoint}
             onShiftSelect={canManageCheckpoints ? handleShiftSelect : undefined}
             onToggleChecked={selectingKind ? (id) => toggleChecked(selectingKind, id) : undefined}
-            onToggleSelectMode={toggleSelectMode}
             selectMode={selectingKind}
             selectableKinds={
               canManageCheckpoints
@@ -792,9 +935,26 @@ export function CheckpointsPage() {
                     }
                   : undefined
             }
-            selected={selectedCheckpoint}
+            frame={checkpoints}
+            selected={selectedIsOnMap ? selectedCheckpoint : undefined}
           />
         )}
+        banner={modeBanner}
+        card={
+          createPanel ??
+          editPanel ??
+          (isViewing && selectedResource ? (
+            <CheckpointDetailCard
+              anchor={cardAnchor}
+              canManage={canManageCheckpoints}
+              checkpoint={selectedResource}
+              key={serializeCheckpointSelection(selectedResource.selection)}
+              onClose={closeDetails}
+              onEdit={startEditing}
+              onView={() => viewArchived(selectedResource.selection)}
+            />
+          ) : undefined)
+        }
         onRetrySource={() => void weighingAreasQuery.refetch()}
         resourceLabel="Checkpoints"
         sourceError={layerVisibility.WEIGHING_AREA && weighingAreasQuery.isError}
@@ -817,28 +977,6 @@ export function CheckpointsPage() {
           submit={submitBulkLifecycle}
         />
       )}
-      <CheckpointSheet
-        canEditCheckpoint={canManageCheckpoints}
-        checkpoint={selectedResource}
-        createPanel={createPanel}
-        editPanel={editPanel}
-        mode={creationKind ? 'create' : isEditing ? 'edit' : 'view'}
-        onClose={() => {
-          if (creationKind) {
-            cancelCreating()
-            return
-          }
-          if (isEditing) {
-            cancelEditing()
-            return
-          }
-          void navigate({
-            replace: true,
-            search: (previous) => ({ ...previous, checkpointId: undefined, edit: undefined }),
-          })
-        }}
-        onEditCheckpoint={startEditing}
-      />
     </>
   )
 }

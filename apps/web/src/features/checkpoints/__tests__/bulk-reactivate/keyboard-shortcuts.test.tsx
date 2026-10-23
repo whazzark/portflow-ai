@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { DOCKS } from '@/features/docks/__tests__/support/fixtures'
-import { mockDocks, renderCheckpoints } from '../support/test-helpers'
+import { mockDocks, renderCheckpoints, startSelecting } from '../support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -47,7 +47,7 @@ test('Ctrl+A extends an in-progress archived selection with archived docks only'
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
   await user.click(screen.getByRole('button', { name: `Select dock ${RETIRED_DOCK.name}` }))
   await user.keyboard('{Control>}a{/Control}')
 
@@ -67,7 +67,7 @@ test('Ctrl+A does not hijack the native select-all while typing in the search fi
   renderCheckpoints('/checkpoints?status=archived')
 
   await screen.findByRole('button', { name: `View dock ${RETIRED_DOCK.name} (Archived)` })
-  await user.click(screen.getByRole('textbox', { name: 'Search checkpoints' }))
+  await user.click(screen.getByRole('combobox', { name: 'Search checkpoints' }))
   await user.keyboard('{Control>}a{/Control}')
 
   expect(screen.queryByRole('button', { name: 'Reactivate selected' })).not.toBeInTheDocument()

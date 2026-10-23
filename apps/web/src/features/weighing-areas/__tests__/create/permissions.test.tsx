@@ -14,7 +14,7 @@ test('does not offer weighing-area creation to a non-administrator', async () =>
 
   await screen.findByRole('region', { name: 'Checkpoint map' })
 
-  expect(screen.queryByRole('button', { name: 'New weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
 })
 
 test('ignores a direct create=weighing-area URL for a non-administrator', async () => {
@@ -23,6 +23,6 @@ test('ignores a direct create=weighing-area URL for a non-administrator', async 
 
   await screen.findByRole('region', { name: 'Checkpoint map' })
 
-  expect(screen.queryByRole('heading', { name: 'Create weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New weighing area' })).not.toBeInTheDocument()
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })

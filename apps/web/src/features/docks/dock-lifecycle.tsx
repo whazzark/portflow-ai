@@ -47,8 +47,21 @@ function useDockLifecycleConfig(dock: DockDto): ResourceLifecycleConfig {
   }
 }
 
-export function DockLifecycleActions({ className, dock }: { className?: string; dock: DockDto }) {
-  const config = useDockLifecycleConfig(dock)
+export function DockLifecycleActions({
+  className,
+  dock,
+  copy,
+}: {
+  className?: string
+  dock: DockDto
+  /** Wording a screen supplies over the canonical lifecycle copy — the Checkpoints map names the
+   * record in its confirmation and offers to open it once archived. */
+  copy?: Pick<
+    ResourceLifecycleConfig,
+    'describeTitle' | 'describeEffect' | 'describeSuccess' | 'successToast'
+  >
+}) {
+  const config = { ...useDockLifecycleConfig(dock), ...copy }
 
   return (
     <ResourceLifecycleActions

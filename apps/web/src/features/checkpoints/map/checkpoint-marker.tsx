@@ -212,12 +212,12 @@ export function CheckpointLegend({
   return (
     <ResourceLegend
       ariaLabel="Checkpoint legend"
-      typeAriaLabel="Checkpoint types"
+      typeAriaLabel="Marker types"
       types={kinds.map((kind) => ({
         label: CHECKPOINT_KIND_LABELS[kind],
         symbol: <CheckpointLegendKindSymbol kind={kind} />,
       }))}
-      statusAriaLabel="Checkpoint statuses"
+      statusAriaLabel="Marker statuses"
       statuses={CHECKPOINT_STATUSES.map((status) => ({
         label: CHECKPOINT_STATUS_LABELS[status],
         symbol: (
