@@ -1,4 +1,8 @@
-import { formatShiftDay, formatShiftDuration } from '@/features/discharges/discharge-detail-view'
+import {
+  formatShiftDay,
+  formatShiftDuration,
+  formatShiftTime,
+} from '@/features/discharges/discharge-detail-view'
 
 type CalendarShift = {
   id: string
@@ -8,6 +12,69 @@ type CalendarShift = {
 }
 
 const DAY_MS = 24 * 3_600_000
+
+const SHORT_DATE = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit' })
+
+const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? '' : 's'}`
+
+/** An instant as the summary's period reads it: `27/09 06:00`. */
+const formatSummaryInstant = (instant: number) => {
+  const iso = new Date(instant).toISOString()
+
+  return `${SHORT_DATE.format(instant)} ${formatShiftTime(iso)}`
+}
+
+/**
+ * The line above the shift calendar, worded for where the discharge stands: what is planned before
+ * it starts, how far its shifts have gone while it runs, and what was worked once it is closed. The
+ * gaps of its planned shifts are counted apart, to be shown as an attention of their own. `null`
+ * without a shift, where the section says so instead.
+ */
+export function shiftsSummary(discharge: {
+  status: 'PLANNED' | 'ACTIVE' | 'CLOSED'
+  shifts: Array<CalendarShift & { readinessGaps?: unknown[] | null }>
+}) {
+  const periods = discharge.shifts.flatMap((shift) =>
+    shift.plannedStartAt && shift.plannedEndAt
+      ? [{ shift, start: Date.parse(shift.plannedStartAt), end: Date.parse(shift.plannedEndAt) }]
+      : [],
+  )
+  if (periods.length === 0) {
+    return null
+  }
+
+  const count = plural(periods.length, 'shift')
+  const first = Math.min(...periods.map((period) => period.start))
+  const last = Math.max(...periods.map((period) => period.end))
+  const range = `${formatSummaryInstant(first)} → ${formatSummaryInstant(last)}`
+  // The time the shifts are planned to work, breaks left out.
+  const worked = periods.reduce((total, period) => total + period.end - period.start, 0)
+  const total = formatShiftDuration({
+    plannedStartAt: new Date(0).toISOString(),
+    plannedEndAt: new Date(worked).toISOString(),
+  })
+  const gapCount = discharge.shifts.reduce(
+    (sum, shift) => sum + (shift.status === 'PLANNED' ? (shift.readinessGaps?.length ?? 0) : 0),
+    0,
+  )
+
+  if (discharge.status === 'ACTIVE') {
+    const byStatus = (['COMPLETED', 'ACTIVE', 'PLANNED'] as const).flatMap((status) => {
+      const inStatus = periods.filter((period) => period.shift.status === status).length
+
+      return inStatus > 0 ? [`${inStatus} ${status.toLowerCase()}`] : []
+    })
+    const ends = `ends ${formatShiftDay(new Date(last))}, ${formatShiftTime(new Date(last).toISOString())}`
+
+    return { text: [count, ...byStatus, ends].join(' · '), gapCount }
+  }
+
+  if (discharge.status === 'CLOSED') {
+    return { text: `${count} completed · ${total} · ${range}`, gapCount }
+  }
+
+  return { text: `${count} · ${total} planned · ${range}`, gapCount }
+}
 
 /** A calendar always shows a week, however short the discharge. */
 const MIN_DAYS = 7

@@ -218,6 +218,39 @@ export function shiftResources(shift: ShiftResources) {
   }
 }
 
+type SincePeriod = { effectiveFrom: string | null; effectiveTo: string | null }
+
+/**
+ * The instant a shift's trucks have all been in effect since, when they share one, so the panel
+ * says it once rather than on each truck; and the same instant when the shift's warehouse doors and
+ * weighing areas share it too. `null` for any truck that has left the shift, as its own period
+ * then says more.
+ */
+export function sharedResourcePeriod(
+  shift: { trucks: SincePeriod[]; warehouseDoors: SincePeriod[]; weighingAreas: SincePeriod[] },
+  dischargeStatus: DischargeStatus,
+) {
+  const commonStart = (periods: SincePeriod[]) => {
+    const first = periods[0]?.effectiveFrom ?? null
+    const shared =
+      first !== null &&
+      periods.every(
+        (period) => isInEffect(period, dischargeStatus) && period.effectiveFrom === first,
+      )
+
+    return shared ? first : null
+  }
+
+  const trucksSince = commonStart(shift.trucks)
+  const others = [...shift.warehouseDoors, ...shift.weighingAreas]
+  const allResourcesSince =
+    trucksSince !== null && others.length > 0 && commonStart(others) === trucksSince
+      ? trucksSince
+      : null
+
+  return { trucksSince, allResourcesSince }
+}
+
 /** How long a shift is planned to last, to the minute: `8 h`, `7 h 30 min`, `45 min`. */
 export function formatShiftDuration(shift: {
   plannedStartAt: string | null

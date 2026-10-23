@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
-import { formatShiftDuration, formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
+import {
+  formatShiftDay,
+  formatShiftDuration,
+  formatShiftPeriod,
+  formatShiftTime,
+} from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/helpers/dates'
 import { toFormFieldName } from '@/libraries/forms/api-error'
@@ -685,6 +690,25 @@ type DetailShift = DischargeDetailDto['shifts'][number]
 
 /** A period drawn on the shift calendar: a press released where it began marks only a start. */
 export type DrawnShiftPeriod = { plannedStartAt: string; plannedEndAt: string | null }
+
+/**
+ * Where a shift being added starts, said while it still starts when the discharge's last shift
+ * ends, as the addition guessed. A period drawn on the calendar, or a start the user changed, was
+ * chosen rather than guessed, and needs no saying.
+ */
+export function addShiftStartHint(
+  discharge: Pick<DischargeDetailDto, 'shifts'>,
+  plannedStartAt: string,
+  drawn: boolean,
+) {
+  const lastEnd = discharge.shifts.at(-1)?.plannedEndAt
+  const start = fromDateTimeLocalValue(plannedStartAt)
+  if (drawn || !lastEnd || !start || Date.parse(start) !== Date.parse(lastEnd)) {
+    return null
+  }
+
+  return `Starts when the last shift ends, on ${formatShiftDay(new Date(lastEnd))} at ${formatShiftTime(lastEnd)}.`
+}
 
 /**
  * A shift being added starts where the discharge's last shift ends and lasts as long, as the

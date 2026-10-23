@@ -11,6 +11,7 @@ import {
   addProductLotsCrossRulesSchema,
   addShiftFormValues,
   addShiftRulesSchema,
+  addShiftStartHint,
   createDischargeFieldsSchema,
   createDischargeFormDefaults,
   createDischargeSchema,
@@ -561,6 +562,26 @@ test('starts an added shift where the last shift ends, for as long, with nothing
     weighingAreaIds: [],
   })
   expect(addShiftFormValues({ shifts: [] })).toMatchObject({ plannedStartAt: '', plannedEndAt: '' })
+})
+
+test('says an added shift starts when the last one ends, while it still does', () => {
+  const discharge = {
+    shifts: [
+      buildShift({
+        plannedStartAt: new Date(2026, 9, 4, 6).toISOString(),
+        plannedEndAt: new Date(2026, 9, 4, 22).toISOString(),
+      }),
+    ],
+  }
+  const lastEnd = toDateTimeLocalValue(new Date(2026, 9, 4, 22).toISOString())
+
+  expect(addShiftStartHint(discharge, lastEnd, false)).toBe(
+    'Starts when the last shift ends, on Sun 4 Oct at 22:00.',
+  )
+  expect(addShiftStartHint(discharge, '2026-10-05T06:00', false)).toBeNull()
+  // A period drawn on the calendar was chosen, not guessed.
+  expect(addShiftStartHint(discharge, lastEnd, true)).toBeNull()
+  expect(addShiftStartHint({ shifts: [] }, '', false)).toBeNull()
 })
 
 const addRuleIssues = (

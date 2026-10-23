@@ -19,6 +19,7 @@ import { AddShiftSheet } from '@/features/discharges/ui/detail/add-shift-sheet'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
 import { DischargeTabLink } from '@/features/discharges/ui/detail/discharge-tab-link'
 import { ShiftCalendar } from '@/features/discharges/ui/detail/shift-calendar'
+import { ShiftCalendarSummary } from '@/features/discharges/ui/detail/shift-calendar-summary'
 import { ShiftPanel } from '@/features/discharges/ui/detail/shift-panel'
 
 const dischargeRoute = getRouteApi('/_authenticated/discharges/$dischargeId')
@@ -79,6 +80,7 @@ export function DischargeShiftsCard({
               </DischargeTabLink>
             </p>
           )}
+          <ShiftCalendarSummary discharge={discharge} />
           <ShiftCalendar
             discharge={discharge}
             onDraw={canAddShifts ? (period) => setAdding({ period }) : undefined}

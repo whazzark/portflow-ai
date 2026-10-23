@@ -66,7 +66,7 @@ test('shows who started a shift and when in its panel', async () => {
   renderDischargeTab(detail.id, 'shifts', '?shiftId=shift-first')
 
   const panel = await screen.findByRole('dialog', {
-    name: `Shift ${formatShiftPeriod(detail.shifts[0])}`,
+    name: formatShiftPeriod(detail.shifts[0]),
   })
 
   expect(panel).toHaveTextContent(`Actual start${formatDateTime(STARTED_AT)}`)

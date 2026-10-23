@@ -94,6 +94,8 @@ test('opens the addition with the period drawn over a column', async () => {
     toDateTimeLocalValue(at(6, 14)),
   )
   expect(within(sheet).getByLabelText(/^Planned end/)).toHaveValue(toDateTimeLocalValue(at(6, 22)))
+  // The period was drawn, not guessed from the last shift.
+  expect(within(sheet).queryByText(/^Starts when the last shift ends/)).not.toBeInTheDocument()
 })
 
 test('draws a night shift across midnight', async () => {
@@ -175,9 +177,7 @@ test('opens a shift pressed on the calendar rather than drawing over it', async 
   fireEvent.pointerUp(block, point(0, 8))
   fireEvent.click(block)
 
-  expect(
-    await screen.findByRole('dialog', { name: `Shift ${formatShiftPeriod(FIRST)}` }),
-  ).toBeInTheDocument()
+  expect(await screen.findByRole('dialog', { name: formatShiftPeriod(FIRST) })).toBeInTheDocument()
   expect(screen.queryByRole('dialog', { name: 'Add shift' })).not.toBeInTheDocument()
 })
 

@@ -13,6 +13,7 @@ import {
 import {
   addShiftFormValues,
   addShiftRulesSchema,
+  addShiftStartHint,
   type DrawnShiftPeriod,
   SHIFT_CORRECTION_FIELDS,
   shiftCorrectionFieldOf,
@@ -188,6 +189,13 @@ function AddShiftForm({
           form={form}
           kept={undefined}
         />
+        <form.Subscribe
+          selector={(state) =>
+            addShiftStartHint(discharge, state.values.plannedStartAt, period !== undefined)
+          }
+        >
+          {(hint) => hint && <p className="-mt-3 text-muted-foreground text-sm">{hint}</p>}
+        </form.Subscribe>
         {planned && (
           <ShiftResourceFields
             discharge={discharge}
