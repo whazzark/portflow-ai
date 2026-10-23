@@ -1,5 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { ResourceMapCard } from '@/components/resource-map/resource-map-card'
 
@@ -55,5 +57,44 @@ describe('ResourceMapCard', () => {
     )
 
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+  })
+})
+
+describe('ResourceMapCard focus and portals', () => {
+  it('leaves Escape from a dialog portaled out of the card to that dialog', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(
+      <ResourceMapCard anchor={null} onClose={onClose} title="North Dock">
+        {createPortal(<input aria-label="Comment" />, document.body)}
+      </ResourceMapCard>,
+    )
+
+    await user.click(screen.getByRole('textbox', { name: 'Comment' }))
+    await user.keyboard('{Escape}')
+
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('hands focus back to what opened it when it closes', async () => {
+    const user = userEvent.setup()
+    function Harness() {
+      const [open, setOpen] = useState(false)
+      return (
+        <>
+          <button onClick={() => setOpen(true)} type="button">
+            Open
+          </button>
+          {open && <ResourceMapCard anchor={null} onClose={() => setOpen(false)} title="Dock" />}
+        </>
+      )
+    }
+    render(<Harness />)
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    expect(screen.getByRole('heading', { name: 'Dock' })).toHaveFocus()
+    await user.keyboard('{Escape}')
+
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
   })
 })

@@ -154,3 +154,21 @@ test('explains archiving in discharge terms and offers to view the archived dock
   expect(details).toHaveTextContent('Dock · Archived')
   expect(within(details).getByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
 })
+
+test('leaving the archive confirmation with Escape keeps the dock card open', async () => {
+  mockDocks()
+  const user = userEvent.setup()
+  const { router } = renderCheckpoints()
+  await openDock(user, NORTH_DOCK.name, 'Available')
+
+  await user.click(screen.getByRole('button', { name: 'Archive' }))
+  await user.type(
+    await screen.findByRole('textbox', { name: /comment/i }),
+    'Quay closed for resurfacing',
+  )
+  await user.keyboard('{Escape}')
+
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+  expect(screen.getByRole('complementary', { name: NORTH_DOCK.name })).toBeInTheDocument()
+  expect(router.state.location.search).toMatchObject({ checkpointId: `dock:${NORTH_DOCK.id}` })
+})

@@ -787,7 +787,15 @@ export function CheckpointsPage() {
   }
   // Select mode leaves markers that cannot be checked — another kind, or the other status — opening
   // their card as usual.
-  const isViewing = Boolean(selectedResource) && !creationKind && !isEditing
+  // A search that leaves the selected checkpoint off the map hides its card too, rather than leave
+  // it pointing at an empty spot; clearing the search brings it back.
+  const selectedIsOnMap =
+    selectedCheckpoint !== undefined &&
+    searchMatches.some(
+      (checkpoint) =>
+        checkpoint.kind === selectedCheckpoint.kind && checkpoint.id === selectedCheckpoint.id,
+    )
+  const isViewing = Boolean(selectedResource) && selectedIsOnMap && !creationKind && !isEditing
   const anchorPoint: LatLng | undefined = creationKind
     ? (pendingPlacement ?? undefined)
     : isEditing
@@ -927,7 +935,8 @@ export function CheckpointsPage() {
                     }
                   : undefined
             }
-            selected={selectedCheckpoint}
+            frame={checkpoints}
+            selected={selectedIsOnMap ? selectedCheckpoint : undefined}
           />
         )}
         banner={modeBanner}

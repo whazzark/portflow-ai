@@ -211,3 +211,21 @@ test('clears malformed selections even when weighing areas fail to load', async 
   await waitFor(() => expect(result.router.state.location.search).not.toHaveProperty('checkpoint'))
   expect(screen.queryByRole('complementary', { name: /Dock|Scale/ })).not.toBeInTheDocument()
 })
+
+test('hides the card while a search keeps its checkpoint off the map', async () => {
+  const user = userEvent.setup()
+  const { router } = renderCheckpoints()
+  await user.click(await screen.findByRole('button', { name: 'View dock North Dock (Available)' }))
+  expect(await card('North Dock')).toBeInTheDocument()
+
+  await user.type(screen.getByRole('combobox', { name: 'Search checkpoints' }), 'beta')
+  await user.keyboard('{Escape}')
+
+  expect(screen.queryByRole('complementary', { name: 'North Dock' })).not.toBeInTheDocument()
+  expect(router.state.location.search).toMatchObject({
+    checkpointId: expect.stringMatching(/^dock:/),
+  })
+
+  await user.click(screen.getByRole('button', { name: 'Clear search checkpoints input' }))
+  expect(await card('North Dock')).toBeInTheDocument()
+})

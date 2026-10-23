@@ -245,6 +245,7 @@ export function CheckpointMap({
   fitRequest,
   ghost,
   onMapClick,
+  frame,
 }: {
   checkpoints: PresentedCheckpoint[]
   selected?: PresentedCheckpoint
@@ -276,6 +277,10 @@ export function CheckpointMap({
   ghost?: { position: LatLng; label: string; icon: ReactNode }
   /** A click on the map itself, away from any marker. */
   onMapClick?: () => void
+  /** What the camera frames on its own and with Fit all: the checkpoints the filters admit, even
+   * those a search or an edit keeps off the map, so typing a search never moves the camera.
+   * Defaults to `checkpoints`. */
+  frame?: PresentedCheckpoint[]
 }) {
   const initialCenter = useMemo<[number, number]>(() => {
     const firstCheckpoint = checkpoints[0]
@@ -298,7 +303,7 @@ export function CheckpointMap({
       styles={mapStyleUrls}
       zoom={checkpoints.length === 1 ? 13 : 5}
     >
-      <FitCheckpointBounds checkpoints={checkpoints} selected={selected} />
+      <FitCheckpointBounds checkpoints={frame ?? checkpoints} selected={selected} />
       <FitRequest checkpoints={checkpoints} request={fitRequest} />
       {onAnchorChange && <ReportAnchor onAnchorChange={onAnchorChange} point={anchorPoint} />}
       {onMapClick && !isArmed && <MapClickListener onClick={onMapClick} />}
@@ -351,7 +356,7 @@ export function CheckpointMap({
         position={isArmed ? 'bottom-left' : 'bottom-right'}
         showZoom
       >
-        <FitAllControl checkpoints={checkpoints} />
+        <FitAllControl checkpoints={frame ?? checkpoints} />
       </MapControls>
     </MapCanvas>
   )

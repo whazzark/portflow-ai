@@ -41,11 +41,22 @@ export function ResourceMapCard({
   const headingRef = useRef<HTMLHeadingElement>(null)
   const [placement, setPlacement] = useState<ResourceMapCardPlacement>({ layout: 'fallback' })
 
-  // Focus follows the card when it opens, so a keyboard user lands on what they just opened.
+  // Focus follows the card when it opens, so a keyboard user lands on what they just opened, and
+  // goes back where it came from when the card closes rather than dropping to the page body.
   // biome-ignore lint/correctness/useExhaustiveDependencies: only on mount
   useEffect(() => {
+    const opener = document.activeElement
     if (autoFocusHeading) {
       headingRef.current?.focus()
+    }
+    return () => {
+      const focusIsLost =
+        document.activeElement === null ||
+        document.activeElement === document.body ||
+        cardRef.current?.contains(document.activeElement)
+      if (focusIsLost && opener instanceof HTMLElement && opener.isConnected) {
+        opener.focus()
+      }
     }
   }, [])
 
@@ -87,7 +98,10 @@ export function ResourceMapCard({
       )}
       data-placement={placement.layout}
       onKeyDown={(event) => {
-        if (event.key === 'Escape' && onClose && !event.defaultPrevented) {
+        // React bubbles events from portals through the component tree, so an Escape meant for a
+        // dialog opened from this card — its archive confirmation — would otherwise close the card.
+        const fromThisCard = event.currentTarget.contains(event.target as Node)
+        if (event.key === 'Escape' && onClose && fromThisCard && !event.defaultPrevented) {
           event.stopPropagation()
           onClose()
         }
