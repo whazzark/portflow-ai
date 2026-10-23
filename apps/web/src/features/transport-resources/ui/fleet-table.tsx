@@ -65,6 +65,8 @@ export type FleetTableProps = {
   onSort: (sort: FleetSort) => void
   isCollapsed: (companyId: string) => boolean
   renderGroupHeader: (group: FleetGroup) => ReactNode
+  /** Rows right under a group header — its open detail or inline edit. */
+  renderGroupDetail?: (group: FleetGroup) => ReactNode
   renderTruck: (fleetTruck: FleetTruck, group: FleetGroup) => ReactNode
   /** Rows a group adds after its trucks — an open detail, an inline form. */
   renderGroupFooter?: (group: FleetGroup) => ReactNode
@@ -81,6 +83,7 @@ export function FleetTable({
   onSort,
   isCollapsed,
   renderGroupHeader,
+  renderGroupDetail,
   renderTruck,
   renderGroupFooter,
   leadingRows,
@@ -127,6 +130,7 @@ export function FleetTable({
             groups.map((group) => (
               <Fragment key={group.company.id}>
                 {renderGroupHeader(group)}
+                {renderGroupDetail?.(group)}
                 {!isCollapsed(group.company.id) &&
                   group.trucks.map((fleetTruck) => (
                     <Fragment key={fleetTruck.truck.id}>{renderTruck(fleetTruck, group)}</Fragment>

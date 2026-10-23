@@ -42,13 +42,14 @@ export type ResourceLifecycleConfig<TResult = unknown> = {
   /** Replaces the canonical effect sentence where a resource genuinely says more — a warehouse
    * archives its available doors along with itself. Falls back to the canonical wording. */
   describeEffect?: (action: LifecycleAction) => string
+  /** Replaces the canonical "Archive dock?" title where a resource names the record itself —
+   * "Archive Loire Minerals?". Falls back to the canonical title. */
+  describeTitle?: (action: LifecycleAction) => string
+  /** Prompts the comment field. No placeholder when omitted. */
+  commentPlaceholder?: (action: LifecycleAction) => string
   /** Replaces the canonical success message with one that reports what the server actually did —
    * a warehouse archival names the doors it cascaded to. */
   describeSuccess?: (action: LifecycleAction, result: TResult) => string
-  /** Replaces the canonical title where a resource names the record in it — "Suspend EF-789-GH?". */
-  describeTitle?: (action: LifecycleAction) => string
-  /** A hint in the comment field, phrased for the action — "Why is this truck suspended?". */
-  commentPlaceholder?: (action: LifecycleAction) => string
   /** A second line under the success toast, for what the change leaves in place. */
   describeSuccessDetail?: (action: LifecycleAction, result: TResult) => string | undefined
 }

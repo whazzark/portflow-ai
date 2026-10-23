@@ -1,6 +1,5 @@
 import type { LifecycleAction } from '@/components/lifecycle/lifecycle-copy'
 import {
-  ResourceLifecycleActions,
   type ResourceLifecycleConfig,
   ResourceLifecycleDialog,
 } from '@/components/lifecycle/resource-lifecycle-actions'
@@ -9,12 +8,6 @@ import { useTransportCompanyMutations } from '@/features/transport-companies/mut
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
 
 export const TRANSPORT_COMPANY_SINGULAR = 'transport company'
-
-export function transportCompanyLifecycleActions(
-  status: TransportCompanyDto['status'],
-): LifecycleAction[] {
-  return status === 'ARCHIVED' ? ['reactivate'] : ['archive']
-}
 
 /** Every lifecycle transition this record carries, for its detail pane. The summary
  * orders them and drops the ones that never happened. */
@@ -75,24 +68,4 @@ export function TransportCompanyLifecycleDialog({
   const config = useTransportCompanyLifecycleConfig(company)
 
   return <ResourceLifecycleDialog action={action} config={config} onClose={onClose} />
-}
-
-export function TransportCompanyLifecycleActions({
-  className,
-  company,
-  onSuccess,
-}: {
-  className?: string
-  company: TransportCompanyDto
-  onSuccess?: () => void
-}) {
-  const config = useTransportCompanyLifecycleConfig(company, onSuccess)
-
-  return (
-    <ResourceLifecycleActions
-      actions={transportCompanyLifecycleActions(company.status)}
-      className={className}
-      config={config}
-    />
-  )
 }

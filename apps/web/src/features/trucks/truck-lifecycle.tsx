@@ -3,7 +3,6 @@ import {
   type LifecycleAction,
 } from '@/components/lifecycle/lifecycle-copy'
 import {
-  ResourceLifecycleActions,
   type ResourceLifecycleConfig,
   ResourceLifecycleDialog,
 } from '@/components/lifecycle/resource-lifecycle-actions'
@@ -44,16 +43,6 @@ function truckDialogTitle(action: LifecycleAction, registration: string) {
   return action === 'return-to-service'
     ? `Return ${registration} to service?`
     : `${LIFECYCLE_ACTION_LABELS[action]} ${registration}?`
-}
-
-// A suspended truck leaves that state only by returning to service: archiving or reactivating it
-// requires it to be available first.
-export function truckLifecycleActions(status: TruckDto['status']): LifecycleAction[] {
-  if (status === 'SUSPENDED') {
-    return ['return-to-service']
-  }
-
-  return status === 'ARCHIVED' ? ['reactivate'] : ['suspend', 'archive']
 }
 
 /** Every lifecycle transition a truck carries, for its detail pane. The summary orders them and
@@ -143,22 +132,4 @@ export function TruckLifecycleDialog({
   const config = useTruckLifecycleConfig(truck)
 
   return <ResourceLifecycleDialog action={action} config={config} onClose={onClose} />
-}
-
-export function TruckLifecycleActions({
-  className,
-  truck,
-}: {
-  className?: string
-  truck: TruckDto
-}) {
-  const config = useTruckLifecycleConfig(truck)
-
-  return (
-    <ResourceLifecycleActions
-      actions={truckLifecycleActions(truck.status)}
-      className={className}
-      config={config}
-    />
-  )
 }

@@ -5,6 +5,17 @@ export function formatDateTime(value: string | null) {
   return value ? DATE_TIME.format(new Date(value)) : '—'
 }
 
+const SHORT_DATE = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+})
+
+/** A day without its time, where a list only needs to say when: `14 Aug 2026`. */
+export function formatShortDate(value: string | null) {
+  return value ? SHORT_DATE.format(new Date(value)) : ''
+}
+
 const DATE = new Intl.DateTimeFormat('en-GB', { dateStyle: 'short' })
 
 /** A date alone, for a lifecycle cell that only needs the day: `23/09/2026`. */

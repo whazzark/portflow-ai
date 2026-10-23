@@ -61,12 +61,19 @@ function lifecycleContext(fleetTruck: FleetTruck) {
   return <span className="text-muted-foreground">—</span>
 }
 
+/** Where focus goes back when the truck's detail closes. */
+export function truckViewButtonId(truckId: string) {
+  return `truck-view-${truckId}`
+}
+
 export function TruckRow({
   fleetTruck,
+  expanded = false,
   onView,
   actions,
 }: {
   fleetTruck: FleetTruck
+  expanded?: boolean
   onView: () => void
   /** The administrator's row actions; absent in read-only mode. */
   actions?: ReactNode
@@ -77,7 +84,9 @@ export function TruckRow({
     <TableRow className="h-[52px] border-t border-b-0 hover:bg-muted/30">
       <TableCell className="pr-3.5 pl-12">
         <button
+          aria-expanded={expanded}
           aria-label={`View truck ${truck.registration}`}
+          id={truckViewButtonId(truck.id)}
           className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={onView}
           type="button"

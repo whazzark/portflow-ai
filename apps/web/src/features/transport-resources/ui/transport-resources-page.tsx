@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { TruckIcon } from 'lucide-react'
+import { ChevronUpIcon, TruckIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { ResourceCollectionError } from '@/components/resource/resource-feedback'
+import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
@@ -16,9 +17,10 @@ import type { TruckDto } from '@/features/trucks/types'
 import { CompanyGroupActions } from './company-group-actions'
 import { CompanyGroupHeader } from './company-group-rows'
 import { ArchivedNotice, CompanyFilterBanner, FleetNoMatch } from './fleet-banners'
+import { CompanyDetailRow, TruckDetailRow } from './fleet-detail-rows'
 import { FleetTable } from './fleet-table'
 import { FleetToolbar } from './fleet-toolbar'
-import { TruckRow } from './truck-row'
+import { TruckRow, truckViewButtonId } from './truck-row'
 import { TruckRowActions } from './truck-row-actions'
 
 const transportResourcesRoute = getRouteApi('/_authenticated/transport-resources')
@@ -79,6 +81,30 @@ export function TransportResourcesPage() {
     }
   }, [administrator, navigate, search.companyDetailsMode, search.truckMode])
 
+  // A record that is not (or no longer) in the collection opens nothing, and leaves the address.
+  const trucksLoaded = collectionQueries.every((query) => query.data)
+  useEffect(() => {
+    if (!trucksLoaded || !companies) {
+      return
+    }
+    const unknownTruck = search.truckId && !trucks.some((truck) => truck.id === search.truckId)
+    const unknownCompany =
+      search.companyDetailsId &&
+      !companies.some((company) => company.id === search.companyDetailsId)
+    if (unknownTruck || unknownCompany) {
+      void navigate({
+        replace: true,
+        search: (previous) => ({
+          ...previous,
+          truckId: unknownTruck ? undefined : previous.truckId,
+          truckMode: unknownTruck ? 'view' : previous.truckMode,
+          companyDetailsId: unknownCompany ? undefined : previous.companyDetailsId,
+          companyDetailsMode: unknownCompany ? 'view' : previous.companyDetailsMode,
+        }),
+      })
+    }
+  }, [companies, navigate, search.companyDetailsId, search.truckId, trucks, trucksLoaded])
+
   if (collectionQueries.some((query) => query.isError)) {
     return (
       <div className="p-4 md:px-8 md:py-6">
@@ -128,6 +154,18 @@ export function TransportResourcesPage() {
         ...previous,
         truckId: previous.truckId === truckId ? undefined : truckId,
         truckMode: 'view',
+      }),
+    })
+  const closeTruck = (truckId: string) =>
+    navigate({
+      search: (previous) => ({ ...previous, truckId: undefined, truckMode: 'view' }),
+    }).then(() => document.getElementById(truckViewButtonId(truckId))?.focus())
+  const closeCompany = () =>
+    navigate({
+      search: (previous) => ({
+        ...previous,
+        companyDetailsId: undefined,
+        companyDetailsMode: 'view',
       }),
     })
   const editTruck = (truckId: string) =>
@@ -245,21 +283,61 @@ export function TransportResourcesPage() {
               onToggle={() => toggleGroup(group.company.id)}
             />
           )}
-          renderTruck={(fleetTruck) => (
-            <TruckRow
-              actions={
-                administrator && (
-                  <TruckRowActions
+          renderGroupDetail={(group) =>
+            search.companyDetailsId === group.company.id &&
+            search.companyDetailsMode === 'view' && (
+              <CompanyDetailRow
+                administrator={administrator}
+                group={group}
+                onClose={() => void closeCompany()}
+                onEdit={() => void editCompany(group.company.id)}
+              />
+            )
+          }
+          renderTruck={(fleetTruck, group) => {
+            const { truck } = fleetTruck
+            const open = search.truckId === truck.id && search.truckMode === 'view'
+
+            return (
+              <>
+                <TruckRow
+                  actions={
+                    open ? (
+                      <Button
+                        aria-expanded={true}
+                        aria-label={`Hide details for ${truck.registration}`}
+                        onClick={() => void closeTruck(truck.id)}
+                        size="icon-sm"
+                        variant="ghost"
+                      >
+                        <ChevronUpIcon aria-hidden="true" />
+                      </Button>
+                    ) : (
+                      administrator && (
+                        <TruckRowActions
+                          fleetTruck={fleetTruck}
+                          onEdit={() => void editTruck(truck.id)}
+                          onView={() => void viewTruck(truck.id)}
+                        />
+                      )
+                    )
+                  }
+                  expanded={open}
+                  fleetTruck={fleetTruck}
+                  onView={() => void viewTruck(truck.id)}
+                />
+                {open && (
+                  <TruckDetailRow
+                    administrator={administrator}
                     fleetTruck={fleetTruck}
-                    onEdit={() => void editTruck(fleetTruck.truck.id)}
-                    onView={() => void viewTruck(fleetTruck.truck.id)}
+                    group={group}
+                    onClose={() => void closeTruck(truck.id)}
+                    onEdit={() => void editTruck(truck.id)}
                   />
-                )
-              }
-              fleetTruck={fleetTruck}
-              onView={() => void viewTruck(fleetTruck.truck.id)}
-            />
-          )}
+                )}
+              </>
+            )
+          }}
           sort={search.sort}
         />
       )}
