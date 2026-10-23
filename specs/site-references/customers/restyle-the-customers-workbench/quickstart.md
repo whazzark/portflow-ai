@@ -38,9 +38,9 @@ As an administrator:
 4. **Detail** — open a reactivated customer: summary and History (Reactivated, then Archived);
    open an archived customer: Reactivate only; open `?customerId=unknown&mode=view`: unable to load.
 5. **Create** — submit an existing code: field error "Already used by …", values kept; submit a
-   new one: toast, sheet shows the new customer's detail; "Cancel" closes the sheet.
+   new one: toast, sheet shows the new customer's detail; no footer "Cancel" (close control only).
 6. **Edit** — subtitle "{company} · {code}", code hint, "Save changes" returns to detail with a
-   toast; "Cancel" returns to detail without saving.
+   toast; "Back to details" returns to detail without saving; no footer "Cancel".
 7. **Archive / reactivate** — archive from the row menu with a comment: V2 dialog copy and
    placeholder, toast "Customer “…” archived", counts update; reactivate from the archived detail.
    Archive the customer used by a planned discharge: refusal toast, it stays available.

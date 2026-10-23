@@ -1,6 +1,5 @@
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { Button } from '@/components/ui/button'
 import { FieldGroup } from '@/components/ui/field'
 import { CUSTOMER_SINGULAR } from '@/features/customers/customer-lifecycle'
 import type { CustomerDto } from '@/features/customers/types'
@@ -23,7 +22,6 @@ type CustomerFormProps = {
   onCreate: (value: CustomerFormValue) => Promise<CustomerDto>
   onUpdate: (value: CustomerFormValue) => Promise<CustomerDto>
   onSuccess: (customer: CustomerDto) => void
-  onCancel: () => void
 }
 
 /**
@@ -66,7 +64,6 @@ export function CustomerForm({
   onCreate,
   onUpdate,
   onSuccess,
-  onCancel,
 }: CustomerFormProps) {
   const form = useAppForm({
     defaultValues: {
@@ -145,13 +142,10 @@ export function CustomerForm({
           )}
           <form.FormError />
         </div>
-        <div className="flex shrink-0 flex-col-reverse gap-2 border-t bg-popover p-4 sm:flex-row">
+        <div className="flex shrink-0 border-t bg-popover p-4">
           <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS[customer ? 'update' : 'create']}>
             {customer ? 'Save changes' : 'Create customer'}
           </form.SubmitButton>
-          <Button onClick={onCancel} type="button" variant="outline">
-            Cancel
-          </Button>
         </div>
       </form.Form>
     </form.AppForm>

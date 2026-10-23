@@ -11,7 +11,7 @@ epic #313).
 Bring `/customers` to the retained Interface V2 inside the V2 shell from #314: restyled toolbar,
 tabs and tables (actor chips with short dates, monospaced codes, visible Actions column), a
 no-match panel with a cross-tab hint, V2 detail sheet with a History timeline, V2 create and edit
-sheets with footer Cancel and conflict field errors, V2 lifecycle dialog copy, a V2 bulk bar and a
+sheets keeping "Back to details" and conflict field errors, V2 lifecycle dialog copy, a V2 bulk bar and a
 bulk dialog that lists the selection. The change is web-only: no API, schema or URL change. Shared
 lifecycle components gain optional seams and two new shared primitives (History timeline, actor
 chip) instead of changing their defaults, so the other directories and the parallel sibling
@@ -54,9 +54,9 @@ existing customer test files updated plus new ones
 | I. Selected feature intent is versioned | ✅ | Issue #318 selected; spec approved with two clarifications |
 | II. One independently deliverable feature | ✅ | Customers workbench only; #180 discharges excluded |
 | III. Vanilla Spec Kit gates | ✅ | Spec reviewed before this plan; plan review required before tasks |
-| IV. Test-first observable behavior | ✅ | Each changed behavior (no-match hint, conflict field errors, Cancel paths, History, bulk list/confirm, read-only) gets a failing feature test first; copy-only changes update existing assertions |
+| IV. Test-first observable behavior | ✅ | Each changed behavior (no-match hint, conflict field errors, sheet navigation, History, bulk list/confirm, read-only) gets a failing feature test first; copy-only changes update existing assertions |
 | V. Deep boundaries and explicit contracts | ✅ | UI adapters only; conflict messages derive from API error codes, no client-side business rule; shared seams documented in [contracts/shared-lifecycle-seams.md](contracts/shared-lifecycle-seams.md) |
-| VI. Durable knowledge has a home | ✅ | Sheet Cancel convention updated in `apps/web/AGENTS.md`; no new domain vocabulary |
+| VI. Durable knowledge has a home | ✅ | `apps/web/AGENTS.md` sheet rule kept (product decision 2026-10-23); no new domain vocabulary |
 | VII. Verification is part of delivery | ✅ | `pnpm check`, `pnpm typecheck`, `pnpm test`, quickstart walk-through in both themes, fresh read-only review |
 | VIII. One workflow owner | ✅ | No new workflow state |
 
@@ -80,6 +80,7 @@ Recorded in the spec's Clarifications section; please confirm during plan review
   "NORDENG: used by an active or planned discharge") — R9.
 - Bulk dialog keeps the shared title "Archive selected customers?" with the selection listed and a
   counted confirm button.
+- Create and edit sheets have no footer "Cancel" (product decision 2026-10-23, shared with #317).
 - Lifecycle dialogs keep the shared "Maximum 1,000 characters" field description beneath the
   comment.
 
@@ -111,14 +112,15 @@ Recorded in the spec's Clarifications section; please confirm during plan review
 - `customer-details.tsx`: V2 header, summary grid with status dot, `ResourceLifecycleHistory`, V2
   footer.
 - `create-customer-panel.tsx`, `edit-customer-panel.tsx`, `customer-form.tsx`: V2 headers, hints,
-  footer with Cancel, conflict field errors with owner lookup from the loaded list.
-- `customer-sheet.tsx`: passes `onCancel` handlers and the loaded customers for the conflict lookup.
+  submit in a bordered footer (no Cancel; edit keeps "Back to details"), conflict field errors with
+  owner lookup from the loaded list.
+- `customer-sheet.tsx`: passes the loaded customers for the conflict lookup.
 
 ### Conventions
 
-- `apps/web/AGENTS.md`, Forms and UI: replace the "Back to details" / map-only Cancel rule with the
-  V2 rule — creation and edit sheets end with a footer "Cancel"; in an edit sheet it returns to the
-  details, in a creation sheet it closes the sheet.
+- `apps/web/AGENTS.md` is unchanged: the product owner decided on 2026-10-23 (with #317) to keep
+  its sheet rule — edit sheets are left through "Back to details", creation sheets get "Cancel"
+  only when unmodal over a map — rather than the boards' footer Cancel.
 
 ### Coordination with sibling sessions
 
@@ -148,7 +150,6 @@ specs/site-references/customers/restyle-the-customers-workbench/
 
 ```text
 apps/web/
-├── AGENTS.md                                         # sheet Cancel convention
 └── src/
     ├── helpers/dates.ts                              # + formatShortDate
     ├── helpers/dates.test.ts                         # formatShortDate unit test
@@ -175,7 +176,7 @@ apps/web/
         │   └── customer-form.tsx
         └── __tests__/
             ├── list/        # columns, lifecycle cells, no-match, empty, row menu
-            ├── details/     # detail, history, create/edit sheets, conflicts, Cancel, permissions
+            ├── details/     # detail, history, create/edit sheets, conflicts, permissions
             ├── lifecycle/   # dialog copy, toasts
             ├── bulk/        # bar, dialog list and confirm label, partial toast
             └── selection/   # unchanged behavior, updated names

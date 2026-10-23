@@ -43,7 +43,6 @@ export function CustomerSheet({
         {mode === 'create' ? (
           <CreateCustomerPanel
             customers={customers}
-            onCancel={close}
             onCreate={async (value) => {
               const result = await mutations.create.mutateAsync({ body: value })
 
@@ -73,7 +72,7 @@ export function CustomerSheet({
           <EditCustomerPanel
             customer={customer}
             customers={customers}
-            onCancel={() => onChange({ customerId: customer.id, mode: 'view' })}
+            onBack={() => onChange({ customerId: customer.id, mode: 'view' })}
             onUpdate={async (value) => {
               const result = await mutations.update.mutateAsync({
                 params: { id: customer.id },

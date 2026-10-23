@@ -61,14 +61,14 @@ Row menu items: Available → "View", "Edit", separator, "Archive" (destructive)
 
 `dialog` "Create customer"; description "Available as soon as it is created"; `form` "Create
 customer"; fields "Customer code", "Company name"; hint "The code identifies the customer in
-discharges and reports. It is stored in uppercase and can be changed later."; buttons "Create
-customer", "Cancel". Code conflict → `code` field error "Already used by {companyName}.".
+discharges and reports. It is stored in uppercase and can be changed later."; footer button "Create
+customer" (no footer "Cancel"; left through "Close"). Code conflict → `code` field error "Already used by {companyName}.".
 
 ## Edit sheet
 
 `dialog` "Edit customer"; description "{companyName} · {code}"; `form` "Edit customer"; code field
-description "Stored in uppercase. Reports already generated keep the previous code."; buttons
-"Save changes", "Cancel" (back to detail).
+description "Stored in uppercase. Reports already generated keep the previous code."; header button
+"Back to details"; footer button "Save changes" (no footer "Cancel").
 
 ## Lifecycle dialogs
 

@@ -105,10 +105,10 @@ customer; compare with the Detail and Archived detail boards.
 
 ## Phase 5: User Story 3 — Create and edit a customer in V2 sheets (Priority: P2)
 
-**Goal**: V2 create/edit sheets with hints, footer Cancel and conflict field errors.
+**Goal**: V2 create/edit sheets with hints, "Back to details" and conflict field errors.
 
 **Independent Test**: As an administrator, create with a duplicate code then a valid one; edit and
-save; Cancel each sheet; compare with the Create and Edit boards.
+save; leave each sheet without saving; compare with the Create and Edit boards.
 
 ### Tests for User Story 3 (write first, must fail)
 
@@ -269,3 +269,6 @@ T009 Create customer-no-match.tsx
   later cross-resource cleanup, not this PR.
 - Baseline failures found in T001: none; the suite only times out under heavy machine load (repo's 3 s asyncUtilTimeout).
 - T040 review (read-only subagent) found three low-severity items, still open: ResourceActor drops the date when the actor is null; the row-menu separator applies to every directory but is not listed in contracts/shared-lifecycle-seams.md; the bulk dialog list filters to loaded customers while the confirm counts every selected id.
+- Product decision 2026-10-23 (shared with #317): T016–T023 originally added a footer "Cancel" and
+  changed the `apps/web/AGENTS.md` sheet rule; both were reverted. The edit sheet keeps
+  "Back to details", the create sheet has no footer Cancel, and `AGENTS.md` is unchanged.

@@ -103,10 +103,11 @@ and of an archived customer, and compare with the retained Detail and Archived d
 An administrator chooses "Create customer" (a primary button with a plus icon beside the search) and
 a side sheet titled "Create customer", subtitled "Available as soon as it is created", asks for the
 Customer code and Company name, explains that the code identifies the customer in discharges and
-reports, is stored in uppercase and can be changed later, and offers "Create customer" and "Cancel".
-Editing an available customer opens a sheet titled "Edit customer", subtitled with the company name
-and code, with the same two fields, a hint that reports already generated keep the previous code,
-and "Save changes" and "Cancel".
+reports, is stored in uppercase and can be changed later, and offers "Create customer" in its footer;
+the sheet is left through its close control. Editing an available customer opens a sheet titled
+"Edit customer", subtitled with the company name and code, with a "Back to details" control, the same
+two fields, a hint that reports already generated keep the previous code, and "Save changes" in its
+footer.
 
 **Why this priority**: Creation and correction are administrator-only and less frequent than
 consultation, but they are core to keeping the reference list right.
@@ -126,9 +127,9 @@ retained Create and Edit screens.
 3. **Given** the edit sheet of an available customer, **When** the administrator saves changes,
    **Then** the sheet returns to the customer's detail, a confirmation toast names it, and the list
    and detail show the corrected values.
-4. **Given** either sheet with unsaved input, **When** the administrator chooses "Cancel" or closes
-   the sheet, **Then** nothing is saved; "Cancel" closes the create sheet and returns the edit sheet
-   to the customer's detail.
+4. **Given** either sheet with unsaved input, **When** the administrator closes the create sheet or
+   chooses "Back to details" in the edit sheet, **Then** nothing is saved; neither sheet offers a
+   footer "Cancel".
 
 ---
 
@@ -322,10 +323,11 @@ detail sheet, a dialog and a toast, comparing with the retained light-theme scre
 - **FR-014**: The create sheet MUST be titled "Create customer" with the subtitle "Available as soon
   as it is created", contain Customer code and Company name fields, a hint that the code identifies
   the customer in discharges and reports, is stored in uppercase and can be changed later, and the
-  actions "Create customer" and "Cancel".
+  action "Create customer" in its footer, without a footer "Cancel".
 - **FR-015**: The edit sheet MUST be titled "Edit customer" with the subtitle "{company name} ·
   {code}", contain the same fields, a hint under the code that it is stored in uppercase and that
-  reports already generated keep the previous code, and the actions "Save changes" and "Cancel".
+  reports already generated keep the previous code, a "Back to details" control in its header, and
+  the action "Save changes" in its footer, without a footer "Cancel".
 - **FR-016**: A customer code already used by another customer MUST be reported on the Customer
   code field as "Already used by {company name}.", keeping the sheet open with the entered values.
 
@@ -407,6 +409,10 @@ detail sheet, a dialog and a toast, comparing with the retained light-theme scre
   sheet shows the customer's detail, as the `create-a-customer` and `update-a-customer` contracts
   already do; the bulk bar keeps the shared toolbar name "Bulk customer actions" rather than a
   "Bulk actions" region.
+- Product decision (2026-10-23, shared with #317): the create and edit sheets keep the
+  `apps/web/AGENTS.md` rule rather than the boards' footer "Cancel" — an edit sheet is left through
+  "Back to details", and a creation sheet gets "Cancel" only when unmodal over a map. Documented
+  deviation from the boards.
 
 ## Assumptions
 

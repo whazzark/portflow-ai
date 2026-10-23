@@ -45,10 +45,8 @@ test('lets administrators inspect and update an available customer in the sheet'
       'Stored in uppercase. Reports already generated keep the previous code.',
     ),
   ).toBeInTheDocument()
-  expect(
-    within(editSheet).queryByRole('button', { name: 'Back to details' }),
-  ).not.toBeInTheDocument()
-  fireEvent.click(within(editSheet).getByRole('button', { name: 'Cancel' }))
+  expect(within(editSheet).queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
+  fireEvent.click(within(editSheet).getByRole('button', { name: 'Back to details' }))
   expect(await screen.findByRole('heading', { name: 'Acme Logistics' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Edit customer' })).not.toBeInTheDocument()
 

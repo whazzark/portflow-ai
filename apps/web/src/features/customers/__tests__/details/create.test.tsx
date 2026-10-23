@@ -37,6 +37,8 @@ test('creates a customer and exposes it in the list and detail sheet', async () 
       'The code identifies the customer in discharges and reports. It is stored in uppercase and can be changed later.',
     ),
   ).toBeInTheDocument()
+  // The creation sheet is modal: it is left through its close control, not a footer Cancel.
+  expect(within(sheet).queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
 
   fireEvent.change(await screen.findByRole('textbox', { name: 'Customer code' }), {
     target: { value: created.code },
@@ -54,27 +56,4 @@ test('creates a customer and exposes it in the list and detail sheet', async () 
     await screen.findByRole('button', { name: `View customer ${created.code}` }),
   ).toBeInTheDocument()
   await waitFor(() => expect(screen.getByRole('tab', { name: 'Available 3' })).toBeInTheDocument())
-})
-
-test('cancels a creation without sending it', async () => {
-  let posted = false
-
-  mockCustomers()
-  server.use(
-    http.post(`${API_BASE_URL}/api/v1/customers`, () => {
-      posted = true
-      return HttpResponse.json({ data: CUSTOMERS[0] }, { status: 201 })
-    }),
-  )
-
-  const { router } = renderCustomers('/customers?mode=create')
-  const sheet = await screen.findByRole('dialog', { name: 'Create customer' })
-  fireEvent.change(within(sheet).getByRole('textbox', { name: 'Customer code' }), {
-    target: { value: 'NEW-04' },
-  })
-  fireEvent.click(within(sheet).getByRole('button', { name: 'Cancel' }))
-
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  expect(router.state.location.search).not.toHaveProperty('mode')
-  expect(posted).toBe(false)
 })

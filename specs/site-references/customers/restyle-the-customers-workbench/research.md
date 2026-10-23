@@ -100,11 +100,11 @@ pool bulk bar).
   - Create sheet: header "Create customer" / "Available as soon as it is created", close control,
     the two fields, the hint under the form ("The code identifies the customer in discharges and
     reports. It is stored in uppercase and can be changed later."), footer "Create customer"
-    (primary) and "Cancel" (closes the sheet). On success the sheet moves to the new customer's
+    (primary) and no footer "Cancel" (the modal sheet is left through its close control). On success the sheet moves to the new customer's
     detail and the existing "Customer “…” created" toast fires (unchanged behavior).
   - Edit sheet: header "Edit customer" / "{company name} · {code}", the code field description
-    "Stored in uppercase. Reports already generated keep the previous code.", footer "Save changes"
-    and "Cancel" (returns to the detail, replacing the "Back to details" header button). On success
+    "Stored in uppercase. Reports already generated keep the previous code.", "Back to details" in
+    the header, footer "Save changes" and no footer "Cancel". On success
     the sheet returns to the detail with the existing "Customer “…” updated" toast.
   - Conflicts: `CustomerForm` maps `E_CUSTOMER_CODE_CONFLICT` to a `code` field error and
     `E_CUSTOMER_COMPANY_NAME_CONFLICT` to a `companyName` field error. The code message is
@@ -117,10 +117,10 @@ pool bulk bar).
   the message is resolved from its error code, not from a client-side pre-check.
 - **Alternatives considered**: Client-side uniqueness pre-check on blur — rejected: duplicates a
   business rule the API owns and can be stale.
-- **Convention impact**: `apps/web/AGENTS.md` says an edit panel is left through "Back to details"
-  and a creation panel adds Cancel only over a map. The V2 sheets put "Cancel" in the footer of
-  both. The plan updates that rule to the V2 convention (footer "Cancel": back to details when
-  editing, closes when creating) so sibling restyles inherit one rule.
+- **Convention**: `apps/web/AGENTS.md` says an edit panel is left through "Back to details" and a
+  creation panel adds Cancel only over a map. The V2 boards put "Cancel" in both footers; the
+  product owner decided on 2026-10-23 (with #317) to keep the AGENTS rule, so the boards' footer
+  Cancel is a documented deviation and `AGENTS.md` is unchanged.
 
 ## R8 — Detail sheet
 
@@ -169,7 +169,7 @@ pool bulk bar).
 
 - **Decision**: Feature tests (Vitest + Testing Library through the real router, MSW) remain the
   primary TDD seam: update existing customer tests for changed copy and structure, add tests for
-  no-match cross-tab, conflict field errors, sheet Cancel, History timeline, bulk dialog list and
+  no-match cross-tab, conflict field errors, sheet navigation, History timeline, bulk dialog list and
   confirm label, read-only rendering. Unit test for `formatShortDate` (unit tests never render
   React). The shared lifecycle components have no tests of their own today; their new optional
   seams are exercised through the Customers feature tests, and the unchanged defaults stay covered
