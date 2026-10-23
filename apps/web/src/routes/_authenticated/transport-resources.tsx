@@ -1,7 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
 import { isAdministrator } from '@/features/auth/policies/permissions'
-import { transportResourcesSearchSchema } from '@/features/transport-resources/helpers/transport-resources-search'
+import {
+  DEFAULT_TRANSPORT_RESOURCES_SEARCH,
+  transportResourcesSearchSchema,
+} from '@/features/transport-resources/helpers/transport-resources-search'
 import { TransportResourcesPage } from '@/features/transport-resources/ui/transport-resources-page'
 import { truckQueries } from '@/features/trucks/queries/truck-queries'
 import { TrucksError } from '@/features/trucks/ui/trucks-error'
@@ -11,6 +14,7 @@ import { ensureSessionUser } from '@/libraries/tuyau/session'
 export const Route = createFileRoute('/_authenticated/transport-resources')({
   staticData: { breadcrumb: 'Transport resources' },
   validateSearch: transportResourcesSearchSchema,
+  search: { middlewares: [stripSearchParams(DEFAULT_TRANSPORT_RESOURCES_SEARCH)] },
   loader: async ({ context: { queryClient } }) => {
     const session = await ensureSessionUser(queryClient)
     // Transport companies are intentionally not ensured here: the page owns their loading and

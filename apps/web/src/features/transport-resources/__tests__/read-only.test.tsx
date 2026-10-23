@@ -81,11 +81,8 @@ test('opens no creation or editing form from a hand-typed address', JOURNEY, asy
   const { router } = renderFleet(fleetPath({ truckMode: 'create', companyDetailsMode: 'edit' }))
   await findFleetTable()
 
-  await expect
-    .poll(() => router.state.location.search)
-    .toMatchObject({
-      truckMode: 'view',
-      companyDetailsMode: 'view',
-    })
+  // Reset to the default view, which the address leaves out.
+  await expect.poll(() => router.state.location.search).not.toHaveProperty('truckMode')
+  expect(router.state.location.search).not.toHaveProperty('companyDetailsMode')
   expect(screen.queryByRole('form')).not.toBeInTheDocument()
 })

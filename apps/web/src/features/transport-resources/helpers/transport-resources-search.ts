@@ -73,6 +73,16 @@ export const transportResourcesSearchSchema = z
 
 export type TransportResourcesSearch = z.output<typeof transportResourcesSearchSchema>
 
+/** What the default view writes nothing for, so a shared address carries only what differs. */
+export const DEFAULT_TRANSPORT_RESOURCES_SEARCH = {
+  status: DEFAULT_FLEET_STATUSES,
+  search: '',
+  sort: 'registration',
+  order: 'asc',
+  truckMode: 'view',
+  companyDetailsMode: 'view',
+} satisfies Partial<TransportResourcesSearch>
+
 /** The former Transport companies address, mapped onto the grouped screen. */
 export function fromLegacyTransportCompanySearch(search: {
   status: 'available' | 'archived'

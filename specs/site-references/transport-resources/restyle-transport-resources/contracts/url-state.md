@@ -19,6 +19,10 @@ rewritten in the `transform`.
 | `companyDetailsId` | company id | — | Company whose detail or inline edit is open (unchanged name). |
 | `companyDetailsMode` | `view`, `edit`, `create` | `view` | `edit` = inline company form; `create` = inline company creation row (administrators). |
 
+Parameters equal to their default are left out of the address (`stripSearchParams` route
+middleware), so the default view is plain `/transport-resources` and a shared link carries only
+what differs.
+
 ## Legacy parameters (read, rewritten, never written)
 
 | Legacy | Rewritten to |

@@ -238,10 +238,16 @@ they start with `specs/`. Run web tests with
 
 **Independent Test**: quickstart #16.
 
-- [ ] T043 [US7] Audit `features/transport-resources/ui/*`, `features/trucks/ui/truck-status-pill.tsx` and the new shared components for hard-coded colours or dark-only classes (`rg -n '#[0-9a-fA-F]{3,6}|bg-black|text-white' apps/web/src/features/transport-resources apps/web/src/features/trucks/ui`) and replace them with tokens.
-- [ ] T044 [US7] Walk every state of `quickstart.md` in light and dark against the *Thème clair* and default artboards; check pill and muted text contrast ≥ 4.5:1 with the browser's contrast tool; fix token usage where needed.
+- [X] T043 [US7] Audit `features/transport-resources/ui/*`, `features/trucks/ui/truck-status-pill.tsx` and the new shared components for hard-coded colours or dark-only classes (`rg -n '#[0-9a-fA-F]{3,6}|bg-black|text-white' apps/web/src/features/transport-resources apps/web/src/features/trucks/ui`) and replace them with tokens.
+- [X] T044 [US7] Walk every state of `quickstart.md` in light and dark against the *Thème clair* and default artboards; check pill and muted text contrast ≥ 4.5:1 with the browser's contrast tool; fix token usage where needed.
 
 ---
+
+**Implementation notes (US7, 2026-10-23)**: no hard-coded colour in the slice. Contrast was
+measured on the running app (seeded data, administrator) from computed colours, after a reload in
+each theme: lowest sampled text 4.6:1 in light (amber "N suspended" on the group header) and
+4.82:1 in dark (pressed pill count). Screenshots were not possible (the session had no visible
+window), so the side-by-side visual comparison with the artboards remains for the human review.
 
 ## Phase 10: Polish & cross-cutting
 
