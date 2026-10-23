@@ -97,6 +97,10 @@ router
           .group(() => {
             router.get('/', [controllers.Discharges, 'index']).as('index')
             router.post('/', [controllers.Discharges, 'store']).as('store')
+            // Declared before `/:id`, which would otherwise read the segment as a discharge id.
+            router
+              .get('/dock-occupancy', [controllers.Discharges, 'dockOccupancy'])
+              .as('dock_occupancy')
             router.get('/:id', [controllers.Discharges, 'show']).as('show')
             router.patch('/:id', [controllers.Discharges, 'update']).as('update')
             router

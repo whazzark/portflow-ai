@@ -111,3 +111,20 @@ test('never shows a stale error on a field being typed with a valid value', asyn
   await waitFor(() => expect(within(shift).getByText('8 h')).toBeInTheDocument())
   expect(within(shift).queryByText('Planned end is required.')).not.toBeInTheDocument()
 })
+
+test('offers Cancel, Back from the second step, and the way on in the action bar', async () => {
+  arrange()
+  await openCreationFromList()
+  const bar = screen.getByRole('region', { name: 'Discharge summary' })
+
+  expect(bar).toHaveTextContent(/lots? · .* · 1 shift · No planned period yet/)
+  expect(within(bar).getByRole('link', { name: 'Cancel' })).toBeInTheDocument()
+  expect(within(bar).queryByRole('button', { name: 'Back' })).not.toBeInTheDocument()
+  expect(within(bar).getByRole('button', { name: 'Next: Product lots' })).toBeInTheDocument()
+
+  await fillVesselStep()
+  await continueTo('Product lots')
+
+  expect(within(bar).getByRole('button', { name: 'Back' })).toBeInTheDocument()
+  expect(within(bar).getByRole('button', { name: 'Next: Planned shifts' })).toBeInTheDocument()
+})

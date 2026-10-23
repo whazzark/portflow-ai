@@ -1,4 +1,5 @@
 import { revalidateLogic } from '@tanstack/react-form'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { PlusIcon } from 'lucide-react'
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
@@ -33,6 +34,8 @@ import {
   nextPlannedShift,
   stepHasErrors,
 } from '@/features/discharges/discharge-preparation-schema'
+import { dischargeQueries } from '@/features/discharges/queries/discharge-queries'
+import { ShiftPreview } from '@/features/discharges/ui/create/shift-preview'
 import { StepIndicator } from '@/features/discharges/ui/create/step-indicator'
 import {
   DischargeIdentityFields,
@@ -64,12 +67,43 @@ type CreateDischargeFormProps = {
    * step moves on, as the preparation could not be completed anyway.
    */
   disabled: boolean
-  /** The page's title and notices, placed in the form's column above the steps. */
+  /** The page's title and notices, placed above the steps. */
   header: ReactNode
   onSubmit: (values: CreateDischargeFormValues) => Promise<void>
 }
 
 const plural = (count: number, singular: string) => `${count} ${singular}${count === 1 ? '' : 's'}`
+
+/**
+ * The shift preview fed with the dock chosen on the first step. Mounted with the Planned shifts
+ * step, so the dock's occupancy is read again every time the step opens.
+ */
+function DockShiftPreview({
+  dockId,
+  docks,
+  ...values
+}: {
+  dockId: string
+  docks: PreparationOptions<{ id: string; name: string }>
+  vesselName: string
+  expectedStartAt: string
+  shifts: CreateDischargeFormValues['shifts']
+}) {
+  const query = useQuery(dischargeQueries.dockOccupancy(dockId))
+
+  return (
+    <ShiftPreview
+      {...values}
+      dockName={docks.options.find((dock) => dock.id === dockId)?.name ?? ''}
+      occupancy={{
+        data: query.data?.data,
+        // A retry under way reads as loading, rather than leaving the failure on screen.
+        loading: query.isPending || (query.isError && query.isFetching),
+        onRetry: query.isError && !query.isFetching ? () => void query.refetch() : undefined,
+      }}
+    />
+  )
+}
 
 function SectionCard({
   title,
@@ -259,7 +293,7 @@ export function CreateDischargeForm({
   return (
     <form.AppForm>
       <form.Form className="flex flex-1 flex-col" noValidate={true} ref={formRef}>
-        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 pt-4 pb-6 md:px-6 md:pt-6">
+        <div className="flex w-full flex-1 flex-col gap-6 px-4 pt-4 pb-6 md:px-6 md:pt-6">
           {header}
           <StepIndicator
             current={step}
@@ -301,11 +335,24 @@ export function CreateDischargeForm({
           )}
 
           {step === 'shifts' && (
+            <form.Subscribe
+              selector={(state) => ({
+                dockId: state.values.dockId,
+                vesselName: state.values.vesselName,
+                expectedStartAt: state.values.expectedStartAt,
+                shifts: state.values.shifts,
+              })}
+            >
+              {(values) => <DockShiftPreview docks={docks} {...values} />}
+            </form.Subscribe>
+          )}
+
+          {step === 'shifts' && (
             <form.AppField mode="array" name="shifts">
               {(shifts) => (
                 <SectionCard
                   count={plural(shifts.state.value.length, 'shift')}
-                  description="The periods the discharge will be worked, each with its responsible. A new shift starts when the last one ends."
+                  description="The periods the discharge will be worked, each with its responsible."
                   headingRef={headingRef}
                   title="Planned shifts"
                 >
@@ -366,7 +413,7 @@ export function CreateDischargeForm({
           aria-label="Discharge summary"
           className="sticky bottom-0 z-10 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:h-[calc(4rem+1px)] md:pb-0"
         >
-          <div className="mx-auto flex h-full w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 md:px-6 md:py-0">
+          <div className="flex h-full w-full flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 md:px-6 md:py-0">
             <form.Subscribe
               selector={(state) => ({
                 lots: flattenLotGroups(state.values.lotGroups).length,

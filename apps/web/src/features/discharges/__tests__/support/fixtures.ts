@@ -4,6 +4,7 @@ import type { CustomerDto } from '@/features/customers/types'
 import type {
   DischargeDetailDto,
   DischargeDto,
+  DockOccupancyDto,
   PlanningDoorDto,
   StartProblemDto,
   TruckCandidateDto,
@@ -306,6 +307,23 @@ export const AVAILABLE_DOCKS: DockDto[] = DOCKS.filter((dock) => dock.status ===
 export const AVAILABLE_CUSTOMERS: CustomerDto[] = CUSTOMERS.filter(
   (customer) => customer.status === 'AVAILABLE',
 )
+
+/**
+ * Other discharges holding the first available dock around the creation journey's expected start,
+ * 1 October 2026 at 06:00. Built from local times, so the preview reads the same in every zone.
+ */
+export const DOCK_OCCUPANCY: DockOccupancyDto[] = [
+  {
+    discharge: { id: 'discharge-nordic-breeze', vesselName: 'MV Nordic Breeze', status: 'ACTIVE' },
+    startAt: new Date(2026, 8, 26, 6).toISOString(),
+    endAt: new Date(2026, 8, 29, 14).toISOString(),
+  },
+  {
+    discharge: { id: 'discharge-baltic-star', vesselName: 'MV Baltic Star', status: 'PLANNED' },
+    startAt: new Date(2026, 9, 3, 6).toISOString(),
+    endAt: new Date(2026, 9, 4, 22).toISOString(),
+  },
+]
 
 export const ELIGIBLE_RESPONSIBLES = [
   { id: 'responsible-lea', firstName: 'Léa', lastName: 'Martin' },
