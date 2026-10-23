@@ -57,7 +57,7 @@ they start with `specs/`. Run web tests with
 - [X] T003 [P] Write failing unit tests in `features/transport-resources/helpers/fleet-view.test.ts` for every rule of `data-model.md`: status membership (incl. archived companies, pinned new company), search on registration / vehicle model / company name, company filter + `hiddenCompanyCount`, unknown company id, sort per column with null vehicle model last and registration tie-break, status order, fleet-wide counts ignoring search/filter, administrator vs non-administrator `archived` count, group summary unaffected by filters, `archiveBlockedBy`, `canReactivate`, `showArchivedNotice`, `isEmpty`, group order by company name.
 - [X] T004 [P] Write failing tests in `routes/_authenticated/__tests__/transport-resources-search.test.ts` for the search schema in `contracts/url-state.md`: defaults, `.catch` fallbacks, de-duplicated non-empty `status`, the four invariants (create clears details; truck and company details exclusive; `createTruckCompanyId` only with `create=truck`), and the `/transport-companies` mapping (`status=archived` → `['archived']`, `search`, `transportCompanyId`). Export the schema and the legacy mapping function from their route files so they are testable.
 - [X] T005 [P] Write failing tests in `helpers/dates.test.ts` for `formatDate` (`2026-09-23T07:48:00Z` → `23/09/2026`, `null` → `—`).
-- [ ] T006 [P] Write failing tests in `components/lifecycle/__tests__/resource-lifecycle-dialog.test.tsx` proving the new optional props: `describeTitle` replaces the title, `commentPlaceholder` sets the textarea placeholder, `describeSuccessDetail` becomes the success toast description; without them the existing title, placeholder-less textarea and toast are unchanged.
+- [X] T006 [P] Write failing tests in `components/lifecycle/__tests__/resource-lifecycle-dialog.test.tsx` proving the new optional props: `describeTitle` replaces the title, `commentPlaceholder` sets the textarea placeholder, `describeSuccessDetail` becomes the success toast description; without them the existing title, placeholder-less textarea and toast are unchanged.
 
 ### Implementation
 
@@ -254,7 +254,7 @@ window), so the side-by-side visual comparison with the artboards remains for th
 - [X] T045 Confirm no import remains of removed modules (`rg -n "trucks-page|transport-resources-workspace|truck-section|transport-company-section|archiveMany|reactivateMany|useSelectAllShortcut" apps/web/src/features/{trucks,transport-companies,transport-resources}`) and that `components/lifecycle` bulk code is untouched (`git diff master -- apps/web/src/components/lifecycle/bulk-resource-lifecycle-actions.tsx` empty).
 - [X] T046 Verify the porting record of T021: every deleted suite's business assertion (validation, conflicts, refusals + refresh, retry, permissions, scale) maps to a passing test in the new suites; add any missing one. Keep `features/trucks/__tests__/list/scale.test.tsx`'s scenario as a `fleet-view` or list test with a few hundred trucks.
 - [X] T047 [P] Update `specs/site-references/transport-resources/roadmap.md` with a row for GH-319 pointing at this feature directory.
-- [ ] T048 Run `pnpm check`, `pnpm typecheck`, `pnpm test` from the repository root; all green (API suites unchanged).
+- [X] T048 Run `pnpm check`, `pnpm typecheck`, `pnpm test` from the repository root; all green (API suites unchanged).
 - [ ] T049 Run the full `quickstart.md` walkthrough as an administrator and as an operations lead, including phone width; note results in the PR.
 - [X] T050 Obtain a fresh read-only Claude Code review of the final diff (new session `/code-review` or read-only subagent) and resolve every confirmed finding; open the Draft PR for #319.
 
@@ -327,3 +327,16 @@ non-administrators; (5) leaving a company edit opened its detail; (6) row links 
 lifecycle buttons stayed active while a form was open and could drop a draft; (7) focus fell to
 the document when a form or company detail closed. An eighth note (two search normalisations) has
 no current effect and was left as is. The Draft PR is not opened yet, at the operator's request.
+
+## Verification record (2026-10-23)
+
+- T006: covered by the US5 feature suite (`lifecycle.test.tsx`), as `apps/web/AGENTS.md` keeps
+  React rendering out of unit tests.
+- T048: `pnpm check` and `pnpm typecheck` pass; API 1,846/1,846; web 313 files, 1,716/1,716 on
+  the final commit. Under heavy machine load a few first-in-file tests of other features can time
+  out on their 3 s render wait; they pass alone and on master alike.
+- T049 (open): the walkthrough ran against the shared dev database as the organization
+  administrator, read-only — the grouped list with seeded data, address stripping, contrast in
+  both themes, phone width. Write journeys (create, edit, lifecycle) were not exercised there, to
+  leave the shared database untouched; they are covered by the feature suites. Side-by-side
+  screenshots against the artboards remain for the human review.
