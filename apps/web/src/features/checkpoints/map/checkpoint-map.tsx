@@ -134,8 +134,8 @@ function ReportAnchor({
   return null
 }
 
-/** Calls `onClick` for a click on the map itself — not on a marker, whose element sits above the
- * canvas — unless a placement is armed, which owns map clicks. */
+/** Calls `onClick` for a click on the map itself. Markers live inside the map's canvas container,
+ * so MapLibre reports a click on one as a map click too; those are left to the marker. */
 function MapClickListener({ onClick }: { onClick: () => void }) {
   const { map } = useMap()
   const onClickRef = useRef(onClick)
@@ -145,7 +145,13 @@ function MapClickListener({ onClick }: { onClick: () => void }) {
     if (!map) {
       return
     }
-    const handleClick = (_event: MapLibreGL.MapMouseEvent) => onClickRef.current()
+    const handleClick = (event: MapLibreGL.MapMouseEvent) => {
+      const target = event.originalEvent.target
+      if (target instanceof Element && target.closest('.maplibregl-marker')) {
+        return
+      }
+      onClickRef.current()
+    }
     map.on('click', handleClick)
     return () => {
       map.off('click', handleClick)

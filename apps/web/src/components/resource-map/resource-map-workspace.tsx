@@ -42,6 +42,34 @@ export function ResourceMapWorkspace({
 }) {
   const [hasMapError, setHasMapError] = useState(false)
   const singularResourceLabel = resourceLabel.replace(/s$/, '')
+  const hasToolbar = Boolean(toolbar || banner)
+  const notices =
+    hasMapError || sourceMessage ? (
+      <>
+        {hasMapError && (
+          <div
+            aria-label={`${singularResourceLabel} map unavailable`}
+            className="rounded-lg border bg-background/95 px-3 py-2 text-center text-muted-foreground text-sm shadow-md backdrop-blur"
+            role="status"
+          >
+            The map background is currently unavailable. {resourceLabel} remain selectable.
+          </div>
+        )}
+        {sourceMessage && (
+          <div
+            className="rounded-lg border bg-background/95 px-3 py-2 text-muted-foreground text-sm shadow-md backdrop-blur"
+            role={sourceError ? 'alert' : 'status'}
+          >
+            <div>{sourceMessage}</div>
+            {sourceError && onRetrySource && (
+              <button className="mt-2 underline" onClick={onRetrySource} type="button">
+                Try again
+              </button>
+            )}
+          </div>
+        )}
+      </>
+    ) : null
 
   return (
     <section
@@ -66,6 +94,11 @@ export function ResourceMapWorkspace({
       )}
       <div className="absolute top-4 left-4 z-10 max-w-[calc(100%-2rem)] md:top-6 md:left-6 md:max-w-[calc(100%-3rem)]">
         {banner ?? toolbar ?? controls}
+        {/* A floating toolbar can span the map's whole width and wraps on a narrow map, so its notices
+            stack under it rather than in the top-right corner. */}
+        {notices && hasToolbar && (
+          <div className="mt-2 flex max-w-sm flex-col gap-2">{notices}</div>
+        )}
       </div>
       {overlay && (
         <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center p-6">
@@ -73,31 +106,8 @@ export function ResourceMapWorkspace({
         </div>
       )}
       {card}
-      {(hasMapError || sourceMessage) && (
-        <div className="absolute top-3 right-3 z-10 flex max-w-sm flex-col gap-2">
-          {hasMapError && (
-            <div
-              aria-label={`${singularResourceLabel} map unavailable`}
-              className="rounded-lg border bg-background/95 px-3 py-2 text-center text-muted-foreground text-sm shadow-md backdrop-blur"
-              role="status"
-            >
-              The map background is currently unavailable. {resourceLabel} remain selectable.
-            </div>
-          )}
-          {sourceMessage && (
-            <div
-              className="rounded-lg border bg-background/95 px-3 py-2 text-muted-foreground text-sm shadow-md backdrop-blur"
-              role={sourceError ? 'alert' : 'status'}
-            >
-              <div>{sourceMessage}</div>
-              {sourceError && onRetrySource && (
-                <button className="mt-2 underline" onClick={onRetrySource} type="button">
-                  Try again
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+      {notices && !hasToolbar && (
+        <div className="absolute top-3 right-3 z-10 flex max-w-sm flex-col gap-2">{notices}</div>
       )}
       {(emptyMessage || legend) && (
         <div className="absolute bottom-3 left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col gap-2">

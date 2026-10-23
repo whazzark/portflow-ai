@@ -210,8 +210,8 @@ D11).
 **Independent Test**: Switch to the light theme and walk through map, card, placement and archive
 dialog; accessibility audit in both themes.
 
-- [ ] T044 [P] [US6] Audit `apps/web/src/components/resource-map/resource-map-card.tsx`, `resource-map-toolbar.tsx`, `resource-map-search.tsx`, `resource-map-mode-banner.tsx`, `resource-map-no-match.tsx` and `apps/web/src/features/checkpoints/ui/*.tsx` for hardcoded colors and replace them with tokens from `apps/web/src/styles/globals.css`
-- [ ] T045 [US6] Browser pass per `quickstart.md` steps 1, 3, 6, 8 and 9 in dark and light themes and at 390 px width (card docks to the bottom, toolbar wraps), plus an axe audit of the map, an open card, placement mode and the archive dialog with no serious or critical violation; fix findings in the files above
+- [X] T044 [P] [US6] Audit `apps/web/src/components/resource-map/resource-map-card.tsx`, `resource-map-toolbar.tsx`, `resource-map-search.tsx`, `resource-map-mode-banner.tsx`, `resource-map-no-match.tsx` and `apps/web/src/features/checkpoints/ui/*.tsx` for hardcoded colors and replace them with tokens from `apps/web/src/styles/globals.css`
+- [X] T045 [US6] Browser pass per `quickstart.md` steps 1, 3, 6, 8 and 9 in dark and light themes and at 390 px width (card docks to the bottom, toolbar wraps), plus an axe audit of the map, an open card, placement mode and the archive dialog with no serious or critical violation; fix findings in the files above
 
 ---
 
