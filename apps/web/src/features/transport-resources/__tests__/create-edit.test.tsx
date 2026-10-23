@@ -6,7 +6,7 @@ import { expect, test } from 'vitest'
 import type { TransportCompanyDto } from '@/features/transport-companies/types'
 import type { TruckDto } from '@/features/trucks/types'
 import { server } from '@/test/msw/server'
-import { BRETAGNE_ID, EF_789_GH, LOIRE_ID } from './support/fleet-fixtures'
+import { BRETAGNE_ID, EF_789_GH, FLEET_COMPANIES, LOIRE_ID } from './support/fleet-fixtures'
 import {
   API_BASE_URL,
   expectListed,
@@ -351,4 +351,96 @@ test('edits a company inline', JOURNEY, async () => {
       within(groupHeader('Loire Logistique')).getByText('+33 2 41 00 00 00'),
     ).toBeInTheDocument(),
   )
+})
+
+test('creates the first transport company of an empty site', JOURNEY, async () => {
+  const user = userEvent.setup()
+  const fleet = mockFleet({ companies: [], trucks: [] })
+  server.use(
+    http.post(`${API_BASE_URL}/api/v1/transport-companies`, async ({ request }) => {
+      const body = (await request.json()) as Pick<
+        TransportCompanyDto,
+        'name' | 'contactPhone' | 'contactEmail'
+      >
+      const created = {
+        ...FLEET_COMPANIES[0],
+        ...body,
+        id: '00000000-0000-4000-8000-000000000a09',
+      } as TransportCompanyDto
+      fleet.companies = [created]
+      return HttpResponse.json({ data: created }, { status: 201 })
+    }),
+  )
+  renderFleet()
+  await screen.findByText('No transport resources yet', undefined, { timeout: 10000 })
+
+  await user.click(screen.getByRole('button', { name: 'Create' }))
+  await user.click(await screen.findByRole('menuitem', { name: 'Transport company' }))
+
+  const row = await screen.findByRole('form', { name: 'Create transport company' })
+  await user.type(within(row).getByLabelText(/Company name/), 'Vendée Bennes')
+  await user.type(within(row).getByLabelText(/Contact phone/), '+33 2 51 00 00 00')
+  await user.type(within(row).getByLabelText(/Contact email/), 'planning@vendee-bennes.example')
+  await user.click(within(row).getByRole('button', { name: 'Create' }))
+
+  await waitFor(() => expect(groupHeader('Vendée Bennes')).toBeInTheDocument())
+})
+
+test('expands a collapsed company to show the truck being added', JOURNEY, async () => {
+  const user = userEvent.setup()
+  mockFleet()
+  renderFleet()
+  await findFleetTable()
+
+  await user.click(screen.getByRole('button', { name: 'Collapse Loire Logistique' }))
+  await user.click(screen.getByRole('button', { name: 'Actions for Loire Logistique' }))
+  await user.click(await screen.findByRole('menuitem', { name: 'Add truck' }))
+
+  expect(await screen.findByRole('form', { name: 'Create truck' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Collapse Loire Logistique' })).toBeInTheDocument()
+})
+
+test('returns to the company row, with focus, once its edit is left', JOURNEY, async () => {
+  const user = userEvent.setup()
+  mockFleet()
+  renderFleet()
+  await findFleetTable()
+
+  await user.click(screen.getByRole('button', { name: 'Actions for Loire Logistique' }))
+  await user.click(await screen.findByRole('menuitem', { name: 'Edit' }))
+  await screen.findByRole('form', { name: 'Edit Loire Logistique' })
+  await user.keyboard('{Escape}')
+
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Show only Loire Logistique' })).toHaveFocus(),
+  )
+  expect(
+    screen.queryByRole('region', { name: 'Transport company Loire Logistique' }),
+  ).not.toBeInTheDocument()
+})
+
+test('returns focus to the truck once its edit is left', JOURNEY, async () => {
+  const user = userEvent.setup()
+  mockFleet()
+  renderFleet(fleetPath({ truckId: EF_789_GH.id, truckMode: 'edit' }))
+  await findFleetTable()
+
+  await user.click(within(form('Edit EF-789-GH')).getByRole('button', { name: 'Cancel edit' }))
+
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'View truck EF-789-GH' })).toHaveFocus(),
+  )
+})
+
+test('starts nothing else from the table while a form is open', JOURNEY, async () => {
+  mockFleet()
+  renderFleet(
+    fleetPath({ status: ['available', 'suspended', 'archived'], companyDetailsMode: 'create' }),
+  )
+  await findFleetTable()
+
+  expect(form('Create transport company')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'View truck EF-789-GH' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Return GH-012-JK to service' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Reactivate QR-234-ST' })).toBeDisabled()
 })

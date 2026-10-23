@@ -108,6 +108,13 @@ describe('search', () => {
     ])
   })
 
+  test('leaves an archived company out when only its name matches and archived is not selected', () => {
+    expect(shape({ search: 'morvan' })).toEqual([])
+    expect(shape({ search: 'morvan', statuses: ['archived'] })).toEqual([
+      { company: 'Transports Morvan', trucks: ['QR-234-ST'] },
+    ])
+  })
+
   test('respects the selected statuses', () => {
     expect(shape({ search: 'QR-234' })).toEqual([])
     expect(view({ search: 'QR-234' }).isEmpty).toBe(true)

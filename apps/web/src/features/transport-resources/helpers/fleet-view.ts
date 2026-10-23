@@ -113,10 +113,12 @@ export function buildFleetView(input: FleetViewInput): FleetView {
       .sort(compare)
     const matchesByName =
       normalizedSearch.length > 0 && normalizeSearch(company.name).includes(normalizedSearch)
+    // An archived company is listed only under the Archived filter, by name as much as by trucks.
+    const companyInSelection = !companyArchived || selected.has('archived')
     const listed =
       listedTrucks.length > 0 ||
-      (companyArchived && selected.has('archived') && (!normalizedSearch || matchesByName)) ||
-      matchesByName ||
+      (companyArchived && selected.has('archived') && !normalizedSearch) ||
+      (matchesByName && companyInSelection) ||
       (company.id === input.pinnedCompanyId && companyTrucks.length === 0)
 
     if (!listed) {

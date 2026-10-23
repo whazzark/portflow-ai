@@ -96,6 +96,9 @@ export function FleetToolbar({
   )
 }
 
+/** Where focus goes back when a creation started from the toolbar is cancelled. */
+export const CREATE_BUTTON_ID = 'transport-resources-create'
+
 /**
  * Create, split as drawn: the screen holds two resources and neither is the obvious default, so
  * both halves open the same choice rather than one of them guessing.
@@ -116,6 +119,7 @@ export function CreateMenu({
       <Button
         className="rounded-r-none"
         disabled={disabled}
+        id={CREATE_BUTTON_ID}
         onClick={() => setOpen(true)}
         size="lg"
         type="button"

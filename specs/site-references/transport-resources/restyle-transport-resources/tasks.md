@@ -256,7 +256,7 @@ window), so the side-by-side visual comparison with the artboards remains for th
 - [X] T047 [P] Update `specs/site-references/transport-resources/roadmap.md` with a row for GH-319 pointing at this feature directory.
 - [ ] T048 Run `pnpm check`, `pnpm typecheck`, `pnpm test` from the repository root; all green (API suites unchanged).
 - [ ] T049 Run the full `quickstart.md` walkthrough as an administrator and as an operations lead, including phone width; note results in the PR.
-- [ ] T050 Obtain a fresh read-only Claude Code review of the final diff (new session `/code-review` or read-only subagent) and resolve every confirmed finding; open the Draft PR for #319.
+- [X] T050 Obtain a fresh read-only Claude Code review of the final diff (new session `/code-review` or read-only subagent) and resolve every confirmed finding; open the Draft PR for #319.
 
 ---
 
@@ -315,3 +315,15 @@ service, archive and read-only artboards.
 
 Commit after each task or logical group with Conventional Commits, e.g.
 `feat(transport-resources): Group trucks by transport company`.
+
+## Review record (2026-10-23)
+
+A fresh read-only review of `git diff master...HEAD -- apps/web` reported seven confirmed
+findings, all fixed test-first in the following commit: (1) an empty site could not create its
+first company (the form lived only inside the table); (2) a leftover edit mode with no record
+locked every control; (3) Add truck on a collapsed group opened an invisible form; (4) an archived
+company matching the search by name appeared under the default filter, including for
+non-administrators; (5) leaving a company edit opened its detail; (6) row links and direct
+lifecycle buttons stayed active while a form was open and could drop a draft; (7) focus fell to
+the document when a form or company detail closed. An eighth note (two search normalisations) has
+no current effect and was left as is. The Draft PR is not opened yet, at the operator's request.

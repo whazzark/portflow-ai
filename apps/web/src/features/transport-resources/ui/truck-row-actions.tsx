@@ -38,6 +38,7 @@ export function TruckRowActions({
       {status === 'suspended' && (
         <Button
           aria-label={`Return ${truck.registration} to service`}
+          disabled={disabled}
           onClick={() => setOpenAction('return-to-service')}
           size="icon-sm"
           title="Return to service"
@@ -49,7 +50,7 @@ export function TruckRowActions({
       {status === 'archived' && (
         <Button
           aria-label={`Reactivate ${truck.registration}`}
-          disabled={!canReactivate}
+          disabled={disabled || !canReactivate}
           onClick={() => setOpenAction('reactivate')}
           size="icon-sm"
           title={canReactivate ? 'Reactivate' : 'Reactivate its transport company first'}

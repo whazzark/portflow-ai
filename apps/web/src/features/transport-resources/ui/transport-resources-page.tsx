@@ -15,12 +15,12 @@ import type { FleetSort } from '@/features/transport-resources/helpers/transport
 import { truckQueries } from '@/features/trucks/queries/truck-queries'
 import type { TruckDto } from '@/features/trucks/types'
 import { CompanyGroupActions } from './company-group-actions'
-import { CompanyGroupHeader } from './company-group-rows'
+import { CompanyGroupHeader, companyNameButtonId } from './company-group-rows'
 import { ArchivedNotice, CompanyFilterBanner, FleetNoMatch } from './fleet-banners'
 import { CompanyDetailRow, TruckDetailRow } from './fleet-detail-rows'
 import { CompanyFormRow, TruckFormRow } from './fleet-form-rows'
 import { FleetTable } from './fleet-table'
-import { CreateMenu, FleetToolbar } from './fleet-toolbar'
+import { CREATE_BUTTON_ID, CreateMenu, FleetToolbar } from './fleet-toolbar'
 import { TruckRow, truckViewButtonId } from './truck-row'
 import { TruckRowActions } from './truck-row-actions'
 
@@ -141,6 +141,9 @@ export function TransportResourcesPage() {
     )
   }
 
+  // Whatever closes under the keyboard user's focus hands it to the row it came from.
+  const focusAfter = (navigation: Promise<void>, elementId: string) =>
+    navigation.then(() => document.getElementById(elementId)?.focus())
   const setSearch = (value: string) =>
     navigate({ replace: true, search: (previous) => ({ ...previous, search: value }) })
   const sortBy = (sort: FleetSort) =>
@@ -162,17 +165,23 @@ export function TransportResourcesPage() {
       }),
     })
   const closeTruck = (truckId: string) =>
-    navigate({
-      search: (previous) => ({ ...previous, truckId: undefined, truckMode: 'view' }),
-    }).then(() => document.getElementById(truckViewButtonId(truckId))?.focus())
-  const closeCompany = () =>
-    navigate({
-      search: (previous) => ({
-        ...previous,
-        companyDetailsId: undefined,
-        companyDetailsMode: 'view',
+    focusAfter(
+      navigate({
+        search: (previous) => ({ ...previous, truckId: undefined, truckMode: 'view' }),
       }),
-    })
+      truckViewButtonId(truckId),
+    )
+  const closeCompany = (companyId: string) =>
+    focusAfter(
+      navigate({
+        search: (previous) => ({
+          ...previous,
+          companyDetailsId: undefined,
+          companyDetailsMode: 'view',
+        }),
+      }),
+      companyNameButtonId(companyId),
+    )
   const editTruck = (truckId: string) =>
     navigate({ search: (previous) => ({ ...previous, truckId, truckMode: 'edit' }) })
   const viewCompany = (companyId: string) =>
@@ -194,15 +203,18 @@ export function TransportResourcesPage() {
         companyDetailsMode: 'edit',
       }),
     })
-  const addTruck = (companyId: string) =>
-    navigate({
+  const addTruck = (companyId: string) => {
+    expandGroup(companyId)
+    return navigate({
       search: (previous) => ({
         ...previous,
         truckMode: 'create',
         truckCompanyId: companyId,
+        companyDetailsId: undefined,
         companyDetailsMode: 'view',
       }),
     })
+  }
   const createTruck = () =>
     navigate({
       search: (previous) => ({
@@ -210,6 +222,7 @@ export function TransportResourcesPage() {
         truckId: undefined,
         truckMode: 'create',
         truckCompanyId: undefined,
+        companyDetailsId: undefined,
         companyDetailsMode: 'view',
       }),
     })
@@ -223,23 +236,36 @@ export function TransportResourcesPage() {
         companyDetailsMode: 'create',
       }),
     })
-  const leaveTruckForm = () =>
-    navigate({
-      search: (previous) => ({
-        ...previous,
-        truckMode: 'view',
-        truckCompanyId: undefined,
-        truckId: undefined,
+  const leaveTruckForm = (focusId: string) =>
+    focusAfter(
+      navigate({
+        search: (previous) => ({
+          ...previous,
+          truckMode: 'view',
+          truckCompanyId: undefined,
+          truckId: undefined,
+        }),
       }),
-    })
-  const leaveCompanyForm = () =>
-    navigate({ search: (previous) => ({ ...previous, companyDetailsMode: 'view' }) })
-  const expandGroup = (companyId: string) =>
+      focusId,
+    )
+  const leaveCompanyForm = (focusId: string) =>
+    focusAfter(
+      navigate({
+        search: (previous) => ({
+          ...previous,
+          companyDetailsId: undefined,
+          companyDetailsMode: 'view',
+        }),
+      }),
+      focusId,
+    )
+  function expandGroup(companyId: string) {
     setCollapsed((previous) => {
       const next = new Set(previous)
       next.delete(companyId)
       return next
     })
+  }
   const toggleGroup = (companyId: string) =>
     setCollapsed((previous) => {
       const next = new Set(previous)
@@ -262,14 +288,23 @@ export function TransportResourcesPage() {
     truckForm === 'create' &&
     fixedCompany !== undefined &&
     view.groups.some((group) => group.company.id === fixedCompany.id)
+  // The group holding the open form stays expanded, so the form is never folded out of sight.
+  const formCompanyId =
+    truckForm === 'edit'
+      ? trucks.find((truck) => truck.id === search.truckId)?.transportCompanyId
+      : truckForm === 'create'
+        ? fixedCompany?.id
+        : undefined
   const truckCreationRow = (company?: typeof fixedCompany) => (
     <TruckFormRow
       companies={availableCompanies}
       company={company}
-      onCancel={() => void leaveTruckForm()}
+      onCancel={() =>
+        void leaveTruckForm(company ? companyNameButtonId(company.id) : CREATE_BUTTON_ID)
+      }
       onSaved={(created) => {
         expandGroup(created.transportCompanyId)
-        void leaveTruckForm()
+        void leaveTruckForm(truckViewButtonId(created.id))
       }}
     />
   )
@@ -300,7 +335,7 @@ export function TransportResourcesPage() {
         />
       )}
       {view.showArchivedNotice && <ArchivedNotice />}
-      {fleetIsEmpty ? (
+      {fleetIsEmpty && !formOpen ? (
         <Empty className="border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -336,15 +371,15 @@ export function TransportResourcesPage() {
             )
           }
           groups={view.groups}
-          isCollapsed={(companyId) => collapsed.has(companyId)}
+          isCollapsed={(companyId) => collapsed.has(companyId) && companyId !== formCompanyId}
           leadingRows={
             <>
               {companyForm === 'create' && (
                 <CompanyFormRow
-                  onCancel={() => void leaveCompanyForm()}
+                  onCancel={() => void leaveCompanyForm(CREATE_BUTTON_ID)}
                   onSaved={(created) => {
                     setPinnedCompanyId(created.id)
-                    void leaveCompanyForm()
+                    void leaveCompanyForm(companyNameButtonId(created.id))
                   }}
                 />
               )}
@@ -362,8 +397,8 @@ export function TransportResourcesPage() {
             companyForm === 'edit' && search.companyDetailsId === group.company.id ? (
               <CompanyFormRow
                 company={group.company}
-                onCancel={() => void leaveCompanyForm()}
-                onSaved={() => void leaveCompanyForm()}
+                onCancel={() => void leaveCompanyForm(companyNameButtonId(group.company.id))}
+                onSaved={() => void leaveCompanyForm(companyNameButtonId(group.company.id))}
               />
             ) : (
               <CompanyGroupHeader
@@ -391,7 +426,7 @@ export function TransportResourcesPage() {
               <CompanyDetailRow
                 administrator={administrator}
                 group={group}
-                onClose={() => void closeCompany()}
+                onClose={() => void closeCompany(group.company.id)}
                 onEdit={() => void editCompany(group.company.id)}
               />
             )
@@ -409,8 +444,8 @@ export function TransportResourcesPage() {
                       ? availableCompanies
                       : [...availableCompanies, group.company]
                   }
-                  onCancel={() => void leaveTruckForm()}
-                  onSaved={() => void leaveTruckForm()}
+                  onCancel={() => void leaveTruckForm(truckViewButtonId(truck.id))}
+                  onSaved={() => void leaveTruckForm(truckViewButtonId(truck.id))}
                   truck={truck}
                 />
               )
@@ -441,6 +476,7 @@ export function TransportResourcesPage() {
                       )
                     )
                   }
+                  disabled={formOpen}
                   expanded={open}
                   fleetTruck={fleetTruck}
                   onView={() => void viewTruck(truck.id)}

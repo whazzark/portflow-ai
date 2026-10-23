@@ -100,6 +100,17 @@ describe('invariants', () => {
     })
   })
 
+  test('drops an edit mode with no record to edit', () => {
+    expect(parse({ truckMode: 'edit' }).truckMode).toBe('view')
+    expect(parse({ companyDetailsMode: 'edit' }).companyDetailsMode).toBe('view')
+  })
+
+  test('drops the company edit an open truck displaced', () => {
+    expect(
+      parse({ truckId: 't1', companyDetailsId: 'c1', companyDetailsMode: 'edit' }),
+    ).toMatchObject({ truckId: 't1', companyDetailsId: undefined, companyDetailsMode: 'view' })
+  })
+
   test('keeps the fixed company of a new truck only while creating one', () => {
     expect(parse({ truckMode: 'create', truckCompanyId: 'c1' }).truckCompanyId).toBe('c1')
     expect(parse({ truckMode: 'view', truckCompanyId: 'c1' }).truckCompanyId).toBeUndefined()

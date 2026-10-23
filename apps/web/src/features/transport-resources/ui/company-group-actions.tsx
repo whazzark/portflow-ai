@@ -43,7 +43,12 @@ export function CompanyGroupActions({
   return (
     <>
       {archived && (
-        <Button onClick={() => setOpenAction('reactivate')} size="sm" variant="outline">
+        <Button
+          disabled={disabled}
+          onClick={() => setOpenAction('reactivate')}
+          size="sm"
+          variant="outline"
+        >
           Reactivate
         </Button>
       )}

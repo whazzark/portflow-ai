@@ -8,6 +8,11 @@ import { LifecycleContextCell } from './truck-row'
 
 export const FLEET_COLUMN_COUNT = 6
 
+/** Where focus goes back when a company's detail or form closes. */
+export function companyNameButtonId(companyId: string) {
+  return `company-name-${companyId}`
+}
+
 function TruckSummary({ summary }: { summary: FleetGroup['summary'] }) {
   return (
     <span className="text-[13px] text-muted-foreground">
@@ -55,6 +60,7 @@ export function CompanyGroupHeader({
           </button>
           <button
             aria-label={`Show only ${company.name}`}
+            id={companyNameButtonId(company.id)}
             className="rounded-sm font-semibold text-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
             onClick={onShowOnly}
             type="button"

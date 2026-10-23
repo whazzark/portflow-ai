@@ -51,9 +51,14 @@ export const transportResourcesSearchSchema = z
 
     // One form at a time, the truck's winning; a creation clears its own record so the two can
     // never contradict each other; one detail at a time, the truck's winning.
-    const truckMode = search.truckMode
-    const companyDetailsMode = truckMode === 'view' ? search.companyDetailsMode : 'view'
+    // An edit with no record to edit is no edit at all.
+    const truckMode = search.truckMode === 'edit' && !search.truckId ? 'view' : search.truckMode
     const truckId = truckMode === 'create' ? undefined : search.truckId
+    const companyDetailsMode =
+      truckMode !== 'view' ||
+      (search.companyDetailsMode === 'edit' && (!search.companyDetailsId || truckId))
+        ? 'view'
+        : search.companyDetailsMode
     const companyDetailsId =
       companyDetailsMode === 'create' || truckId ? undefined : search.companyDetailsId
 

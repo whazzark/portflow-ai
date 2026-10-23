@@ -69,11 +69,14 @@ export function truckViewButtonId(truckId: string) {
 export function TruckRow({
   fleetTruck,
   expanded = false,
+  disabled = false,
   onView,
   actions,
 }: {
   fleetTruck: FleetTruck
   expanded?: boolean
+  /** While a form is open, opening another truck would discard it. */
+  disabled?: boolean
   onView: () => void
   /** The administrator's row actions; absent in read-only mode. */
   actions?: ReactNode
@@ -86,6 +89,7 @@ export function TruckRow({
         <button
           aria-expanded={expanded}
           aria-label={`View truck ${truck.registration}`}
+          disabled={disabled}
           id={truckViewButtonId(truck.id)}
           className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={onView}
