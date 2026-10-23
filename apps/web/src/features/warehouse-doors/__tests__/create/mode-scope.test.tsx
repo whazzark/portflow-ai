@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { BULK_WAREHOUSES, WAREHOUSE_ADMIN } from '@/features/warehouses/__tests__/support/fixtures'
@@ -25,7 +25,7 @@ async function openDoorCreation(user: ReturnType<typeof userEvent.setup>) {
     await screen.findByRole('button', { name: `View warehouse ${NORTH.name} (Available)` }),
   )
   await user.click(await screen.findByRole('button', { name: 'Create door' }))
-  await screen.findByRole('heading', { name: 'Create door' })
+  await screen.findByRole('heading', { name: 'New door' })
 }
 
 async function selectEastShed(user: ReturnType<typeof userEvent.setup>) {
@@ -43,15 +43,16 @@ test('drops the mode when the lifecycle filter clears the selection', async () =
 
   await openDoorCreation(user)
 
-  await user.click(screen.getByRole('button', { name: /Filter warehouses/ }))
-  await user.click(await screen.findByRole('menuitemradio', { name: /^Available/ }))
+  // The toolbar is hidden during the mode, so the filter changes the way a link or Back would.
+  // biome-ignore lint/security/noSecrets: route search string, not a secret
+  await act(async () => router.history.push('/warehouses?status=available&create=door'))
 
   await waitFor(() => expect(router.state.location.search).not.toHaveProperty('create'))
 
   await selectEastShed(user)
 
   expect(await screen.findByRole('heading', { name: 'Doors' })).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Create door' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New door' })).not.toBeInTheDocument()
 })
 
 test('drops the mode when select mode clears the selection', async () => {
@@ -67,7 +68,7 @@ test('drops the mode when select mode clears the selection', async () => {
   await selectEastShed(user)
 
   expect(await screen.findByRole('heading', { name: 'Doors' })).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Create door' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New door' })).not.toBeInTheDocument()
 })
 
 test('drops a mode carried in on a URL that names no warehouse', async () => {
@@ -80,7 +81,7 @@ test('drops a mode carried in on a URL that names no warehouse', async () => {
   await selectEastShed(user)
 
   expect(await screen.findByRole('heading', { name: 'Doors' })).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Create door' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New door' })).not.toBeInTheDocument()
 })
 
 /** An archived warehouse takes no new door, so the mode is inert on one — but left in the URL it
@@ -93,7 +94,7 @@ test('drops a mode carried in on a URL naming an archived warehouse', async () =
 
   expect(await screen.findByRole('heading', { name: 'Doors' })).toBeInTheDocument()
   await waitFor(() => expect(router.state.location.search).not.toHaveProperty('create'))
-  expect(screen.queryByRole('heading', { name: 'Create door' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New door' })).not.toBeInTheDocument()
 })
 
 /** A drawing in progress owns the map rather than a selection, so the same navigations must leave
@@ -103,12 +104,11 @@ test('keeps a footprint drawing armed across the same navigations', async () => 
   const { router } = renderWarehouses()
 
   await user.click(await screen.findByRole('button', { name: 'Create warehouse' }))
-  await screen.findByRole('heading', { name: 'Create warehouse' })
+  await screen.findByRole('heading', { name: 'New warehouse' })
 
-  await user.click(screen.getByRole('button', { name: /Filter warehouses/ }))
-  await user.click(await screen.findByRole('menuitemradio', { name: /^Available/ }))
+  await act(async () => router.history.push('/warehouses?status=available&create=warehouse'))
 
   await waitFor(() => expect(router.state.location.search).toMatchObject({ status: 'available' }))
   expect(router.state.location.search).toMatchObject({ create: 'warehouse' })
-  expect(screen.getByRole('heading', { name: 'Create warehouse' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'New warehouse' })).toBeInTheDocument()
 })

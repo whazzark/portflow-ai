@@ -1,8 +1,7 @@
-import { DoorOpenIcon, SquareDashedMousePointer } from 'lucide-react'
+import { DoorOpenIcon, ScanIcon, SquareDashedMousePointer } from 'lucide-react'
 import { LngLatBounds } from 'maplibre-gl'
 import { useEffect, useMemo, useState } from 'react'
-import type { ResourceMapCreateAction } from '@/components/resource-map/resource-map-create-control'
-import { ResourceMapCreateControl } from '@/components/resource-map/resource-map-create-control'
+import type { ResourceMapAnchor } from '@/components/resource-map/resource-map-anchor'
 import {
   type LatLng,
   PendingPlacementMarker,
@@ -196,6 +195,102 @@ function FitWarehouseBounds({
   return null
 }
 
+const boundsOf = (points: LatLng[]) =>
+  points.reduce(
+    (bounds, point) => bounds.extend([point.longitude, point.latitude]),
+    new LngLatBounds(),
+  )
+
+/**
+ * Reports where `points` sit on screen — the selected outline, the one being drawn or corrected, or
+ * a door pin — as the box the page's card is placed beside. Re-reported as the map moves, so the
+ * card follows a pan or a zoom; `null` with nothing to anchor to.
+ */
+function ReportAnchor({
+  points,
+  onAnchorChange,
+}: {
+  points: LatLng[] | undefined
+  onAnchorChange: (anchor: ResourceMapAnchor | null) => void
+}) {
+  const { map, isLoaded } = useMap()
+  const pointsKey = points?.map((point) => `${point.longitude}:${point.latitude}`).join('|') ?? ''
+
+  useEffect(() => {
+    if (!map || !isLoaded || !pointsKey) {
+      onAnchorChange(null)
+      return
+    }
+    const bounds = boundsOf(
+      pointsKey.split('|').map((pair) => {
+        const [longitude, latitude] = pair.split(':').map(Number)
+        return { latitude, longitude }
+      }),
+    )
+    // At most once a frame, and only when the box moved by a whole pixel: each report re-renders
+    // the page around the card, and a pan fires `move` far more often than that.
+    let frame: number | undefined
+    let last = ''
+    const measure = () => {
+      frame = undefined
+      const northWest = map.project([bounds.getWest(), bounds.getNorth()])
+      const southEast = map.project([bounds.getEast(), bounds.getSouth()])
+      const anchor = {
+        x: Math.round(northWest.x),
+        y: Math.round(northWest.y),
+        width: Math.round(southEast.x - northWest.x),
+        height: Math.round(southEast.y - northWest.y),
+      }
+      const key = `${anchor.x}:${anchor.y}:${anchor.width}:${anchor.height}`
+      if (key !== last) {
+        last = key
+        onAnchorChange(anchor)
+      }
+    }
+    const report = () => {
+      frame ??= requestAnimationFrame(measure)
+    }
+    measure()
+    map.on('move', report)
+    map.on('resize', report)
+
+    return () => {
+      if (frame !== undefined) {
+        cancelAnimationFrame(frame)
+      }
+      map.off('move', report)
+      map.off('resize', report)
+    }
+  }, [isLoaded, map, onAnchorChange, pointsKey])
+
+  return null
+}
+
+/** Reframes the map on every warehouse the current filter shows, wherever it was panned to. */
+function FitAllControl({ warehouses }: { warehouses: PresentedWarehouse[] }) {
+  const { map } = useMap()
+  const points = warehouses.flatMap((warehouse) => warehouse.footprint.points)
+
+  return (
+    <ControlGroup>
+      <ControlButton
+        disabled={points.length === 0}
+        label="Fit all warehouses"
+        onClick={() => {
+          if (map && points.length > 0) {
+            map.fitBounds(boundsOf(points), {
+              maxZoom: COLLECTION_MAX_ZOOM,
+              padding: MAP_EDGE_PADDING,
+            })
+          }
+        }}
+      >
+        <ScanIcon aria-hidden="true" className="size-4" />
+      </ControlButton>
+    </ControlGroup>
+  )
+}
+
 export function WarehouseMap({
   detailsPanelSide,
   warehouses,
@@ -211,7 +306,8 @@ export function WarehouseMap({
   placement,
   doorPlacement,
   editing,
-  createActions = [],
+  anchorPoints,
+  onAnchorChange,
   selectMode = false,
   checkedIds,
   checkableIds,
@@ -238,7 +334,9 @@ export function WarehouseMap({
   placement?: WarehouseMapPlacement
   doorPlacement?: WarehouseMapDoorPlacement
   editing?: WarehouseMapEditing
-  createActions?: ResourceMapCreateAction[]
+  /** What the page's card is anchored to; reported back through `onAnchorChange`. */
+  anchorPoints?: LatLng[]
+  onAnchorChange?: (anchor: ResourceMapAnchor | null) => void
   selectMode?: boolean
   checkedIds?: Set<string>
   checkableIds?: Set<string>
@@ -350,7 +448,9 @@ export function WarehouseMap({
               onHoverChange={(hovered) => setHoveredDoorId(hovered ? door.id : undefined)}
             />
           ))}
+        {onAnchorChange && <ReportAnchor onAnchorChange={onAnchorChange} points={anchorPoints} />}
         <MapControls position="bottom-right" showZoom>
+          <FitAllControl warehouses={warehouses} />
           {onToggleSelectMode && (
             <ControlGroup>
               <ControlButton
@@ -362,7 +462,6 @@ export function WarehouseMap({
               </ControlButton>
             </ControlGroup>
           )}
-          <ResourceMapCreateControl actions={createActions} />
         </MapControls>
       </MapCanvas>
       <section aria-label="Warehouses on map" className="sr-only">

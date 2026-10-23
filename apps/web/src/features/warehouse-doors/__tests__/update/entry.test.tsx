@@ -46,7 +46,12 @@ test('offers Edit inside the menu, first', async () => {
   const items = await screen.findAllByRole('menuitem')
   // `Archive` joined it in #215, which is what the container was chosen for. Reactivation is #216's
   // remaining slot.
-  expect(items.map((item) => item.textContent)).toEqual(['Edit', 'Archive'])
+  expect(items.map((item) => item.textContent)).toEqual([
+    'Edit',
+    'Show on map',
+    'Copy coordinates',
+    'Archive',
+  ])
   expect(screen.queryByRole('menuitem', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
 

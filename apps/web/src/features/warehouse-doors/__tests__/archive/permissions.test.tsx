@@ -19,12 +19,18 @@ vi.mock(
 const AVAILABLE = WAREHOUSES[0]
 const DOOR = (AVAILABLE.doors ?? [])[0]
 
-test('offers no action menu at all to a non-administrator', async () => {
+test('offers a non-administrator only the entries that change nothing', async () => {
   mockWarehouses(WAREHOUSE_OBSERVER)
+  const user = userEvent.setup()
   renderWarehouses(`/warehouses?status=all&warehouseId=${AVAILABLE.id}`)
 
   expect(await screen.findByText(DOOR.name)).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: `Actions for ${DOOR.name}` })).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: `Actions for ${DOOR.name}` }))
+
+  expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
+    'Show on map',
+    'Copy coordinates',
+  ])
 })
 
 test('offers the archive entry to an administrator on the same row', async () => {

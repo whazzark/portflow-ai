@@ -26,7 +26,7 @@ test('arms the map and appends a boundary point per click', async () => {
   const router = await startDrawing(user)
 
   expect(router.state.location.search).toMatchObject({ create: 'warehouse' })
-  expect(screen.getByRole('heading', { name: 'Create warehouse' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'New warehouse' })).toBeInTheDocument()
 
   await user.click(
     screen.getByRole('button', { name: 'Simulate map click to add footprint point' }),

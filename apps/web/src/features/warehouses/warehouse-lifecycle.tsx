@@ -2,6 +2,7 @@ import type { BulkLifecycleOutcome } from '@/components/lifecycle/bulk-resource-
 import {
   describeBulkLifecycleEffect,
   describeLifecycleEffect,
+  LIFECYCLE_ACTION_LABELS,
   type LifecycleAction,
   lifecycleSuccessMessage,
 } from '@/components/lifecycle/lifecycle-copy'
@@ -104,12 +105,47 @@ export function describeBulkDoorCascade(warehouseCount: number, doors: number) {
 }
 
 /** The two directions return different envelopes; only the response itself proves which came back. */
+export function describeWarehouseLifecycleTitle(action: LifecycleAction, name: string) {
+  return `${LIFECYCLE_ACTION_LABELS[action]} ${name}?`
+}
+
+/** What an archival takes out of new discharges. Counted over the *available* doors: those are the
+ * ones that stop being selectable; an already archived door changes nothing for a planner. */
+export function describeWarehouseArchiveEffect(availableDoors: number) {
+  const outro = 'You can reactivate it later from Archived.'
+
+  if (availableDoors === 0) {
+    return `The warehouse can no longer be selected for new discharges. Past discharges keep it. ${outro}`
+  }
+  const doors =
+    availableDoors === 1 ? 'its available door' : `its ${availableDoors} available doors`
+
+  return `The warehouse and ${doors} can no longer be selected for new discharges. Past discharges keep them. ${outro}`
+}
+
+/** The archival toast's second line: what went with the warehouse, and where it now lives. */
+export function describeWarehouseArchiveDetail(archivedDoors: number) {
+  const outro = 'Find it under Archived to reactivate it.'
+
+  if (archivedDoors === 0) {
+    return outro
+  }
+
+  return archivedDoors === 1
+    ? `Its door is archived with it. ${outro}`
+    : `Its ${archivedDoors} doors are archived with it. ${outro}`
+}
+
+const countAvailableDoors = (warehouse: WarehouseWithDoorsDto) =>
+  (warehouse.doors ?? []).filter((door) => door.status === 'AVAILABLE').length
+
 type WarehouseLifecycleResponse = {
   data: { archivedDoorCount: number } | { reactivatedDoorCount: number }
 }
 
 function useWarehouseLifecycleConfig(
   warehouse: WarehouseWithDoorsDto,
+  onViewArchived?: (warehouseId: string) => void,
 ): ResourceLifecycleConfig<WarehouseLifecycleResponse> {
   const mutations = useWarehouseMutations()
 
@@ -118,17 +154,27 @@ function useWarehouseLifecycleConfig(
     name: warehouse.name,
     isPending: mutations.archive.isPending || mutations.reactivate.isPending,
     refresh: mutations.refreshWarehouses,
-    // The door clause is appended to the canonical sentence rather than replacing it: the promise
-    // the administrator reads about the warehouse is the same one every other resource makes.
+    describeTitle: (action) => describeWarehouseLifecycleTitle(action, warehouse.name),
+    // A reactivation keeps the canonical promise with its door clause; an archival says, as the V2
+    // map does, what stops being selectable for new discharges and where to find it again.
     describeEffect: (action) =>
-      `${describeLifecycleEffect(action, warehouse.name)} ${
-        action === 'reactivate'
-          ? describeDoorRestore(countDoors(warehouse))
-          : describeDoorCascade(countDoors(warehouse))
-      }`,
+      action === 'reactivate'
+        ? `${describeLifecycleEffect(action, warehouse.name)} ${describeDoorRestore(countDoors(warehouse))}`
+        : describeWarehouseArchiveEffect(countAvailableDoors(warehouse)),
+    describeSuccessDetail: (action, result) =>
+      action === 'archive' && 'archivedDoorCount' in result.data
+        ? describeWarehouseArchiveDetail(result.data.archivedDoorCount)
+        : undefined,
+    successAction: (action) =>
+      action === 'archive' && onViewArchived
+        ? { label: 'View', onClick: () => onViewArchived(warehouse.id) }
+        : undefined,
     // The advisory count above is what the administrator was shown; this reports what the server
-    // actually touched.
+    // actually touched — for an archival in the toast's second line.
     describeSuccess: (action, result) => {
+      if (action === 'archive') {
+        return lifecycleSuccessMessage(action, WAREHOUSE_SINGULAR, warehouse.name)
+      }
       const changedDoors =
         'reactivatedDoorCount' in result.data
           ? result.data.reactivatedDoorCount
@@ -153,11 +199,14 @@ function useWarehouseLifecycleConfig(
 export function WarehouseLifecycleActions({
   className,
   warehouse,
+  onViewArchived,
 }: {
   className?: string
   warehouse: WarehouseWithDoorsDto
+  /** Offered as `View` on the archival toast: where the archived warehouse can be found again. */
+  onViewArchived?: (warehouseId: string) => void
 }) {
-  const config = useWarehouseLifecycleConfig(warehouse)
+  const config = useWarehouseLifecycleConfig(warehouse, onViewArchived)
 
   return (
     <ResourceLifecycleActions

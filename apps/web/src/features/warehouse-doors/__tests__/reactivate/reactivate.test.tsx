@@ -81,8 +81,8 @@ test('refetches the warehouse collection so the door changes lifecycle view', as
   expect(await screen.findByText('No archived doors')).toBeInTheDocument()
 
   // …and the tab counts have moved with it.
-  expect(await screen.findByRole('tab', { name: 'Available (2)' })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: 'Archived (0)' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Available, 2 doors' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archived, 0 doors' })).toBeInTheDocument()
 })
 
 test('stays on the archived view rather than following the door', async () => {

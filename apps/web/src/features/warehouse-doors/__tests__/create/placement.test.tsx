@@ -34,7 +34,7 @@ test('activates the mode for the selected warehouse without losing it', async ()
 
   await waitFor(() => expect(router.state.location.search).toMatchObject({ create: 'door' }))
   expect(router.state.location.search).toMatchObject({ warehouseId: AVAILABLE_WAREHOUSE.id })
-  expect(await screen.findByRole('heading', { name: 'Create door' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'New door' })).toBeInTheDocument()
 })
 
 test('places one pending door on a map click and moves it on the next', async () => {
@@ -50,7 +50,7 @@ test('places one pending door on a map click and moves it on the next', async ()
   expect(pending).toHaveTextContent(
     `${MOCK_DOOR_CLICK_POINTS[0].latitude}, ${MOCK_DOOR_CLICK_POINTS[0].longitude}`,
   )
-  expect(screen.getByText('New door')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'New door' })).toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place the door' }))
 
@@ -122,7 +122,7 @@ test('a click over an existing door places the pending door rather than selectin
   expect(await screen.findByTestId('pending-door')).toHaveTextContent(
     `${MOCK_DOOR_CLICK_POINTS[0].latitude}, ${MOCK_DOOR_CLICK_POINTS[0].longitude}`,
   )
-  expect(screen.getByRole('heading', { name: 'Create door' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'New door' })).toBeInTheDocument()
 })
 
 test('discards the pending door when the mode is cancelled', async () => {
@@ -163,7 +163,7 @@ test('does not restore the discarded pending door when the browser returns to th
   await act(async () => router.history.back())
 
   await waitFor(() => expect(router.state.location.search).toMatchObject({ create: 'door' }))
-  expect(await screen.findByRole('heading', { name: 'Create door' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'New door' })).toBeInTheDocument()
   expect(screen.queryByTestId('pending-door')).not.toBeInTheDocument()
 })
 
@@ -177,7 +177,7 @@ test('places from the Available view even when the archived doors were on screen
   await user.click(
     await screen.findByRole('button', { name: 'View warehouse North Shed (Available)' }),
   )
-  await user.click(await screen.findByRole('tab', { name: /Archived/ }))
+  await user.click(await screen.findByRole('button', { name: /^Archived, \d+ doors/ }))
   await waitFor(() =>
     expect(router.state.location.search).toMatchObject({ doorStatus: 'archived' }),
   )

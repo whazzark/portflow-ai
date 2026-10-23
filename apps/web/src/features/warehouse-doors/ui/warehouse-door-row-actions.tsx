@@ -4,7 +4,9 @@ import {
   WarehouseDoorLifecycleDialog,
   warehouseDoorLifecycleActions,
 } from '@/features/warehouse-doors/warehouse-door-lifecycle'
+import { formatCoordinates } from '@/features/warehouses/geometry/footprint-centre'
 import type { WarehouseStatus } from '@/features/warehouses/types'
+import { copyText } from '@/helpers/copy-text'
 
 /**
  * The per-row administration menu for a warehouse door, mirroring `TruckRowActions`.
@@ -18,18 +20,34 @@ import type { WarehouseStatus } from '@/features/warehouses/types'
 export function WarehouseDoorRowActions({
   door,
   warehouseStatus,
+  canAdminister = false,
   onEdit,
+  onShowOnMap,
 }: {
   door: WarehouseDoorDto
   warehouseStatus: WarehouseStatus
+  /** False leaves only the entries that change nothing — Show on map, Copy coordinates — which
+   * every viewer gets. */
+  canAdminister?: boolean
   onEdit?: (doorId: string) => void
+  onShowOnMap?: (doorId: string) => void
 }) {
   return (
     <ResourceRowActions
-      actions={warehouseDoorLifecycleActions(door, warehouseStatus)}
+      actions={canAdminister ? warehouseDoorLifecycleActions(door, warehouseStatus) : []}
       // A door is correctable only while both it and its containing warehouse are available —
       // exactly what the API re-decides under lock.
-      editable={door.status === 'AVAILABLE' && warehouseStatus === 'AVAILABLE'}
+      editable={canAdminister && door.status === 'AVAILABLE' && warehouseStatus === 'AVAILABLE'}
+      items={[
+        ...(onShowOnMap
+          ? [{ key: 'show', label: 'Show on map', onSelect: () => onShowOnMap(door.id) }]
+          : []),
+        {
+          key: 'copy',
+          label: 'Copy coordinates',
+          onSelect: () => void copyText(formatCoordinates(door), 'Coordinates'),
+        },
+      ]}
       name={door.name}
       onEdit={onEdit && (() => onEdit(door.id))}
       // A callback rather than an element, so the feature's mutation hooks run inside the dialog

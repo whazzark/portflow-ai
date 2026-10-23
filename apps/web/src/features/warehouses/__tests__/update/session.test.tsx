@@ -32,7 +32,7 @@ test('opens the update mode pre-filled with the stored name and every boundary p
   expect(router.state.location.search).toMatchObject({ warehouseId: NORTH_SHED.id })
   // The panel is titled like every other edit panel, and the way back out is worded like theirs.
   expect(screen.getByRole('heading', { name: 'Edit warehouse' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Back to details' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Warehouse name' })).toHaveValue(NORTH_SHED.name)
 
   for (const [index, point] of NORTH_SHED.footprint.points.entries()) {
@@ -42,16 +42,15 @@ test('opens the update mode pre-filled with the stored name and every boundary p
   }
 })
 
-test('leaves the update mode without saving when creation is activated', async () => {
+test('offers no creation while the outline is edited, so the two modes never coexist', async () => {
   const user = userEvent.setup()
-  const { router } = renderWarehouses()
+  renderWarehouses()
 
   await openUpdate(user)
-  await user.click(screen.getByRole('button', { name: 'Create warehouse' }))
 
-  await waitFor(() => expect(router.state.location.search).not.toHaveProperty('edit'))
-  expect(router.state.location.search).toMatchObject({ create: 'warehouse' })
-  expect(screen.queryByTestId('boundary-point-0')).not.toBeInTheDocument()
+  // The mode banner replaces the toolbar, `Create warehouse` with it.
+  expect(screen.getByRole('button', { name: 'Cancel editing the outline' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create warehouse' })).not.toBeInTheDocument()
 })
 
 test('drops any pending creation footprint when the update mode is activated', async () => {
@@ -82,7 +81,7 @@ test('restores the stored outline and keeps the warehouse selected when cancelle
     `${NORTH_SHED.footprint.points[0].latitude}, ${NORTH_SHED.footprint.points[0].longitude}`,
   )
 
-  await user.click(screen.getByRole('button', { name: 'Back to details' }))
+  await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
   await waitFor(() => expect(router.state.location.search).not.toHaveProperty('edit'))
   expect(router.state.location.search).toMatchObject({ warehouseId: NORTH_SHED.id })

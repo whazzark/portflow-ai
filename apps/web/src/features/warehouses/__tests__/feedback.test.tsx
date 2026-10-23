@@ -22,11 +22,11 @@ const warehouse = {
 
 describe('warehouse feedback and map semantics', () => {
   test('distinguishes lifecycle states in the legend', () => {
-    const { rerender } = render(<WarehouseLegend />)
+    render(<WarehouseLegend />)
     expect(screen.getByRole('region', { name: 'Warehouse legend' })).toHaveTextContent('Type')
-    expect(screen.getByRole('group', { name: 'Warehouse types' })).toHaveTextContent('Warehouse')
-    expect(screen.getByRole('group', { name: 'Warehouse types' })).not.toHaveTextContent(
-      'Warehouse door',
+    // Both types in every state of the map, as the V2 legend shows them.
+    expect(screen.getByRole('group', { name: 'Warehouse types' })).toHaveTextContent(
+      'WarehouseDoor',
     )
     expect(screen.getByRole('group', { name: 'Warehouse statuses' })).toHaveTextContent('Status')
     expect(screen.getByText('Available')).toBeInTheDocument()
@@ -37,11 +37,6 @@ describe('warehouse feedback and map semantics', () => {
     )
     // biome-ignore lint/security/noSecrets: This is a static data attribute selector, not a secret.
     expect(document.querySelector('[data-warehouse-legend-type="WAREHOUSE"]')).toBeInTheDocument()
-
-    rerender(<WarehouseLegend showDoors />)
-    expect(screen.getByRole('group', { name: 'Warehouse types' })).toHaveTextContent(
-      'Warehouse door',
-    )
   })
 
   test('exposes name and status in the tooltip', () => {
