@@ -217,9 +217,9 @@ dialog; accessibility audit in both themes.
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T046 [P] Update the "Forms and UI" rules in `apps/web/AGENTS.md`: on the maps a record opens in a `ResourceMapCard` anchored to its map feature and modes use `ResourceMapModeBanner`; map filters are toolbar toggles (`ResourceMapToggleGroup`); directories keep the `Sheet` and tabs (research D12)
-- [ ] T047 [P] Remove dead code left by the migration (unused exports in `apps/web/src/features/checkpoints/types.ts`, the map-cluster select labels, `CheckpointSheet` remnants) and confirm `ResourceMapControls` and `ResourceMapCreateControl` are still used by warehouses before keeping them
-- [ ] T048 Leave a note in the shared session notes folder and in the PR description listing the new `components/resource-map/` primitives for #321, and draft the follow-up issue for the deferred "Discharges" card section (to be created by the operator)
+- [X] T046 [P] Update the "Forms and UI" rules in `apps/web/AGENTS.md`: on the maps a record opens in a `ResourceMapCard` anchored to its map feature and modes use `ResourceMapModeBanner`; map filters are toolbar toggles (`ResourceMapToggleGroup`); directories keep the `Sheet` and tabs (research D12)
+- [X] T047 [P] Remove dead code left by the migration (unused exports in `apps/web/src/features/checkpoints/types.ts`, the map-cluster select labels, `CheckpointSheet` remnants) and confirm `ResourceMapControls` and `ResourceMapCreateControl` are still used by warehouses before keeping them
+- [X] T048 Leave a note in the shared session notes folder and in the PR description listing the new `components/resource-map/` primitives for #321, and draft the follow-up issue for the deferred "Discharges" card section (to be created by the operator)
 - [ ] T049 Run `pnpm check`, `pnpm typecheck` and `pnpm test` from the repository root; fix every failure
 - [ ] T050 Obtain a fresh read-only Claude Code review of the final diff (`/code-review` in a new session or a read-only review subagent) and resolve or justify every confirmed finding before marking the PR ready
 
