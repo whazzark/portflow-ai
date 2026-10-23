@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { DOCKS } from '@/features/docks/__tests__/support/fixtures'
 import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixtures'
-import { mockDocks, renderCheckpoints } from '../support/test-helpers'
+import { mockDocks, renderCheckpoints, startSelecting } from '../support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -49,7 +49,7 @@ test('shift-clicking a second dock while already selecting just toggles it', asy
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
   await user.click(screen.getByRole('button', { name: `Select dock ${NORTH_DOCK.name}` }))
   fireEvent.click(screen.getByRole('button', { name: `Select dock ${BETA_DOCK.name}` }), {
     shiftKey: true,
@@ -96,7 +96,7 @@ test('Escape clears an in-progress selection without leaving select mode', async
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
   await user.click(screen.getByRole('button', { name: `Select dock ${NORTH_DOCK.name}` }))
   expect(screen.getByText('1 selected')).toBeInTheDocument()
 
@@ -130,7 +130,7 @@ test('shift-clicking a second weighing area while already selecting weighing are
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(screen.getByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` }))
   fireEvent.click(screen.getByRole('button', { name: `Select weighing area ${BETA_SCALE.name}` }), {
     shiftKey: true,
@@ -144,7 +144,7 @@ test('Ctrl+A keeps targeting weighing areas once already selecting them, leaving
   const user = userEvent.setup()
   renderCheckpoints('/checkpoints?status=all')
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await screen.findByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` })
 
   await user.keyboard('{Control>}a{/Control}')

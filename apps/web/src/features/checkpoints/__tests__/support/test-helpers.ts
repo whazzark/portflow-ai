@@ -38,3 +38,12 @@ export async function startCreating(
   await user.click(await screen.findByRole('button', { name: 'Create' }))
   await user.click(await screen.findByRole('menuitem', { name: new RegExp(`^${item}`) }))
 }
+
+/** Enters bulk select mode from the toolbar's Select menu. */
+export async function startSelecting(
+  user: { click: (element: Element) => Promise<void> },
+  kind: 'docks' | 'weighing areas',
+) {
+  await user.click(await screen.findByRole('button', { name: 'Select' }))
+  await user.click(await screen.findByRole('menuitem', { name: `Select ${kind}` }))
+}

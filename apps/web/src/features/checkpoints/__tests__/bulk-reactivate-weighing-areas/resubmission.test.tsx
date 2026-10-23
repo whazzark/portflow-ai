@@ -5,7 +5,7 @@ import { expect, test, vi } from 'vitest'
 import { API_BASE_URL } from '@/features/docks/__tests__/support/fixtures'
 import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixtures'
 import { server } from '@/test/msw/server'
-import { mockDocks, renderCheckpoints } from '../support/test-helpers'
+import { mockDocks, renderCheckpoints, startSelecting } from '../support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -56,7 +56,7 @@ test('clears blocked entries and reactivates only the reduced selection on resub
 
   // biome-ignore lint/security/noSecrets: route search string, not a secret
   renderCheckpoints('/checkpoints?status=archived')
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(
     screen.getByRole('button', { name: `Select weighing area ${RETIRED_SCALE.name}` }),
   )
@@ -102,7 +102,7 @@ test('a reactivated weighing area is no longer offered for a reactivation select
 
   // biome-ignore lint/security/noSecrets: route search string, not a secret
   renderCheckpoints('/checkpoints?status=archived')
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(screen.getByRole('button', { name: `Select weighing area ${GAMMA_SCALE.name}` }))
   await user.click(screen.getByRole('button', { name: 'Reactivate selected' }))
   await screen.findByRole('heading', { name: 'Reactivate selected weighing areas?' })

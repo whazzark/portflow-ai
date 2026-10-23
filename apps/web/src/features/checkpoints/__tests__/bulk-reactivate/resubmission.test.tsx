@@ -5,7 +5,7 @@ import { expect, test, vi } from 'vitest'
 import { API_BASE_URL, DOCK_ADMIN, DOCKS } from '@/features/docks/__tests__/support/fixtures'
 import type { DockDto } from '@/features/docks/types'
 import { server } from '@/test/msw/server'
-import { mockDocks, renderCheckpoints } from '../support/test-helpers'
+import { mockDocks, renderCheckpoints, startSelecting } from '../support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -70,7 +70,7 @@ test('a mixed reactivation empties the whole selection, and a later selection is
   // biome-ignore lint/security/noSecrets: route search string, not a secret
   renderCheckpoints('/checkpoints?status=archived')
 
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
   await user.click(screen.getByRole('button', { name: `Select dock ${ARCHIVED_ONE.name}` }))
   await user.click(screen.getByRole('button', { name: `Select dock ${ARCHIVED_TWO.name}` }))
 

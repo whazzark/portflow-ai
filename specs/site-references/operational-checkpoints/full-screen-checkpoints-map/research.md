@@ -112,6 +112,10 @@ API, and the constraints found while reading the existing code.
   references and may be restyled by #326).
 - **Rationale**: Spec User Story 7 / FR-030–030b: keep the capability, restyled for the V2 map,
   with no regression.
+- **Revised during implementation**: no select banner. A banner would hide the search and filters,
+  and today's selection behavior relies on search narrowing the map without pruning the checked
+  set. The toolbar stays; its Select and Create menus give way to a "Stop selecting <kind>" button.
+  Escape keeps clearing the checked set only, so a second Escape still falls through to menus.
 
 ### D8 — Archive confirmation and "View" toast through opt-in hooks on the shared lifecycle config
 

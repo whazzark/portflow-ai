@@ -61,7 +61,7 @@ test('offers both creation kinds with their purpose from the toolbar Create menu
 
   await user.click(screen.getByRole('button', { name: 'Create' }))
 
-  expect(screen.getByRole('menuitem', { name: /^New dock/ })).toHaveTextContent(
+  expect(await screen.findByRole('menuitem', { name: /^New dock/ })).toHaveTextContent(
     'Berth where trucks are loaded',
   )
   expect(screen.getByRole('menuitem', { name: /^New weighing area/ })).toHaveTextContent(

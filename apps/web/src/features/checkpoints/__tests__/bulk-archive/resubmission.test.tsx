@@ -5,7 +5,7 @@ import { expect, test, vi } from 'vitest'
 import { API_BASE_URL, DOCKS } from '@/features/docks/__tests__/support/fixtures'
 import type { DockDto } from '@/features/docks/types'
 import { server } from '@/test/msw/server'
-import { mockDocks, renderCheckpoints } from '../support/test-helpers'
+import { mockDocks, renderCheckpoints, startSelecting } from '../support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -48,7 +48,7 @@ test('resubmitting after a partial success does not re-touch the already-archive
 
   renderCheckpoints()
 
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
   await user.click(screen.getByRole('button', { name: `Select dock ${BETA_DOCK.name}` }))
   await user.click(screen.getByRole('button', { name: `Select dock ${NORTH_DOCK.name}` }))
 

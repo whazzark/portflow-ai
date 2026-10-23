@@ -1,7 +1,6 @@
 import { type MouseEvent, type ReactNode, useEffect, useState } from 'react'
 import {
   CHECKPOINT_KIND_LABELS,
-  CHECKPOINT_KIND_PLURAL_LABELS,
   CHECKPOINT_STATUS_LABELS,
   type CheckpointKind,
   type PresentedCheckpoint,
@@ -70,23 +69,15 @@ type MockPlacement = {
   label?: string
 }
 
-type MockCreateAction = {
-  key: string
-  label: string
-  onSelect: () => void
-}
-
 export function CheckpointMap({
   checkpoints,
   onSelect,
   placement,
-  createActions = [],
   selectMode,
   checkedIds,
   checkableIds,
   onToggleChecked,
   selectableKinds = [],
-  onToggleSelectMode,
   onShiftSelect,
   onAnchorChange,
   fitRequest,
@@ -96,13 +87,11 @@ export function CheckpointMap({
   checkpoints: PresentedCheckpoint[]
   onSelect: (checkpoint: PresentedCheckpoint) => void
   placement?: MockPlacement
-  createActions?: MockCreateAction[]
   selectMode?: CheckpointKind
   checkedIds?: Set<string>
   checkableIds?: Set<string>
   onToggleChecked?: (id: string) => void
   selectableKinds?: CheckpointKind[]
-  onToggleSelectMode?: (kind: CheckpointKind) => void
   onShiftSelect?: (kind: CheckpointKind, id: string) => void
   anchorPoint?: MockLatLng
   onAnchorChange?: (anchor: { x: number; y: number } | null) => void
@@ -132,24 +121,6 @@ export function CheckpointMap({
           {ghost.position.latitude}, {ghost.position.longitude}
         </span>
       )}
-      {onToggleSelectMode &&
-        selectableKinds.map((kind) => (
-          <button
-            aria-pressed={selectMode === kind}
-            key={kind}
-            onClick={() => onToggleSelectMode(kind)}
-            type="button"
-          >
-            {selectMode === kind
-              ? `Stop selecting ${CHECKPOINT_KIND_PLURAL_LABELS[kind]}`
-              : `Select ${CHECKPOINT_KIND_PLURAL_LABELS[kind]}`}
-          </button>
-        ))}
-      {createActions.map((action) => (
-        <button key={action.key} onClick={action.onSelect} type="button">
-          {action.label}
-        </button>
-      ))}
       {checkpoints.map((checkpoint) => {
         const isCheckable =
           selectableKinds.includes(checkpoint.kind) && (checkableIds?.has(checkpoint.id) ?? false)

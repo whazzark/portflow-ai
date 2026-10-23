@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixtures'
-import { mockDocks, renderCheckpoints } from '../support/test-helpers'
+import { mockDocks, renderCheckpoints, startSelecting } from '../support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -54,7 +54,7 @@ test('Ctrl+A extends an archived selection with archived weighing areas only', a
   const user = userEvent.setup()
   renderCheckpoints('/checkpoints?kinds=weighing-area&status=all')
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(
     screen.getByRole('button', { name: `Select weighing area ${RETIRED_SCALE.name}` }),
   )

@@ -191,12 +191,12 @@ archived weighing areas together.
 
 ### Tests for User Story 7 ⚠️ write first, confirm they fail
 
-- [ ] T041 [P] [US7] Update the three `select-mode.test.tsx` files in `apps/web/src/features/checkpoints/__tests__/bulk-archive/`, `bulk-reactivate/` and `bulk-reactivate-weighing-areas/`: enter via the toolbar "Select" menu items "Select docks" / "Select weighing areas"; the banner "Selecting docks" / "Selecting weighing areas" with "Done" replaces the toolbar; "Done" (and Escape with nothing checked) clears `selecting`; shift-click still enters select mode; marker clicks never open a card while selecting
-- [ ] T042 [P] [US7] Run the unchanged `bulk-archive-actions`, `bulk-reactivate-actions`, `keyboard-shortcuts` and `resubmission` suites in the same folders and adjust only entry-point queries that referenced the removed map-cluster toggle
+- [X] T041 [P] [US7] Update the three `select-mode.test.tsx` files in `apps/web/src/features/checkpoints/__tests__/bulk-archive/`, `bulk-reactivate/` and `bulk-reactivate-weighing-areas/`: enter via the toolbar "Select" menu items "Select docks" / "Select weighing areas"; the banner "Selecting docks" / "Selecting weighing areas" with "Done" replaces the toolbar; "Done" (and Escape with nothing checked) clears `selecting`; shift-click still enters select mode; marker clicks never open a card while selecting
+- [X] T042 [P] [US7] Run the unchanged `bulk-archive-actions`, `bulk-reactivate-actions`, `keyboard-shortcuts` and `resubmission` suites in the same folders and adjust only entry-point queries that referenced the removed map-cluster toggle
 
 ### Implementation for User Story 7
 
-- [ ] T043 [US7] Add the "Select" menu to the toolbar `startActions` (administrators, browse/view modes, only kinds currently visible), render `ResourceMapModeBanner` with "Done" while `selecting` is set, and remove the per-kind select toggles from the map control cluster in `apps/web/src/features/checkpoints/map/checkpoint-map.tsx` and `apps/web/src/features/checkpoints/ui/checkpoints-page.tsx`, leaving `BulkResourceLifecycleActions` unchanged; make T041–T042 pass
+- [X] T043 [US7] Add the "Select" menu to the toolbar `startActions` (administrators, browse/view modes, only kinds currently visible), render `ResourceMapModeBanner` with "Done" while `selecting` is set, and remove the per-kind select toggles from the map control cluster in `apps/web/src/features/checkpoints/map/checkpoint-map.tsx` and `apps/web/src/features/checkpoints/ui/checkpoints-page.tsx`, leaving `BulkResourceLifecycleActions` unchanged; make T041–T042 pass
 
 **Checkpoint**: Bulk lifecycle has no regression.
 

@@ -1,12 +1,8 @@
-import { Maximize, SquareDashedMousePointer } from 'lucide-react'
+import { Maximize } from 'lucide-react'
 import type * as MapLibreGL from 'maplibre-gl'
 import { LngLatBounds } from 'maplibre-gl'
 import { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import type { ResourceMapAnchor } from '@/components/resource-map/resource-map-anchor'
-import {
-  type ResourceMapCreateAction,
-  ResourceMapCreateControl,
-} from '@/components/resource-map/resource-map-create-control'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import {
   PendingPlacementMarker,
@@ -24,11 +20,7 @@ import {
 import { mapStyleUrls } from '@/config/map'
 import { CheckpointMarker } from '@/features/checkpoints/map/checkpoint-marker'
 import { getCheckpointMarkerOffset } from '@/features/checkpoints/map/checkpoint-marker-offset'
-import {
-  CHECKPOINT_KIND_PLURAL_LABELS,
-  type CheckpointKind,
-  type PresentedCheckpoint,
-} from '@/features/checkpoints/types'
+import type { CheckpointKind, PresentedCheckpoint } from '@/features/checkpoints/types'
 
 export type CheckpointMapPlacement = {
   armed: boolean
@@ -236,13 +228,11 @@ export function CheckpointMap({
   onError,
   onSelect,
   placement,
-  createActions = [],
   selectMode,
   checkedIds,
   checkableIds,
   onToggleChecked,
   selectableKinds = [],
-  onToggleSelectMode,
   onShiftSelect,
   anchorPoint,
   onAnchorChange,
@@ -255,7 +245,6 @@ export function CheckpointMap({
   onError?: (error: unknown) => void
   onSelect: (checkpoint: PresentedCheckpoint) => void
   placement?: CheckpointMapPlacement
-  createActions?: ResourceMapCreateAction[]
   /** When set to a kind, markers of that kind become checkable instead of opening the details
    * sheet, while every other kind's markers keep their normal `onSelect` behavior. */
   selectMode?: CheckpointKind
@@ -266,10 +255,9 @@ export function CheckpointMap({
    * selection's intent); the map only renders it. */
   checkableIds?: Set<string>
   onToggleChecked?: (id: string) => void
-  /** Which kinds offer a "Select {kind}" map-control toggle at all; one button is rendered per
-   * entry, and at most one kind is ever the active `selectMode`. */
+  /** Which kinds' markers may become checkable at all; at most one kind is ever the active
+   * `selectMode`. */
   selectableKinds?: CheckpointKind[]
-  onToggleSelectMode?: (kind: CheckpointKind) => void
   /** Shift-clicking a checkable marker enters/adds to that kind's select mode directly,
    * regardless of the current mode. */
   onShiftSelect?: (kind: CheckpointKind, id: string) => void
@@ -357,23 +345,6 @@ export function CheckpointMap({
         position={isArmed ? 'bottom-left' : 'bottom-right'}
         showZoom
       >
-        {onToggleSelectMode &&
-          selectableKinds.map((kind) => (
-            <ControlGroup key={kind}>
-              <ControlButton
-                active={selectMode === kind}
-                label={
-                  selectMode === kind
-                    ? `Stop selecting ${CHECKPOINT_KIND_PLURAL_LABELS[kind]}`
-                    : `Select ${CHECKPOINT_KIND_PLURAL_LABELS[kind]}`
-                }
-                onClick={() => onToggleSelectMode(kind)}
-              >
-                <SquareDashedMousePointer aria-hidden="true" className="size-4" />
-              </ControlButton>
-            </ControlGroup>
-          ))}
-        <ResourceMapCreateControl actions={createActions} />
         <FitAllControl checkpoints={checkpoints} />
       </MapControls>
     </MapCanvas>

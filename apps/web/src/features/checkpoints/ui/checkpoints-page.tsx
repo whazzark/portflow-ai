@@ -25,6 +25,7 @@ import type { PresentedCheckpoint } from '@/features/checkpoints/types'
 import {
   BULK_LIFECYCLE_INTENTS,
   type BulkLifecycleIntent,
+  CHECKPOINT_KIND_PLURAL_LABELS,
   CHECKPOINT_KINDS,
   CHECKPOINT_PARAM_BY_KIND,
   type CheckpointKind,
@@ -45,7 +46,10 @@ import {
   type SelectedCheckpoint,
 } from '@/features/checkpoints/ui/checkpoint-detail-card'
 import { CheckpointMapToolbar } from '@/features/checkpoints/ui/checkpoint-map-toolbar'
-import { CheckpointCreateMenu } from '@/features/checkpoints/ui/checkpoint-toolbar-menus'
+import {
+  CheckpointCreateMenu,
+  CheckpointSelectMenu,
+} from '@/features/checkpoints/ui/checkpoint-toolbar-menus'
 import { CreateCheckpointPanel } from '@/features/checkpoints/ui/create-checkpoint-panel'
 import { EditCheckpointPanel } from '@/features/checkpoints/ui/edit-checkpoint-panel'
 import {
@@ -540,13 +544,6 @@ export function CheckpointsPage() {
       search: (previous) => ({ ...previous, selecting: undefined }),
     })
   }
-  const toggleSelectMode = (kind: CheckpointKind) => {
-    if (selectingKind === kind) {
-      stopSelecting()
-      return
-    }
-    startSelecting(kind)
-  }
   const toggleChecked = (_kind: CheckpointKind, id: string) => {
     // Eligibility already accounts for kind, status and the selection's intent.
     if (!checkableIds.has(id)) {
@@ -788,7 +785,9 @@ export function CheckpointsPage() {
       }),
     })
   }
-  const isViewing = Boolean(selectedResource) && !creationKind && !isEditing && !selectingKind
+  // Select mode leaves markers that cannot be checked — another kind, or the other status — opening
+  // their card as usual.
+  const isViewing = Boolean(selectedResource) && !creationKind && !isEditing
   const anchorPoint: LatLng | undefined = creationKind
     ? (pendingPlacement ?? undefined)
     : isEditing
@@ -825,9 +824,19 @@ export function CheckpointsPage() {
               status === 'all' ? 'checkpoints' : status
             } · Enter to zoom to all matches`}
             actions={
-              createActions.length > 0 ? (
-                <CheckpointCreateMenu onCreate={startCreating} />
-              ) : undefined
+              !canManageCheckpoints ? undefined : selectingKind ? (
+                <Button onClick={stopSelecting} size="sm" type="button">
+                  Stop selecting {CHECKPOINT_KIND_PLURAL_LABELS[selectingKind]}
+                </Button>
+              ) : (
+                <>
+                  <CheckpointSelectMenu
+                    kinds={BULK_LIFECYCLE_CAPABLE_KINDS.filter((kind) => layerVisibility[kind])}
+                    onSelect={startSelecting}
+                  />
+                  {createActions.length > 0 && <CheckpointCreateMenu onCreate={startCreating} />}
+                </>
+              )
             }
             statusCounts={statusCounts}
             statuses={selectedStatuses}
@@ -891,7 +900,6 @@ export function CheckpointsPage() {
             onSelect={selectCheckpoint}
             onShiftSelect={canManageCheckpoints ? handleShiftSelect : undefined}
             onToggleChecked={selectingKind ? (id) => toggleChecked(selectingKind, id) : undefined}
-            onToggleSelectMode={toggleSelectMode}
             selectMode={selectingKind}
             selectableKinds={
               canManageCheckpoints

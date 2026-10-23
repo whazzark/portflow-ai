@@ -63,7 +63,6 @@ Non-administrators: `create`, `edit`, `selecting` are ignored (no mode opens).
 | Placing dock | "Placing a new dock · click the map where trucks are loaded" | "Cancel" |
 | Placing weighing area | "Placing a new weighing area · click the weighbridge position" | "Cancel" |
 | Moving | "Drag the pin to move <name>" | "Cancel" |
-| Selecting | "Selecting docks" / "Selecting weighing areas" | "Done" |
 
 ## Creation card
 
@@ -90,5 +89,9 @@ toast from `resourceSuccessMessage('update', …)`.
 
 ## Bulk selection
 
-Unchanged `BulkResourceLifecycleActions` bar ("<n> selected", action, Clear), dialog with optional
+Entered from the toolbar's "Select" menu (items "Select docks", "Select weighing areas") or by
+shift-clicking an eligible marker. The toolbar stays visible while selecting — search and filters
+keep narrowing the map without pruning the checked set, as before — and the Select and Create menus
+give way to a "Stop selecting docks" / "Stop selecting weighing areas" button. Markers that cannot
+be checked keep opening their card. Unchanged `BulkResourceLifecycleActions` bar ("<n> selected", action, Clear), dialog with optional
 comment, partial-success summary, keyboard shortcuts.
