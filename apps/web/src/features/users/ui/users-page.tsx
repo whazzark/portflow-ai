@@ -243,6 +243,9 @@ export function UsersPage() {
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <InputSearch
+            // The card surface rather than the input's transparent default: on the light page
+            // background a transparent field all but disappears.
+            className="h-9 bg-card dark:bg-card"
             fieldClassName="md:w-[440px]"
             id="user-search"
             label="Search users"
