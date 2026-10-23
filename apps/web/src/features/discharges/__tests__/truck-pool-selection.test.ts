@@ -4,12 +4,16 @@ import {
   buildDischargeDetail,
   buildPoolEntry,
   buildShift,
+  buildTruckCandidate,
   listedDischarge,
 } from '@/features/discharges/__tests__/support/fixtures'
 import {
+  candidateGroups,
   candidateMatchesSearch,
   heldPoolEntries,
   offeredShiftTrucks,
+  poolSummary,
+  shiftCountByTruck,
   shiftsSelectingTrucks,
 } from '@/features/discharges/truck-pool-selection'
 import type { TruckCandidateDto } from '@/features/discharges/types'
@@ -130,5 +134,117 @@ describe('candidateMatchesSearch', () => {
     expect(candidateMatchesSearch(candidate, ' ab-123 ')).toBe(true)
     expect(candidateMatchesSearch(candidate, 'emeraude')).toBe(true)
     expect(candidateMatchesSearch(candidate, 'cargill')).toBe(false)
+  })
+})
+
+const PLANNED_HOLDING = {
+  dischargeId: 'discharge-loire',
+  vesselName: 'MV Loire Star',
+  status: 'PLANNED' as const,
+}
+const ACTIVE_HOLDING = {
+  dischargeId: 'discharge-cedar',
+  vesselName: 'MV Ocean Cedar',
+  status: 'ACTIVE' as const,
+}
+
+describe('poolSummary', () => {
+  test('counts the trucks still held and the suspended ones among them', () => {
+    const detail = buildDischargeDetail(planned, {
+      truckPool: [
+        HELD,
+        SUSPENDED,
+        { ...RELEASED, truckStatus: 'SUSPENDED', otherHoldings: [PLANNED_HOLDING] },
+      ],
+    })
+
+    expect(poolSummary(detail)).toEqual({
+      heldCount: 2,
+      suspendedCount: 1,
+      contested: false,
+      contestedByActive: false,
+    })
+  })
+
+  test('says whether another discharge holds a held truck, and whether it is active', () => {
+    const plannedOnly = buildDischargeDetail(planned, {
+      truckPool: [{ ...HELD, otherHoldings: [PLANNED_HOLDING] }, SUSPENDED],
+    })
+    const withActive = buildDischargeDetail(planned, {
+      truckPool: [{ ...HELD, otherHoldings: [PLANNED_HOLDING, ACTIVE_HOLDING] }],
+    })
+
+    expect(poolSummary(plannedOnly)).toMatchObject({ contested: true, contestedByActive: false })
+    expect(poolSummary(withActive)).toMatchObject({ contested: true, contestedByActive: true })
+  })
+
+  test('holds nothing on a closed discharge', () => {
+    const detail = buildDischargeDetail(planned, {
+      status: 'CLOSED',
+      truckPool: [{ ...HELD, otherHoldings: [PLANNED_HOLDING] }],
+    })
+
+    expect(poolSummary(detail)).toEqual({
+      heldCount: 0,
+      suspendedCount: 0,
+      contested: false,
+      contestedByActive: false,
+    })
+  })
+})
+
+// biome-ignore lint/security/noSecrets: a function name, not a secret
+describe('shiftCountByTruck', () => {
+  test('counts the planned shifts each truck is currently selected in', () => {
+    const detail = buildDischargeDetail(planned, {
+      truckPool: [HELD, SUSPENDED],
+      shifts: [
+        buildShift({ id: 'one', trucks: [current('truck-held'), current('truck-suspended')] }),
+        buildShift({ id: 'two', trucks: [current('truck-held')] }),
+        buildShift({
+          id: 'ended',
+          trucks: [{ ...current('truck-suspended'), effectiveTo: '2026-09-08T08:00:00.000Z' }],
+        }),
+        buildShift({ id: 'started', status: 'ACTIVE', trucks: [current('truck-held')] }),
+      ],
+    })
+
+    const counts = shiftCountByTruck(detail)
+
+    expect(counts.get('truck-held')).toBe(2)
+    expect(counts.get('truck-suspended')).toBe(1)
+    expect(counts.get('truck-unknown') ?? 0).toBe(0)
+  })
+})
+
+describe('candidateGroups', () => {
+  test('groups candidates by transport company, by name, with their selected count', () => {
+    const port = { id: 'company-port', name: 'Transports du Port' }
+    const armor = { id: 'company-armor', name: 'Armor Fret' }
+    const candidates = [
+      buildTruckCandidate({ id: 'c', registration: 'ZZ-900-ZZ', transportCompany: port }),
+      buildTruckCandidate({ id: 'a', registration: 'BB-200-BB', transportCompany: armor }),
+      buildTruckCandidate({ id: 'b', registration: 'AA-100-AA', transportCompany: port }),
+      buildTruckCandidate({ id: 'd', registration: 'AA-100-AB', transportCompany: armor }),
+    ]
+
+    const groups = candidateGroups(candidates, new Set(['a', 'c']))
+
+    expect(
+      groups.map((group) => ({
+        company: group.company.name,
+        registrations: group.candidates.map((candidate) => candidate.registration),
+        total: group.total,
+        selected: group.selected,
+      })),
+    ).toEqual([
+      { company: 'Armor Fret', registrations: ['AA-100-AB', 'BB-200-BB'], total: 2, selected: 1 },
+      {
+        company: 'Transports du Port',
+        registrations: ['AA-100-AA', 'ZZ-900-ZZ'],
+        total: 2,
+        selected: 1,
+      },
+    ])
   })
 })

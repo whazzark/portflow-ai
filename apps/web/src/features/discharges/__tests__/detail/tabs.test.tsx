@@ -130,7 +130,7 @@ test('updates a count once a change is accepted', async () => {
   fireEvent.click(within(pool).getByRole('button', { name: 'Add trucks' }))
   const sheet = await screen.findByRole('dialog', { name: 'Add trucks' })
   fireEvent.click(await within(sheet).findByRole('checkbox', { name: 'Select CE-101-DR' }))
-  fireEvent.click(within(sheet).getByRole('button', { name: 'Reserve' }))
+  fireEvent.click(within(sheet).getByRole('button', { name: 'Add trucks' }))
 
   await waitFor(() =>
     expect(screen.getByRole('tab', { name: 'Truck pool (2)' })).toBeInTheDocument(),
