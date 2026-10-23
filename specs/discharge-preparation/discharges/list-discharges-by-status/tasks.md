@@ -253,20 +253,20 @@ collection restored and the address cleaned (spec US5, Clarification Q2).
 
 ## Phase 8: Polish & Verification
 
-- [ ] T027 Remove the now-unused `customerNames` helper and any dead imports from
+- [X] T027 Remove the now-unused `customerNames` helper and any dead imports from
   `apps/web/src/features/discharges/ui/discharge-list.tsx`; check the row stays one line high at
   desktop width and the table scrolls horizontally inside its box at phone width (no page-level
   horizontal scroll).
-- [ ] T028 [P] Measure the list endpoint against seeded data (`pnpm --filter @portflow/api db:fresh`,
+- [X] T028 [P] Measure the list endpoint against seeded data (`pnpm --filter @portflow/api db:fresh`,
   then time `GET /api/v1/discharges` as a signed-in user); if the planned-discharge evaluation
   pushes it near SC-006's 2 s, batch the evaluator's reads per research R2 and note the deviation in
   the PR.
-- [ ] T029 Run the full checks from the repository root: `pnpm check`, `pnpm typecheck`,
+- [X] T029 Run the full checks from the repository root: `pnpm check`, `pnpm typecheck`,
   `pnpm test`; fix any failure.
-- [ ] T030 Run the [quickstart](quickstart.md) browser validation on seeded data (Active, Planned
+- [X] T030 Run the [quickstart](quickstart.md) browser validation on seeded data (Active, Planned
   with start-dialog parity, Closed, « +N », row opening and Back, no-match Clear search, light and
   dark themes).
-- [ ] T031 Obtain a fresh read-only Claude Code review of the final diff (new session `/code-review`
+- [X] T031 Obtain a fresh read-only Claude Code review of the final diff (new session `/code-review`
   or read-only subagent) and resolve or justify every confirmed finding before marking the PR
   ready.
 

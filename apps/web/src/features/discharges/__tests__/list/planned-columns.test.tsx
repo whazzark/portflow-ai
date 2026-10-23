@@ -108,3 +108,15 @@ test('shows a discharge with no lot yet as zero lots, with no tonnage', async ()
   expect(within(row).queryByText(/ t$/)).not.toBeInTheDocument()
   expect(within(row).getByText('2 problems')).toBeInTheDocument()
 })
+
+// The API always counts a planned discharge's problems; should it ever not, the row must not
+// claim a readiness nobody evaluated.
+test('never claims ready when the problem count is unknown', async () => {
+  const row = rowOf(
+    await plannedTable([{ ...ATLANTIC_DAWN, startProblemCount: null }]),
+    'MV Atlantic Dawn',
+  )
+
+  expect(within(row).queryByText('Ready')).not.toBeInTheDocument()
+  expect(within(row).getByText('Readiness unknown')).toBeInTheDocument()
+})

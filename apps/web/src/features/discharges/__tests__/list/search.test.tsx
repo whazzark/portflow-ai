@@ -118,7 +118,8 @@ test('clears a search that matched nothing in one action', async () => {
   const table = await screen.findByRole('table', { name: 'Discharges' })
   expect(within(table).getByText('MV Ocean Cedar')).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Search discharges' })).toHaveValue('')
-  expect(router.state.location.searchStr).not.toContain('search=zzz')
+  // Cleared, the search leaves the address entirely rather than lingering as an empty `search=`.
+  expect(router.state.location.searchStr).not.toContain('search=')
 })
 
 test('offers no Clear search on a status that is simply empty', async () => {

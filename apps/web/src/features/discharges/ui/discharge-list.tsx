@@ -93,9 +93,13 @@ const COLUMNS = {
     { header: 'Expected start', cell: (discharge) => formatDateTime(discharge.expectedStartAt) },
     {
       header: 'Preparation',
-      cell: (discharge) => (
-        <PreparationBadge startProblemCount={discharge.startProblemCount ?? 0} />
-      ),
+      cell: (discharge) =>
+        // Never Ready by default: a count nobody evaluated is not a discharge ready to start.
+        discharge.startProblemCount === null ? (
+          <span className="text-muted-foreground italic">Readiness unknown</span>
+        ) : (
+          <PreparationBadge startProblemCount={discharge.startProblemCount} />
+        ),
     },
     { header: 'Lots · tonnage', cell: lotsAndTonnage, className: 'tabular-nums' },
     CUSTOMERS,

@@ -47,7 +47,11 @@ export function DischargeCustomers({ discharge }: DischargeCustomersProps) {
           >
             +{remaining}
           </TooltipTrigger>
-          <TooltipContent className="flex-col items-start">
+          <TooltipContent
+            className="flex-col items-start"
+            // Portalled out of the row, but React still bubbles its clicks through the row.
+            onClick={(event) => event.stopPropagation()}
+          >
             <ul aria-label="Customers">
               {names.map((name) => (
                 <li key={name}>{name}</li>
