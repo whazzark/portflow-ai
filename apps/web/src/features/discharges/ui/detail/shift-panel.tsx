@@ -27,6 +27,8 @@ export function ShiftPanel({ canCorrect, discharge, onClose, shift }: ShiftPanel
     <Sheet onOpenChange={(open) => !open && onClose()} open={Boolean(shift)}>
       <SheetContent
         className="gap-0 data-[side=bottom]:h-[min(75dvh,38rem)]"
+        // A completed shift's footer offers the one way to close it, so two buttons never share a name.
+        showCloseButton={shift?.status !== 'COMPLETED'}
         side={isMobile ? 'bottom' : 'right'}
         size="lg"
       >

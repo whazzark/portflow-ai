@@ -237,13 +237,22 @@ export function ShiftCalendar({
     ),
   }
 
-  const continuations = calendar.segments.filter((segment) => !segment.primary)
-  // How tall each shift's first part is, which decides the lines its continuation takes over.
-  const primaryHeightPct = new Map(
-    calendar.segments
-      .filter((segment) => segment.primary)
-      .map((segment) => [segment.shift.id, segment.heightPct]),
-  )
+  // Each part of a shift past its first takes over the lines the parts before it had no room for,
+  // so a shift worked across several midnights never repeats one. Segments come in column order.
+  const shownSoFar = new Map<string, number>()
+  const continuations = calendar.segments.flatMap((segment) => {
+    if (segment.primary) {
+      shownSoFar.set(segment.shift.id, blockRowCount(heightPx(segment.heightPct)))
+
+      return []
+    }
+    const fromLine = shownSoFar.get(segment.shift.id) ?? 0
+    // Its first line reads the times again, as a continuation.
+    const room = Math.max(0, blockRowCount(heightPx(segment.heightPct)) - 1)
+    shownSoFar.set(segment.shift.id, fromLine + room)
+
+    return [{ ...segment, fromLine, room }]
+  })
 
   return (
     <div className="md:-mx-1 md:overflow-x-auto md:px-1 md:pb-2" ref={scroller}>
@@ -354,8 +363,8 @@ export function ShiftCalendar({
                     )}
                   >
                     <ShiftContinuation
-                      primaryHeightPx={heightPx(primaryHeightPct.get(segment.shift.id) ?? 0)}
-                      segmentHeightPx={heightPx(segment.heightPct)}
+                      fromLine={segment.fromLine}
+                      room={segment.room}
                       shift={segment.shift}
                     />
                   </div>
@@ -559,7 +568,7 @@ function shiftLines(shift: Shift) {
           <span className="font-semibold tabular-nums">
             {formatShiftTime(shift.plannedStartAt)}–{formatShiftTime(shift.plannedEndAt)}
           </span>
-          {duration && <span className="text-muted-foreground text-xs">{duration}</span>}
+          {duration && <span className="text-muted-foreground text-xs">· {duration}</span>}
         </>
       ),
     },
@@ -595,29 +604,26 @@ function shiftLines(shift: Shift) {
 }
 
 /**
- * The part of a shift worked past midnight, in the next column: its times as a continuation, then
- * the lines its first part had no room for, as far as this part's own height allows. The first
- * part stays the shift's one control.
+ * The part of a shift worked past midnight, in a later column: its times as a continuation, then
+ * the `room` lines from `fromLine` that the parts before it had no room for. The first part stays
+ * the shift's one control.
  */
 function ShiftContinuation({
-  primaryHeightPx,
-  segmentHeightPx,
+  fromLine,
+  room,
   shift,
 }: {
-  primaryHeightPx: number
-  segmentHeightPx: number
+  fromLine: number
+  room: number
   shift: Shift
 }) {
-  const shown = blockRowCount(primaryHeightPx)
-  const room = blockRowCount(segmentHeightPx) - 1
-
   return (
     <span className="flex flex-col items-start gap-1 text-sm">
       <span className="flex h-5 items-center text-muted-foreground text-xs tabular-nums">
         {formatShiftTime(shift.plannedStartAt)}–{formatShiftTime(shift.plannedEndAt)} (cont.)
       </span>
       {shiftLines(shift)
-        .slice(shown, shown + Math.max(0, room))
+        .slice(fromLine, fromLine + room)
         .map((line, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: the lines of a card never reorder
           <span className={classnames('flex', line.className)} key={index}>

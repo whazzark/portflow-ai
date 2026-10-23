@@ -161,6 +161,27 @@ test('marks the time now on the calendar of an active discharge', async () => {
   expect(within(region).getByText('Now 22:14')).toBeInTheDocument()
 })
 
+test('reads the times and the duration of a shift on its card', async () => {
+  const { region } = await renderShifts({ shifts: [DAY_SHIFT] })
+
+  const card = within(region).getByRole('button', { name: shiftName(DAY_SHIFT) })
+  expect(card).toHaveTextContent(
+    `${formatShiftTime(DAY_SHIFT.plannedStartAt)}–${formatShiftTime(DAY_SHIFT.plannedEndAt)}· 8 h`,
+  )
+})
+
+test('never repeats a line of a shift worked across several midnights', async () => {
+  const longShift = buildShift({
+    id: 'long',
+    plannedStartAt: new Date(2026, 9, 4, 22).toISOString(),
+    plannedEndAt: new Date(2026, 9, 6, 6).toISOString(),
+  })
+  const { region } = await renderShifts({ shifts: [longShift] })
+
+  // Once on the card the list reads, once in the part that has room for it.
+  expect(within(region).getAllByText('Léa Martin')).toHaveLength(2)
+})
+
 test('reads the part of a shift worked past midnight as its continuation', async () => {
   const lateShift = buildShift({
     id: 'late',
@@ -382,8 +403,9 @@ test('says a completed shift cannot be changed, and closes its panel from there'
   const { router } = await renderShifts({ shifts: [DAY_SHIFT, EVENING_SHIFT] }, '?shiftId=day')
 
   const panel = await screen.findByRole('dialog', { name: panelName(DAY_SHIFT) })
-  const footer = within(panel).getByText('A completed shift cannot be changed').parentElement
-  await userEvent.click(within(footer as HTMLElement).getByRole('button', { name: 'Close' }))
+  expect(panel).toHaveTextContent('A completed shift cannot be changed')
+  // The footer's is the panel's one way out, so no two buttons share its name.
+  await userEvent.click(within(panel).getByRole('button', { name: 'Close' }))
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   expect(router.state.location.search).not.toHaveProperty('shiftId')
