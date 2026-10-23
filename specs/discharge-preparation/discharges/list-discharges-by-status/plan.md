@@ -90,7 +90,7 @@ apps/api/
 │           ├── discharge_repository.ts        # list() returns the list read
 │           └── lucid_discharge_repository.ts  # preload non-completed shifts of active discharges
 └── tests/
-    ├── unit/discharges/discharge_list_shifts.spec.ts
+    ├── unit/discharges/consultation/discharge_list_shifts.spec.ts
     └── integration/discharges/consultation/list.spec.ts
 
 apps/web/src/

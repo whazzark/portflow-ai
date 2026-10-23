@@ -3,20 +3,20 @@
 ## Prerequisites
 
 - `pnpm install` at the repository root, PostgreSQL running, `apps/api/.env` configured.
-- Seeded data: `pnpm --filter api db:fresh` (planned, active, and closed discharges from the
+- Seeded data: `pnpm --filter @portflow/api db:fresh` (planned, active, and closed discharges from the
   discharge preparation fixtures).
 
 ## Automated checks
 
 ```bash
-pnpm --filter api test -- --files tests/integration/discharges/consultation/list.spec.ts
+cd apps/api && PORT=3399 node --import tsx ace.js test --files="consultation/*"
 ```
 
 Expect the new fields per status ([contract](contracts/discharges-index.md)) and the
 `startProblemCount` / start-check parity test to pass.
 
 ```bash
-pnpm --filter web test -- src/features/discharges/__tests__/list
+cd apps/web && pnpm exec vitest run src/features/discharges/__tests__/list
 ```
 
 Expect the per-tab columns, shift cell, preparation badge, customers « +N », and no-match Clear
