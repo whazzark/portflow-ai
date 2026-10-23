@@ -61,7 +61,9 @@ test('records the cancellation in the access history the reopened record shows',
   renderUsers('/users?status=pending')
   await cancelFromRecord(user)
 
-  await waitFor(() => expect(screen.getByRole('tab', { name: /^Cancelled 2$/ })).toBeInTheDocument())
+  await waitFor(() =>
+    expect(screen.getByRole('tab', { name: /^Cancelled 2$/ })).toBeInTheDocument(),
+  )
   await user.click(screen.getByRole('tab', { name: /^Cancelled 2$/ }))
   const table = await screen.findByRole('table', { name: 'Cancelled users' })
   await user.click(within(table).getByRole('button', { name: `View user ${PENDING_USER}` }))
@@ -78,7 +80,9 @@ test('records the cancellation in the access history the reopened record shows',
 })
 
 const reopenFromCancelledView = async (user: ReturnType<typeof userEvent.setup>) => {
-  await waitFor(() => expect(screen.getByRole('tab', { name: /^Cancelled 2$/ })).toBeInTheDocument())
+  await waitFor(() =>
+    expect(screen.getByRole('tab', { name: /^Cancelled 2$/ })).toBeInTheDocument(),
+  )
   await user.click(screen.getByRole('tab', { name: /^Cancelled 2$/ }))
   const table = await screen.findByRole('table', { name: 'Cancelled users' })
   await user.click(within(table).getByRole('button', { name: `View user ${PENDING_USER}` }))

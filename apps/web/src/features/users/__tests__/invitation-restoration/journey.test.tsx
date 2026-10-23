@@ -70,10 +70,15 @@ test('stays on the cancelled view after Done, and follows both counts', async ()
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
 
   expect(screen.queryByText(NEW_LINK)).not.toBeInTheDocument()
-  await waitFor(() => expect(screen.getByRole('tab', { name: /^Cancelled 0$/ })).toBeInTheDocument())
+  await waitFor(() =>
+    expect(screen.getByRole('tab', { name: /^Cancelled 0$/ })).toBeInTheDocument(),
+  )
   expect(screen.getByRole('tab', { name: /^Pending 2$/ })).toBeInTheDocument()
   // No navigation: the view the administrator was working through is still the selected one.
-  expect(screen.getByRole('tab', { name: /^Cancelled 0$/ })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('tab', { name: /^Cancelled 0$/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
 })
 
 test('records the restoration after the cancellation in the reopened record', async () => {
