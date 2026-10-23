@@ -2,9 +2,10 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
-
+import type { TransportCompanyDto } from '@/features/transport-companies/types'
+import type { TruckDto } from '@/features/trucks/types'
 import { server } from '@/test/msw/server'
-import { FLEET_COMPANIES, GH_012_JK, NP_901_QR } from './support/fleet-fixtures'
+import { AB_123_CD, FLEET_COMPANIES, GH_012_JK, NP_901_QR } from './support/fleet-fixtures'
 import {
   API_BASE_URL,
   findFleetTable,
@@ -196,4 +197,39 @@ test('retries a failed load and renders the recovered fleet', JOURNEY, async () 
   await findFleetTable()
   expect(groupHeader('Atlantic Transport')).toBeInTheDocument()
   expect(requests).toBeGreaterThanOrEqual(2)
+})
+
+test('keeps a 1,000-truck fleet counted and searched locally', { timeout: 60_000 }, async () => {
+  const user = userEvent.setup()
+  const companies = Array.from({ length: 10 }, (_, index) => ({
+    ...FLEET_COMPANIES[0],
+    id: `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+    name: `Carrier ${String(index + 1).padStart(2, '0')}`,
+  })) as TransportCompanyDto[]
+  const trucks = Array.from({ length: 1_000 }, (_, index) => ({
+    ...AB_123_CD,
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+    registration: `SCALE-${String(index + 1).padStart(4, '0')}`,
+    transportCompanyId: companies[index % 10]?.id ?? '',
+    status: index % 4 === 0 ? 'ARCHIVED' : 'AVAILABLE',
+  })) as TruckDto[]
+  let completeRequests = 0
+  mockFleet({
+    companies,
+    trucks,
+    onCompleteTrucksRequest: () => {
+      completeRequests += 1
+    },
+  })
+  renderFleet()
+  await findFleetTable()
+
+  expect(statusPill('Available')).toHaveTextContent('750')
+  expect(statusPill('Archived')).toHaveTextContent('250')
+  const requestsBeforeSearch = completeRequests
+
+  await user.type(screen.getByRole('textbox', { name: 'Search transport resources' }), '0999')
+
+  await waitFor(() => expect(listedRegistrations()).toEqual(['SCALE-0999']))
+  expect(completeRequests).toBe(requestsBeforeSearch)
 })

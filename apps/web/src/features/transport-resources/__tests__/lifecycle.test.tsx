@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -258,6 +258,11 @@ test('keeps the dialog open and refreshes the fleet when the API refuses', JOURN
   expect(screen.getByText('Truck is used by a planned or active discharge')).toBeInTheDocument()
   expect(within(dialog).getByLabelText('Comment (optional)')).toHaveValue('Retired')
   await waitFor(() => expect(truckReads).toBeGreaterThan(readsBefore))
+  // The refusal leaves the truck where it was.
+  await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+  await waitFor(() =>
+    expect(within(truckRow(EF_789_GH.registration)).getByText('Available')).toBeInTheDocument(),
+  )
 })
 
 test(
@@ -350,3 +355,60 @@ test('archives a company that provides no available truck', JOURNEY, async () =>
   expect(fleet.companies.find((company) => company.id === LOIRE_ID)?.status).toBe('ARCHIVED')
   expect(fleet.companies.find((company) => company.id === MORVAN_ID)?.status).toBe('ARCHIVED')
 })
+
+test(
+  'keeps the typed comment through a refusal and accepts the corrected resubmit',
+  JOURNEY,
+  async () => {
+    const user = userEvent.setup()
+    const fleet = mockFleet()
+    let attempt = 0
+    server.use(
+      http.post(`${API_BASE_URL}/api/v1/trucks/:id/archive`, () => {
+        attempt += 1
+        if (attempt === 1) {
+          return HttpResponse.json(
+            {
+              error: {
+                code: 'E_VALIDATION_ERROR',
+                message: 'Validation failure',
+                details: [
+                  {
+                    field: 'comment',
+                    message: 'The comment field must not exceed 1000 characters',
+                  },
+                ],
+              },
+            },
+            { status: 422 },
+          )
+        }
+        fleet.trucks = fleet.trucks.map((truck) =>
+          truck.id === EF_789_GH.id ? { ...truck, status: 'ARCHIVED' } : truck,
+        )
+        return HttpResponse.json({ data: { ...EF_789_GH, status: 'ARCHIVED' } })
+      }),
+    )
+    renderFleet()
+    await findFleetTable()
+
+    const menu = await openMenu(user, EF_789_GH.registration)
+    await user.click(within(menu).getByRole('menuitem', { name: 'Archive' }))
+    const dialog = await screen.findByRole('alertdialog', { name: 'Archive EF-789-GH?' })
+    const comment = within(dialog).getByLabelText('Comment (optional)')
+    // The field's maxLength stops typing past the limit, so an over-long value has to be set.
+    fireEvent.change(comment, { target: { value: 'a'.repeat(1001) } })
+    await user.click(within(dialog).getByRole('button', { name: 'Archive' }))
+
+    // The field-level detail, not the generic "Validation failure", says what to fix.
+    expect(
+      await screen.findByText('The comment field must not exceed 1000 characters'),
+    ).toBeInTheDocument()
+    expect(comment).toHaveValue('a'.repeat(1001))
+
+    fireEvent.change(comment, { target: { value: 'Shortened' } })
+    await user.click(within(dialog).getByRole('button', { name: 'Archive' }))
+
+    expect(await screen.findByText('Truck “EF-789-GH” archived')).toBeInTheDocument()
+  },
+)

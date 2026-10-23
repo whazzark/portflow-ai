@@ -251,9 +251,9 @@ window), so the side-by-side visual comparison with the artboards remains for th
 
 ## Phase 10: Polish & cross-cutting
 
-- [ ] T045 Confirm no import remains of removed modules (`rg -n "trucks-page|transport-resources-workspace|truck-section|transport-company-section|archiveMany|reactivateMany|useSelectAllShortcut" apps/web/src/features/{trucks,transport-companies,transport-resources}`) and that `components/lifecycle` bulk code is untouched (`git diff master -- apps/web/src/components/lifecycle/bulk-resource-lifecycle-actions.tsx` empty).
-- [ ] T046 Verify the porting record of T021: every deleted suite's business assertion (validation, conflicts, refusals + refresh, retry, permissions, scale) maps to a passing test in the new suites; add any missing one. Keep `features/trucks/__tests__/list/scale.test.tsx`'s scenario as a `fleet-view` or list test with a few hundred trucks.
-- [ ] T047 [P] Update `specs/site-references/transport-resources/roadmap.md` with a row for GH-319 pointing at this feature directory.
+- [X] T045 Confirm no import remains of removed modules (`rg -n "trucks-page|transport-resources-workspace|truck-section|transport-company-section|archiveMany|reactivateMany|useSelectAllShortcut" apps/web/src/features/{trucks,transport-companies,transport-resources}`) and that `components/lifecycle` bulk code is untouched (`git diff master -- apps/web/src/components/lifecycle/bulk-resource-lifecycle-actions.tsx` empty).
+- [X] T046 Verify the porting record of T021: every deleted suite's business assertion (validation, conflicts, refusals + refresh, retry, permissions, scale) maps to a passing test in the new suites; add any missing one. Keep `features/trucks/__tests__/list/scale.test.tsx`'s scenario as a `fleet-view` or list test with a few hundred trucks.
+- [X] T047 [P] Update `specs/site-references/transport-resources/roadmap.md` with a row for GH-319 pointing at this feature directory.
 - [ ] T048 Run `pnpm check`, `pnpm typecheck`, `pnpm test` from the repository root; all green (API suites unchanged).
 - [ ] T049 Run the full `quickstart.md` walkthrough as an administrator and as an operations lead, including phone width; note results in the PR.
 - [ ] T050 Obtain a fresh read-only Claude Code review of the final diff (new session `/code-review` or read-only subagent) and resolve every confirmed finding; open the Draft PR for #319.
