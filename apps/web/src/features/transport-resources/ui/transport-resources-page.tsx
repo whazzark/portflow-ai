@@ -18,8 +18,9 @@ import { CompanyGroupActions } from './company-group-actions'
 import { CompanyGroupHeader } from './company-group-rows'
 import { ArchivedNotice, CompanyFilterBanner, FleetNoMatch } from './fleet-banners'
 import { CompanyDetailRow, TruckDetailRow } from './fleet-detail-rows'
+import { CompanyFormRow, TruckFormRow } from './fleet-form-rows'
 import { FleetTable } from './fleet-table'
-import { FleetToolbar } from './fleet-toolbar'
+import { CreateMenu, FleetToolbar } from './fleet-toolbar'
 import { TruckRow, truckViewButtonId } from './truck-row'
 import { TruckRowActions } from './truck-row-actions'
 
@@ -53,6 +54,9 @@ export function TransportResourcesPage() {
   )
   const companies = companiesQuery.data?.data
 
+  // A company just created has no truck yet; it stays listed so it can receive its first.
+  const [pinnedCompanyId, setPinnedCompanyId] = useState<string>()
+
   const view = useMemo(
     () =>
       buildFleetView({
@@ -64,8 +68,9 @@ export function TransportResourcesPage() {
         sort: search.sort,
         order: search.order,
         administrator,
+        pinnedCompanyId,
       }),
-    [administrator, companies, search, trucks],
+    [administrator, companies, pinnedCompanyId, search, trucks],
   )
 
   // Collapsing a group is a momentary reading aid, not a view anyone shares.
@@ -198,6 +203,43 @@ export function TransportResourcesPage() {
         companyDetailsMode: 'view',
       }),
     })
+  const createTruck = () =>
+    navigate({
+      search: (previous) => ({
+        ...previous,
+        truckId: undefined,
+        truckMode: 'create',
+        truckCompanyId: undefined,
+        companyDetailsMode: 'view',
+      }),
+    })
+  const createCompany = () =>
+    navigate({
+      search: (previous) => ({
+        ...previous,
+        truckId: undefined,
+        truckMode: 'view',
+        companyDetailsId: undefined,
+        companyDetailsMode: 'create',
+      }),
+    })
+  const leaveTruckForm = () =>
+    navigate({
+      search: (previous) => ({
+        ...previous,
+        truckMode: 'view',
+        truckCompanyId: undefined,
+        truckId: undefined,
+      }),
+    })
+  const leaveCompanyForm = () =>
+    navigate({ search: (previous) => ({ ...previous, companyDetailsMode: 'view' }) })
+  const expandGroup = (companyId: string) =>
+    setCollapsed((previous) => {
+      const next = new Set(previous)
+      next.delete(companyId)
+      return next
+    })
   const toggleGroup = (companyId: string) =>
     setCollapsed((previous) => {
       const next = new Set(previous)
@@ -208,6 +250,29 @@ export function TransportResourcesPage() {
     })
 
   const fleetIsEmpty = companies.length === 0 && trucks.length === 0
+  const availableCompanies = companies.filter((company) => company.status === 'AVAILABLE')
+  const truckForm = administrator && search.truckMode !== 'view' ? search.truckMode : null
+  const companyForm =
+    administrator && search.companyDetailsMode !== 'view' ? search.companyDetailsMode : null
+  const formOpen = truckForm !== null || companyForm !== null
+  // A truck added from a company's menu sits at the end of that company's group, when the group is
+  // on screen; otherwise, or when created from the toolbar, at the top of the table.
+  const fixedCompany = companies.find((company) => company.id === search.truckCompanyId)
+  const createsInGroup =
+    truckForm === 'create' &&
+    fixedCompany !== undefined &&
+    view.groups.some((group) => group.company.id === fixedCompany.id)
+  const truckCreationRow = (company?: typeof fixedCompany) => (
+    <TruckFormRow
+      companies={availableCompanies}
+      company={company}
+      onCancel={() => void leaveTruckForm()}
+      onSaved={(created) => {
+        expandGroup(created.transportCompanyId)
+        void leaveTruckForm()
+      }}
+    />
+  )
 
   return (
     <div className="flex flex-col gap-4 p-4 md:px-8 md:py-6">
@@ -215,6 +280,15 @@ export function TransportResourcesPage() {
         counts={view.counts}
         onSearchChange={setSearch}
         onStatusesChange={(status) => navigate({ search: (previous) => ({ ...previous, status }) })}
+        create={
+          administrator && (
+            <CreateMenu
+              disabled={formOpen}
+              onCreateCompany={() => void createCompany()}
+              onCreateTruck={() => void createTruck()}
+            />
+          )
+        }
         search={search.search}
         statuses={search.status}
       />
@@ -263,26 +337,54 @@ export function TransportResourcesPage() {
           }
           groups={view.groups}
           isCollapsed={(companyId) => collapsed.has(companyId)}
+          leadingRows={
+            <>
+              {companyForm === 'create' && (
+                <CompanyFormRow
+                  onCancel={() => void leaveCompanyForm()}
+                  onSaved={(created) => {
+                    setPinnedCompanyId(created.id)
+                    void leaveCompanyForm()
+                  }}
+                />
+              )}
+              {truckForm === 'create' && !createsInGroup && truckCreationRow(fixedCompany)}
+            </>
+          }
           onSort={(sort) => void sortBy(sort)}
           order={search.order}
-          renderGroupHeader={(group) => (
-            <CompanyGroupHeader
-              actions={
-                administrator && (
-                  <CompanyGroupActions
-                    group={group}
-                    onAddTruck={() => void addTruck(group.company.id)}
-                    onEdit={() => void editCompany(group.company.id)}
-                    onViewDetails={() => void viewCompany(group.company.id)}
-                  />
-                )
-              }
-              expanded={!collapsed.has(group.company.id)}
-              group={group}
-              onShowOnly={() => void showOnly(group.company.id)}
-              onToggle={() => toggleGroup(group.company.id)}
-            />
-          )}
+          renderGroupFooter={(group) =>
+            createsInGroup &&
+            group.company.id === fixedCompany?.id &&
+            truckCreationRow(fixedCompany)
+          }
+          renderGroupHeader={(group) =>
+            companyForm === 'edit' && search.companyDetailsId === group.company.id ? (
+              <CompanyFormRow
+                company={group.company}
+                onCancel={() => void leaveCompanyForm()}
+                onSaved={() => void leaveCompanyForm()}
+              />
+            ) : (
+              <CompanyGroupHeader
+                actions={
+                  administrator && (
+                    <CompanyGroupActions
+                      disabled={formOpen}
+                      group={group}
+                      onAddTruck={() => void addTruck(group.company.id)}
+                      onEdit={() => void editCompany(group.company.id)}
+                      onViewDetails={() => void viewCompany(group.company.id)}
+                    />
+                  )
+                }
+                expanded={!collapsed.has(group.company.id)}
+                group={group}
+                onShowOnly={() => void showOnly(group.company.id)}
+                onToggle={() => toggleGroup(group.company.id)}
+              />
+            )
+          }
           renderGroupDetail={(group) =>
             search.companyDetailsId === group.company.id &&
             search.companyDetailsMode === 'view' && (
@@ -297,6 +399,22 @@ export function TransportResourcesPage() {
           renderTruck={(fleetTruck, group) => {
             const { truck } = fleetTruck
             const open = search.truckId === truck.id && search.truckMode === 'view'
+
+            if (truckForm === 'edit' && search.truckId === truck.id) {
+              return (
+                <TruckFormRow
+                  // The truck keeps its own company in the list even once that company is archived.
+                  companies={
+                    availableCompanies.some((company) => company.id === truck.transportCompanyId)
+                      ? availableCompanies
+                      : [...availableCompanies, group.company]
+                  }
+                  onCancel={() => void leaveTruckForm()}
+                  onSaved={() => void leaveTruckForm()}
+                  truck={truck}
+                />
+              )
+            }
 
             return (
               <>
@@ -315,6 +433,7 @@ export function TransportResourcesPage() {
                     ) : (
                       administrator && (
                         <TruckRowActions
+                          disabled={formOpen}
                           fleetTruck={fleetTruck}
                           onEdit={() => void editTruck(truck.id)}
                           onView={() => void viewTruck(truck.id)}

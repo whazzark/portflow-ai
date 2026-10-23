@@ -55,3 +55,31 @@ export function applyValidationError(
 
   return true
 }
+
+/** Where a form shows one of the API's refusals: the field it is about, and optionally the form's
+ * own wording when the API's would not read well next to that field. */
+export type RefusalPlacement = { field: string; message?: string }
+
+/**
+ * Shows any refusal of a submitted form in the form itself, so what was typed stays in front of
+ * the administrator: validation details on their fields, a known refusal (a taken name, a locked
+ * assignment) on the field it concerns, and anything else as the form-level error.
+ */
+export function applyRefusal(
+  form: FormWithErrorMap,
+  error: unknown,
+  placements: Record<string, RefusalPlacement>,
+) {
+  if (applyValidationError(form, error)) {
+    return
+  }
+
+  const apiError = parseApiError(error)
+  const placement = placements[apiError.code]
+
+  form.setErrorMap({
+    onSubmit: placement
+      ? { fields: { [placement.field]: placement.message ?? apiError.message }, form: '' }
+      : { fields: {}, form: apiError.message },
+  })
+}

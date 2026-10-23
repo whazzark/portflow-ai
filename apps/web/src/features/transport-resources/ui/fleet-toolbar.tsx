@@ -1,5 +1,13 @@
-import type { ReactNode } from 'react'
+import { ChevronDownIcon, PlusIcon } from 'lucide-react'
+import { type ReactNode, useState } from 'react'
 
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { InputSearch } from '@/components/ui/input-search'
 import { statusIndicatorDotVariants } from '@/components/ui/status-indicator'
 import type { FleetStatus } from '@/features/transport-resources/helpers/transport-resources-search'
@@ -84,6 +92,56 @@ export function FleetToolbar({
         })}
       </fieldset>
       {create && <div className="ml-auto">{create}</div>}
+    </div>
+  )
+}
+
+/**
+ * Create, split as drawn: the screen holds two resources and neither is the obvious default, so
+ * both halves open the same choice rather than one of them guessing.
+ */
+export function CreateMenu({
+  disabled,
+  onCreateTruck,
+  onCreateCompany,
+}: {
+  disabled: boolean
+  onCreateTruck: () => void
+  onCreateCompany: () => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="flex">
+      <Button
+        className="rounded-r-none"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        size="lg"
+        type="button"
+      >
+        <PlusIcon aria-hidden="true" />
+        Create
+      </Button>
+      <DropdownMenu onOpenChange={setOpen} open={open}>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              aria-label="Choose what to create"
+              className="rounded-l-none border-primary-foreground/20 border-l"
+              disabled={disabled}
+              size="icon-lg"
+              type="button"
+            />
+          }
+        >
+          <ChevronDownIcon aria-hidden="true" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onCreateTruck}>Truck</DropdownMenuItem>
+          <DropdownMenuItem onClick={onCreateCompany}>Transport company</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

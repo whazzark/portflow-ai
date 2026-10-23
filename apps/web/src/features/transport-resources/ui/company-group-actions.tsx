@@ -27,11 +27,14 @@ export function CompanyGroupActions({
   onViewDetails,
   onEdit,
   onAddTruck,
+  disabled = false,
 }: {
   group: FleetGroup
   onViewDetails: () => void
   onEdit: () => void
   onAddTruck: () => void
+  /** While another form is open, nothing else is started from here. */
+  disabled?: boolean
 }) {
   const { company, archiveBlockedBy } = group
   const archived = company.status === 'ARCHIVED'
@@ -49,6 +52,7 @@ export function CompanyGroupActions({
           render={
             <Button
               aria-label={`Actions for ${company.name}`}
+              disabled={disabled}
               size="icon-sm"
               type="button"
               variant="ghost"

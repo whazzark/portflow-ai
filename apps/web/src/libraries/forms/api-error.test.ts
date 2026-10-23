@@ -1,7 +1,7 @@
 import { TuyauHTTPError } from '@tuyau/core/client'
 import { expect, test, vi } from 'vitest'
 
-import { applyValidationError } from '@/libraries/forms/api-error'
+import { applyRefusal, applyValidationError } from '@/libraries/forms/api-error'
 
 test('maps a validation error to a form error and matching field errors', () => {
   const setErrorMap = vi.fn()
@@ -103,5 +103,76 @@ test('names fields through a form-specific mapping, announcing unmapped details 
       fields: { 'lotGroups[0].products[0].productName': 'Duplicate lot.' },
       form: 'Validation failure Customer archived.',
     },
+  })
+})
+
+function refusal(code: string, message: string) {
+  // biome-ignore lint/suspicious/noExplicitAny: constructing a minimal fake ky HTTPError for the test
+  return new TuyauHTTPError({} as any, { error: { code, message } })
+}
+
+const TRUCK_REFUSALS = {
+  E_TRUCK_REGISTRATION_CONFLICT: { field: 'registration' },
+  E_TRUCK_TRANSPORT_COMPANY_LOCKED: {
+    field: 'transportCompanyId',
+    message: 'The company cannot change while this truck is used by a discharge.',
+  },
+}
+
+test('puts a known refusal on its field, in the API wording or the form own', () => {
+  const setErrorMap = vi.fn()
+
+  applyRefusal(
+    { setErrorMap },
+    refusal('E_TRUCK_REGISTRATION_CONFLICT', 'Registration already exists'),
+    TRUCK_REFUSALS,
+  )
+  expect(setErrorMap).toHaveBeenLastCalledWith({
+    onSubmit: { fields: { registration: 'Registration already exists' }, form: '' },
+  })
+
+  applyRefusal(
+    { setErrorMap },
+    refusal('E_TRUCK_TRANSPORT_COMPANY_LOCKED', 'Locked'),
+    TRUCK_REFUSALS,
+  )
+  expect(setErrorMap).toHaveBeenLastCalledWith({
+    onSubmit: {
+      fields: {
+        transportCompanyId: 'The company cannot change while this truck is used by a discharge.',
+      },
+      form: '',
+    },
+  })
+})
+
+test('puts any other refusal on the form itself', () => {
+  const setErrorMap = vi.fn()
+
+  applyRefusal({ setErrorMap }, refusal('E_TRUCK_ARCHIVED', 'Truck is archived'), TRUCK_REFUSALS)
+
+  expect(setErrorMap).toHaveBeenCalledWith({
+    onSubmit: { fields: {}, form: 'Truck is archived' },
+  })
+})
+
+test('still maps validation details onto their fields', () => {
+  const setErrorMap = vi.fn()
+  const error = new TuyauHTTPError(
+    // biome-ignore lint/suspicious/noExplicitAny: constructing a minimal fake ky HTTPError for the test
+    {} as any,
+    {
+      error: {
+        code: 'E_VALIDATION_ERROR',
+        details: [{ field: 'registration', message: 'Too long.' }],
+        message: 'Validation failure',
+      },
+    },
+  )
+
+  applyRefusal({ setErrorMap }, error, TRUCK_REFUSALS)
+
+  expect(setErrorMap).toHaveBeenCalledWith({
+    onSubmit: { fields: { registration: 'Too long.' }, form: 'Validation failure' },
   })
 })

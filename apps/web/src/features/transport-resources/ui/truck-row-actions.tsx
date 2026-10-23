@@ -22,10 +22,13 @@ export function TruckRowActions({
   fleetTruck,
   onView,
   onEdit,
+  disabled = false,
 }: {
   fleetTruck: FleetTruck
   onView: () => void
   onEdit: () => void
+  /** While another form is open, nothing else is started from here. */
+  disabled?: boolean
 }) {
   const { truck, status, canReactivate } = fleetTruck
   const [openAction, setOpenAction] = useState<LifecycleAction | null>(null)
@@ -60,6 +63,7 @@ export function TruckRowActions({
           render={
             <Button
               aria-label={`Actions for ${truck.registration}`}
+              disabled={disabled}
               size="icon-sm"
               type="button"
               variant="ghost"
