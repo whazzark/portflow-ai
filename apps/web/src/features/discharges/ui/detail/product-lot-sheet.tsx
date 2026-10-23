@@ -1,6 +1,9 @@
+import { useStore } from '@tanstack/react-form'
+import { useId } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { FieldDescription, FieldLegend, FieldSet } from '@/components/ui/field'
 import {
   Sheet,
   SheetContent,
@@ -9,6 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { lotLabel } from '@/features/discharges/discharge-planning-view'
 import {
   productLotFormValues,
   productLotSchema,
@@ -17,6 +21,10 @@ import {
 import { useDischargeMutations } from '@/features/discharges/mutations/use-discharge-mutations'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { STARTED_REFUSAL_MESSAGE } from '@/features/discharges/ui/detail/edit-discharge-identity-sheet'
+import {
+  LotDoorChips,
+  type LotDoorRowProblems,
+} from '@/features/discharges/ui/detail/lot-door-chips'
 import { useCustomerOptions } from '@/features/discharges/ui/preparation/preparation-options'
 import { ProductLotFields } from '@/features/discharges/ui/preparation/product-lot-fields'
 import { WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
@@ -30,8 +38,12 @@ type ProductLotSheetProps = {
   discharge: DischargeDetailDto
   /** The lot being corrected; absent while none is. */
   lot?: ProductLot
+  /** The lot's door problems, shown with its doors as on its row. */
+  problems?: LotDoorRowProblems
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Leaves the sheet for the lot's Assign doors, the one place its doors change. */
+  onAssignDoors: (lot: ProductLot) => void
 }
 
 const ROOT_LOT_FIELDS = {
@@ -43,7 +55,14 @@ const ROOT_LOT_FIELDS = {
 
 export const LOT_GONE_MESSAGE = 'This product lot no longer exists'
 
-export function ProductLotSheet({ discharge, lot, open, onOpenChange }: ProductLotSheetProps) {
+export function ProductLotSheet({
+  discharge,
+  lot,
+  problems,
+  open,
+  onOpenChange,
+  onAssignDoors,
+}: ProductLotSheetProps) {
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
       <SheetContent className="overflow-y-auto" size="lg">
@@ -54,7 +73,13 @@ export function ProductLotSheet({ discharge, lot, open, onOpenChange }: ProductL
           </SheetDescription>
         </SheetHeader>
         {open && lot && (
-          <ProductLotForm discharge={discharge} lot={lot} onDone={() => onOpenChange(false)} />
+          <ProductLotForm
+            discharge={discharge}
+            lot={lot}
+            onAssignDoors={() => onAssignDoors(lot)}
+            onDone={() => onOpenChange(false)}
+            problems={problems}
+          />
         )}
       </SheetContent>
     </Sheet>
@@ -64,14 +89,19 @@ export function ProductLotSheet({ discharge, lot, open, onOpenChange }: ProductL
 function ProductLotForm({
   discharge,
   lot,
+  problems,
+  onAssignDoors,
   onDone,
 }: {
   discharge: DischargeDetailDto
   lot: ProductLot
+  problems?: LotDoorRowProblems
+  onAssignDoors: () => void
   onDone: () => void
 }) {
   const { correctLot } = useDischargeMutations()
   const customers = useCustomerOptions(lot?.customer)
+  const unsavedId = useId()
 
   const form = useAppForm({
     defaultValues: productLotFormValues(lot),
@@ -111,11 +141,41 @@ function ProductLotForm({
     },
   })
 
+  const dirty = useStore(form.store, (state) => state.isDirty)
+
   return (
     <div className="px-4 pb-4">
       <form.AppForm>
         <form.Form className="flex flex-col gap-6" noValidate={true}>
           <ProductLotFields customers={customers} fields={ROOT_LOT_FIELDS} form={form} />
+          {/* The lot's doors are read here, with what keeps them from serving the start, but are
+              not part of this form: a door change has its own rules and its own save. */}
+          <FieldSet className="gap-2">
+            <FieldLegend variant="label">Warehouse doors</FieldLegend>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <LotDoorChips dischargeStatus={discharge.status} lot={lot} problems={problems} />
+              <Button
+                aria-describedby={dirty ? unsavedId : undefined}
+                aria-label={`Assign doors for ${lotLabel(lot)}`}
+                // Leaving with unsaved changes would lose them: they are saved or cancelled first.
+                disabled={dirty}
+                onClick={onAssignDoors}
+                size="xs"
+                type="button"
+                variant="outline"
+              >
+                Assign doors
+              </Button>
+            </div>
+            <FieldDescription>
+              Doors are changed from Assign doors, not from this form.
+            </FieldDescription>
+            {dirty && (
+              <FieldDescription id={unsavedId}>
+                Save or cancel this lot's changes before assigning doors.
+              </FieldDescription>
+            )}
+          </FieldSet>
           <form.FormError />
           <SheetFooter className="flex-row justify-end gap-2 p-0">
             <Button onClick={onDone} type="button" variant="outline">

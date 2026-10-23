@@ -1,4 +1,4 @@
-import type { DischargeDetailDto } from '@/features/discharges/types'
+import type { DischargeDetailDto, StartProblemDto } from '@/features/discharges/types'
 import { formatDateTime, fromDateTimeLocalValue } from '@/helpers/dates'
 
 type DischargeStatus = DischargeDetailDto['status']
@@ -314,4 +314,81 @@ export function lotRemovalBlock(lot: LotOfCustomer, lotCount: number): LotRemova
   }
 
   return lot.doorAssignments.length > 0 ? 'E_PRODUCT_LOT_HAS_DOOR_ASSIGNMENTS' : null
+}
+
+/** Who holds a door when the start check could not name them. */
+export const UNKNOWN_DOOR_HOLDER = 'another active discharge'
+
+export type LotDoorProblems = {
+  /** The lots without any door in effect. */
+  noDoor: ReadonlySet<string>
+  /** By lot, its doors an active discharge holds, each with the holder's vessel. */
+  heldDoors: ReadonlyMap<string, ReadonlyMap<string, string>>
+  /** Whether held doors were read at all: without the start check, none is known either way. */
+  heldKnown: boolean
+}
+
+/**
+ * What keeps each lot of a planned discharge from starting on its doors. A lot without a door in
+ * effect is the start rule itself, read from the detail so every reader sees it. Which active
+ * discharge holds a door only the start check knows: `problems` is its answer, `null` while it is
+ * not read, and a held door the lot no longer has on the page is left out. An active or closed
+ * discharge has nothing left to start.
+ */
+export function lotDoorProblems(
+  detail: Pick<DischargeDetailDto, 'status' | 'productLots'>,
+  problems: StartProblemDto[] | null,
+): LotDoorProblems {
+  if (detail.status !== 'PLANNED') {
+    return { noDoor: new Set(), heldDoors: new Map(), heldKnown: false }
+  }
+
+  const currentDoors = new Map(
+    detail.productLots.map((lot) => [
+      lot.id,
+      new Set(
+        lot.doorAssignments
+          .filter((period) => isInEffect(period, detail.status))
+          .map((period) => period.warehouseDoor.id),
+      ),
+    ]),
+  )
+  const heldDoors = new Map<string, Map<string, string>>()
+
+  for (const problem of problems ?? []) {
+    const lotId = problem.context?.type === 'PRODUCT_LOT' ? problem.context.id : undefined
+
+    if (problem.code !== 'WAREHOUSE_DOOR_HELD' || !lotId) {
+      continue
+    }
+    if (!currentDoors.get(lotId)?.has(problem.subject.id)) {
+      continue
+    }
+
+    const lotHeld = heldDoors.get(lotId) ?? new Map<string, string>()
+    lotHeld.set(problem.subject.id, problem.holder?.vesselName ?? UNKNOWN_DOOR_HOLDER)
+    heldDoors.set(lotId, lotHeld)
+  }
+
+  return {
+    noDoor: new Set(
+      [...currentDoors].filter(([, doors]) => doors.size === 0).map(([lotId]) => lotId),
+    ),
+    heldDoors,
+    heldKnown: problems !== null,
+  }
+}
+
+/** The line above a discharge's lots: how much there is, then what still blocks its doors. */
+export function productLotsSummary(
+  detail: Pick<DischargeDetailDto, 'expectedTonnage' | 'productLots'>,
+  problems: LotDoorProblems,
+) {
+  return {
+    lotCount: detail.productLots.length,
+    customerCount: new Set(detail.productLots.map((lot) => lot.customer.id)).size,
+    expectedTonnage: detail.expectedTonnage,
+    lotsWithoutDoor: problems.noDoor.size,
+    heldDoorCount: [...problems.heldDoors.values()].reduce((total, doors) => total + doors.size, 0),
+  }
 }

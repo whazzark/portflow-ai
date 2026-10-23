@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { formatTonnes } from '@/features/discharges/discharge-detail-view'
 import {
   currentDoorIds,
   describeIssues,
@@ -49,8 +50,14 @@ export const DOORS_NOT_SELECTABLE_MESSAGE = 'Some warehouse doors can no longer 
 type LotWarehouseDoorsDialogProps = {
   discharge: DischargeDetailDto
   lot: ProductLot | null
+  /** The lot's doors an active discharge holds, each with the holder's vessel. */
+  heldBy?: ReadonlyMap<string, string>
   onOpenChange: (open: boolean) => void
 }
+
+/** The one rule the two columns follow, said once under them. */
+export const DOOR_SHARING_RULE =
+  'A door serves one lot of a discharge at a time. Several planned discharges may share it: the one that starts first uses it.'
 
 /**
  * A lot's warehouse doors, moved between what is available and what the lot takes. Two columns side
@@ -58,6 +65,7 @@ type LotWarehouseDoorsDialogProps = {
  */
 export function LotWarehouseDoorsDialog({
   discharge,
+  heldBy,
   lot,
   onOpenChange,
 }: LotWarehouseDoorsDialogProps) {
@@ -66,12 +74,15 @@ export function LotWarehouseDoorsDialog({
       <DialogContent className="gap-0 p-0" size="xl">
         <DialogHeader className="shrink-0 border-b p-4">
           <DialogTitle>Warehouse doors</DialogTitle>
-          <DialogDescription>{lot ? lotLabel(lot) : null}</DialogDescription>
+          <DialogDescription>
+            {lot ? `${lotLabel(lot)} · ${formatTonnes(lot.expectedQuantityTonnes)}` : null}
+          </DialogDescription>
         </DialogHeader>
         {/* Mounted with the dialog, so each opening starts from the lot as it stands. */}
         {lot && (
           <LotWarehouseDoorsForm
             discharge={discharge}
+            heldBy={heldBy}
             lot={lot}
             onDone={() => onOpenChange(false)}
           />
@@ -101,10 +112,12 @@ type ValidationDetail = { field: string; message: string; rule?: string }
 
 function LotWarehouseDoorsForm({
   discharge,
+  heldBy,
   lot,
   onDone,
 }: {
   discharge: DischargeDetailDto
+  heldBy?: ReadonlyMap<string, string>
   lot: ProductLot
   onDone: () => void
 }) {
@@ -272,6 +285,7 @@ function LotWarehouseDoorsForm({
       discharge={discharge}
       doors={columns.assigned}
       headingId={assignedHeadingId}
+      heldBy={heldBy}
       heldIds={heldIds}
       lot={lot}
       onRemove={(doorId, target) => move(doorId, false, target)}
@@ -339,6 +353,9 @@ function LotWarehouseDoorsForm({
             </Column>
           </div>
         )}
+        <p className="shrink-0 border-t px-4 py-2 text-muted-foreground text-xs">
+          {DOOR_SHARING_RULE}
+        </p>
         <DialogFooter className="shrink-0 flex-row flex-wrap items-center gap-3 border-t p-4 sm:flex-row sm:flex-nowrap">
           <LotDoorChangeSummary
             chosenIds={chosenIds}

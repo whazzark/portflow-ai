@@ -1,8 +1,11 @@
 import { describe, expect, test } from 'vitest'
 import {
+  buildDischargeDetail,
   buildDoorPeriod,
   buildLot,
   buildShift,
+  buildStartProblem,
+  DISCHARGES,
 } from '@/features/discharges/__tests__/support/fixtures'
 import {
   formatPeriod,
@@ -13,8 +16,10 @@ import {
   isInEffect,
   lotDoorCell,
   lotDoorNotice,
+  lotDoorProblems,
   lotRemovalBlock,
   plannedCoverage,
+  productLotsSummary,
   shiftResources,
   splitPeriods,
   sumTonnes,
@@ -311,5 +316,111 @@ describe('lotDoorCell', () => {
     expect(ids(cell.shown)).toEqual(['a', 'b'])
     expect(cell.history).toHaveLength(3)
     expect(cell.historyLabel).toBe('history')
+  })
+})
+
+describe('lotDoorProblems', () => {
+  const door = (id: string, effectiveTo: string | null = null) =>
+    buildDoorPeriod({
+      id: `period-${id}-${effectiveTo ?? 'open'}`,
+      effectiveTo,
+      warehouseDoor: { id, name: id, status: 'AVAILABLE' },
+    })
+  const detail = (status: 'PLANNED' | 'ACTIVE' | 'CLOSED') =>
+    buildDischargeDetail(DISCHARGES[0], {
+      status,
+      productLots: [
+        buildLot({ id: 'never' }),
+        buildLot({ id: 'ended', doorAssignments: [door('d-ended', ENDED.effectiveTo)] }),
+        buildLot({ id: 'held', doorAssignments: [door('d-held'), door('d-free')] }),
+      ],
+    })
+  const held = (doorId: string, lotId: string, vesselName?: string) =>
+    buildStartProblem({
+      family: 'ACTIVE_DISCHARGE_CONFLICT',
+      code: 'WAREHOUSE_DOOR_HELD',
+      subject: { type: 'WAREHOUSE_DOOR', id: doorId },
+      context: { type: 'PRODUCT_LOT', id: lotId },
+      ...(vesselName ? { holder: { dischargeId: 'discharge-ocean', vesselName } } : {}),
+    })
+
+  test('flags the lots of a planned discharge without a current door, ended ones included', () => {
+    const problems = lotDoorProblems(detail('PLANNED'), [])
+
+    expect([...problems.noDoor]).toEqual(['never', 'ended'])
+  })
+
+  test('reads the doors held by an active discharge from the start check, by lot', () => {
+    const problems = lotDoorProblems(detail('PLANNED'), [
+      buildStartProblem({ subject: { type: 'PRODUCT_LOT', id: 'never' } }),
+      held('d-held', 'held', 'MV Ocean Cedar'),
+    ])
+
+    expect(problems.heldKnown).toBe(true)
+    expect([...(problems.heldDoors.get('held') ?? [])]).toEqual([['d-held', 'MV Ocean Cedar']])
+    expect(problems.heldDoors.has('never')).toBe(false)
+  })
+
+  test('names an unknown holder as another active discharge', () => {
+    const problems = lotDoorProblems(detail('PLANNED'), [held('d-held', 'held')])
+
+    expect(problems.heldDoors.get('held')?.get('d-held')).toBe('another active discharge')
+  })
+
+  test('ignores a held door the lot no longer has on the page', () => {
+    const problems = lotDoorProblems(detail('PLANNED'), [held('d-gone', 'held', 'MV Ocean Cedar')])
+
+    expect(problems.heldDoors.size).toBe(0)
+  })
+
+  test('knows nothing of held doors without the start check', () => {
+    const problems = lotDoorProblems(detail('PLANNED'), null)
+
+    expect(problems.heldKnown).toBe(false)
+    expect(problems.heldDoors.size).toBe(0)
+    expect([...problems.noDoor]).toEqual(['never', 'ended'])
+  })
+
+  test('reports nothing on an active or a closed discharge', () => {
+    for (const status of ['ACTIVE', 'CLOSED'] as const) {
+      const problems = lotDoorProblems(detail(status), [held('d-held', 'held', 'MV Ocean Cedar')])
+
+      expect(problems.noDoor.size).toBe(0)
+      expect(problems.heldDoors.size).toBe(0)
+      expect(problems.heldKnown).toBe(false)
+    }
+  })
+})
+
+describe('productLotsSummary', () => {
+  test('counts the lots, their customers, and the problems found', () => {
+    const cargill = { id: 'cargill', name: 'Cargill France', status: 'AVAILABLE' as const }
+    const soufflet = { id: 'soufflet', name: 'Soufflet', status: 'AVAILABLE' as const }
+    const discharge = buildDischargeDetail(DISCHARGES[0], {
+      status: 'PLANNED',
+      expectedTonnage: '1800.000',
+      productLots: [
+        buildLot({ id: 'a', customer: cargill }),
+        buildLot({ id: 'b', customer: cargill, doorAssignments: [buildDoorPeriod()] }),
+        buildLot({ id: 'c', customer: soufflet }),
+      ],
+    })
+    const problems = lotDoorProblems(discharge, [
+      buildStartProblem({
+        family: 'ACTIVE_DISCHARGE_CONFLICT',
+        code: 'WAREHOUSE_DOOR_HELD',
+        subject: { type: 'WAREHOUSE_DOOR', id: 'door-a1' },
+        context: { type: 'PRODUCT_LOT', id: 'b' },
+        holder: { dischargeId: 'discharge-ocean', vesselName: 'MV Ocean Cedar' },
+      }),
+    ])
+
+    expect(productLotsSummary(discharge, problems)).toEqual({
+      lotCount: 3,
+      customerCount: 2,
+      expectedTonnage: '1800.000',
+      lotsWithoutDoor: 2,
+      heldDoorCount: 1,
+    })
   })
 })

@@ -1,4 +1,5 @@
-import { ContactIcon } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { ContactIcon, TriangleAlertIcon } from 'lucide-react'
 import { useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -21,13 +22,20 @@ import {
 import {
   formatTonnes,
   groupLotsByCustomer,
+  type LotDoorProblems,
+  lotDoorProblems,
   lotRemovalBlock,
+  productLotsSummary,
 } from '@/features/discharges/discharge-detail-view'
+import { dischargeQueries } from '@/features/discharges/queries/discharge-queries'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { AddProductLotsSheet } from '@/features/discharges/ui/detail/add-product-lots-sheet'
 import { CustomerProductLotsSheet } from '@/features/discharges/ui/detail/customer-product-lots-sheet'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
-import { LotDoorChips } from '@/features/discharges/ui/detail/lot-door-chips'
+import {
+  LotDoorChips,
+  type LotDoorRowProblems,
+} from '@/features/discharges/ui/detail/lot-door-chips'
 import { ProductLotRowActions } from '@/features/discharges/ui/detail/product-lot-row-actions'
 import { ProductLotSheet } from '@/features/discharges/ui/detail/product-lot-sheet'
 import { ReferenceLabel } from '@/features/discharges/ui/detail/reference-label'
@@ -38,6 +46,69 @@ import {
 import { LotWarehouseDoorsDialog } from '@/features/discharges/ui/planning/lot-warehouse-doors-dialog'
 
 type ProductLot = DischargeDetailDto['productLots'][number]
+
+const NO_HELD_DOOR: ReadonlyMap<string, string> = new Map()
+
+const counted = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
+
+/** A lot's own share of the discharge's door problems, as its row shows them. */
+const rowProblems = (problems: LotDoorProblems, lotId: string): LotDoorRowProblems => ({
+  noDoor: problems.noDoor.has(lotId),
+  heldBy: problems.heldDoors.get(lotId) ?? NO_HELD_DOOR,
+})
+
+const hasDoorProblem = (problems: LotDoorRowProblems) => problems.noDoor || problems.heldBy.size > 0
+
+/**
+ * How much the discharge unloads, then what still blocks its doors. A count of held doors appears
+ * only once the start check has answered: before that, none is known either way.
+ */
+function ProductLotsSummary({
+  discharge,
+  problems,
+}: {
+  discharge: DischargeDetailDto
+  problems: LotDoorProblems
+}) {
+  const readOnly = discharge.status === 'ACTIVE'
+  const summary = productLotsSummary(discharge, problems)
+  const warnings = [
+    summary.lotsWithoutDoor > 0
+      ? counted(summary.lotsWithoutDoor, 'lot without a door', 'lots without a door')
+      : null,
+    problems.heldKnown && summary.heldDoorCount > 0
+      ? counted(
+          summary.heldDoorCount,
+          'door held by another discharge',
+          'doors held by another discharge',
+        )
+      : null,
+  ].filter((warning) => warning !== null)
+
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground text-sm">
+      <p>
+        {counted(summary.lotCount, 'lot', 'lots')} ·{' '}
+        {counted(summary.customerCount, 'customer', 'customers')} ·{' '}
+        <span className="tabular-nums">{formatTonnes(summary.expectedTonnage)}</span>
+      </p>
+      {(warnings.length > 0 || readOnly) && (
+        <ul className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:ml-auto">
+          {warnings.map((warning, index) => (
+            <li className="inline-flex items-center gap-2" key={warning}>
+              {index > 0 && <span aria-hidden="true">·</span>}
+              <span className="inline-flex items-center gap-1.5 text-warning">
+                <TriangleAlertIcon aria-hidden="true" className="size-4" />
+                {warning}
+              </span>
+            </li>
+          ))}
+          {readOnly && <li>Read-only while the discharge is active</li>}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 type DischargeProductLotsCardProps = {
   discharge: DischargeDetailDto
@@ -53,6 +124,10 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
   const [planningDoors, setPlanningDoors] = useState<ProductLot | null>(null)
   const tableId = useId()
   const groups = groupLotsByCustomer(discharge.productLots)
+  // Which active discharge holds a door only the start check knows, and only a preparer may read
+  // it: the same answer the Start dialog shows, so the two never disagree.
+  const check = useQuery({ ...dischargeQueries.startCheck(discharge.id), enabled: canCorrect })
+  const problems = lotDoorProblems(discharge, check.data?.data.problems ?? null)
   const columnCount = canCorrect ? 4 : 3
 
   const addButton = (
@@ -63,6 +138,9 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
 
   return (
     <DetailSection actions={canCorrect ? addButton : undefined} title="Product lots">
+      {discharge.productLots.length > 0 && (
+        <ProductLotsSummary discharge={discharge} problems={problems} />
+      )}
       {discharge.productLots.length > 0 ? (
         <div className="overflow-hidden rounded-lg border">
           <Table aria-label="Product lots">
@@ -96,8 +174,8 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
                             status={group.customer.status}
                           />
                         </span>
-                        <span className="font-normal text-muted-foreground">
-                          · {group.lots.length} {group.lots.length === 1 ? 'lot' : 'lots'}
+                        <span className="font-normal text-muted-foreground text-sm">
+                          {counted(group.lots.length, 'lot', 'lots')}
                         </span>
                       </span>
                     </th>
@@ -120,6 +198,7 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
                   {group.lots.map((lot) => {
                     const lotName = `${lot.customer.name} · ${lot.productName}`
                     const block = lotRemovalBlock(lot, discharge.productLots.length)
+                    const lotProblems = rowProblems(problems, lot.id)
 
                     return (
                       <TableRow key={lot.id}>
@@ -127,7 +206,7 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
                           <span className="grid gap-0.5">
                             <span className="font-medium">{lot.productName}</span>
                             {lot.description && (
-                              <span className="text-muted-foreground italic">
+                              <span className="text-muted-foreground text-sm">
                                 {lot.description}
                               </span>
                             )}
@@ -137,7 +216,24 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
                           {formatTonnes(lot.expectedQuantityTonnes)}
                         </TableCell>
                         <TableCell className="whitespace-normal align-top">
-                          <LotDoorChips dischargeStatus={discharge.status} lot={lot} />
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <LotDoorChips
+                              dischargeStatus={discharge.status}
+                              lot={lot}
+                              problems={lotProblems}
+                            />
+                            {canCorrect && hasDoorProblem(lotProblems) && (
+                              // The fix sits with the problem, a click from it.
+                              <Button
+                                aria-label={`Assign doors for ${lotName}`}
+                                onClick={() => setPlanningDoors(lot)}
+                                size="xs"
+                                variant="outline"
+                              >
+                                Assign doors
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                         {canCorrect && (
                           <TableCell className="text-right align-top">
@@ -187,6 +283,11 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
         <ProductLotSheet
           discharge={discharge}
           lot={editing ?? undefined}
+          onAssignDoors={(lot) => {
+            setEditing(null)
+            setPlanningDoors(lot)
+          }}
+          problems={editing ? rowProblems(problems, editing.id) : undefined}
           onOpenChange={(open) => !open && setEditing(null)}
           open={editing !== null}
         />
@@ -201,6 +302,7 @@ export function DischargeProductLotsCard({ discharge, canCorrect }: DischargePro
       {canCorrect && (
         <LotWarehouseDoorsDialog
           discharge={discharge}
+          heldBy={planningDoors ? rowProblems(problems, planningDoors.id).heldBy : undefined}
           lot={planningDoors}
           onOpenChange={(open) => !open && setPlanningDoors(null)}
         />

@@ -82,6 +82,8 @@ test("corrects a customer's lots in one change, and shows them corrected", async
   const sheet = await openCargillCorrection()
 
   expect(sheet).toHaveTextContent('Cargill France')
+  // The running count and total follow the edits before anything is saved.
+  expect(sheet).toHaveTextContent('3 lots · 1,500.000 t')
   expect([1, 2, 3].map((product) => nameOf(sheet, product))).toEqual([
     expect.objectContaining({ value: 'Blé tendre' }),
     expect.objectContaining({ value: 'Orge' }),
@@ -91,6 +93,7 @@ test("corrects a customer's lots in one change, and shows them corrected", async
 
   change(quantityOf(sheet, 2), '350.5')
   change(nameOf(sheet, 3), 'Colza bio')
+  expect(sheet).toHaveTextContent('3 lots · 1,550.500 t')
   fireEvent.click(within(sheet).getByRole('button', { name: 'Save' }))
 
   await waitForClosed()

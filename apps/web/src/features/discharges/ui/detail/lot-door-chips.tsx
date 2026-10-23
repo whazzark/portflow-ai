@@ -1,4 +1,5 @@
-import { ArchiveIcon } from 'lucide-react'
+import { ArchiveIcon, TriangleAlertIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
@@ -18,6 +19,23 @@ const isArchived = (assignment: DoorAssignment) =>
 
 const fullName = (assignment: DoorAssignment) =>
   `${assignment.warehouse.name} › ${assignment.warehouseDoor.name}`
+
+/** What keeps a lot of a planned discharge from starting on its doors, as its row shows it. */
+export type LotDoorRowProblems = {
+  noDoor: boolean
+  /** The lot's doors an active discharge holds, each with the holder's vessel. */
+  heldBy: ReadonlyMap<string, string>
+}
+
+/** A door problem in words, so it reads without its amber tone. */
+function WarningText({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm text-warning">
+      <TriangleAlertIcon aria-hidden="true" className="size-3.5" />
+      {children}
+    </span>
+  )
+}
 
 /** A door by its own name; its warehouse is read with it and shown on hover. */
 function DoorChip({ assignment }: { assignment: DoorAssignment }) {
@@ -54,8 +72,16 @@ function DoorReference({ assignment }: { assignment: DoorAssignment }) {
   )
 }
 
-/** Every door the lot holds, once the chips leave some out. */
-function MoreDoorsPopover({ doors, hidden }: { doors: DoorAssignment[]; hidden: number }) {
+/** Every door the lot holds, once the chips leave some out, each still saying who holds it. */
+function MoreDoorsPopover({
+  doors,
+  heldBy,
+  hidden,
+}: {
+  doors: DoorAssignment[]
+  heldBy?: ReadonlyMap<string, string>
+  hidden: number
+}) {
   return (
     <li>
       <Popover>
@@ -71,11 +97,16 @@ function MoreDoorsPopover({ doors, hidden }: { doors: DoorAssignment[]; hidden: 
         <PopoverContent>
           <PopoverTitle>Warehouse doors</PopoverTitle>
           <ul className="grid gap-1">
-            {doors.map((assignment) => (
-              <li key={assignment.id}>
-                <DoorReference assignment={assignment} />
-              </li>
-            ))}
+            {doors.map((assignment) => {
+              const holder = heldBy?.get(assignment.warehouseDoor.id)
+
+              return (
+                <li key={assignment.id}>
+                  <DoorReference assignment={assignment} />
+                  {holder && <span className="block text-warning text-xs">Held by {holder}</span>}
+                </li>
+              )
+            })}
           </ul>
         </PopoverContent>
       </Popover>
@@ -120,9 +151,12 @@ function HistoryPopover({
 export function LotDoorChips({
   dischargeStatus,
   lot,
+  problems,
 }: {
   lot: ProductLot
   dischargeStatus: DischargeStatus
+  /** On a planned discharge, the lot's door problems; each is said in words, not by color only. */
+  problems?: LotDoorRowProblems
 }) {
   const cell = lotDoorCell(lot.doorAssignments, dischargeStatus)
 
@@ -131,24 +165,45 @@ export function LotDoorChips({
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       {cell.doors.length > 0 ? (
         <ul aria-label="Warehouse doors" className="flex flex-wrap items-center gap-1">
-          {cell.shown.map((assignment) => (
-            <li key={assignment.id}>
-              <DoorChip assignment={assignment} />
-            </li>
-          ))}
+          {cell.shown.map((assignment) => {
+            const holder = problems?.heldBy.get(assignment.warehouseDoor.id)
+
+            return (
+              <li className="inline-flex flex-wrap items-center gap-x-1.5" key={assignment.id}>
+                <DoorChip assignment={assignment} />
+                {holder && <WarningText>Held by {holder}</WarningText>}
+              </li>
+            )
+          })}
           {cell.hidden.length > 0 && (
-            <MoreDoorsPopover doors={cell.doors} hidden={cell.hidden.length} />
+            <MoreDoorsPopover
+              doors={cell.doors}
+              heldBy={problems?.heldBy}
+              hidden={cell.hidden.length}
+            />
           )}
         </ul>
+      ) : problems?.noDoor ? (
+        // On a planned discharge a lot without a door keeps it from starting: said, not hinted.
+        <WarningText>No door</WarningText>
       ) : lot.doorAssignments.length === 0 ? (
-        // No door yet is the usual state of a lot being prepared: a quiet dash, said in words to
-        // assistive technologies.
+        // Elsewhere no door is a quiet dash, said in words to assistive technologies.
         <span className="text-muted-foreground">
           <span aria-hidden="true">—</span>
           <span className="sr-only">No warehouse door assigned</span>
         </span>
       ) : null}
-      {lotDoorNotice(lot, dischargeStatus) === 'NONE_CURRENTLY_ASSIGNED' && (
+      {/* A held door behind +N is still said on the row: the problem never needs the popover. */}
+      {cell.hidden.map((assignment) => {
+        const holder = problems?.heldBy.get(assignment.warehouseDoor.id)
+
+        return holder ? (
+          <WarningText key={assignment.id}>
+            {assignment.warehouseDoor.name} held by {holder}
+          </WarningText>
+        ) : null
+      })}
+      {!problems?.noDoor && lotDoorNotice(lot, dischargeStatus) === 'NONE_CURRENTLY_ASSIGNED' && (
         <p className="text-muted-foreground text-xs">No warehouse door currently assigned</p>
       )}
       {cell.history.length > 0 && (

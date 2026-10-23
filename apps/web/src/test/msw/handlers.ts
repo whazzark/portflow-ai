@@ -19,6 +19,14 @@ export const handlers = [
 
   http.post(`${API_BASE_URL}/api/v1/auth/logout`, () => new HttpResponse(null, { status: 204 })),
 
+  // A planned discharge's page asks a preparer what would block its start. Nothing does unless a
+  // test says otherwise, so a test about another section need not answer it.
+  http.get(`${API_BASE_URL}/api/v1/discharges/:id/start-check`, ({ params }) =>
+    HttpResponse.json({
+      data: { dischargeId: String(params.id), shiftId: null, problems: [] },
+    }),
+  ),
+
   // The submitted identity merged over a signed-in user, as the API answers it. Tests needing a
   // session that follows the update, or a refusal, override this.
   http.patch(`${API_BASE_URL}/api/v1/me/profile`, async ({ request }) => {
