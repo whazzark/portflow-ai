@@ -2,7 +2,7 @@ import { PlusIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { formatTonnes, sumTonnes } from '@/features/discharges/discharge-detail-view'
+import { sumTonnes } from '@/features/discharges/discharge-detail-view'
 import {
   emptyProductLine,
   type ProductLineFormValues,
@@ -14,6 +14,7 @@ import {
   RemoveRowButton,
   RepeatedRow,
 } from '@/features/discharges/ui/preparation/repeated-rows'
+import { formatTonnes } from '@/helpers/tonnes'
 import { withFieldGroup } from '@/libraries/forms/form'
 
 type CustomerOption = { id: string; name: string }

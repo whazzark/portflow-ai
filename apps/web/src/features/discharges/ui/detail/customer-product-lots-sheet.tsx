@@ -11,11 +11,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { correctionRowRemoval } from '@/features/discharges/customer-lots-correction'
-import {
-  formatTonnes,
-  groupLotsByCustomer,
-  sumTonnes,
-} from '@/features/discharges/discharge-detail-view'
+import { groupLotsByCustomer, sumTonnes } from '@/features/discharges/discharge-detail-view'
 import {
   type CorrectionLineFormValues,
   correctionLineOf,
@@ -35,6 +31,7 @@ import { LOT_REMOVAL_REASONS } from '@/features/discharges/ui/detail/remove-prod
 import { useCustomerOptions } from '@/features/discharges/ui/preparation/preparation-options'
 import { ProductLotGroupFields } from '@/features/discharges/ui/preparation/product-lot-group-fields'
 import { WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
+import { formatTonnes } from '@/helpers/tonnes'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'

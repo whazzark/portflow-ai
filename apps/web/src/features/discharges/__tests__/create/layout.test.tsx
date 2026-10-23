@@ -1,8 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
-
-import { formatTonnes } from '@/features/discharges/discharge-detail-view'
 import { formatDateTime, fromDateTimeLocalValue } from '@/helpers/dates'
+import { formatTonnes } from '@/helpers/tonnes'
 
 import { ACTIVE_OPERATIONS_LEAD, ELIGIBLE_RESPONSIBLES } from '../support/fixtures'
 import {

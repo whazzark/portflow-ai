@@ -1,9 +1,9 @@
 import { ResourceDetailField } from '@/components/resource/resource-details'
-import { formatTonnes } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
 import { ReferenceLabel } from '@/features/discharges/ui/detail/reference-label'
 import { formatDateTime } from '@/helpers/dates'
+import { formatTonnes } from '@/helpers/tonnes'
 
 type DischargeIdentityCardProps = {
   discharge: DischargeDetailDto

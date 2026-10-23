@@ -83,19 +83,6 @@ export function lotDoorNotice(
   return 'NONE_CURRENTLY_ASSIGNED'
 }
 
-const WHOLE_TONNES = new Intl.NumberFormat('en-GB')
-
-/**
- * A fixed-3 decimal string as tonnes. The value never goes through a number: the whole part is
- * grouped as an integer and the three decimals are kept as sent. Belongs in `helpers/` once a
- * second feature displays tonnes.
- */
-export function formatTonnes(value: string) {
-  const [whole, decimals = '000'] = value.split('.')
-
-  return `${WHOLE_TONNES.format(BigInt(whole))}.${decimals} t`
-}
-
 const TONNAGE_PATTERN = /^(\d{1,9})(?:\.(\d{1,3}))?$/
 
 /**

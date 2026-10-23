@@ -13,11 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  formatTonnes,
-  plannedCoverage,
-  sumTonnes,
-} from '@/features/discharges/discharge-detail-view'
+import { plannedCoverage, sumTonnes } from '@/features/discharges/discharge-detail-view'
 import {
   CREATION_STEPS,
   type CreateDischargeFormValues,
@@ -51,6 +47,7 @@ import {
 } from '@/features/discharges/ui/preparation/repeated-rows'
 import { formatDateTime } from '@/helpers/dates'
 import { resourceFailureTitle, WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
+import { formatTonnes } from '@/helpers/tonnes'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'
