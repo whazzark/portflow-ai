@@ -268,7 +268,10 @@ T009 Create customer-no-match.tsx
 - Shared lifecycle defaults stay as they are (R1, R2); any temptation to change them belongs to a
   later cross-resource cleanup, not this PR.
 - Baseline failures found in T001: none; the suite only times out under heavy machine load (repo's 3 s asyncUtilTimeout).
-- T040 review (read-only subagent) found three low-severity items, still open: ResourceActor drops the date when the actor is null; the row-menu separator applies to every directory but is not listed in contracts/shared-lifecycle-seams.md; the bulk dialog list filters to loaded customers while the confirm counts every selected id.
+- T040 review (read-only subagent) found three low-severity items, now resolved: ResourceActor drops the date when the actor is null; the row-menu separator applies to every directory but is not listed in contracts/shared-lifecycle-seams.md; the bulk dialog list filters to loaded customers while the confirm counts every selected id.
 - Product decision 2026-10-23 (shared with #317): T016–T023 originally added a footer "Cancel" and
   changed the `apps/web/AGENTS.md` sheet rule; both were reverted. The edit sheet keeps
   "Back to details", the create sheet has no footer Cancel, and `AGENTS.md` is unchanged.
+- Review fixes: an unresolved actor reads "Unknown" with its date instead of "—"; the row-menu
+  separator is recorded in contracts/shared-lifecycle-seams.md; the bulk dialog lists every selected
+  id (by id when the list no longer holds it) so it agrees with the confirm count.

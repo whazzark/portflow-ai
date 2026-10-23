@@ -62,9 +62,15 @@ export function ResourceLifecycleHistory({ blocks }: { blocks: LifecycleBlock[] 
                       {formatDateTime(block.at ?? null)}
                     </span>
                   </div>
+                  {/* `undefined` is a collection that never exposes the actor; `null` one that
+                      did not resolve it, which is said rather than drawn as an empty dash. */}
                   {block.actor !== undefined && (
                     <span className="text-[13px]">
-                      <ResourceActor actor={block.actor} />
+                      {block.actor ? (
+                        <ResourceActor actor={block.actor} />
+                      ) : (
+                        <span className="text-muted-foreground">Unknown</span>
+                      )}
                     </span>
                   )}
                   {block.comment && (

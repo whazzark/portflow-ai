@@ -59,3 +59,16 @@ test('offers only reactivation on an archived customer', async () => {
   expect(within(dialog).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
   expect(within(dialog).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })
+
+test('names an unknown actor in the history instead of leaving a dash', async () => {
+  mockCustomers(undefined, [CUSTOMERS[0], CUSTOMERS[1], { ...CUSTOMERS[2], archivedBy: null }])
+
+  renderCustomers('/customers?customerId=archived-1&mode=view')
+
+  const dialog = await screen.findByRole('dialog', { name: 'Old Harbor' })
+  const entry = within(within(dialog).getByRole('region', { name: 'History' })).getByRole(
+    'listitem',
+  )
+  expect(entry).toHaveTextContent('Unknown')
+  expect(entry).not.toHaveTextContent('—')
+})

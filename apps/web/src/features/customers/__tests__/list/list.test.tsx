@@ -208,3 +208,21 @@ test('offers observers no creation from an empty directory', async () => {
   expect(await screen.findByText('No available customers')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Create customer' })).not.toBeInTheDocument()
 })
+
+test('keeps the archive date when the archiving user is unknown', async () => {
+  const user = userEvent.setup()
+  mockCustomers(
+    undefined,
+    CUSTOMERS.map((customer) =>
+      customer.status === 'ARCHIVED' ? { ...customer, archivedBy: null } : customer,
+    ),
+  )
+
+  renderCustomers()
+  await screen.findByRole('table', { name: 'Available customers' })
+  await user.click(screen.getByRole('tab', { name: 'Archived 1' }))
+
+  const archived = await screen.findByRole('table', { name: 'Archived customers' })
+  expect(within(archived).getByText('Unknown')).toBeInTheDocument()
+  expect(within(archived).getByText('2 Jan 2026')).toBeInTheDocument()
+})

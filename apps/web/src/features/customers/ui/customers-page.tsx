@@ -55,15 +55,17 @@ export function CustomersPage() {
   const customers = customersQuery.data?.data ?? []
   const availableCustomers = customers.filter((customer) => customer.status === 'AVAILABLE')
   const archivedCustomers = customers.filter((customer) => customer.status === 'ARCHIVED')
-  // The selection as the confirmation lists it, in the directory's order: each customer by the
-  // code the row shows, over its company name.
-  const bulkSelection = customers
-    .filter((customer) => selectedCustomerIds.has(customer.id))
-    .map((customer) => ({
-      id: customer.id,
-      primary: customer.code,
-      secondary: customer.companyName,
-    }))
+  // The selection as the confirmation lists it: each customer by the code the row shows, over its
+  // company name. Every selected id is listed, so the list always agrees with the count on the
+  // confirm button; one a refresh no longer returns is listed by its id, as its outcome will be.
+  const customersById = new Map(customers.map((customer) => [customer.id, customer]))
+  const bulkSelection = [...selectedCustomerIds].map((id) => {
+    const customer = customersById.get(id)
+
+    return customer
+      ? { id, primary: customer.code, secondary: customer.companyName }
+      : { id, primary: id }
+  })
 
   // What the active tab currently lists, once the search has narrowed it — the same set the table
   // renders, and so the same set `Select all` and Ctrl/Cmd+A act on.

@@ -1,8 +1,9 @@
 # Contract: Shared lifecycle and resource primitives touched by this feature
 
-These are the additions to shared web components. Every addition is optional; omitting it keeps
-today's behavior and copy exactly, so other features need no change. Sibling V2 restyles (#317,
-#319, #320, #321, #326) can adopt them.
+These are the changes to shared web components. Every new prop is optional; omitting it keeps
+today's behavior and copy exactly, so other features need no change. Two changes are visual for
+every resource and are listed as such: the bulk toolbar look and the row-menu separator. Sibling
+V2 restyles (#317, #319, #320, #321, #326) can adopt the new props.
 
 ## `components/lifecycle/resource-lifecycle-actions.tsx`
 
@@ -31,6 +32,12 @@ commentPlaceholder?: (action: LifecycleAction) => string
 `BulkResourceLifecycleActions` (toolbar) changes visually to the V2 bar for every resource. Its
 role, accessible name and the accessible names of its buttons are unchanged; visible button text
 becomes the action alone and "Clear".
+
+## `components/lifecycle/resource-row-actions.tsx`
+
+The row menu renders a `DropdownMenuSeparator` between View/Edit and the lifecycle items whenever
+both groups are present. Like the bulk toolbar, this is a visual change for every resource's row
+menu (one more `role="separator"` in the open menu); item names, order and behavior are unchanged.
 
 ## `components/lifecycle/resource-lifecycle-history.tsx` (new)
 
