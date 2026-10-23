@@ -48,7 +48,7 @@ test('reactivates the user exactly once when retried after the API is back', asy
 
   expect(await screen.findByText('User “David Évrard” reactivated')).toBeInTheDocument()
   await waitFor(() =>
-    expect(screen.getByRole('tab', { name: /Deactivated \(0\)/ })).toBeInTheDocument(),
+    expect(screen.getByRole('tab', { name: /^Deactivated 0$/ })).toBeInTheDocument(),
   )
   expect(requests).toEqual(['deactivated-1'])
 })

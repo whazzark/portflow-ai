@@ -27,7 +27,7 @@ test('counts the active collection for an operations admin', async () => {
   renderUsers()
   await screen.findByRole('table', { name: 'Active users' })
 
-  expect(screen.getByRole('heading', { name: /Active users/ })).toHaveTextContent('(2)')
+  expect(screen.getByRole('heading', { name: /Active users/ })).toHaveTextContent('Active users 2')
 })
 
 test('discloses no other access status to an operations admin', async () => {
