@@ -21,11 +21,23 @@ export default class LucidDischargeRepository extends DischargeRepository {
    * two discharges expected at the same minute never swap places between two reads. The lots are
    * ordered on the same terms: unordered, Postgres is free to return them differently between two
    * reads, and the row's customers are read off that order.
+   *
+   * Only an active discharge's row names shifts, and only the one in progress and those still to
+   * come: planned and closed discharges, and completed shifts, load no shift row.
    */
   list(): Promise<Discharge[]> {
     return Discharge.query()
       .preload('dock')
       .preload('productLots', (productLots) => productLots.preload('customer').orderBy('id', 'asc'))
+      .preload('shifts', (shifts) =>
+        shifts
+          .whereIn('status', ['ACTIVE', 'PLANNED'])
+          .whereIn('discharge_id', (active) =>
+            active.from('discharges').select('id').where('status', 'ACTIVE'),
+          )
+          .orderBy('sequence', 'asc')
+          .preload('responsible'),
+      )
       .withCount('shifts')
       .orderBy('expectedStartAt', 'asc')
       .orderBy('id', 'asc')

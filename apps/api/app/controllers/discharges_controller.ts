@@ -27,9 +27,9 @@ export default class DischargesController {
   async index({ bouncer, serialize }: HttpContext) {
     await bouncer.with(DischargePolicy).authorize('list')
 
-    const discharges = await this.listDischargesUseCase.handle()
+    const entries = await this.listDischargesUseCase.handle()
 
-    return serialize(DischargeTransformer.transform(discharges))
+    return serialize(DischargeTransformer.transform(entries))
   }
 
   async show({ bouncer, params, serialize }: HttpContext) {
