@@ -10,7 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { formatTonnes, sumTonnes } from '@/features/discharges/discharge-detail-view'
+import { sumTonnes } from '@/features/discharges/discharge-detail-view'
 import {
   addProductLotsCrossRulesSchema,
   addProductLotsFieldsSchema,
@@ -25,6 +25,7 @@ import type { DischargeDetailDto } from '@/features/discharges/types'
 import { STARTED_REFUSAL_MESSAGE } from '@/features/discharges/ui/detail/edit-discharge-identity-sheet'
 import { useCustomerOptions } from '@/features/discharges/ui/preparation/preparation-options'
 import { ProductLotGroupsEditor } from '@/features/discharges/ui/preparation/product-lot-groups-editor'
+import { formatTonnes } from '@/helpers/tonnes'
 import { applyValidationError } from '@/libraries/forms/api-error'
 import { useAppForm } from '@/libraries/forms/form'
 import { parseApiError } from '@/libraries/tuyau/api-error'

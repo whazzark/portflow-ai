@@ -82,6 +82,11 @@ const UNSORTED_DISCHARGES: DischargeDto[] = [
       },
     ],
     shiftCount: 2,
+    startedAt: '2026-07-01T06:30:00.000Z',
+    expectedTonnage: '4200.000',
+    activeShift: null,
+    nextShift: null,
+    startProblemCount: null,
   },
   {
     id: '00000000-0000-4000-8000-000000000004',
@@ -99,6 +104,11 @@ const UNSORTED_DISCHARGES: DischargeDto[] = [
       },
     ],
     shiftCount: 4,
+    startedAt: '2026-08-01T06:00:00.000Z',
+    expectedTonnage: '6100.500',
+    activeShift: null,
+    nextShift: null,
+    startProblemCount: null,
   },
   {
     id: '00000000-0000-4000-8000-000000000003',
@@ -122,6 +132,23 @@ const UNSORTED_DISCHARGES: DischargeDto[] = [
       },
     ],
     shiftCount: 3,
+    startedAt: '2026-09-08T05:30:00.000Z',
+    expectedTonnage: '8419.750',
+    activeShift: {
+      id: 'shift-cedar-2',
+      sequence: 2,
+      plannedStartAt: '2026-09-08T18:00:00.000Z',
+      plannedEndAt: '2026-09-09T06:00:00.000Z',
+      responsible: { id: 'user-sophie', firstName: 'Sophie', lastName: 'Dubois' },
+    },
+    nextShift: {
+      id: 'shift-cedar-3',
+      sequence: 3,
+      plannedStartAt: '2026-09-09T06:00:00.000Z',
+      plannedEndAt: '2026-09-09T18:00:00.000Z',
+      responsible: { id: 'user-thomas', firstName: 'Thomas', lastName: 'Bernard' },
+    },
+    startProblemCount: null,
   },
   {
     // No IMO, no lot, no shift: a discharge only just planned.
@@ -133,6 +160,11 @@ const UNSORTED_DISCHARGES: DischargeDto[] = [
     dock: { id: 'dock-sud', name: 'Quai Sud' },
     productLots: [],
     shiftCount: 0,
+    startedAt: null,
+    expectedTonnage: '0.000',
+    activeShift: null,
+    nextShift: null,
+    startProblemCount: 2,
   },
   {
     id: '00000000-0000-4000-8000-000000000001',
@@ -150,6 +182,11 @@ const UNSORTED_DISCHARGES: DischargeDto[] = [
       },
     ],
     shiftCount: 2,
+    startedAt: null,
+    expectedTonnage: '22843.000',
+    activeShift: null,
+    nextShift: null,
+    startProblemCount: 0,
   },
 ]
 

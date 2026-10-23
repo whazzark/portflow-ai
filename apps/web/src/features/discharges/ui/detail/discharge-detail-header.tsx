@@ -1,11 +1,10 @@
 import type { ReactNode, Ref } from 'react'
-
-import { formatTonnes } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { BackToDischargesLink } from '@/features/discharges/ui/detail/back-to-discharges-link'
 import { DischargeStatusBadge } from '@/features/discharges/ui/detail/discharge-status-badge'
 import { ReferenceLabel } from '@/features/discharges/ui/detail/reference-label'
 import { formatDateTime } from '@/helpers/dates'
+import { formatTonnes } from '@/helpers/tonnes'
 
 type DischargeDetailHeaderProps = {
   discharge: DischargeDetailDto

@@ -12,11 +12,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { formatTonnes, type LotRemovalBlock } from '@/features/discharges/discharge-detail-view'
+import type { LotRemovalBlock } from '@/features/discharges/discharge-detail-view'
 import { useDischargeMutations } from '@/features/discharges/mutations/use-discharge-mutations'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { STARTED_REFUSAL_MESSAGE } from '@/features/discharges/ui/detail/edit-discharge-identity-sheet'
 import { LOT_GONE_MESSAGE } from '@/features/discharges/ui/detail/product-lot-sheet'
+import { formatTonnes } from '@/helpers/tonnes'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
 type ProductLot = DischargeDetailDto['productLots'][number]

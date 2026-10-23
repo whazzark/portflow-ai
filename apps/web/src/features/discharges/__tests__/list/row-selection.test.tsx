@@ -65,3 +65,33 @@ test('marks every row as something that opens', async () => {
   expect(within(row).queryByRole('button')).not.toBeInTheDocument()
   expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument()
 })
+
+test.each([
+  ['Active', /Active/, 'MV Ocean Cedar'],
+  ['Planned', /Planned/, 'MV Atlantic Dawn'],
+  ['Closed', /Closed/, '9410003'],
+])(
+  'opens a %s discharge from its customers and from its trailing chevron',
+  async (_tab, tab, name) => {
+    for (const cell of ['customers', 'chevron'] as const) {
+      const user = userEvent.setup()
+      mockDischarges()
+      mockDischargeDetail()
+
+      const { router, unmount } = renderDischarges()
+      await screen.findByRole('table', { name: 'Discharges' })
+      await user.click(screen.getByRole('tab', { name: tab }))
+      const table = await screen.findByRole('table', { name: 'Discharges' })
+      const row = within(table).getByRole('row', { name: new RegExp(name) })
+      const cells = within(row).getAllByRole('cell')
+      await user.click(
+        cell === 'customers' ? (cells.at(-2) as HTMLElement) : (cells.at(-1) as HTMLElement),
+      )
+
+      await screen.findByRole('heading', { level: 1 })
+      expect(router.state.location.pathname).toMatch(/^\/discharges\/[\w-]+$/)
+      expect(router.state.location.search).toMatchObject({ status: _tab.toLowerCase() })
+      unmount()
+    }
+  },
+)
