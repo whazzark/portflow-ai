@@ -94,7 +94,9 @@ test('View on the archival toast opens the archived warehouse', async () => {
 
   const dialog = await openArchiveDialog(user)
   await user.click(within(dialog).getByRole('button', { name: 'Archive' }))
-  await user.click(await screen.findByRole('button', { name: 'View' }))
+  // From the keyboard: sonner captures the pointer on a toast press, which jsdom does not implement.
+  ;(await screen.findByRole('button', { name: 'View' })).focus()
+  await user.keyboard('{Enter}')
 
   await waitFor(() =>
     expect(router.state.location.search).toMatchObject({
