@@ -32,8 +32,10 @@ function InputSearch({
           aria-hidden="true"
           className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-muted-foreground"
         />
+        {/* The card surface rather than the input's transparent default: a search sits on the page
+            background, where a transparent field all but disappears in the light theme. */}
         <Input
-          className={classnames('pl-9', hasValue && 'pr-9', className)}
+          className={classnames('bg-card pl-9 dark:bg-card', hasValue && 'pr-9', className)}
           id={id}
           onChange={(event) => onValueChange(event.target.value)}
           type="text"
