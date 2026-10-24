@@ -62,8 +62,8 @@ test('moves an activated user out of the pending view and closes the record', as
 
   expect(await screen.findByText(/Deactivate them instead/i)).toBeInTheDocument()
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  expect(screen.getByRole('tab', { name: /Pending \(0\)/ })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Active \(3\)/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Pending 0$/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Active 3$/ })).toBeInTheDocument()
 })
 
 // US2 scenario 5: someone else removed Chloé first. The 404 and the refreshed collection agree, so
@@ -95,7 +95,7 @@ test('stops presenting a user someone else already removed', async () => {
 
   expect(await screen.findByText(/no longer exists/i)).toBeInTheDocument()
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  expect(screen.getByRole('tab', { name: /Pending \(0\)/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Pending 0$/ })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'View user Chloé Durand' })).not.toBeInTheDocument()
 })
 

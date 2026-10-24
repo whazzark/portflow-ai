@@ -15,7 +15,7 @@ test('renders users through access status tabs with active selected by default',
   expect(within(active).queryByText('chloe.durand@portflow.test')).not.toBeInTheDocument()
   expect(within(active).queryByText('david.evrard@portflow.test')).not.toBeInTheDocument()
   expect(within(active).queryByText('elodie.fabre@portflow.test')).not.toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Active \(2\)/ })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('tab', { name: /^Active 2$/ })).toHaveAttribute('aria-selected', 'true')
   expect(screen.getByRole('tablist', { name: 'User access status' })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({ status: 'active' })
 })
@@ -26,10 +26,10 @@ test('counts each access status view from the users it represents', async () => 
   renderUsers()
   await screen.findByRole('table', { name: 'Active users' })
 
-  expect(screen.getByRole('tab', { name: /Active \(2\)/ })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Pending \(1\)/ })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Deactivated \(1\)/ })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Cancelled \(1\)/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Active 2$/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Pending 1$/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Deactivated 1$/ })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /^Cancelled 1$/ })).toBeInTheDocument()
 })
 
 test('identifies each user without opening them', async () => {
@@ -44,7 +44,7 @@ test('identifies each user without opening them', async () => {
   expect(within(row).getByText('Organization admin')).toBeInTheDocument()
   // The access status belongs to the selected view, so the row does not repeat it.
   expect(within(row).queryByText('Active')).not.toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: /Active \(2\)/ })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('tab', { name: /^Active 2$/ })).toHaveAttribute('aria-selected', 'true')
 })
 
 test('switches access status views without showing a user of the previous view', async () => {
@@ -53,7 +53,7 @@ test('switches access status views without showing a user of the previous view',
 
   const { router } = renderUsers()
   await screen.findByRole('table', { name: 'Active users' })
-  await user.click(screen.getByRole('tab', { name: /Pending \(1\)/ }))
+  await user.click(screen.getByRole('tab', { name: /^Pending 1$/ }))
 
   const pending = await screen.findByRole('table', { name: 'Pending users' })
 
@@ -71,12 +71,13 @@ test('shows a status-specific empty state and keeps the other views reachable', 
 
   renderUsers()
   await screen.findByRole('table', { name: 'Active users' })
-  await user.click(screen.getByRole('tab', { name: /Cancelled \(0\)/ }))
+  await user.click(screen.getByRole('tab', { name: /^Cancelled 0$/ }))
 
-  const cancelled = await screen.findByRole('table', { name: 'Cancelled users' })
-  expect(within(cancelled).getByText('No cancelled users')).toBeInTheDocument()
+  // An empty view shows its empty state in place of the table: a header over nothing reads as broken.
+  expect(await screen.findByText('No cancelled users')).toBeInTheDocument()
+  expect(screen.queryByRole('table', { name: 'Cancelled users' })).not.toBeInTheDocument()
 
-  await user.click(screen.getByRole('tab', { name: /Active \(2\)/ }))
+  await user.click(screen.getByRole('tab', { name: /^Active 2$/ }))
 
   expect(await screen.findByRole('table', { name: 'Active users' })).toBeInTheDocument()
 })

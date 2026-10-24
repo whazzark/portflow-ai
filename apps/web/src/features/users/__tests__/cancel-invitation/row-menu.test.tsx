@@ -30,10 +30,8 @@ test('cancels an invitation from its row without opening the record', async () =
 
   expect(await screen.findByText('Invitation for “Chloé Durand” cancelled')).toBeInTheDocument()
   expect(requests).toHaveLength(1)
-  await waitFor(() =>
-    expect(screen.getByRole('tab', { name: /Pending \(0\)/ })).toBeInTheDocument(),
-  )
-  expect(screen.getByRole('tab', { name: /Cancelled \(2\)/ })).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Pending 0$/ })).toBeInTheDocument())
+  expect(screen.getByRole('tab', { name: /^Cancelled 2$/ })).toBeInTheDocument()
 })
 
 test('keeps the row confirmation open with the reason when someone else cancelled first', async () => {
@@ -49,8 +47,6 @@ test('keeps the row confirmation open with the reason when someone else cancelle
     await screen.findByText('This invitation has already been cancelled by someone else.'),
   ).toBeInTheDocument()
   // The refreshed collection agrees with the refusal: the user has left the pending view.
-  await waitFor(() =>
-    expect(screen.getByRole('tab', { name: /Pending \(0\)/ })).toBeInTheDocument(),
-  )
-  expect(screen.getByRole('tab', { name: /Cancelled \(2\)/ })).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Pending 0$/ })).toBeInTheDocument())
+  expect(screen.getByRole('tab', { name: /^Cancelled 2$/ })).toBeInTheDocument()
 })

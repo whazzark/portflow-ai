@@ -5,6 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
@@ -68,16 +69,15 @@ export function UserRowActions({
   const mayResetPassword = canResetPassword(viewer, user)
   const mayRenewActivationLink = canRenewActivationLink(viewer, user)
   const mayRestoreInvitation = canRestoreInvitation(viewer, user)
+  const hasConsultationItems =
+    onView !== undefined ||
+    canEdit ||
+    mayResetPassword ||
+    mayRenewActivationLink ||
+    mayRestoreInvitation
 
   // A menu with nothing in it is not rendered at all, rather than as an empty popup.
-  if (
-    onView === undefined &&
-    !canEdit &&
-    !mayResetPassword &&
-    !mayRenewActivationLink &&
-    !mayRestoreInvitation &&
-    actions.length === 0
-  ) {
+  if (!hasConsultationItems && actions.length === 0) {
     return null
   }
 
@@ -88,8 +88,8 @@ export function UserRowActions({
           render={
             <Button
               aria-label={`Actions for ${formatFullName(user)}`}
-              className="mr-1 shrink-0"
-              size="icon-sm"
+              className="shrink-0"
+              size="icon"
               type="button"
               variant="ghost"
             />
@@ -100,7 +100,7 @@ export function UserRowActions({
         </DropdownMenuTrigger>
         {/* Sized to its longest item rather than to the icon trigger it hangs from, so that
             `Renew activation link` stays on one line. */}
-        <DropdownMenuContent align="end" className="w-max">
+        <DropdownMenuContent align="end" className="w-max min-w-[180px]">
           {onView && <DropdownMenuItem onClick={() => onView(user.id)}>View</DropdownMenuItem>}
           {canEdit && <DropdownMenuItem onClick={() => onEdit(user.id)}>Edit</DropdownMenuItem>}
           {mayResetPassword && (
@@ -114,6 +114,9 @@ export function UserRowActions({
           {mayRestoreInvitation && (
             <DropdownMenuItem onClick={() => setIsRestorationOpen(true)}>Restore</DropdownMenuItem>
           )}
+          {/* The access actions are ruled off from the rest, so the destructive one is never a
+              slip away from View or Edit. */}
+          {hasConsultationItems && actions.length > 0 && <DropdownMenuSeparator />}
           {actions.map((action) => (
             <DropdownMenuItem
               key={action}

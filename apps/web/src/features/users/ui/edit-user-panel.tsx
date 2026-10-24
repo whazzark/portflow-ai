@@ -15,21 +15,26 @@ type EditUserPanelProps = {
 
 export function EditUserPanel({ user, onCancel, onUpdate, onSuccess }: EditUserPanelProps) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <SheetHeader>
-        <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <SheetHeader className="shrink-0 gap-3 border-b py-5 pr-14 pl-6">
+        <Button
+          className="-ml-2 self-start text-[13px] text-muted-foreground"
+          onClick={onCancel}
+          size="sm"
+          variant="ghost"
+        >
           <ArrowLeftIcon aria-hidden="true" />
           Back to details
         </Button>
-        <SheetTitle>Edit user</SheetTitle>
-        <SheetDescription>
-          Correct {formatFullName(user)}'s name and email address, or change their role. Their
-          access status is unchanged.
-        </SheetDescription>
+        <div className="grid gap-1">
+          <SheetTitle className="font-semibold text-lg">Edit user</SheetTitle>
+          <SheetDescription>
+            Correct {formatFullName(user)}’s name and email address, or change their role. Their
+            access status is unchanged.
+          </SheetDescription>
+        </div>
       </SheetHeader>
-      <div className="px-4 pb-6">
-        <EditUserForm onSuccess={onSuccess} onUpdate={onUpdate} user={user} />
-      </div>
+      <EditUserForm onSuccess={onSuccess} onUpdate={onUpdate} user={user} />
     </div>
   )
 }

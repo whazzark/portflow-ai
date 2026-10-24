@@ -9,17 +9,15 @@ type InviteUserPanelProps = {
 
 export function InviteUserPanel({ onInvite, onSuccess }: InviteUserPanelProps) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <SheetHeader>
-        <SheetTitle>Invite user</SheetTitle>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <SheetHeader className="shrink-0 gap-1 border-b py-5 pr-14 pl-6">
+        <SheetTitle className="font-semibold text-lg">Invite user</SheetTitle>
         <SheetDescription>
           The invited person activates their own access from a confidential link, and chooses their
           password themselves.
         </SheetDescription>
       </SheetHeader>
-      <div className="px-4">
-        <InviteUserForm onInvite={onInvite} onSuccess={onSuccess} />
-      </div>
+      <InviteUserForm onInvite={onInvite} onSuccess={onSuccess} />
     </div>
   )
 }
