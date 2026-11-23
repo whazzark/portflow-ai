@@ -43,10 +43,12 @@ function planned(
 async function openPanel() {
   const shifts = await screen.findByRole('region', { name: 'Shifts' })
   fireEvent.click(
-    await within(shifts).findByRole('button', { name: `Shift ${formatShiftPeriod(PERIOD)}` }),
+    await within(shifts).findByRole('button', {
+      name: (name) => name.startsWith(`Shift ${formatShiftPeriod(PERIOD)}`),
+    }),
   )
 
-  return screen.findByRole('dialog', { name: `Shift ${formatShiftPeriod(PERIOD)}` })
+  return screen.findByRole('dialog', { name: formatShiftPeriod(PERIOD) })
 }
 
 const readiness = (panel: HTMLElement) => within(panel).getByRole('region', { name: 'Readiness' })
@@ -156,7 +158,7 @@ test('updates the gaps once a correction fills them, without a reload', async ()
   fireEvent.click(await within(sheet).findByRole('checkbox', { name: 'Select North scale' }))
   fireEvent.click(within(sheet).getByRole('button', { name: 'Save' }))
 
-  const details = await screen.findByRole('dialog', { name: `Shift ${formatShiftPeriod(PERIOD)}` })
+  const details = await screen.findByRole('dialog', { name: formatShiftPeriod(PERIOD) })
   await waitFor(() =>
     expect(within(details).getByRole('region', { name: 'Readiness' })).toHaveTextContent(
       'Nothing missing',

@@ -79,7 +79,7 @@ test('opens the shift using a door from its lock, leaving the doors dialog', asy
   const dialog = await openWheatDoors()
   fireEvent.click(within(assigned(dialog)).getByRole('link', { name: SHIFT_NAME }))
 
-  expect(await screen.findByRole('dialog', { name: SHIFT_NAME })).toBeInTheDocument()
+  expect(await screen.findByRole('dialog', { name: formatShiftPeriod(SHIFT) })).toBeInTheDocument()
   expect(screen.queryByRole('dialog', { name: 'Warehouse doors' })).not.toBeInTheDocument()
 })
 

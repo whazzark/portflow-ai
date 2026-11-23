@@ -151,9 +151,7 @@ test('opens the active shift in the shifts section', async () => {
   const card = await screen.findByRole('region', { name: 'Current shift' })
   await userEvent.setup().click(within(card).getByRole('link', { name: 'Open in Shifts' }))
 
-  expect(
-    await screen.findByRole('dialog', { name: `Shift ${formatShiftPeriod(active)}` }),
-  ).toBeInTheDocument()
+  expect(await screen.findByRole('dialog', { name: formatShiftPeriod(active) })).toBeInTheDocument()
   expect(router.state.location.search).toMatchObject({ tab: 'shifts', shiftId: 'shift-6' })
 })
 

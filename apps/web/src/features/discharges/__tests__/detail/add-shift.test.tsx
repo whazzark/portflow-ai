@@ -1,7 +1,11 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 
-import { formatShiftPeriod } from '@/features/discharges/discharge-detail-view'
+import {
+  formatShiftDay,
+  formatShiftPeriod,
+  formatShiftTime,
+} from '@/features/discharges/discharge-detail-view'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/helpers/dates'
 import {
   ACTIVE_OBSERVER,
@@ -98,6 +102,24 @@ test('opens after the last shift, for as long, with every resource group', async
   ).not.toBeChecked()
 })
 
+test('says it starts when the last shift ends until another start is entered', async () => {
+  mockTruckPlanning({ detail: PLANNED })
+  renderDischargeTab(PLANNED.id, 'shifts')
+  const sheet = await openAddShift()
+
+  const hint = `Starts when the last shift ends, on ${formatShiftDay(new Date(LAST.plannedEndAt))} at ${formatShiftTime(LAST.plannedEndAt)}.`
+  expect(within(sheet).getByText(hint)).toBeInTheDocument()
+  expect(within(sheet).getByRole('status', { name: 'Duration' })).toHaveTextContent('8 h')
+
+  change(
+    within(sheet).getByLabelText(/^Planned start/),
+    toDateTimeLocalValue('2026-10-05T16:00:00.000Z'),
+  )
+
+  expect(within(sheet).queryByText(hint)).not.toBeInTheDocument()
+  expect(within(sheet).getByRole('status', { name: 'Duration' })).toHaveTextContent('6 h')
+})
+
 test('adds a shift between two others with its resources and opens it', async () => {
   const state = mockTruckPlanning({ detail: PLANNED })
   const { router } = renderDischargeTab(PLANNED.id, 'shifts')
@@ -130,7 +152,7 @@ test('adds a shift between two others with its resources and opens it', async ()
   const id = request.kind === 'add-shift' ? request.body.id : ''
   expect(id).toMatch(/^[0-9a-f-]{36}$/)
 
-  const panel = await screen.findByRole('dialog', { name: `Shift ${formatShiftPeriod(added)}` })
+  const panel = await screen.findByRole('dialog', { name: formatShiftPeriod(added) })
   expect(panel).toHaveTextContent('Thomas Bernard')
   expect(within(panel).getByRole('list', { name: 'Trucks' })).toHaveTextContent('AA-100-AA')
   expect(router.state.location.search).toMatchObject({ tab: 'shifts', shiftId: id })

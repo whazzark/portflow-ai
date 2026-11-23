@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useId, useState } from 'react'
 
 import { buttonVariants } from '@/components/ui/button'
 import {
@@ -57,14 +57,15 @@ export const ShiftPeriodFields = withFieldGroup({
   props: { kept: undefined as Responsible | undefined },
   render: function ShiftPeriodFieldsRender({ group, kept }) {
     const responsibles = useResponsibleOptions()
+    const durationId = useId()
     const options = [
       ...(kept && !responsibles.options.some((option) => option.id === kept.id) ? [kept] : []),
       ...responsibles.options,
     ]
 
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2">
+      <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
+        <div className="sm:col-span-3">
           <group.AppField name="responsibleUserId">
             {(field) => (
               <field.ComboboxField
@@ -82,23 +83,29 @@ export const ShiftPeriodFields = withFieldGroup({
             )}
           </group.AppField>
         </div>
-        <group.Subscribe
-          selector={(state) =>
-            formatLocalShiftDuration(state.values.plannedStartAt, state.values.plannedEndAt)
-          }
-        >
-          {(length) => (
-            <p className="text-muted-foreground text-sm tabular-nums sm:col-span-2">
-              Duration {length}
-            </p>
-          )}
-        </group.Subscribe>
         <group.AppField name="plannedStartAt">
           {(field) => <field.DateTimeField label="Planned start" required={true} />}
         </group.AppField>
         <group.AppField name="plannedEndAt">
           {(field) => <field.DateTimeField label="Planned end" required={true} />}
         </group.AppField>
+        {/* Read from the period as it is typed, beside it, never entered. */}
+        <group.Subscribe
+          selector={(state) =>
+            formatLocalShiftDuration(state.values.plannedStartAt, state.values.plannedEndAt)
+          }
+        >
+          {(length) => (
+            <div className="grid content-start gap-2 text-sm">
+              <span className="font-medium" id={durationId}>
+                Duration
+              </span>
+              <output aria-labelledby={durationId} className="flex h-9 items-center tabular-nums">
+                {length}
+              </output>
+            </div>
+          )}
+        </group.Subscribe>
       </div>
     )
   },
