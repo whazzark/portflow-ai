@@ -1,3 +1,5 @@
+import type { DateTime } from 'luxon'
+
 import type Discharge from '#models/discharge'
 
 /** Another planned or active discharge that currently holds a truck. */
@@ -5,6 +7,22 @@ export type OtherHolding = {
   dischargeId: string
   vesselName: string
   status: 'PLANNED' | 'ACTIVE'
+}
+
+/**
+ * Another planned or active discharge assigned to the same dock, with the span its shifts are
+ * planned over. Only a planned discharge reads them: they are what its dock timeline draws.
+ */
+export type DockOccupation = {
+  dischargeId: string
+  vesselName: string
+  status: 'PLANNED' | 'ACTIVE'
+  expectedStartAt: DateTime
+  startedAt: DateTime | null
+  /** The earliest planned start of its shifts, whatever their status; `null` without shifts. */
+  plannedStartAt: DateTime | null
+  /** The latest planned end of its shifts, whatever their status; `null` without shifts. */
+  plannedEndAt: DateTime | null
 }
 
 /**
@@ -16,6 +34,8 @@ export type DischargeDetailRead = {
   discharge: Discharge
   /** Keyed by lower-case truck identity; a truck no other discharge holds is absent. */
   otherHoldings: ReadonlyMap<string, OtherHolding[]>
+  /** Active ones first, then by when they are planned to begin; empty unless this one is planned. */
+  dockOccupations: DockOccupation[]
 }
 
 /** A truck a planned discharge may reserve, as the site knows it now. */

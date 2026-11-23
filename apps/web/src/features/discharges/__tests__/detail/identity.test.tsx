@@ -6,8 +6,9 @@ import { buildDischargeDetail, listedDischarge } from '../support/fixtures'
 import { mockDischargeDetail, renderDischargeDetail } from '../support/test-helpers'
 
 const OCEAN_CEDAR = listedDischarge('MV Ocean Cedar', 'ACTIVE')
-// A planned discharge keeps the overview card; an active one reads its facts from the header alone.
-const ATLANTIC_DAWN = listedDischarge('MV Atlantic Dawn', 'PLANNED')
+// Only a closed discharge keeps the overview card and the expected start: a planned one reads its
+// planned period from the header, and an active one the period it spans.
+const LOIRE_STAR = listedDischarge('MV Loire Star', 'CLOSED')
 
 function field(region: HTMLElement, label: string) {
   const term = within(region).getByText(label, { selector: 'dt' })
@@ -26,16 +27,16 @@ test('names the vessel and states the status of the discharge', async () => {
 
 test('labels the dock, the expected start, and the expected tonnage beside the vessel name', async () => {
   mockDischargeDetail({
-    details: [buildDischargeDetail(ATLANTIC_DAWN, { expectedTonnage: '32150.750' })],
+    details: [buildDischargeDetail(LOIRE_STAR, { expectedTonnage: '32150.750' })],
   })
 
-  renderDischargeDetail(ATLANTIC_DAWN.id)
+  renderDischargeDetail(LOIRE_STAR.id)
 
-  const heading = await screen.findByRole('heading', { level: 1, name: 'MV Atlantic Dawn' })
+  const heading = await screen.findByRole('heading', { level: 1, name: 'MV Loire Star' })
   const header = heading.parentElement?.nextElementSibling as HTMLElement
-  expect(field(header, 'Dock')).toHaveTextContent('Quai Nord')
+  expect(field(header, 'Dock')).toHaveTextContent('Quai Sud')
   expect(field(header, 'Expected start')).toHaveTextContent(
-    formatDateTime(ATLANTIC_DAWN.expectedStartAt),
+    formatDateTime(LOIRE_STAR.expectedStartAt),
   )
   expect(field(header, 'Expected tonnage')).toHaveTextContent('32,150.750 t')
 })
@@ -43,21 +44,21 @@ test('labels the dock, the expected start, and the expected tonnage beside the v
 test('shows the vessel, the dock, the expected start, and the expected tonnage', async () => {
   mockDischargeDetail({
     details: [
-      buildDischargeDetail(ATLANTIC_DAWN, {
+      buildDischargeDetail(LOIRE_STAR, {
         expectedTonnage: '32150.750',
         vesselComment: 'Draught restricted at low tide',
       }),
     ],
   })
 
-  renderDischargeDetail(ATLANTIC_DAWN.id)
+  renderDischargeDetail(LOIRE_STAR.id)
 
   const overview = await screen.findByRole('region', { name: 'Overview' })
-  expect(field(overview, 'IMO')).toHaveTextContent('9410001')
+  expect(field(overview, 'IMO')).toHaveTextContent('9410004')
   expect(field(overview, 'Vessel comment')).toHaveTextContent('Draught restricted at low tide')
-  expect(field(overview, 'Dock')).toHaveTextContent('Quai Nord')
+  expect(field(overview, 'Dock')).toHaveTextContent('Quai Sud')
   expect(field(overview, 'Expected start')).toHaveTextContent(
-    formatDateTime(ATLANTIC_DAWN.expectedStartAt),
+    formatDateTime(LOIRE_STAR.expectedStartAt),
   )
   expect(field(overview, 'Expected tonnage')).toHaveTextContent('32,150.750 t')
 })
@@ -68,9 +69,10 @@ test('marks an absent IMO and comment as not specified rather than leaving them 
 
   renderDischargeDetail(balticStar.id)
 
-  const overview = await screen.findByRole('region', { name: 'Overview' })
-  expect(field(overview, 'IMO')).toHaveTextContent('Not specified')
-  expect(field(overview, 'Vessel comment')).toHaveTextContent('Not specified')
+  // A planned discharge carries its IMO in the header, and leaves an absent comment out entirely.
+  await screen.findByRole('heading', { level: 1, name: 'MV Baltic Star' })
+  expect(field(screen.getByLabelText('Discharge facts'), 'IMO')).toHaveTextContent('Not specified')
+  expect(screen.queryByText('Vessel comment')).not.toBeInTheDocument()
 })
 
 test('keeps an archived dock readable and says it is archived', async () => {

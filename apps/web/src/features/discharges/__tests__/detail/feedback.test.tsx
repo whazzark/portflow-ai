@@ -55,8 +55,11 @@ test('tells each empty section apart while the rest of the discharge still shows
 
   renderDischargeDetail(atlanticDawn.id)
 
-  const overview = await screen.findByRole('region', { name: 'Overview' })
-  expect(within(overview).getByText('Quai Nord')).toBeInTheDocument()
+  // A planned discharge's header carries its facts, so its dock still shows there.
+  await screen.findByRole('heading', { level: 1, name: 'MV Atlantic Dawn' })
+  expect(
+    within(screen.getByLabelText('Discharge facts')).getByText('Quai Nord'),
+  ).toBeInTheDocument()
 
   for (const [tab, region, empty] of [
     [/^Product lots/, 'Product lots', 'No product lots'],
