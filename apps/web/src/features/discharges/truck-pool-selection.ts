@@ -35,6 +35,44 @@ export function shiftsSelectingTrucks(detail: DischargeDetailDto, truckIds: read
     .sort((left, right) => (left.plannedStartAt ?? '').localeCompare(right.plannedStartAt ?? ''))
 }
 
+export type PoolSummary = {
+  heldCount: number
+  suspendedCount: number
+  /** Another discharge also holds one of the held trucks. */
+  contested: boolean
+  /** One of those other discharges is active, so starting first settles nothing. */
+  contestedByActive: boolean
+}
+
+/** What the pool holds at a glance; released history counts for nothing. */
+export function poolSummary(detail: DischargeDetailDto): PoolSummary {
+  const held = heldPoolEntries(detail)
+  const holdings = held.flatMap((entry) => entry.otherHoldings)
+
+  return {
+    heldCount: held.length,
+    suspendedCount: held.filter((entry) => entry.truckStatus === 'SUSPENDED').length,
+    contested: holdings.length > 0,
+    contestedByActive: holdings.some((holding) => holding.status === 'ACTIVE'),
+  }
+}
+
+/**
+ * How many planned shifts currently select each truck: the same shifts a withdrawal would change,
+ * so the count and the withdrawal's confirmation never disagree.
+ */
+export function shiftCountByTruck(detail: DischargeDetailDto) {
+  const counts = new Map<string, number>()
+
+  for (const shift of detail.shifts.filter((candidate) => candidate.status === 'PLANNED')) {
+    for (const truckId of currentTruckIds(shift)) {
+      counts.set(truckId, (counts.get(truckId) ?? 0) + 1)
+    }
+  }
+
+  return counts
+}
+
 export type OfferedShiftTruck = {
   truckId: string
   registration: string
@@ -75,4 +113,43 @@ export function candidateMatchesSearch(candidate: TruckCandidateDto, search: str
     normalizeSearch(candidate.registration).includes(normalizedSearch) ||
     normalizeSearch(candidate.transportCompany.name).includes(normalizedSearch)
   )
+}
+
+export type CandidateGroup = {
+  company: TruckCandidateDto['transportCompany']
+  candidates: TruckCandidateDto[]
+  total: number
+  selected: number
+}
+
+/** The candidates by transport company, both in name order, each with how many are selected. */
+export function candidateGroups(
+  candidates: readonly TruckCandidateDto[],
+  selectedIds: ReadonlySet<string>,
+): CandidateGroup[] {
+  const groups = new Map<string, CandidateGroup>()
+
+  for (const candidate of candidates) {
+    const group = groups.get(candidate.transportCompany.id) ?? {
+      company: candidate.transportCompany,
+      candidates: [],
+      total: 0,
+      selected: 0,
+    }
+    group.candidates.push(candidate)
+    group.total += 1
+    group.selected += selectedIds.has(candidate.id) ? 1 : 0
+    groups.set(candidate.transportCompany.id, group)
+  }
+
+  const byName = (left: string, right: string) => left.localeCompare(right)
+
+  return [...groups.values()]
+    .map((group) => ({
+      ...group,
+      candidates: group.candidates.sort((left, right) =>
+        byName(left.registration, right.registration),
+      ),
+    }))
+    .sort((left, right) => byName(left.company.name, right.company.name))
 }

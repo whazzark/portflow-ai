@@ -20,10 +20,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useDischargeMutations } from '@/features/discharges/mutations/use-discharge-mutations'
 import { dischargeQueries } from '@/features/discharges/queries/discharge-queries'
 import { type TruckRefusals, truckRefusals } from '@/features/discharges/truck-pool-refusals'
-import { candidateMatchesSearch } from '@/features/discharges/truck-pool-selection'
+import { candidateGroups, candidateMatchesSearch } from '@/features/discharges/truck-pool-selection'
 import type { DischargeDetailDto, TruckCandidateDto } from '@/features/discharges/types'
 import { STARTED_REFUSAL_MESSAGE } from '@/features/discharges/ui/detail/edit-discharge-identity-sheet'
-import { TruckHoldings } from '@/features/discharges/ui/detail/truck-holdings'
+import { TruckHoldingsText } from '@/features/discharges/ui/detail/truck-holdings'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
 type AddTrucksSheetProps = {
@@ -190,39 +190,73 @@ function AddTrucksForm({
                   onCheckedChange={(checked) => selection.toggleMany(visibleIds, checked === true)}
                 />
                 <span className="text-muted-foreground text-xs">Select all</span>
+                <span className="ml-auto text-muted-foreground text-xs tabular-nums">
+                  {candidates.length === 1
+                    ? '1 truck not in the pool'
+                    : `${candidates.length} trucks not in the pool`}
+                </span>
               </div>
-              <ul aria-label="Trucks to add" className="grid gap-1">
-                {visible.map((candidate) => {
-                  const reason = refusals?.byTruck.get(candidate.id)
-                  const reasonId = `${searchId}-${candidate.id}-reason`
-
+              <div className="grid gap-4">
+                {candidateGroups(visible, selection.selectedIds).map((group) => {
                   return (
-                    <li className="flex items-start gap-3 rounded-lg px-2 py-2" key={candidate.id}>
-                      <Checkbox
-                        aria-describedby={reason ? reasonId : undefined}
-                        aria-label={`Select ${candidate.registration}`}
-                        checked={selection.selectedIds.has(candidate.id)}
-                        className="mt-0.5"
-                        onCheckedChange={() => selection.toggle(candidate.id)}
-                      />
-                      <div className="grid min-w-0 gap-0.5">
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="font-medium">{candidate.registration}</span>
-                          <TruckHoldings holdings={candidate.otherHoldings} />
+                    <fieldset
+                      aria-label={group.company.name}
+                      className="m-0 grid min-w-0 gap-1 border-0 p-0"
+                      key={group.company.id}
+                    >
+                      <div className="flex items-baseline justify-between gap-2 px-2 text-xs">
+                        <span className="font-medium text-muted-foreground uppercase tracking-wide">
+                          {group.company.name}
                         </span>
-                        <span className="text-muted-foreground text-sm">
-                          {candidate.transportCompany.name}
+                        <span className="text-muted-foreground tabular-nums">
+                          {group.selected > 0 ? `${group.selected} of ${group.total}` : group.total}
                         </span>
-                        {reason && (
-                          <span className="text-destructive text-sm" id={reasonId}>
-                            {reason}
-                          </span>
-                        )}
                       </div>
-                    </li>
+                      <ul className="grid gap-1">
+                        {group.candidates.map((candidate) => {
+                          const reason = refusals?.byTruck.get(candidate.id)
+                          const reasonId = `${searchId}-${candidate.id}-reason`
+                          const holdingsId = `${searchId}-${candidate.id}-holdings`
+
+                          return (
+                            <li
+                              className="flex items-start gap-3 rounded-lg px-2 py-2"
+                              key={candidate.id}
+                            >
+                              <Checkbox
+                                aria-describedby={
+                                  [
+                                    candidate.otherHoldings.length > 0 ? holdingsId : null,
+                                    reason ? reasonId : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' ') || undefined
+                                }
+                                aria-label={`Select ${candidate.registration}`}
+                                checked={selection.selectedIds.has(candidate.id)}
+                                className="mt-0.5"
+                                onCheckedChange={() => selection.toggle(candidate.id)}
+                              />
+                              <div className="grid min-w-0 gap-0.5">
+                                <span className="font-medium">{candidate.registration}</span>
+                                <TruckHoldingsText
+                                  holdings={candidate.otherHoldings}
+                                  id={holdingsId}
+                                />
+                                {reason && (
+                                  <span className="text-destructive text-sm" id={reasonId}>
+                                    {reason}
+                                  </span>
+                                )}
+                              </div>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </fieldset>
                   )
                 })}
-              </ul>
+              </div>
             </div>
           ) : (
             <p className="text-muted-foreground text-sm">No trucks match “{search}”</p>
@@ -239,7 +273,7 @@ function AddTrucksForm({
           onClick={() => void submit()}
           type="button"
         >
-          {reserveTrucks.isPending ? 'Reserving…' : 'Reserve'}
+          {reserveTrucks.isPending ? 'Adding…' : 'Add trucks'}
         </Button>
       </SheetFooter>
     </div>
