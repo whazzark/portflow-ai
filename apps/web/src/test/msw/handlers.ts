@@ -26,6 +26,11 @@ export const handlers = [
       data: { dischargeId: String(params.id), shiftId: null, problems: [] },
     }),
   ),
+  // A free dock: an active discharge's overview reads its dock's occupancy whichever helper serves
+  // the discharge. Tests about other discharges on the dock override this.
+  http.get(`${API_BASE_URL}/api/v1/discharges/dock-occupancy`, () =>
+    HttpResponse.json({ data: [] }),
+  ),
 
   // The submitted identity merged over a signed-in user, as the API answers it. Tests needing a
   // session that follows the update, or a refusal, override this.

@@ -4,7 +4,7 @@ import { preparationSummary } from '@/features/discharges/discharge-detail-secti
 import type { DischargeDetailDto, DischargeDetailTab } from '@/features/discharges/types'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
 import { DischargeTabLink } from '@/features/discharges/ui/detail/discharge-tab-link'
-import { DOCK_TIMELINE_ID } from '@/features/discharges/ui/detail/dock-timeline-card'
+import { DOCK_TIMELINE_ID } from '@/features/discharges/ui/detail/planned-dock-timeline-card'
 
 function counted(count: number, one: string, many: string, none: string) {
   if (count === 0) {

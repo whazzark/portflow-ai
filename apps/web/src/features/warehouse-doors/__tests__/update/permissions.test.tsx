@@ -22,12 +22,18 @@ const DOOR = (AVAILABLE.doors ?? [])[0]
 const ARCHIVED_DOOR = (AVAILABLE.doors ?? [])[1]
 const ARCHIVED_WAREHOUSE_DOOR = (ARCHIVED.doors ?? [])[0]
 
-test('withholds the row menu from a user without warehouse management permission', async () => {
+test('withholds Edit from a user without warehouse management permission', async () => {
   mockWarehouses(WAREHOUSE_OBSERVER)
+  const user = userEvent.setup()
   renderWarehouses(`/warehouses?status=all&warehouseId=${AVAILABLE.id}`)
 
   await screen.findByRole('heading', { name: 'Doors' })
-  expect(screen.queryByRole('button', { name: `Actions for ${DOOR.name}` })).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: `Actions for ${DOOR.name}` }))
+
+  expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
+    'Show on map',
+    'Copy coordinates',
+  ])
 })
 
 test('offers no Edit on an archived door, rather than a dead item', async () => {
@@ -42,17 +48,27 @@ test('offers no Edit on an archived door, rather than a dead item', async () => 
   await user.click(screen.getByRole('button', { name: `Actions for ${ARCHIVED_DOOR.name}` }))
 
   const items = await screen.findAllByRole('menuitem')
-  expect(items.map((item) => item.textContent)).toEqual(['Reactivate'])
+  expect(items.map((item) => item.textContent)).toEqual([
+    'Show on map',
+    'Copy coordinates',
+    'Reactivate',
+  ])
 })
 
-test('renders no menu under an archived warehouse', async () => {
+test('offers no Edit under an archived warehouse', async () => {
   mockWarehouses(WAREHOUSE_ADMIN)
+  const user = userEvent.setup()
   renderWarehouses(`/warehouses?status=all&warehouseId=${ARCHIVED.id}`)
 
   expect(await screen.findByText(ARCHIVED_WAREHOUSE_DOOR.name)).toBeInTheDocument()
-  expect(
-    screen.queryByRole('button', { name: `Actions for ${ARCHIVED_WAREHOUSE_DOOR.name}` }),
-  ).not.toBeInTheDocument()
+  await user.click(
+    screen.getByRole('button', { name: `Actions for ${ARCHIVED_WAREHOUSE_DOOR.name}` }),
+  )
+
+  expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
+    'Show on map',
+    'Copy coordinates',
+  ])
 })
 
 test('leaves the mode inert without warehouse management permission', async () => {
@@ -104,6 +120,6 @@ test('a creation mode wins over a door update, so the two never coexist', async 
     `/warehouses?status=all&warehouseId=${AVAILABLE.id}&doorId=${DOOR.id}&edit=door&create=door`,
   )
 
-  expect(await screen.findByRole('heading', { name: 'Create door' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'New door' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Edit door' })).not.toBeInTheDocument()
 })

@@ -83,8 +83,9 @@ export function ResetPasswordDialog({ user, onClose }: { user: UserDto; onClose:
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel size="lg">Cancel</AlertDialogCancel>
           <AlertDialogAction
+            size="lg"
             disabled={resetPassword.isPending}
             onClick={(event) => {
               event.preventDefault()

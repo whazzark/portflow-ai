@@ -14,6 +14,9 @@ export type TruckCandidateDto = Route.Response<'discharges.truck_pool.candidates
 export type DischargePlanningOptionsDto = Route.Response<'discharges.planning_options'>['data']
 export type PlanningDoorDto = DischargePlanningOptionsDto['warehouseDoors'][number]
 
+/** Another discharge holding a dock, over the period its shifts are planned for. */
+export type DockOccupancyDto = Route.Response<'discharges.dock_occupancy'>['data'][number]
+
 /** What a start would answer now: the shift that would start and every reason it cannot. */
 export type StartCheckDto = Route.Response<'discharges.start_check'>['data']
 export type StartProblemDto = StartCheckDto['problems'][number]

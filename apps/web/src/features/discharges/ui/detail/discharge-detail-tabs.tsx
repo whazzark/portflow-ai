@@ -10,12 +10,13 @@ import {
   type DischargeDetailDto,
   type DischargeDetailTab,
 } from '@/features/discharges/types'
+import { ActiveOverview } from '@/features/discharges/ui/detail/active-overview'
 import { DischargeIdentityCard } from '@/features/discharges/ui/detail/discharge-identity-card'
 import { DischargePreparationCard } from '@/features/discharges/ui/detail/discharge-preparation-card'
 import { DischargeProductLotsCard } from '@/features/discharges/ui/detail/discharge-product-lots-card'
 import { DischargeShiftsCard } from '@/features/discharges/ui/detail/discharge-shifts-card'
 import { DischargeTruckPoolCard } from '@/features/discharges/ui/detail/discharge-truck-pool-card'
-import { DockTimelineCard } from '@/features/discharges/ui/detail/dock-timeline-card'
+import { PlannedDockTimelineCard } from '@/features/discharges/ui/detail/planned-dock-timeline-card'
 
 const TAB_LABELS = {
   overview: 'Overview',
@@ -96,15 +97,17 @@ export function DischargeDetailTabs({
         </TabsList>
       </div>
       <TabsContent className="grid gap-6" value="overview">
-        {/* A planned discharge's header already carries these facts; the started ones keep their
-            card until their own record is redesigned. */}
+        {/* A planned discharge's header already carries these facts; a started one has its own
+            overview, and a closed one keeps its card until its own record is redesigned. */}
         {discharge.status === 'PLANNED' ? (
           <>
             {/* Where the dock stands first, then what the plan still lacks. Only here: the other
                 sections are about their own elements, not about the dock. */}
-            <DockTimelineCard discharge={discharge} now={Date.now()} />
+            <PlannedDockTimelineCard discharge={discharge} now={Date.now()} />
             <DischargePreparationCard discharge={discharge} />
           </>
+        ) : discharge.status === 'ACTIVE' ? (
+          <ActiveOverview canAddShifts={canAddShifts} discharge={discharge} />
         ) : (
           <DischargeIdentityCard discharge={discharge} />
         )}

@@ -29,6 +29,17 @@ test('opens from the user menu, pre-filled with the signed-in identity', async (
   expect(within(form).queryByLabelText(/Current password/)).not.toBeInTheDocument()
 }, 15000)
 
+test('heads the page with the signed-in person, their address and their role', async () => {
+  mockSession({ role: 'ORGANIZATION_ADMIN' })
+
+  renderProfile()
+  await findForm()
+
+  expect(screen.getByRole('heading', { level: 2, name: 'Claire Martin' })).toBeInTheDocument()
+  expect(screen.getByText(`${SESSION_USER.email} · Organization admin`)).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: 'Identity' })).toHaveAttribute('aria-selected', 'true')
+}, 15000)
+
 test('updates the name and carries it to the session without a reload', async () => {
   const { submissions } = mockSession()
 
@@ -101,3 +112,16 @@ test.each(['ORGANIZATION_ADMIN', 'OPERATIONS_ADMIN', 'OPERATIONS_LEAD', 'OBSERVE
     expect(entry).not.toHaveAttribute('aria-disabled', 'true')
   },
 )
+
+test('keeps a draft across a switch to the password tab and back', async () => {
+  mockSession()
+
+  renderProfile()
+  await findForm()
+  fill('Last name', 'Renard')
+  fireEvent.click(screen.getByRole('tab', { name: 'Password' }))
+  fireEvent.click(await screen.findByRole('tab', { name: 'Identity', selected: false }))
+
+  expect(await findForm()).toBeVisible()
+  expect(screen.getByLabelText(/Last name/)).toHaveValue('Renard')
+}, 15000)

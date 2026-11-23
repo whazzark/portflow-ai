@@ -45,6 +45,16 @@ export type ResourceLifecycleConfig<TResult = unknown> = {
   /** Replaces the canonical success message with one that reports what the server actually did —
    * a warehouse archival names the doors it cascaded to. */
   describeSuccess?: (action: LifecycleAction, result: TResult) => string
+  /** Replaces the canonical dialog title where a resource names the record in it — the maps ask
+   * "Archive <name>?". Falls back to `Archive <noun>?`. */
+  describeTitle?: (action: LifecycleAction) => string
+  /** A second line under the success toast, for what the change did beyond the record itself. */
+  describeSuccessDetail?: (action: LifecycleAction, result: TResult) => string | undefined
+  /** A follow-up offered on the success toast, such as viewing the record where it now lives. */
+  successAction?: (
+    action: LifecycleAction,
+    result: TResult,
+  ) => { label: string; onClick: () => void } | undefined
 }
 
 const ACTION_VARIANTS: Record<LifecycleAction, 'default' | 'destructive' | 'outline'> = {
@@ -84,9 +94,17 @@ export function ResourceLifecycleDialog<TResult>({
       const result = await config.submit(lifecycleAction, { comment: comment || null })
 
       close()
+      const description = config.describeSuccessDetail?.(lifecycleAction, result)
+      const toastAction = config.successAction?.(lifecycleAction, result)
       toast.success(
         config.describeSuccess?.(lifecycleAction, result) ??
           lifecycleSuccessMessage(lifecycleAction, config.singular, config.name),
+        description || toastAction
+          ? {
+              ...(description ? { description } : {}),
+              ...(toastAction ? { action: toastAction } : {}),
+            }
+          : undefined,
       )
     } catch (cause) {
       // A refusal may mean the record's authoritative state has moved on since this view loaded,
@@ -108,7 +126,9 @@ export function ResourceLifecycleDialog<TResult>({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {action ? lifecycleDialogTitle(action, config.singular) : ''}
+            {action
+              ? (config.describeTitle?.(action) ?? lifecycleDialogTitle(action, config.singular))
+              : ''}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {action

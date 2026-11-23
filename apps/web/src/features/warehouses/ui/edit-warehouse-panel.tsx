@@ -1,4 +1,3 @@
-import { ArrowLeftIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -11,7 +10,6 @@ import {
 } from '@/components/resource-map/resource-placement-fields'
 import { Button } from '@/components/ui/button'
 import { FieldDescription, FieldGroup } from '@/components/ui/field'
-import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
   checkFootprint,
   doorsOutsideFootprint,
@@ -129,6 +127,9 @@ export function EditWarehousePanel({
   onInsertPoint,
   onRemovePoint,
   onRestoreOutline,
+  onUndo,
+  canUndo = false,
+  movedCount = 0,
   onCancel,
   onNotFound,
   onUpdate,
@@ -143,6 +144,11 @@ export function EditWarehousePanel({
   onInsertPoint: (index: number, point: LatLng) => void
   onRemovePoint: (index: number) => void
   onRestoreOutline: () => void
+  /** Steps back one change; offered while there is one to take back. */
+  onUndo: () => void
+  canUndo?: boolean
+  /** Points that differ from the session's origin, for the `· <n> moved` counter. */
+  movedCount?: number
   onCancel: () => void
   onNotFound: () => void
   onUpdate: (value: { name: string; points: LatLng[] }) => Promise<WarehouseDto>
@@ -206,21 +212,8 @@ export function EditWarehousePanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      {/* Sticky because "Back to details" is the only way out of an edit panel, and the header
-          scrolls with the form: a long footprint would otherwise leave the user at "Save changes"
-          with no visible way to abandon. */}
-      <SheetHeader className="sticky top-0 z-10 bg-background">
-        <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
-          <ArrowLeftIcon aria-hidden="true" />
-          Back to details
-        </Button>
-        <SheetTitle>Edit warehouse</SheetTitle>
-        <SheetDescription>
-          Drag a boundary point, split an edge to add one, or remove one to reshape {warehouse.name}
-          .
-        </SheetDescription>
-      </SheetHeader>
-      <div className="px-4 pb-4">
+      <div className="p-4">
+        <p className="mb-4 text-muted-foreground text-sm">Previous outline shown dashed.</p>
         <form.AppForm>
           <form.Form className="flex flex-col gap-6">
             <FieldGroup>
@@ -237,12 +230,25 @@ export function EditWarehousePanel({
               <div className="flex items-center justify-between gap-2">
                 <p className="text-muted-foreground text-sm" role="status">
                   {summarisePoints(points.length)}
+                  {movedCount > 0 && ` · ${movedCount} moved`}
                 </p>
-                {outlineModified && (
-                  <Button onClick={onRestoreOutline} size="sm" type="button" variant="link">
-                    Restore original outline
+                <div className="flex items-center gap-1">
+                  {/* Disabled rather than removed, so pressing it to the last step keeps focus. */}
+                  <Button
+                    disabled={!canUndo}
+                    onClick={onUndo}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Undo
                   </Button>
-                )}
+                  {outlineModified && (
+                    <Button onClick={onRestoreOutline} size="sm" type="button" variant="link">
+                      Restore original outline
+                    </Button>
+                  )}
+                </div>
               </div>
               {/* Reshaping on the map is the expected path, so the raw coordinates stay out of the
                   way — folded away, but never removed: they are the only way to reshape a footprint
@@ -315,9 +321,14 @@ export function EditWarehousePanel({
               )}
             </FieldGroup>
             <form.FormError />
-            <form.SubmitButton disabled={!canSubmit} pendingLabel={WRITE_PENDING_LABELS.update}>
-              Save changes
-            </form.SubmitButton>
+            <div className="flex gap-2">
+              <form.SubmitButton disabled={!canSubmit} pendingLabel={WRITE_PENDING_LABELS.update}>
+                Save changes
+              </form.SubmitButton>
+              <Button onClick={onCancel} type="button" variant="outline">
+                Cancel
+              </Button>
+            </div>
           </form.Form>
         </form.AppForm>
       </div>

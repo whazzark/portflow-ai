@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: Portflow Dock Occupancy Contract
+  version: 1.0.0
+  description: >-
+    Introduced by issue 323 for the creation wizard's shift preview, dock-scoped so that issue 324's
+    dock timeline can reuse it. Read only. Requires an ACTIVE user (DischargePolicy.list; the auth middleware answers 401 to any other session). See
+    research.md Decisions 1 to 3 and data-model.md.
+paths:
+  /api/v1/discharges/dock-occupancy:
+    get:
+      operationId: discharges.dock_occupancy
+      summary: The planned or active discharges occupying a dock, each with its planned period
+      description: >-
+        Declared before every /discharges/:id route. Closed discharges and discharges without a
+        planned shift are omitted. An unknown dock answers an empty list.
+      parameters:
+        - name: dockId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The dock's occupancy, ordered by startAt then discharge id.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DockOccupancyEnvelope" }
+              examples:
+                occupied:
+                  value:
+                    data:
+                      - discharge:
+                          id: 0e1d2c3b-4a59-4687-9a6b-5c4d3e2f1a0b
+                          vesselName: MV Nordic Breeze
+                          status: ACTIVE
+                        startAt: "2026-09-17T06:00:00.000Z"
+                        endAt: "2026-09-20T12:00:00.000Z"
+                free:
+                  value:
+                    data: []
+        "401": { description: Not signed in, or the session user is not ACTIVE (E_UNAUTHORIZED_ACCESS). }
+        "422": { description: dockId missing or not a uuid (E_VALIDATION_ERROR). }
+components:
+  schemas:
+    DockOccupancyEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/DockOccupancy" }
+    DockOccupancy:
+      type: object
+      required: [discharge, startAt, endAt]
+      properties:
+        discharge:
+          type: object
+          required: [id, vesselName, status]
+          properties:
+            id: { type: string, format: uuid }
+            vesselName: { type: string }
+            status: { type: string, enum: [PLANNED, ACTIVE] }
+        startAt:
+          type: string
+          format: date-time
+          description: Earliest planned start among the discharge's shifts.
+        endAt:
+          type: string
+          format: date-time
+          description: Latest planned end among the discharge's shifts.

@@ -186,9 +186,13 @@ export function UserAccessDialog({
           </FieldGroup>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel>{USER_ACCESS_DISMISS_LABELS[action]}</AlertDialogCancel>
+          <AlertDialogCancel size="lg">{USER_ACCESS_DISMISS_LABELS[action]}</AlertDialogCancel>
           <AlertDialogAction
             disabled={isPending}
+            size="lg"
+            // The confirmation looks like the button that opened it: a withdrawal stays red to the
+            // last click, and a reactivation stays the plain action it is.
+            variant={USER_ACCESS_ACTION_VARIANTS[action]}
             onClick={(event) => {
               event.preventDefault()
               void submit()

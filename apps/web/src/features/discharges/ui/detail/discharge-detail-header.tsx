@@ -1,6 +1,7 @@
 import type { ReactNode, Ref } from 'react'
 
 import {
+  formatDischargePeriod,
   formatShiftPeriod,
   formatTonnes,
   plannedPeriod,
@@ -56,6 +57,11 @@ export function DischargeDetailHeader({
   headingRef,
   comment,
 }: DischargeDetailHeaderProps) {
+  // An active discharge is read by the period it spans rather than by when it was expected, and its
+  // dock timeline tells who started it. A planned one reads by its planned period, a closed one by
+  // when it was expected and started.
+  const spansPeriod = discharge.status === 'ACTIVE'
+
   return (
     <div className="flex flex-col gap-3">
       <BackToDischargesLink />
@@ -87,6 +93,15 @@ export function DischargeDetailHeader({
                   {discharge.vesselImo ?? (
                     <span className="font-normal text-muted-foreground italic">Not specified</span>
                   )}
+                </Fact>
+              </>
+            ) : spansPeriod ? (
+              <>
+                <Fact label="Period">
+                  <span className="tabular-nums">{formatDischargePeriod(discharge)}</span>
+                </Fact>
+                <Fact label="IMO">
+                  <span className="tabular-nums">{discharge.vesselImo ?? 'Not specified'}</span>
                 </Fact>
               </>
             ) : (

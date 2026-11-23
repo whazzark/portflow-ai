@@ -6,6 +6,9 @@ import { buildDischargeDetail, listedDischarge } from '../support/fixtures'
 import { mockDischargeDetail, renderDischargeDetail } from '../support/test-helpers'
 
 const OCEAN_CEDAR = listedDischarge('MV Ocean Cedar', 'ACTIVE')
+// Only a closed discharge keeps the overview card and the expected start: a planned one reads its
+// planned period from the header, and an active one the period it spans.
+const LOIRE_STAR = listedDischarge('MV Loire Star', 'CLOSED')
 
 function field(region: HTMLElement, label: string) {
   const term = within(region).getByText(label, { selector: 'dt' })
@@ -24,16 +27,16 @@ test('names the vessel and states the status of the discharge', async () => {
 
 test('labels the dock, the expected start, and the expected tonnage beside the vessel name', async () => {
   mockDischargeDetail({
-    details: [buildDischargeDetail(OCEAN_CEDAR, { expectedTonnage: '32150.750' })],
+    details: [buildDischargeDetail(LOIRE_STAR, { expectedTonnage: '32150.750' })],
   })
 
-  renderDischargeDetail(OCEAN_CEDAR.id)
+  renderDischargeDetail(LOIRE_STAR.id)
 
-  const heading = await screen.findByRole('heading', { level: 1, name: 'MV Ocean Cedar' })
+  const heading = await screen.findByRole('heading', { level: 1, name: 'MV Loire Star' })
   const header = heading.parentElement?.nextElementSibling as HTMLElement
-  expect(field(header, 'Dock')).toHaveTextContent('Quai Est')
+  expect(field(header, 'Dock')).toHaveTextContent('Quai Sud')
   expect(field(header, 'Expected start')).toHaveTextContent(
-    formatDateTime(OCEAN_CEDAR.expectedStartAt),
+    formatDateTime(LOIRE_STAR.expectedStartAt),
   )
   expect(field(header, 'Expected tonnage')).toHaveTextContent('32,150.750 t')
 })
@@ -41,21 +44,21 @@ test('labels the dock, the expected start, and the expected tonnage beside the v
 test('shows the vessel, the dock, the expected start, and the expected tonnage', async () => {
   mockDischargeDetail({
     details: [
-      buildDischargeDetail(OCEAN_CEDAR, {
+      buildDischargeDetail(LOIRE_STAR, {
         expectedTonnage: '32150.750',
         vesselComment: 'Draught restricted at low tide',
       }),
     ],
   })
 
-  renderDischargeDetail(OCEAN_CEDAR.id)
+  renderDischargeDetail(LOIRE_STAR.id)
 
   const overview = await screen.findByRole('region', { name: 'Overview' })
-  expect(field(overview, 'IMO')).toHaveTextContent('9410002')
+  expect(field(overview, 'IMO')).toHaveTextContent('9410004')
   expect(field(overview, 'Vessel comment')).toHaveTextContent('Draught restricted at low tide')
-  expect(field(overview, 'Dock')).toHaveTextContent('Quai Est')
+  expect(field(overview, 'Dock')).toHaveTextContent('Quai Sud')
   expect(field(overview, 'Expected start')).toHaveTextContent(
-    formatDateTime(OCEAN_CEDAR.expectedStartAt),
+    formatDateTime(LOIRE_STAR.expectedStartAt),
   )
   expect(field(overview, 'Expected tonnage')).toHaveTextContent('32,150.750 t')
 })
@@ -83,7 +86,32 @@ test('keeps an archived dock readable and says it is archived', async () => {
 
   renderDischargeDetail(OCEAN_CEDAR.id)
 
-  const overview = await screen.findByRole('region', { name: 'Overview' })
-  expect(field(overview, 'Dock')).toHaveTextContent('Quai Est')
-  expect(field(overview, 'Dock')).toHaveTextContent('Archived')
+  const heading = await screen.findByRole('heading', { level: 1, name: 'MV Ocean Cedar' })
+  const header = heading.parentElement?.nextElementSibling as HTMLElement
+  expect(field(header, 'Dock')).toHaveTextContent('Quai Est')
+  expect(field(header, 'Dock')).toHaveTextContent('Archived')
+})
+
+test('keeps the expected start and who started a closed discharge in its header', async () => {
+  const loireStar = listedDischarge('MV Loire Star', 'CLOSED')
+  mockDischargeDetail({
+    details: [
+      buildDischargeDetail(loireStar, {
+        startedAt: '2026-08-01T06:10:00.000Z',
+        startedBy: { id: 'lead-1', firstName: 'Léa', lastName: 'Martin' },
+      }),
+    ],
+  })
+
+  renderDischargeDetail(loireStar.id)
+
+  const heading = await screen.findByRole('heading', { level: 1, name: 'MV Loire Star' })
+  const header = heading.parentElement?.nextElementSibling as HTMLElement
+  expect(field(header, 'Expected start')).toHaveTextContent(
+    formatDateTime(loireStar.expectedStartAt),
+  )
+  expect(field(header, 'Started')).toHaveTextContent(
+    `${formatDateTime('2026-08-01T06:10:00.000Z')} by Léa Martin`,
+  )
+  expect(within(header).queryByText('Period')).not.toBeInTheDocument()
 })
