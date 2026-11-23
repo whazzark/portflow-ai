@@ -87,9 +87,9 @@ test('opens the section a summary row names', async () => {
 })
 
 test.each([
-  // An active discharge's overview opens on what is happening now; a closed one on its facts.
+  // An active discharge's overview opens on what is happening now; a closed one on its summary.
   ['an active', listedDischarge('MV Ocean Cedar', 'ACTIVE'), 'Current shift'],
-  ['a closed', listedDischarge('MV Loire Star', 'CLOSED'), 'Overview'],
+  ['a closed', listedDischarge('MV Loire Star', 'CLOSED'), 'Summary'],
 ])('shows no preparation summary on %s discharge', async (_case, listed, firstCard) => {
   await renderSummary(buildDischargeDetail(listed))
 

@@ -73,9 +73,11 @@ test('leaves the open section behind, so the next discharge opens on its overvie
   expect(router.state.location.searchStr).not.toContain('tab=')
 
   await user.click(within(table).getAllByRole('link', { name: /^View discharge/ })[0])
+  // A closed record's overview is its summary, not a details card.
   expect(
-    await screen.findByRole('region', { name: 'Overview' }, { timeout: 3000 }),
+    await screen.findByRole('region', { name: 'Summary' }, { timeout: 3000 }),
   ).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true')
   expect(router.state.location.search).not.toHaveProperty('tab')
 })
 

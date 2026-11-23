@@ -1,5 +1,6 @@
 import type { ReactNode, Ref } from 'react'
 
+import { closedRecordPeriod } from '@/features/discharges/closed-discharge-record'
 import { formatDischargePeriod, formatTonnes } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { BackToDischargesLink } from '@/features/discharges/ui/detail/back-to-discharges-link'
@@ -15,15 +16,26 @@ type DischargeDetailHeaderProps = {
   headingRef?: Ref<HTMLHeadingElement>
 }
 
+/**
+ * A closed record's period, from its start to its closure, saying so where an end is not on
+ * record rather than reading one off its shifts as an active discharge's period does.
+ */
+function formatRecordPeriod(discharge: DischargeDetailDto) {
+  const { startAt, endAt } = closedRecordPeriod(discharge)
+  const instant = (value: string | null) => (value ? formatDateTime(value) : 'Not recorded')
+
+  return `${instant(startAt)} → ${instant(endAt)}`
+}
+
 /** What stays in view whichever section is open: which discharge this is, and where it stands. */
 export function DischargeDetailHeader({
   discharge,
   actions,
   headingRef,
 }: DischargeDetailHeaderProps) {
-  // An active discharge is read by the period it spans rather than by when it was expected, and its
-  // dock timeline tells who started it. Planned and closed records keep their facts line.
-  const spansPeriod = discharge.status === 'ACTIVE'
+  // An active or closed discharge is read by the period it spans rather than by when it was
+  // expected; an active one's dock timeline tells who started it. A planned record keeps its facts.
+  const spansPeriod = discharge.status !== 'PLANNED'
 
   return (
     <div className="flex flex-col gap-3">
@@ -52,7 +64,9 @@ export function DischargeDetailHeader({
                 <div className="flex items-baseline gap-1.5">
                   <dt>Period</dt>
                   <dd className="font-medium text-foreground tabular-nums">
-                    {formatDischargePeriod(discharge)}
+                    {discharge.status === 'CLOSED'
+                      ? formatRecordPeriod(discharge)
+                      : formatDischargePeriod(discharge)}
                   </dd>
                 </div>
                 <div className="flex items-baseline gap-1.5">

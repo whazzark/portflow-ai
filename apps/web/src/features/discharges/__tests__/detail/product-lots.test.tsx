@@ -174,17 +174,60 @@ test('keeps archived customers, warehouses, and doors readable and marks them', 
   expect(door).toHaveTextContent('Magasin Retiré › Porte Retirée (Archived)')
 })
 
-test("shows a closed discharge's door left without an end as ended, not as held", async () => {
+test('shows the doors a closed lot used once each, with no door history', async () => {
   const region = await renderLots({
     status: 'CLOSED',
-    productLots: [buildLot({ doorAssignments: [buildDoorPeriod()] })],
+    productLots: [
+      buildLot({
+        doorAssignments: [
+          buildDoorPeriod({ id: 'first-a', ...ENDED_PERIOD }),
+          buildDoorPeriod({
+            id: 'then-b',
+            ...ENDED_PERIOD,
+            warehouseDoor: { id: 'door-b2', name: 'Door B2', status: 'AVAILABLE' },
+            warehouse: { id: 'warehouse-b', name: 'Magasin B', status: 'AVAILABLE' },
+          }),
+          buildDoorPeriod({ id: 'again-a' }),
+        ],
+      }),
+    ],
   })
 
-  fireEvent.click(within(region).getByRole('button', { name: 'History' }))
+  const doors = within(within(region).getByRole('list', { name: 'Warehouse doors' })).getAllByRole(
+    'listitem',
+  )
+  expect(doors.map((door) => door.textContent)).toEqual([
+    'Magasin A › Door A1',
+    'Magasin B › Door B2',
+  ])
+  expect(within(region).queryByRole('button', { name: 'History' })).not.toBeInTheDocument()
+  expect(within(region).queryByRole('button', { name: /ended/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('dialog', { name: 'Door history' })).not.toBeInTheDocument()
+  expect(within(region).queryByRole('button', { name: 'Add product lots' })).not.toBeInTheDocument()
+  expect(within(region).queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument()
+})
 
-  const history = await screen.findByRole('dialog', { name: 'Door history' })
-  const door = within(history).getByRole('listitem')
-  expect(door).toHaveTextContent('Ended')
-  expect(door).toHaveTextContent('end not recorded')
-  expect(door).not.toHaveTextContent('Since')
+test('lists every door a closed lot used behind +N, without their periods', async () => {
+  const region = await renderLots({
+    status: 'CLOSED',
+    productLots: [
+      buildLot({
+        doorAssignments: ['1', '2', '3', '4'].map((index) =>
+          buildDoorPeriod({
+            id: `period-${index}`,
+            ...ENDED_PERIOD,
+            warehouseDoor: { id: `door-a${index}`, name: `Door A${index}`, status: 'AVAILABLE' },
+          }),
+        ),
+      }),
+    ],
+  })
+
+  const list = within(region).getByRole('list', { name: 'Warehouse doors' })
+  fireEvent.click(within(list).getByRole('button', { name: 'Show 2 more warehouse doors' }))
+
+  const all = await screen.findByRole('dialog', { name: 'Warehouse doors' })
+  expect(within(all).getAllByRole('listitem')).toHaveLength(4)
+  expect(all).not.toHaveTextContent('Ended')
+  expect(all).not.toHaveTextContent('Since')
 })

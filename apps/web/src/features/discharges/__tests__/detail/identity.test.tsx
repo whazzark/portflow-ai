@@ -90,7 +90,7 @@ test('keeps an archived dock readable and says it is archived', async () => {
   expect(field(header, 'Dock')).toHaveTextContent('Archived')
 })
 
-test('keeps the expected start and who started a closed discharge in its header', async () => {
+test('reads a closed discharge by its period rather than by its expected start', async () => {
   const loireStar = listedDischarge('MV Loire Star', 'CLOSED')
   mockDischargeDetail({
     details: [
@@ -105,11 +105,10 @@ test('keeps the expected start and who started a closed discharge in its header'
 
   const heading = await screen.findByRole('heading', { level: 1, name: 'MV Loire Star' })
   const header = heading.parentElement?.nextElementSibling as HTMLElement
-  expect(field(header, 'Expected start')).toHaveTextContent(
-    formatDateTime(loireStar.expectedStartAt),
+  // Its closure time is not recorded yet, so the period says so rather than inventing an end.
+  expect(field(header, 'Period')).toHaveTextContent(
+    `${formatDateTime('2026-08-01T06:10:00.000Z')} → Not recorded`,
   )
-  expect(field(header, 'Started')).toHaveTextContent(
-    `${formatDateTime('2026-08-01T06:10:00.000Z')} by Léa Martin`,
-  )
-  expect(within(header).queryByText('Period')).not.toBeInTheDocument()
+  expect(within(header).queryByText('Expected start')).not.toBeInTheDocument()
+  expect(within(header).queryByText('Started')).not.toBeInTheDocument()
 })

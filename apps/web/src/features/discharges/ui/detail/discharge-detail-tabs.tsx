@@ -11,11 +11,14 @@ import {
   type DischargeDetailTab,
 } from '@/features/discharges/types'
 import { ActiveOverview } from '@/features/discharges/ui/detail/active-overview'
+import { ClosedDischargeSummary } from '@/features/discharges/ui/detail/closed-discharge-summary'
+import { ClosedDockTimeline } from '@/features/discharges/ui/detail/closed-dock-timeline'
 import { DischargeIdentityCard } from '@/features/discharges/ui/detail/discharge-identity-card'
 import { DischargePreparationCard } from '@/features/discharges/ui/detail/discharge-preparation-card'
 import { DischargeProductLotsCard } from '@/features/discharges/ui/detail/discharge-product-lots-card'
 import { DischargeShiftsCard } from '@/features/discharges/ui/detail/discharge-shifts-card'
 import { DischargeTruckPoolCard } from '@/features/discharges/ui/detail/discharge-truck-pool-card'
+import { VesselComment } from '@/features/discharges/ui/detail/vessel-comment'
 
 const TAB_LABELS = {
   overview: 'Overview',
@@ -87,6 +90,13 @@ export function DischargeDetailTabs({
       <TabsContent className="grid gap-6" value="overview">
         {discharge.status === 'ACTIVE' ? (
           <ActiveOverview canAddShifts={canAddShifts} discharge={discharge} />
+        ) : discharge.status === 'CLOSED' ? (
+          // A closed record's facts all sit in its header; its overview is what it went through.
+          <>
+            <VesselComment comment={discharge.vesselComment} />
+            <ClosedDockTimeline discharge={discharge} />
+            <ClosedDischargeSummary discharge={discharge} />
+          </>
         ) : (
           <>
             <DischargeIdentityCard discharge={discharge} />
