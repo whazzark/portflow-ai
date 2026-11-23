@@ -124,7 +124,7 @@ async function openShiftPanel(period = PERIOD) {
   const shifts = await screen.findByRole('region', { name: 'Shifts' })
   fireEvent.click(within(shifts).getByRole('button', { name: `Shift ${period}` }))
 
-  return screen.findByRole('dialog', { name: `Shift ${period}` })
+  return screen.findByRole('dialog', { name: period })
 }
 
 /** Opens the planned shift's panel, then its correction, once its choices have loaded. */
@@ -171,6 +171,7 @@ test('opens on the shift as it stands', async () => {
   expect(within(sheet).getByLabelText(/^Planned start/)).toHaveValue(toDateTimeLocalValue(START))
   expect(within(sheet).getByLabelText(/^Planned end/)).toHaveValue(toDateTimeLocalValue(END))
   expect(within(sheet).getByRole('combobox', { name: /^Responsible/ })).toHaveValue('Léa Martin')
+  expect(within(sheet).getByRole('status', { name: 'Duration' })).toHaveTextContent('8 h')
   expect(within(sheet).getByRole('checkbox', { name: 'Select AA-100-AA' })).toBeChecked()
   expect(within(sheet).getByRole('checkbox', { name: 'Select BB-200-BB' })).not.toBeChecked()
   expect(within(sheet).getByRole('checkbox', { name: 'Select Magasin A › Door A1' })).toBeChecked()
@@ -192,7 +193,7 @@ test('returns to the shift details without saving anything', async () => {
   fireEvent.click(within(sheet).getByRole('checkbox', { name: 'Select BB-200-BB' }))
   fireEvent.click(within(sheet).getByRole('button', { name: 'Back to details' }))
 
-  const panel = await screen.findByRole('dialog', { name: `Shift ${PERIOD}` })
+  const panel = await screen.findByRole('dialog', { name: PERIOD })
   expect(within(panel).getByRole('list', { name: 'Trucks' })).not.toHaveTextContent('BB-200-BB')
   expect(state.requests).toEqual([])
 })
@@ -233,10 +234,10 @@ test('corrects the period, the responsible, and every resource of the shift at o
 
   // Back to the shift's details, which read the saved correction.
   const shift = await screen.findByRole('dialog', {
-    name: `Shift ${formatShiftPeriod({
+    name: formatShiftPeriod({
       plannedStartAt: fromDateTimeLocalValue(newStart),
       plannedEndAt: fromDateTimeLocalValue(newEnd),
-    })}`,
+    }),
   })
   expect(shift).toHaveTextContent('Thomas Bernard')
   expect(within(shift).getByRole('list', { name: 'Trucks' })).toHaveTextContent('BB-200-BB')
@@ -365,7 +366,7 @@ test('selects every truck it can at once', async () => {
   fireEvent.click(within(sheet).getByRole('checkbox', { name: 'Select all trucks' }))
 
   expect(within(sheet).getByRole('checkbox', { name: 'Select BB-200-BB' })).toBeChecked()
-  expect(within(sheet).getByText('3 selected')).toBeInTheDocument()
+  expect(within(sheet).getByText('3 of 3 selected')).toBeInTheDocument()
 })
 
 test('points to the pool when the discharge holds no truck', async () => {

@@ -26,8 +26,8 @@ export const dischargeQueries = {
       { params: { dischargeId } },
       { staleTime: 0 },
     ),
-  // Refetched on every read: other discharges are planned, started, and replanned on the dock
-  // meanwhile.
+  // Refetched on every read, such as each opening of the creation's Planned shifts step: other
+  // discharges are planned, started, and replanned on the dock meanwhile.
   dockOccupancy: (dockId: string) =>
     tuyauQuery.discharges.dockOccupancy.queryOptions({ query: { dockId } }, { staleTime: 0 }),
 }

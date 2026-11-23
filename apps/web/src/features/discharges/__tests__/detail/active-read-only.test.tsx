@@ -49,7 +49,7 @@ test.each(PREPARERS.map((user) => [user.role, user] as const))(
     // A planned shift of a started discharge is not corrected from its panel.
     renderDischargeTab(discharge.id, 'shifts', '?shiftId=shift-7')
     const panel = await screen.findByRole('dialog', {
-      name: `Shift ${formatShiftPeriod(discharge.shifts[6])}`,
+      name: formatShiftPeriod(discharge.shifts[6]),
     })
     expect(within(panel).queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument()
   },

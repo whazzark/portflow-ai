@@ -15,6 +15,11 @@ type ShiftResourceGroupProps<T extends Period> = {
   renderResource: (period: T) => ReactNode
   /** An action on this group of resources, placed beside its label. */
   action?: ReactNode
+  /**
+   * Said once below the resources, in place of each one's period: the resources then read side by
+   * side, as their periods are all the same.
+   */
+  sharedPeriod?: ReactNode
 }
 
 /** One kind of resource a shift uses, each with the period it was used for. */
@@ -25,6 +30,7 @@ export function ShiftResourceGroup<T extends Period>({
   count,
   renderResource,
   action,
+  sharedPeriod,
 }: ShiftResourceGroupProps<T>) {
   const { inEffect, ended } = splitPeriods(periods, dischargeStatus)
 
@@ -40,7 +46,21 @@ export function ShiftResourceGroup<T extends Period>({
         </h4>
         {action}
       </div>
-      {periods.length > 0 ? (
+      {periods.length > 0 && sharedPeriod ? (
+        <>
+          <ul aria-label={label} className="flex flex-wrap gap-1.5">
+            {inEffect.map((period) => (
+              <li
+                className="rounded-md border bg-muted/40 px-2 py-0.5 tabular-nums"
+                key={period.id}
+              >
+                {renderResource(period)}
+              </li>
+            ))}
+          </ul>
+          <p className="text-muted-foreground text-sm">{sharedPeriod}</p>
+        </>
+      ) : periods.length > 0 ? (
         <ul aria-label={label} className="grid gap-1">
           {[...inEffect, ...ended].map((period) => (
             <li className="grid gap-0.5" key={period.id}>

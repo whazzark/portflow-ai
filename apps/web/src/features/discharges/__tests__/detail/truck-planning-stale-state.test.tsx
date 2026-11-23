@@ -65,7 +65,7 @@ test('keeps a truck withdrawn elsewhere on the shift correction, refused, until 
 
   const shifts = await screen.findByRole('region', { name: 'Shifts' })
   fireEvent.click(within(shifts).getByRole('button', { name: `Shift ${PERIOD}` }))
-  const panel = await screen.findByRole('dialog', { name: `Shift ${PERIOD}` })
+  const panel = await screen.findByRole('dialog', { name: PERIOD })
   fireEvent.click(within(panel).getByRole('button', { name: 'Edit' }))
   const sheet = await screen.findByRole('dialog', { name: 'Edit shift' })
   fireEvent.click(within(sheet).getByRole('checkbox', { name: 'Select XX-900-XX' }))

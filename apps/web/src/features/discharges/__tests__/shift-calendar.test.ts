@@ -7,6 +7,7 @@ import {
   drawnPeriod,
   openShift,
   shiftCalendar,
+  shiftsSummary,
 } from '@/features/discharges/shift-calendar'
 
 // Local times, so the calendar reads the same whatever zone the suite runs in.
@@ -300,5 +301,76 @@ describe('blockRowCount', () => {
 
   test('keeps the times even on a card too short for them', () => {
     expect(blockRowCount(10)).toBe(1)
+  })
+})
+
+describe('shiftsSummary', () => {
+  const withGaps = (base: ReturnType<typeof shift>, count: number) => ({
+    ...base,
+    readinessGaps: Array.from({ length: count }, () => 'NO_USABLE_TRUCK' as const),
+  })
+
+  test('summarises nothing without a shift', () => {
+    expect(shiftsSummary({ status: 'PLANNED', shifts: [] })).toBeNull()
+  })
+
+  test("reads a planned discharge's count, total planned, and period", () => {
+    const summary = shiftsSummary({
+      status: 'PLANNED',
+      shifts: [
+        shift('a', at(4, 6), at(4, 14)),
+        shift('b', at(4, 14), at(4, 22)),
+        shift('c', at(5, 6), at(5, 13, 30)),
+      ],
+    })
+
+    expect(summary).toEqual({
+      text: '3 shifts · 23 h 30 min planned · 04/10 06:00 → 05/10 13:30',
+      gapCount: 0,
+    })
+  })
+
+  test('reads a single shift in the singular', () => {
+    expect(
+      shiftsSummary({ status: 'PLANNED', shifts: [shift('a', at(4, 6), at(4, 14))] })?.text,
+    ).toBe('1 shift · 8 h planned · 04/10 06:00 → 04/10 14:00')
+  })
+
+  test("reads an active discharge's shifts by status, leaving out those it has none of, and when it ends", () => {
+    const summary = shiftsSummary({
+      status: 'ACTIVE',
+      shifts: [
+        shift('a', at(4, 6), at(4, 14), 'COMPLETED'),
+        shift('b', at(4, 14), at(4, 22), 'COMPLETED'),
+        shift('c', at(4, 22), at(5, 6), 'ACTIVE'),
+      ],
+    })
+
+    expect(summary?.text).toBe('3 shifts · 2 completed · 1 active · ends Mon 5 Oct, 06:00')
+  })
+
+  test("reads a closed discharge's completed shifts, their total, and their period", () => {
+    const summary = shiftsSummary({
+      status: 'CLOSED',
+      shifts: [
+        shift('a', at(4, 6), at(4, 14), 'COMPLETED'),
+        shift('b', at(5, 6), at(5, 14), 'COMPLETED'),
+      ],
+    })
+
+    expect(summary?.text).toBe('2 shifts completed · 16 h · 04/10 06:00 → 05/10 14:00')
+  })
+
+  test('counts the gaps of every planned shift', () => {
+    const summary = shiftsSummary({
+      status: 'ACTIVE',
+      shifts: [
+        shift('a', at(4, 6), at(4, 14), 'ACTIVE'),
+        withGaps(shift('b', at(4, 14), at(4, 22)), 2),
+        withGaps(shift('c', at(5, 6), at(5, 14)), 1),
+      ],
+    })
+
+    expect(summary?.gapCount).toBe(3)
   })
 })
