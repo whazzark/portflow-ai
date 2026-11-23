@@ -122,7 +122,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
                 <DropdownMenuGroup>
                   {/* A destination, named like the navigation entries rather than as an action: the
                       page holds the identity and the password alike. */}
-                  <DropdownMenuItem render={<Link to="/profile" />}>
+                  <DropdownMenuItem render={<Link search={{ tab: 'identity' }} to="/profile" />}>
                     <UserRoundIcon />
                     <span>Profile</span>
                   </DropdownMenuItem>
