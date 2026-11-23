@@ -111,7 +111,7 @@ test('keeps a truck suspended elsewhere selected on the add sheet until it is un
   fireEvent.click(within(pool).getByRole('button', { name: 'Add trucks' }))
   const sheet = await screen.findByRole('dialog', { name: 'Add trucks' })
   fireEvent.click(await within(sheet).findByRole('checkbox', { name: 'Select PO-303-RT' }))
-  fireEvent.click(within(sheet).getByRole('button', { name: 'Reserve' }))
+  fireEvent.click(within(sheet).getByRole('button', { name: 'Add trucks' }))
 
   expect(
     await within(sheet).findByText('This truck is no longer available to reserve'),
@@ -147,7 +147,7 @@ test('drops the pool actions once the discharge turns out to have started', asyn
 
   const pool = await screen.findByRole('region', { name: 'Truck pool' })
   fireEvent.click(within(pool).getByRole('button', { name: 'Withdraw AA-100-AA' }))
-  const dialog = await screen.findByRole('alertdialog', { name: 'Withdraw truck?' })
+  const dialog = await screen.findByRole('alertdialog', { name: 'Withdraw AA-100-AA?' })
   fireEvent.click(within(dialog).getByRole('button', { name: 'Withdraw' }))
 
   expect(
@@ -160,7 +160,7 @@ test('drops the pool actions once the discharge turns out to have started', asyn
   )
 })
 
-test('sends one reservation when Reserve is pressed twice', async () => {
+test('sends one reservation when Add trucks is pressed twice', async () => {
   const state = mockTruckPlanning({ detail: PLANNED })
   renderDischargeTab(PLANNED.id, 'truck-pool')
 
@@ -168,7 +168,7 @@ test('sends one reservation when Reserve is pressed twice', async () => {
   fireEvent.click(within(pool).getByRole('button', { name: 'Add trucks' }))
   const sheet = await screen.findByRole('dialog', { name: 'Add trucks' })
   fireEvent.click(await within(sheet).findByRole('checkbox', { name: 'Select LO-202-RE' }))
-  const reserve = within(sheet).getByRole('button', { name: 'Reserve' })
+  const reserve = within(sheet).getByRole('button', { name: 'Add trucks' })
   fireEvent.click(reserve)
   fireEvent.click(reserve)
 
@@ -183,21 +183,41 @@ test('counts only trucks still held once the pool refreshes without one of them'
   const pool = await screen.findByRole('region', { name: 'Truck pool' })
   fireEvent.click(within(pool).getByRole('checkbox', { name: 'Select AA-100-AA' }))
   fireEvent.click(within(pool).getByRole('checkbox', { name: 'Select XX-900-XX' }))
-  expect(within(pool).getByRole('button', { name: 'Withdraw (2)' })).toBeInTheDocument()
+  expect(screen.getByRole('toolbar', { name: 'Selected trucks' })).toHaveTextContent(
+    '2 trucks selected',
+  )
 
   // Another user withdraws XX-900-XX; this page learns it from its next write's answer.
   state.current = withoutTruck(state.current, 'truck-x')
   fireEvent.click(within(pool).getByRole('button', { name: 'Add trucks' }))
   const sheet = await screen.findByRole('dialog', { name: 'Add trucks' })
   fireEvent.click(await within(sheet).findByRole('checkbox', { name: 'Select LO-202-RE' }))
-  fireEvent.click(within(sheet).getByRole('button', { name: 'Reserve' }))
+  fireEvent.click(within(sheet).getByRole('button', { name: 'Add trucks' }))
 
   expect(await screen.findByText('Truck reserved')).toBeInTheDocument()
   await waitFor(() =>
-    expect(
-      within(screen.getByRole('region', { name: 'Truck pool' })).getByRole('button', {
-        name: 'Withdraw (1)',
-      }),
-    ).toBeInTheDocument(),
+    expect(screen.getByRole('toolbar', { name: 'Selected trucks' })).toHaveTextContent(
+      '1 truck selected',
+    ),
+  )
+})
+
+test('hides the selection bar once the pool refreshes without any selected truck', async () => {
+  const state = mockTruckPlanning({ detail: PLANNED })
+  renderDischargeTab(PLANNED.id, 'truck-pool')
+
+  const pool = await screen.findByRole('region', { name: 'Truck pool' })
+  fireEvent.click(within(pool).getByRole('checkbox', { name: 'Select XX-900-XX' }))
+  expect(screen.getByRole('toolbar', { name: 'Selected trucks' })).toBeInTheDocument()
+
+  state.current = withoutTruck(state.current, 'truck-x')
+  fireEvent.click(within(pool).getByRole('button', { name: 'Add trucks' }))
+  const sheet = await screen.findByRole('dialog', { name: 'Add trucks' })
+  fireEvent.click(await within(sheet).findByRole('checkbox', { name: 'Select LO-202-RE' }))
+  fireEvent.click(within(sheet).getByRole('button', { name: 'Add trucks' }))
+
+  expect(await screen.findByText('Truck reserved')).toBeInTheDocument()
+  await waitFor(() =>
+    expect(screen.queryByRole('toolbar', { name: 'Selected trucks' })).not.toBeInTheDocument(),
   )
 })

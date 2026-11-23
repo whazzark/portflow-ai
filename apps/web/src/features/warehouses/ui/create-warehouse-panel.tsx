@@ -10,7 +10,6 @@ import {
 } from '@/components/resource-map/resource-placement-fields'
 import { Button } from '@/components/ui/button'
 import { FieldDescription, FieldGroup } from '@/components/ui/field'
-import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
   checkFootprint,
   FOOTPRINT_PROBLEM_MESSAGES,
@@ -208,14 +207,8 @@ export function CreateWarehousePanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <SheetHeader>
-        <SheetTitle>Create warehouse</SheetTitle>
-        <SheetDescription>
-          Click the map to draw the warehouse footprint, then name it. Click the first point again
-          to finish the outline.
-        </SheetDescription>
-      </SheetHeader>
-      <div className="px-4 pb-4">
+      <div className="p-4">
+        <p className="mb-4 text-muted-foreground text-sm">Click the map to add corners.</p>
         <form.AppForm>
           <form.Form className="flex flex-col gap-6">
             <FieldGroup>
@@ -296,10 +289,14 @@ export function CreateWarehousePanel({
                   </Button>
                 </div>
               </details>
-              {problem && (
+              {problem ? (
                 <FieldDescription role="status">
                   {FOOTPRINT_PROBLEM_MESSAGES[problem]}
                 </FieldDescription>
+              ) : (
+                !isOutlineComplete && (
+                  <FieldDescription>Close the outline to create the warehouse.</FieldDescription>
+                )
               )}
             </FieldGroup>
             <form.FormError />

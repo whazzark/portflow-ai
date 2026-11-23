@@ -159,9 +159,10 @@ test('clears the selection after a partial outcome instead of turning it into an
   // Nothing stays checked. Keeping the refused warehouse would leave the bar reading "1 selected"
   // over a warehouse the refresh has just turned available — an archival of what was asked to be
   // reactivated.
-  expect(screen.getByRole('toolbar', { name: 'Bulk warehouse actions' })).toHaveTextContent(
-    '0 selected',
-  )
+  // `hidden: true`: with nothing checked the bar is rightly withdrawn (aria-hidden, inert), and a
+  // hidden element computes no accessible name — it is the page's only toolbar. What matters here
+  // is what it holds.
+  expect(screen.getByRole('toolbar', { hidden: true })).toHaveTextContent('0 selected')
 })
 
 test('reports an all-blocked submission as nothing changed', async () => {
