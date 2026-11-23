@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import {
+  activeDischargeDetail,
   buildDoorPeriod,
   buildLot,
   buildShift,
 } from '@/features/discharges/__tests__/support/fixtures'
 import {
+  dischargePeriod,
+  formatDischargePeriod,
   formatPeriod,
   formatShiftDuration,
   formatShiftPeriod,
@@ -311,5 +314,55 @@ describe('lotDoorCell', () => {
     expect(ids(cell.shown)).toEqual(['a', 'b'])
     expect(cell.history).toHaveLength(3)
     expect(cell.historyLabel).toBe('history')
+  })
+})
+
+describe('dischargePeriod', () => {
+  const shifts = [
+    buildShift({
+      id: 'first',
+      plannedStartAt: '2026-09-14T04:00:00.000Z',
+      plannedEndAt: '2026-09-14T12:00:00.000Z',
+    }),
+    buildShift({
+      id: 'last',
+      plannedStartAt: '2026-09-18T12:00:00.000Z',
+      plannedEndAt: '2026-09-18T20:00:00.000Z',
+    }),
+  ]
+
+  test('runs from the actual start of a started discharge to the planned end of its last shift', () => {
+    const active = activeDischargeDetail({ startedAt: '2026-09-14T04:05:00.000Z', shifts })
+
+    expect(dischargePeriod(active)).toEqual({
+      from: '2026-09-14T04:05:00.000Z',
+      to: '2026-09-18T20:00:00.000Z',
+    })
+    expect(dischargePeriod({ ...active, status: 'CLOSED' }).from).toBe('2026-09-14T04:05:00.000Z')
+  })
+
+  test('runs from the expected start of a planned discharge', () => {
+    const planned = activeDischargeDetail({
+      status: 'PLANNED',
+      startedAt: null,
+      expectedStartAt: '2026-09-14T03:00:00.000Z',
+      shifts,
+    })
+
+    expect(dischargePeriod(planned).from).toBe('2026-09-14T03:00:00.000Z')
+  })
+
+  test('has no end while no shift is planned', () => {
+    expect(dischargePeriod(activeDischargeDetail({ shifts: [] })).to).toBeNull()
+  })
+
+  test('reads both ends to the minute, with an arrow between them', () => {
+    const active = activeDischargeDetail({ startedAt: '2026-09-14T04:05:00.000Z', shifts })
+
+    expect(formatDischargePeriod(active)).toBe(
+      `${formatDateTime('2026-09-14T04:05:00.000Z')} → ${formatDateTime('2026-09-18T20:00:00.000Z')}`,
+    )
+    const unplanned = activeDischargeDetail({ shifts: [] })
+    expect(formatDischargePeriod(unplanned)).toBe(`${formatDateTime(unplanned.startedAt)} → —`)
   })
 })

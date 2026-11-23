@@ -50,7 +50,5 @@ test('removes a user from its row in three interactions, without opening the rec
   await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   // The record sheet was never opened: the row menu is enough on its own.
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  await waitFor(() =>
-    expect(screen.getByRole('tab', { name: /Pending \(0\)/ })).toBeInTheDocument(),
-  )
+  await waitFor(() => expect(screen.getByRole('tab', { name: /^Pending 0$/ })).toBeInTheDocument())
 })

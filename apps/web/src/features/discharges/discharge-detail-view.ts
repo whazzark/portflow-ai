@@ -83,6 +83,36 @@ export function lotDoorNotice(
   return 'NONE_CURRENTLY_ASSIGNED'
 }
 
+type PeriodDischarge = Pick<DischargeDetailDto, 'status' | 'expectedStartAt' | 'startedAt'> & {
+  shifts: Array<{ plannedEndAt: string | null }>
+}
+
+/**
+ * The period a discharge spans, as its header reads it: from its actual start once started, else
+ * from its expected start, to the planned end of its last shift — `null` while no shift is planned.
+ */
+export function dischargePeriod(discharge: PeriodDischarge) {
+  const from =
+    discharge.status === 'PLANNED'
+      ? discharge.expectedStartAt
+      : (discharge.startedAt ?? discharge.expectedStartAt)
+  let to: string | null = null
+  for (const shift of discharge.shifts) {
+    if (shift.plannedEndAt && (to === null || Date.parse(shift.plannedEndAt) > Date.parse(to))) {
+      to = shift.plannedEndAt
+    }
+  }
+
+  return { from, to }
+}
+
+/** `14/09/2026, 06:00 → 18/09/2026, 22:00`, with a dash for an end not planned yet. */
+export function formatDischargePeriod(discharge: PeriodDischarge) {
+  const { from, to } = dischargePeriod(discharge)
+
+  return `${formatDateTime(from)} → ${formatDateTime(to)}`
+}
+
 const WHOLE_TONNES = new Intl.NumberFormat('en-GB')
 
 /**
