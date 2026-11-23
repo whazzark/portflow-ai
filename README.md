@@ -99,10 +99,13 @@ Ces éléments sont documentés, mais pas encore implémentés dans ce dépôt.
 │   ├── adr/                # ADRs racine
 │   ├── agents/             # Conventions de delivery et guides opératoires
 │   └── architecture/       # Documentation d'architecture transverse
+├── scripts/
+│   └── worktree/           # Setup et teardown d'un worktree (base, ports, cookie)
 ├── specs/                  # Roadmaps et spécifications Spec Kit canoniques
 ├── .specify/               # Constitution, templates et workflows Spec Kit
 ├── CONTEXT.md              # Glossaire métier
 ├── AGENTS.md               # Conventions agentiques du repo
+├── orca.yaml               # Hooks Orca de création et d'archivage des worktrees
 ├── package.json
 └── pnpm-workspace.yaml
 ```
@@ -139,10 +142,12 @@ Variables principales de `apps/api` :
 - `APP_KEY` : clé d'application AdonisJS ;
 - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE` : connexion PostgreSQL ;
 - `SESSION_DRIVER` : driver de session ;
+- `SESSION_COOKIE_NAME` : nom du cookie de session, `adonis-session` par défaut ;
 - `WEB_ORIGIN` : origine du frontend autorisée.
 
 Variables principales de `apps/web` :
 
+- `WEB_PORT` : port d'écoute du serveur de développement, `3000` par défaut ;
 - `VITE_API_BASE_URL` : base de l'API appelée par le frontend ;
 - `VITE_MAP_STYLE_LIGHT_URL` et `VITE_MAP_STYLE_DARK_URL` : styles de fond de carte MapLibre.
 
@@ -231,7 +236,7 @@ pnpm dev
 Turbo démarre les deux applications en mode watch :
 
 - l'API AdonisJS sur le port configuré, par défaut `3333` ;
-- le poste de travail web sur `http://localhost:3000`.
+- le poste de travail web sur le port configuré, par défaut `http://localhost:3000`.
 
 Pour ne lancer qu'une application :
 
@@ -239,6 +244,43 @@ Pour ne lancer qu'une application :
 pnpm --dir apps/api dev
 pnpm --dir apps/web dev
 ```
+
+## Travailler dans un worktree
+
+Chaque worktree Git dispose de sa propre base, de ses propres ports et de son propre cookie de
+session, ce qui permet d'en lancer plusieurs en même temps, dans le même navigateur, sans qu'ils se
+marchent dessus. Le checkout principal garde la base `portflow` et les ports `3000` et `3333`.
+
+Orca lance `scripts/worktree/setup.sh` à la création d'un worktree (voir [`orca.yaml`](./orca.yaml)).
+Pour un worktree créé autrement, ou pour le remettre d'aplomb, le lancer depuis ce worktree :
+
+```bash
+pnpm worktree:setup
+```
+
+Le script, que l'on peut relancer sans risque :
+
+- installe les dépendances ;
+- démarre `portflow-postgres` s'il est arrêté ;
+- réserve un numéro n au worktree, qui lui donne le web sur `3000 + n` et l'API sur `3333 + n` ;
+- crée `apps/api/.env` et `apps/web/.env` à partir de ceux du checkout principal, puis y écrit le
+  port, la base `portflow_wt_<nom-du-worktree>` et le cookie de session du worktree ;
+- crée cette base dans le conteneur existant, la migre et, à sa création seulement, la seed.
+
+Il affiche ensuite les URLs du worktree ; `pnpm dev` démarre les deux applications.
+
+À l'archivage ou à la suppression du worktree, Orca lance `scripts/worktree/teardown.sh`, qui
+supprime la base du worktree et libère ses ports. Hors Orca, le lancer avant de supprimer le
+worktree :
+
+```bash
+pnpm worktree:teardown
+```
+
+Il ne supprime jamais une base dont le nom ne commence pas par `portflow_wt_`. Les numéros réservés
+sont enregistrés dans `.git/portflow-worktrees/`, partagé par tous les worktrees ; celui d'un
+worktree supprimé sans teardown est récupéré au setup suivant, mais sa base reste à supprimer à la
+main.
 
 ## Commandes utiles
 
