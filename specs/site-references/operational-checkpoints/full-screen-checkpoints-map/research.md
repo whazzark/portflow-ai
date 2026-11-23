@@ -173,3 +173,15 @@ API, and the constraints found while reading the existing code.
   only consumes it.
 - **Deferred**: the V2 "Discharges" section on detail cards (spec Clarifications) needs a follow-up
   issue.
+
+## Reconciliation with #321 (2026-11-23)
+
+#321 (Warehouses) merged first with its own versions of the shared map primitives under the same
+names. This branch adopted them and adapted Checkpoints to their APIs: `ResourceMapToggleGroup`
+takes `items[].pressed` and `onToggle(value)` (accessible names `Docks, 3`, `Available, 4
+checkpoints`); `ResourceMapSearch` takes grouped items, so checkpoint suggestions are grouped by
+kind; the lifecycle hooks are `describeTitle`, `describeSuccessDetail` and `successAction` (D8's
+`successToast` is gone). Additive changes brought to the shared versions: the card hands focus back
+on close, ignores Escape from portaled dialogs and can skip heading focus; the search field gains
+`onSubmitAll` (Enter frames every match), `listLabel`, and accent-aware highlighting; workspace
+notices stack under a floating toolbar.

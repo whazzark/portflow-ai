@@ -865,7 +865,7 @@ export function CheckpointsPage() {
                   )}
                 </>
               }
-              explanation="Search looks at names in the selected types and status. Turn on Archived to include archived checkpoints, or clear the search."
+              description="Search looks at names in the selected types and status. Turn on Archived to include archived checkpoints, or clear the search."
               title={`No checkpoint matches “${search}”`}
             />
           ) : undefined

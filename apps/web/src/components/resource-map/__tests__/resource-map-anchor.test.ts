@@ -1,71 +1,65 @@
 import { describe, expect, test } from 'vitest'
-import {
-  computeResourceMapCardPlacement,
-  RESOURCE_MAP_CARD_GAP,
-  RESOURCE_MAP_CARD_INSET,
-} from '../resource-map-anchor'
+import { computeResourceMapCardPlacement } from '@/components/resource-map/resource-map-anchor'
 
 const container = { width: 1200, height: 800 }
-const card = { width: 360, height: 300 }
+const card = { width: 360, height: 400 }
+const breakpoint = 768
 
-describe('computeResourceMapCardPlacement', () => {
-  test('places the card to the right of the anchor, vertically centred on it', () => {
+describe('card placement', () => {
+  test('sits to the right of a point anchor with a gap', () => {
     expect(
-      computeResourceMapCardPlacement({ anchor: { x: 400, y: 400 }, container, card }),
-    ).toEqual({
-      layout: 'floating',
-      left: 400 + RESOURCE_MAP_CARD_GAP,
-      top: 400 - card.height / 2,
-    })
+      computeResourceMapCardPlacement({ anchor: { x: 300, y: 300 }, container, card, breakpoint }),
+    ).toEqual({ kind: 'floating', left: 316, top: 100 })
   })
 
-  test('flips to the left of the anchor when the right side would overflow', () => {
+  test('flips to the left when the right side would overflow', () => {
     expect(
-      computeResourceMapCardPlacement({ anchor: { x: 1000, y: 400 }, container, card }),
-    ).toMatchObject({ layout: 'floating', left: 1000 - RESOURCE_MAP_CARD_GAP - card.width })
+      computeResourceMapCardPlacement({ anchor: { x: 1000, y: 300 }, container, card, breakpoint }),
+    ).toEqual({ kind: 'floating', left: 624, top: 100 })
   })
 
-  test('clamps the card inside the container when neither side fits', () => {
-    const wideCard = { width: 500, height: 300 }
-    const placement = computeResourceMapCardPlacement({
-      anchor: { x: 400, y: 20 },
-      container: { width: 800, height: 800 },
-      card: wideCard,
-    })
-
-    expect(placement).toEqual({
-      layout: 'floating',
-      left: 800 - RESOURCE_MAP_CARD_INSET - wideCard.width,
-      top: RESOURCE_MAP_CARD_INSET,
-    })
+  test('clamps inside the container', () => {
+    expect(
+      computeResourceMapCardPlacement({ anchor: { x: 300, y: 20 }, container, card, breakpoint }),
+    ).toEqual({ kind: 'floating', left: 316, top: 16 })
   })
 
-  test('clamps the bottom edge inside the container', () => {
+  test('sits beside a rectangular anchor without covering it', () => {
     const placement = computeResourceMapCardPlacement({
-      anchor: { x: 400, y: 790 },
+      anchor: { x: 200, y: 200, width: 300, height: 200 },
       container,
       card,
+      breakpoint,
     })
 
-    expect(placement).toMatchObject({
-      layout: 'floating',
-      top: container.height - RESOURCE_MAP_CARD_INSET - card.height,
-    })
+    expect(placement).toEqual({ kind: 'floating', left: 516, top: 100 })
   })
 
-  test('docks to the bottom below the medium breakpoint', () => {
+  test('flips beside a rectangular anchor', () => {
+    expect(
+      computeResourceMapCardPlacement({
+        anchor: { x: 600, y: 200, width: 400, height: 200 },
+        container,
+        card,
+        breakpoint,
+      }),
+    ).toEqual({ kind: 'floating', left: 224, top: 100 })
+  })
+
+  test('docks at the bottom below the breakpoint', () => {
     expect(
       computeResourceMapCardPlacement({
         anchor: { x: 100, y: 100 },
         container: { width: 390, height: 700 },
         card,
+        breakpoint,
       }),
-    ).toEqual({ layout: 'docked' })
+    ).toEqual({ kind: 'docked' })
   })
 
   test('falls back to the top-right corner without an anchor', () => {
-    expect(computeResourceMapCardPlacement({ anchor: null, container, card })).toEqual({
-      layout: 'fallback',
+    expect(computeResourceMapCardPlacement({ anchor: null, container, card, breakpoint })).toEqual({
+      kind: 'fallback',
     })
   })
 })

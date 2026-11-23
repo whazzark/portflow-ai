@@ -3,60 +3,60 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ResourceMapToggleGroup } from '@/components/resource-map/resource-map-toolbar'
 
-const items = [
-  { value: 'available', label: 'Available', count: 12 },
-  { value: 'archived', label: 'Archived', count: 3 },
-] as const
+function items(pressed: { available: boolean; archived: boolean }) {
+  return [
+    { value: 'available' as const, label: 'Available', count: 12, pressed: pressed.available },
+    { value: 'archived' as const, label: 'Archived', count: 3, pressed: pressed.archived },
+  ]
+}
 
 describe('ResourceMapToggleGroup', () => {
   it('renders a named group of pressed-state toggles with their counts', () => {
     render(
       <ResourceMapToggleGroup
-        items={items}
+        countNoun="checkpoints"
+        items={items({ available: true, archived: false })}
         label="Filter by checkpoint status"
-        onChange={vi.fn()}
-        pressed={['available']}
+        onToggle={vi.fn()}
       />,
     )
 
     expect(screen.getByRole('group', { name: 'Filter by checkpoint status' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Available 12' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Available, 12 checkpoints' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
-    expect(screen.getByRole('button', { name: 'Archived 3' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Archived, 3 checkpoints' })).toHaveAttribute(
       'aria-pressed',
       'false',
     )
   })
 
-  it('reports the next pressed set when a toggle changes', async () => {
+  it('reports the toggled value', async () => {
     const user = userEvent.setup()
-    const onChange = vi.fn()
+    const onToggle = vi.fn()
     render(
       <ResourceMapToggleGroup
-        items={items}
+        items={items({ available: true, archived: false })}
         label="Status"
-        onChange={onChange}
-        pressed={['available']}
+        onToggle={onToggle}
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Archived 3' }))
-    expect(onChange).toHaveBeenCalledWith(['available', 'archived'])
+    await user.click(screen.getByRole('button', { name: 'Archived, 3' }))
+    expect(onToggle).toHaveBeenCalledWith('archived')
   })
 
-  it('disables the last pressed toggle so a group is never empty', () => {
+  it('disables the last pressed toggle so a filter is never empty', () => {
     render(
       <ResourceMapToggleGroup
-        items={items}
+        items={items({ available: false, archived: true })}
         label="Status"
-        onChange={vi.fn()}
-        pressed={['archived']}
+        onToggle={vi.fn()}
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Archived 3' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Available 12' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Archived, 3' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Available, 12' })).toBeEnabled()
   })
 })

@@ -1,24 +1,23 @@
 import type { ReactNode } from 'react'
 
-/** Shown over the map when a search matches nothing: names the search, says what it looked at, and
- * offers the ways out. */
+/** What a search that matched nothing says, and the ways out of it. */
 export function ResourceMapNoMatch({
   title,
-  explanation,
+  description,
   actions,
 }: {
   title: ReactNode
-  explanation: ReactNode
-  actions: ReactNode
+  description?: ReactNode
+  actions?: ReactNode
 }) {
   return (
     <div
-      className="flex max-w-sm flex-col items-center gap-3 rounded-xl border bg-popover px-6 py-5 text-center text-popover-foreground shadow-lg"
+      className="w-[22rem] max-w-[calc(100vw-2rem)] rounded-xl border bg-popover/95 p-4 text-popover-foreground shadow-md backdrop-blur"
       role="status"
     >
-      <p className="font-heading font-semibold text-sm">{title}</p>
-      <p className="text-muted-foreground text-sm">{explanation}</p>
-      <div className="flex flex-wrap justify-center gap-2">{actions}</div>
+      <p className="font-medium text-sm">{title}</p>
+      {description && <p className="mt-1 text-muted-foreground text-xs">{description}</p>}
+      {actions && <div className="mt-3 flex flex-wrap gap-2">{actions}</div>}
     </div>
   )
 }

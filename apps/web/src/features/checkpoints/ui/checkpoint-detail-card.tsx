@@ -50,7 +50,7 @@ function checkpointLifecycleCopy(
   onView: () => void,
 ): Pick<
   ResourceLifecycleConfig,
-  'describeTitle' | 'describeEffect' | 'describeSuccess' | 'successToast'
+  'describeTitle' | 'describeEffect' | 'describeSuccess' | 'describeSuccessDetail' | 'successAction'
 > {
   const isArchive = (action: LifecycleAction) => action === 'archive'
 
@@ -63,13 +63,9 @@ function checkpointLifecycleCopy(
         : describeLifecycleEffect(action, name),
     describeSuccess: (action) =>
       isArchive(action) ? `${name} archived` : lifecycleSuccessMessage(action, noun, name),
-    successToast: (action) =>
-      isArchive(action)
-        ? {
-            description: 'Find it under Archived to reactivate it.',
-            action: { label: 'View', onClick: onView },
-          }
-        : undefined,
+    describeSuccessDetail: (action) =>
+      isArchive(action) ? 'Find it under Archived to reactivate it.' : undefined,
+    successAction: (action) => (isArchive(action) ? { label: 'View', onClick: onView } : undefined),
   }
 }
 
@@ -148,7 +144,7 @@ export function CheckpointDetailCard({
       }
       title={resource.name}
     >
-      <div className="flex flex-col gap-4 text-sm">
+      <div className="flex flex-col gap-4 p-4 text-sm">
         <div className="flex flex-col gap-1">
           <span className="text-muted-foreground text-xs">GPS location</span>
           <div className="flex items-center gap-2">

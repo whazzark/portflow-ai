@@ -2,6 +2,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { FieldGroup } from '@/components/ui/field'
+import { SheetFooter } from '@/components/ui/sheet'
 import { invitationConflictMessage } from '@/features/users/helpers/user-invitation-copy'
 import { USER_ROLE_LABELS, USER_SINGULAR } from '@/features/users/helpers/user-labels'
 import type { UserInvitationDto } from '@/features/users/types'
@@ -72,53 +73,59 @@ export function InviteUserForm({ onInvite, onSuccess }: InviteUserFormProps) {
 
   return (
     <form.AppForm>
-      <form.Form className="flex flex-col gap-6">
-        <FieldGroup>
-          <form.AppField name="firstName">
-            {(field) => (
-              <field.TextField
-                autoComplete="given-name"
-                label="First name"
-                placeholder="Claire"
-                required={true}
-              />
-            )}
-          </form.AppField>
-          <form.AppField name="lastName">
-            {(field) => (
-              <field.TextField
-                autoComplete="family-name"
-                label="Last name"
-                placeholder="Martin"
-                required={true}
-              />
-            )}
-          </form.AppField>
-          <form.AppField name="email">
-            {(field) => (
-              <field.TextField
-                autoComplete="email"
-                label="Email"
-                placeholder="claire.martin@portflow.test"
-                required={true}
-              />
-            )}
-          </form.AppField>
-          <form.AppField name="role">
-            {(field) => (
-              <field.SelectField
-                description="What the invited person will be responsible for."
-                label="Role"
-                options={ROLE_OPTIONS}
-                required={true}
-              />
-            )}
-          </form.AppField>
-        </FieldGroup>
-        <form.FormError />
-        <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS.create}>
-          Invite user
-        </form.SubmitButton>
+      {/* The body scrolls and the footer stays put, so the submission is in reach however long the
+          form grows. The footer stays inside the <form> so the button still submits it. */}
+      <form.Form className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6">
+          <FieldGroup>
+            <form.AppField name="firstName">
+              {(field) => (
+                <field.TextField
+                  autoComplete="given-name"
+                  label="First name"
+                  placeholder="Claire"
+                  required={true}
+                />
+              )}
+            </form.AppField>
+            <form.AppField name="lastName">
+              {(field) => (
+                <field.TextField
+                  autoComplete="family-name"
+                  label="Last name"
+                  placeholder="Martin"
+                  required={true}
+                />
+              )}
+            </form.AppField>
+            <form.AppField name="email">
+              {(field) => (
+                <field.TextField
+                  autoComplete="email"
+                  label="Email"
+                  placeholder="claire.martin@portflow.test"
+                  required={true}
+                />
+              )}
+            </form.AppField>
+            <form.AppField name="role">
+              {(field) => (
+                <field.SelectField
+                  description="What the invited person will be responsible for."
+                  label="Role"
+                  options={ROLE_OPTIONS}
+                  required={true}
+                />
+              )}
+            </form.AppField>
+          </FieldGroup>
+          <form.FormError />
+        </div>
+        <SheetFooter className="shrink-0 border-t px-6 py-4 sm:flex-row sm:justify-end">
+          <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS.create} size="lg">
+            Invite user
+          </form.SubmitButton>
+        </SheetFooter>
       </form.Form>
     </form.AppForm>
   )

@@ -463,6 +463,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['store']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
     }
   }
+  'discharges.dock_occupancy': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/discharges/dock-occupancy'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#discharges/dock_occupancy/dock_occupancy_validator').dockOccupancyValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['dockOccupancy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/discharges_controller').default['dockOccupancy']>>> | { status: 422; response: { error: { code: 'E_VALIDATION_ERROR'; message: string; details: Array<{ field: string; message: string; rule: string; index?: number; meta?: Record<string, unknown> }> } } }
+    }
+  }
   'discharges.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/discharges/:id'

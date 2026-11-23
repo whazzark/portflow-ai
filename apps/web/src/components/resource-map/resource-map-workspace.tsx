@@ -19,7 +19,15 @@ export function ResourceMapWorkspace({
 }: {
   resourceLabel: string
   map: (onMapError: () => void) => ReactNode
+  /** The pre-V2 control cluster, kept for maps that have not moved to `toolbar`. */
   controls?: ReactNode
+  /** The floating toolbar, top-left. A `banner` takes its place while a map mode is active. */
+  toolbar?: ReactNode
+  banner?: ReactNode
+  /** One anchored card (`ResourceMapCard`), positioned against this workspace. */
+  card?: ReactNode
+  /** Centred over the map, for a state that replaces what the map shows — a search with no match. */
+  overlay?: ReactNode
   legend?: ReactNode
   emptyMessage?: string
   sourceMessage?: string
@@ -31,14 +39,6 @@ export function ResourceMapWorkspace({
    * configured, where the map — and the cluster with it — never renders at all.
    */
   mapUnavailableActions?: ReactNode
-  /** The floating toolbar, top-left. Takes `controls`' place when given. */
-  toolbar?: ReactNode
-  /** A mode banner, shown instead of the toolbar while the map is in a mode. */
-  banner?: ReactNode
-  /** A `ResourceMapCard`, positioned against this section. */
-  card?: ReactNode
-  /** A centred notice over the map, such as a search with no match. */
-  overlay?: ReactNode
 }) {
   const [hasMapError, setHasMapError] = useState(false)
   const singularResourceLabel = resourceLabel.replace(/s$/, '')
@@ -101,8 +101,8 @@ export function ResourceMapWorkspace({
         )}
       </div>
       {overlay && (
-        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center p-6">
-          <div className="pointer-events-auto">{overlay}</div>
+        <div className="absolute top-1/3 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+          {overlay}
         </div>
       )}
       {card}

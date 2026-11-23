@@ -31,10 +31,10 @@ Non-administrators: `create`, `edit`, `selecting` are ignored (no mode opens).
 | Map section | `region` "Checkpoints locations" | — |
 | Map canvas | "Checkpoints map" | — |
 | Toolbar search | `combobox` "Search checkpoints" | `aria-expanded` with suggestions |
-| Suggestions | `listbox` "Matching checkpoints"; each `option` "<name>" with kind text | highlighted option `aria-selected` |
+| Suggestions | `listbox` "Matching checkpoints", grouped Docks / Weighing areas; each `option` "<name>" with kind text | highlighted option `aria-selected` |
 | Suggestion footer | text "<n> of <total> <status> · Enter to zoom to all matches" | not an option |
-| Type group | `group` "Checkpoint types"; buttons "Docks <count>", "Weighing areas <count>" | `aria-pressed`; last active disabled |
-| Status group | `group` "Filter by checkpoint status"; buttons "Available <count>", "Archived <count>" | `aria-pressed`; last active disabled |
+| Type group | `group` "Checkpoint types"; buttons "Docks, <count>", "Weighing areas, <count>" | `aria-pressed`; last active disabled |
+| Status group | `group` "Filter by checkpoint status"; buttons "Available, <count> checkpoints", "Archived, <count> checkpoints" | `aria-pressed`; last active disabled |
 | Select menu | button "Select" → items "Select docks", "Select weighing areas" | admin only |
 | Create menu | button "Create" → items "New dock" (desc. "Berth where trucks are loaded"), "New weighing area" (desc. "Weighbridge where trucks are weighed") | admin only |
 | Legend | "Dock", "Weighing area", "Archived" (visible kinds only) | — |

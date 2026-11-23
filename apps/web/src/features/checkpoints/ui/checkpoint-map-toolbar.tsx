@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
-import { ResourceMapSearch } from '@/components/resource-map/resource-map-search-field'
+import {
+  HighlightedMatch,
+  ResourceMapSearch,
+} from '@/components/resource-map/resource-map-search-field'
 import {
   ResourceMapToggleGroup,
   ResourceMapToolbar,
-  ResourceMapToolbarSeparator,
 } from '@/components/resource-map/resource-map-toolbar'
 import { serializeCheckpointSelection } from '@/features/checkpoints/checkpoint-selection'
 import { CheckpointKindIcon } from '@/features/checkpoints/map/checkpoint-marker'
@@ -20,6 +22,13 @@ import {
 const KIND_TOGGLE_LABELS: Record<CheckpointKind, string> = {
   DOCK: 'Docks',
   WEIGHING_AREA: 'Weighing areas',
+}
+
+/** Toggles `value` in or out of `selected`, keeping the canonical order of `all`. */
+function toggled<Value extends string>(all: readonly Value[], selected: Value[], value: Value) {
+  return all.filter((entry) =>
+    entry === value ? !selected.includes(entry) : selected.includes(entry),
+  )
 }
 
 /**
@@ -58,50 +67,54 @@ export function CheckpointMapToolbar({
 }) {
   return (
     <ResourceMapToolbar>
-      <ResourceMapSearch
+      <ResourceMapSearch<PresentedCheckpoint>
         footer={searchFooter}
-        items={matches.map((checkpoint) => ({
-          id: serializeCheckpointSelection(checkpoint),
-          name: checkpoint.name,
-          kindLabel: CHECKPOINT_KIND_LABELS[checkpoint.kind],
-          icon: <CheckpointKindIcon className="text-muted-foreground" kind={checkpoint.kind} />,
+        getItemKey={serializeCheckpointSelection}
+        groups={CHECKPOINT_KINDS.map((kind) => ({
+          label: KIND_TOGGLE_LABELS[kind],
+          items: matches.filter((checkpoint) => checkpoint.kind === kind),
         }))}
+        id="checkpoint-search"
         label="Search checkpoints"
         listLabel="Matching checkpoints"
-        onPick={onPick}
+        onSelect={(checkpoint) => onPick(serializeCheckpointSelection(checkpoint))}
         onSubmitAll={onSubmitAll}
         onValueChange={onSearchChange}
+        renderItem={(checkpoint) => (
+          <span className="flex items-center gap-2">
+            <CheckpointKindIcon className="text-muted-foreground" kind={checkpoint.kind} />
+            <span className="min-w-0 flex-1 truncate">
+              <HighlightedMatch search={search} text={checkpoint.name} />
+            </span>
+            <span className="shrink-0 text-muted-foreground text-xs">
+              {CHECKPOINT_KIND_LABELS[checkpoint.kind]}
+            </span>
+          </span>
+        )}
         value={search}
       />
-      <ResourceMapToolbarSeparator />
       <ResourceMapToggleGroup
         items={CHECKPOINT_KINDS.map((kind) => ({
           value: kind,
           label: KIND_TOGGLE_LABELS[kind],
           count: kindCounts[kind],
-          icon: <CheckpointKindIcon className="text-muted-foreground" kind={kind} />,
+          pressed: kinds.includes(kind),
         }))}
         label="Checkpoint types"
-        onChange={onKindsChange}
-        pressed={kinds}
+        onToggle={(kind) => onKindsChange(toggled(CHECKPOINT_KINDS, kinds, kind))}
       />
-      <ResourceMapToolbarSeparator />
       <ResourceMapToggleGroup
+        countNoun="checkpoints"
         items={CHECKPOINT_STATUSES.map((status) => ({
           value: status,
           label: CHECKPOINT_STATUS_LABELS[status],
           count: statusCounts[status],
+          pressed: statuses.includes(status),
         }))}
         label="Filter by checkpoint status"
-        onChange={onStatusesChange}
-        pressed={statuses}
+        onToggle={(status) => onStatusesChange(toggled(CHECKPOINT_STATUSES, statuses, status))}
       />
-      {actions && (
-        <>
-          <ResourceMapToolbarSeparator />
-          <div className="flex items-center gap-2">{actions}</div>
-        </>
-      )}
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </ResourceMapToolbar>
   )
 }

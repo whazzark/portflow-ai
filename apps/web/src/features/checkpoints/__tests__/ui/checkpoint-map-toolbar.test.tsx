@@ -20,21 +20,22 @@ test('shows the type and status toggles with their counts in a floating toolbar'
 
   const types = await screen.findByRole('group', { name: 'Checkpoint types' })
   // Weighing areas load separately from docks, so wait for the counts that include them.
-  expect(await within(types).findByRole('button', { name: 'Weighing areas 4' })).toBeInTheDocument()
-  expect(within(types).getByRole('button', { name: 'Docks 3' })).toHaveAttribute(
+  expect(
+    await within(types).findByRole('button', { name: 'Weighing areas, 4' }),
+  ).toBeInTheDocument()
+  expect(within(types).getByRole('button', { name: 'Docks, 3' })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
-  expect(within(types).getByRole('button', { name: 'Weighing areas 4' })).toHaveAttribute(
+  expect(within(types).getByRole('button', { name: 'Weighing areas, 4' })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
   const statuses = screen.getByRole('group', { name: 'Filter by checkpoint status' })
-  expect(within(statuses).getByRole('button', { name: 'Available 4' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
-  expect(within(statuses).getByRole('button', { name: 'Archived 3' })).toHaveAttribute(
+  expect(
+    within(statuses).getByRole('button', { name: 'Available, 4 checkpoints' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  expect(within(statuses).getByRole('button', { name: 'Archived, 3 checkpoints' })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
@@ -46,13 +47,13 @@ test('counts each type within the selected statuses and each status within the s
   // biome-ignore lint/security/noSecrets: route search string, not a secret
   renderCheckpoints('/checkpoints?status=available&kinds=dock')
 
-  expect(await screen.findByRole('button', { name: 'Docks 2' })).toBeInTheDocument()
-  expect(await screen.findByRole('button', { name: 'Weighing areas 2' })).toHaveAttribute(
+  expect(await screen.findByRole('button', { name: 'Docks, 2' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Weighing areas, 2' })).toHaveAttribute(
     'aria-pressed',
     'false',
   )
-  expect(screen.getByRole('button', { name: 'Available 2' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Archived 1' })).toHaveAttribute(
+  expect(screen.getByRole('button', { name: 'Available, 2 checkpoints' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archived, 1 checkpoints' })).toHaveAttribute(
     'aria-pressed',
     'false',
   )

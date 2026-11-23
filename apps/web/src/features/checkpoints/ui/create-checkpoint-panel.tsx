@@ -42,16 +42,18 @@ export function CreateCheckpointPanel<TResource>({
       subtitle={PLACEMENT_HINT_BY_KIND[kind]}
       title={`New ${resourceNoun}`}
     >
-      <CheckpointResourceForm
-        failureTitle={(name) => resourceFailureTitle('create', resourceNoun, name)}
-        kind={kind}
-        onCancel={onCancel}
-        onPendingChange={onPendingChange}
-        onSubmit={onCreate}
-        onSuccess={onSuccess}
-        pending={pending}
-        submitLabel={`Create ${resourceNoun}`}
-      />
+      <div className="p-4">
+        <CheckpointResourceForm
+          failureTitle={(name) => resourceFailureTitle('create', resourceNoun, name)}
+          kind={kind}
+          onCancel={onCancel}
+          onPendingChange={onPendingChange}
+          onSubmit={onCreate}
+          onSuccess={onSuccess}
+          pending={pending}
+          submitLabel={`Create ${resourceNoun}`}
+        />
+      </div>
     </ResourceMapCard>
   )
 }

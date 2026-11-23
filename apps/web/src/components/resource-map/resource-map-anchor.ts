@@ -1,57 +1,51 @@
-/** A point in the map container's own pixel space, as `map.project()` reports it. */
-export type ResourceMapAnchor = { x: number; y: number }
-
-type Size = { width: number; height: number }
-
-/** Space between the anchored point and the card's nearest edge. */
-export const RESOURCE_MAP_CARD_GAP = 24
-/** Minimum distance kept between the card and every edge of the map. */
-export const RESOURCE_MAP_CARD_INSET = 16
-/** Below this container width the card stops floating beside its anchor and docks to the bottom,
- * matching Tailwind's `md` breakpoint. */
-export const RESOURCE_MAP_CARD_DOCK_BELOW = 768
+/** A point on the map area in CSS pixels, or the box an outline occupies there. A point is a box
+ * of zero size, so a card can sit beside either without covering it. */
+export type ResourceMapAnchor = { x: number; y: number; width?: number; height?: number }
 
 export type ResourceMapCardPlacement =
-  | { layout: 'floating'; left: number; top: number }
-  /** Pinned to the bottom of the map, full width: a narrow map has no room beside the anchor. */
-  | { layout: 'docked' }
-  /** No anchor to follow — the map is not rendered (feature tests, map unavailable) — so the card
-   * takes a fixed top-right position. */
-  | { layout: 'fallback' }
+  | { kind: 'floating'; left: number; top: number }
+  | { kind: 'docked' }
+  | { kind: 'fallback' }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), Math.max(min, max))
-}
+const GAP = 16
+const MARGIN = 16
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
 /**
- * Where a card anchored to a map feature goes: beside the anchor on its right, flipped to its left
- * when the right would overflow, and clamped so the card always stays fully inside the map.
+ * Where an anchored card goes: beside its anchor (right first, left when the right would overflow),
+ * vertically centred on it, then clamped inside the map area. Below the breakpoint the card docks at
+ * the bottom instead; with no anchor — a map that never rendered, or the mocked map in tests — it
+ * falls back to a fixed corner.
  */
 export function computeResourceMapCardPlacement({
   anchor,
   container,
   card,
+  breakpoint,
 }: {
   anchor: ResourceMapAnchor | null
-  container: Size
-  card: Size
+  container: { width: number; height: number }
+  card: { width: number; height: number }
+  breakpoint: number
 }): ResourceMapCardPlacement {
-  if (container.width < RESOURCE_MAP_CARD_DOCK_BELOW) {
-    return { layout: 'docked' }
+  if (container.width < breakpoint) {
+    return { kind: 'docked' }
   }
   if (!anchor) {
-    return { layout: 'fallback' }
+    return { kind: 'fallback' }
   }
 
-  const maxLeft = container.width - RESOURCE_MAP_CARD_INSET - card.width
-  const maxTop = container.height - RESOURCE_MAP_CARD_INSET - card.height
-  const right = anchor.x + RESOURCE_MAP_CARD_GAP
-  const left = anchor.x - RESOURCE_MAP_CARD_GAP - card.width
-  const preferred = right <= maxLeft ? right : left >= RESOURCE_MAP_CARD_INSET ? left : right
+  const width = anchor.width ?? 0
+  const height = anchor.height ?? 0
+  const right = anchor.x + width + GAP
+  const fitsRight = right + card.width <= container.width - MARGIN
+  const left = fitsRight ? right : anchor.x - GAP - card.width
+  const top = anchor.y + height / 2 - card.height / 2
 
   return {
-    layout: 'floating',
-    left: clamp(preferred, RESOURCE_MAP_CARD_INSET, maxLeft),
-    top: clamp(anchor.y - card.height / 2, RESOURCE_MAP_CARD_INSET, maxTop),
+    kind: 'floating',
+    left: clamp(left, MARGIN, Math.max(MARGIN, container.width - MARGIN - card.width)),
+    top: clamp(top, MARGIN, Math.max(MARGIN, container.height - MARGIN - card.height)),
   }
 }

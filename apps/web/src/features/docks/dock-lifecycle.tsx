@@ -58,7 +58,11 @@ export function DockLifecycleActions({
    * record in its confirmation and offers to open it once archived. */
   copy?: Pick<
     ResourceLifecycleConfig,
-    'describeTitle' | 'describeEffect' | 'describeSuccess' | 'successToast'
+    | 'describeTitle'
+    | 'describeEffect'
+    | 'describeSuccess'
+    | 'describeSuccessDetail'
+    | 'successAction'
   >
 }) {
   const config = { ...useDockLifecycleConfig(dock), ...copy }

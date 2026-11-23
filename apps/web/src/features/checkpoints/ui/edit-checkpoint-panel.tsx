@@ -50,30 +50,32 @@ export function EditCheckpointPanel<
       onClose={onCancel}
       title={`Edit ${resourceNoun}`}
     >
-      <div className="mb-4 flex flex-col gap-1 text-sm">
-        <span className="text-muted-foreground text-xs">Previous position</span>
-        <span className="font-mono tabular-nums">{formatCheckpointCoordinates(origin)}</span>
+      <div className="p-4">
+        <div className="mb-4 flex flex-col gap-1 text-sm">
+          <span className="text-muted-foreground text-xs">Previous position</span>
+          <span className="font-mono tabular-nums">{formatCheckpointCoordinates(origin)}</span>
+        </div>
+        {positionModified && (
+          <FieldDescription className="mb-4 flex items-center justify-between gap-2" role="status">
+            <span>Position modified</span>
+            <Button onClick={onRestorePosition} size="sm" type="button" variant="link">
+              Restore original position
+            </Button>
+          </FieldDescription>
+        )}
+        <CheckpointResourceForm
+          failureTitle={() => resourceFailureTitle('update', resourceNoun, resource.name)}
+          initialValues={resource}
+          kind={kind}
+          onCancel={onCancel}
+          onNotFound={onNotFound}
+          onPendingChange={onDraftChange}
+          onSubmit={onUpdate}
+          onSuccess={onSuccess}
+          pending={draft}
+          submitLabel="Save changes"
+        />
       </div>
-      {positionModified && (
-        <FieldDescription className="mb-4 flex items-center justify-between gap-2" role="status">
-          <span>Position modified</span>
-          <Button onClick={onRestorePosition} size="sm" type="button" variant="link">
-            Restore original position
-          </Button>
-        </FieldDescription>
-      )}
-      <CheckpointResourceForm
-        failureTitle={() => resourceFailureTitle('update', resourceNoun, resource.name)}
-        initialValues={resource}
-        kind={kind}
-        onCancel={onCancel}
-        onNotFound={onNotFound}
-        onPendingChange={onDraftChange}
-        onSubmit={onUpdate}
-        onSuccess={onSuccess}
-        pending={draft}
-        submitLabel="Save changes"
-      />
     </ResourceMapCard>
   )
 }
