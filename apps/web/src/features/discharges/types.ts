@@ -21,6 +21,9 @@ export type StartProblemDto = StartCheckDto['problems'][number]
 /** The `meta` of a refused start, which error responses do not type. */
 export type StartRefusedMeta = Pick<StartCheckDto, 'shiftId' | 'problems'>
 
+/** Another discharge holding a dock, over the period its shifts are planned for. */
+export type DockOccupancyDto = Route.Response<'discharges.dock_occupancy'>['data'][number]
+
 /** The three tabs, lower-cased for the address; the API's own vocabulary is uppercase. */
 export const DISCHARGE_STATUS_FILTERS = ['planned', 'active', 'closed'] as const
 export type DischargeStatusFilter = (typeof DISCHARGE_STATUS_FILTERS)[number]

@@ -145,8 +145,11 @@ export function RestoreInvitationDialog({ user, onClose }: { user: UserDto; onCl
           </Field>
         </FieldGroup>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending} size="lg">
+            Cancel
+          </AlertDialogCancel>
           <AlertDialogAction
+            size="lg"
             disabled={isPending}
             onClick={(event) => {
               event.preventDefault()

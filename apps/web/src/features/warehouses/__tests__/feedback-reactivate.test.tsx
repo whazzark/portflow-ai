@@ -146,7 +146,7 @@ test('keeps a refused dialog on its own direction when the warehouse turns avail
   await queryClient.invalidateQueries({ queryKey: warehouseQueries.list().queryKey })
   await waitFor(() => expect(listRequests).toBeGreaterThan(requestsBeforeRefresh))
 
-  expect(within(dialog).getByText('Reactivate warehouse?')).toBeInTheDocument()
+  expect(within(dialog).getByText(`Reactivate ${RIVERSIDE.name}?`)).toBeInTheDocument()
   expect(within(dialog).getByRole('button', { name: 'Reactivate' })).toBeInTheDocument()
   expect(within(dialog).queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
 })

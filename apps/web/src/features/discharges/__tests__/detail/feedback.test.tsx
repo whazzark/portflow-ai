@@ -50,12 +50,13 @@ test('offers a retry after a failed retrieval and recovers the discharge', async
 
 test('tells each empty section apart while the rest of the discharge still shows', async () => {
   const user = userEvent.setup()
-  mockDischargeDetail({ details: [buildDischargeDetail(OCEAN_CEDAR)] })
+  const atlanticDawn = listedDischarge('MV Atlantic Dawn', 'PLANNED')
+  mockDischargeDetail({ details: [buildDischargeDetail(atlanticDawn)] })
 
-  renderDischargeDetail(OCEAN_CEDAR.id)
+  renderDischargeDetail(atlanticDawn.id)
 
   const overview = await screen.findByRole('region', { name: 'Overview' })
-  expect(within(overview).getByText('Quai Est')).toBeInTheDocument()
+  expect(within(overview).getByText('Quai Nord')).toBeInTheDocument()
 
   for (const [tab, region, empty] of [
     [/^Product lots/, 'Product lots', 'No product lots'],

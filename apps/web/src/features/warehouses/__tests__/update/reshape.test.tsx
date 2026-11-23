@@ -33,7 +33,7 @@ test('moves a boundary point without changing the count', async () => {
   await user.click(screen.getByRole('button', { name: 'Simulate dragging boundary point 2' }))
 
   expect(pointAt(1)).toBe(`${STORED[1].latitude + 1}, ${STORED[1].longitude + 1}`)
-  expect(screen.getByText('3 boundary points')).toBeInTheDocument()
+  expect(screen.getByText(/^3 boundary points/)).toBeInTheDocument()
   expect(screen.queryByTestId('boundary-point-3')).not.toBeInTheDocument()
 })
 
@@ -45,7 +45,7 @@ test('inserts a boundary point between the designated edge endpoints and nowhere
   // Edge 1 runs from boundary point 1 to boundary point 2.
   await user.click(screen.getByRole('button', { name: 'Simulate inserting on edge 1' }))
 
-  expect(screen.getByText('4 boundary points')).toBeInTheDocument()
+  expect(screen.getByText(/^4 boundary points/)).toBeInTheDocument()
   expect(pointAt(0)).toBe(`${STORED[0].latitude}, ${STORED[0].longitude}`)
   expect(pointAt(1)).toBe(
     `${(STORED[0].latitude + STORED[1].latitude) / 2}, ${(STORED[0].longitude + STORED[1].longitude) / 2}`,
@@ -60,11 +60,11 @@ test('removes a boundary point that is not the last one added', async () => {
 
   await openUpdate(user)
   await user.click(screen.getByRole('button', { name: 'Simulate inserting on edge 3' }))
-  expect(screen.getByText('4 boundary points')).toBeInTheDocument()
+  expect(screen.getByText(/^4 boundary points/)).toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: 'Simulate removing boundary point 1' }))
 
-  expect(screen.getByText('3 boundary points')).toBeInTheDocument()
+  expect(screen.getByText(/^3 boundary points/)).toBeInTheDocument()
   expect(pointAt(0)).toBe(`${STORED[1].latitude}, ${STORED[1].longitude}`)
   expect(pointAt(1)).toBe(`${STORED[2].latitude}, ${STORED[2].longitude}`)
 })
@@ -80,7 +80,7 @@ test('refuses to take the outline below three boundary points', async () => {
       screen.getByRole('button', { name: `Simulate removing boundary point ${index}` }),
     ).toBeDisabled()
   }
-  expect(screen.getByText('3 boundary points')).toBeInTheDocument()
+  expect(screen.getByText(/^3 boundary points/)).toBeInTheDocument()
 })
 
 test('leaves the outline alone when a click lands away from it', async () => {
@@ -93,7 +93,7 @@ test('leaves the outline alone when a click lands away from it', async () => {
   await user.click(screen.getByRole('button', { name: 'Simulate map click away from the outline' }))
 
   expect([pointAt(0), pointAt(1), pointAt(2)]).toEqual(before)
-  expect(screen.getByText('3 boundary points')).toBeInTheDocument()
+  expect(screen.getByText(/^3 boundary points/)).toBeInTheDocument()
 })
 
 test('does not let another warehouse be selected while an outline is being corrected', async () => {

@@ -1,4 +1,3 @@
-import { ArrowLeftIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
@@ -8,9 +7,8 @@ import {
 } from '@/components/resource-map/resource-placement-fields'
 import { Button } from '@/components/ui/button'
 import { FieldDescription, FieldGroup } from '@/components/ui/field'
-import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import type { WarehouseDoorDto } from '@/features/warehouse-doors/types'
 import { DOOR_SINGULAR } from '@/features/warehouse-doors/warehouse-door-presentation'
+import { formatCoordinates } from '@/features/warehouses/geometry/footprint-centre'
 import { isInsideFootprint } from '@/features/warehouses/geometry/footprint-validation'
 import type { WarehouseWithDoorsDto } from '@/features/warehouses/types'
 import { resourceFailureTitle, WRITE_PENDING_LABELS } from '@/helpers/resource-copy'
@@ -25,7 +23,6 @@ export type UpdatedWarehouseDoor = { id: string; name: string }
 
 export function EditWarehouseDoorPanel({
   warehouse,
-  door,
   draft,
   origin,
   originName,
@@ -37,7 +34,6 @@ export function EditWarehouseDoorPanel({
   onSuccess,
 }: {
   warehouse: WarehouseWithDoorsDto
-  door: WarehouseDoorDto
   draft: LatLng
   /** Where the door stood when this session started — not its live, refetchable position. */
   origin: LatLng
@@ -128,20 +124,11 @@ export function EditWarehouseDoorPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      {/* Sticky because "Back to details" is the only way out of an edit panel, and the header
-          scrolls with the form: on a short viewport it would otherwise scroll away and leave the
-          user at "Save changes" with no visible way to abandon. */}
-      <SheetHeader className="sticky top-0 z-10 bg-background">
-        <Button className="self-start" onClick={onCancel} size="sm" variant="ghost">
-          <ArrowLeftIcon aria-hidden="true" />
-          Back to details
-        </Button>
-        <SheetTitle>Edit door</SheetTitle>
-        <SheetDescription>
-          Drag the marker or edit its coordinates to reposition {door.name} in {warehouse.name}.
-        </SheetDescription>
-      </SheetHeader>
-      <div className="px-4 pb-4">
+      <div className="p-4">
+        <p className="mb-4 text-muted-foreground text-sm">
+          Previous position{' '}
+          <span className="font-mono tabular-nums">{formatCoordinates(origin)}</span>
+        </p>
         {positionModified && (
           <FieldDescription className="mb-4 flex items-center justify-between gap-2" role="status">
             <span>Position modified</span>
@@ -184,9 +171,14 @@ export function EditWarehouseDoorPanel({
               )}
             </FieldGroup>
             <form.FormError />
-            <form.SubmitButton disabled={!canSubmit} pendingLabel={WRITE_PENDING_LABELS.update}>
-              Save changes
-            </form.SubmitButton>
+            <div className="flex gap-2">
+              <form.SubmitButton disabled={!canSubmit} pendingLabel={WRITE_PENDING_LABELS.update}>
+                Save changes
+              </form.SubmitButton>
+              <Button onClick={onCancel} type="button" variant="outline">
+                Cancel
+              </Button>
+            </div>
           </form.Form>
         </form.AppForm>
       </div>

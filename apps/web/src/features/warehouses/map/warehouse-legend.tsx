@@ -25,11 +25,13 @@ function WarehouseDoorLegendTypeSymbol() {
   )
 }
 
-export function WarehouseLegend({ showDoors = false }: { showDoors?: boolean }) {
-  const types = [{ label: 'Warehouse', symbol: <WarehouseLegendTypeSymbol /> }]
-  if (showDoors) {
-    types.push({ label: 'Warehouse door', symbol: <WarehouseDoorLegendTypeSymbol /> })
-  }
+/** Warehouse, Door, and the two statuses, in every state of the map — the V2 legend does not
+ * change under the user as they select, draw, or place. */
+export function WarehouseLegend() {
+  const types = [
+    { label: 'Warehouse', symbol: <WarehouseLegendTypeSymbol /> },
+    { label: 'Door', symbol: <WarehouseDoorLegendTypeSymbol /> },
+  ]
 
   return (
     <ResourceLegend
