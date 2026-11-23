@@ -21,7 +21,7 @@ export function StepIndicator({ current, reached, onSelect }: StepIndicatorProps
   const currentIndex = CREATION_STEPS.findIndex((step) => step.id === current)
 
   return (
-    <nav aria-label="Discharge preparation steps" className="flex flex-col gap-2">
+    <nav aria-label="Discharge preparation steps">
       <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
         {CREATION_STEPS.map((step, index) => {
           const isCurrent = index === currentIndex
@@ -59,9 +59,6 @@ export function StepIndicator({ current, reached, onSelect }: StepIndicatorProps
           )
         })}
       </ol>
-      <p aria-hidden="true" className="text-muted-foreground text-sm md:hidden">
-        Step {currentIndex + 1} of {CREATION_STEPS.length} · {CREATION_STEPS[currentIndex].label}
-      </p>
     </nav>
   )
 }
