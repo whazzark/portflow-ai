@@ -1,15 +1,12 @@
 import type { ReactNode } from 'react'
 
 import { counted, dischargeProgress } from '@/features/discharges/active-discharge-view'
-import {
-  formatShiftDay,
-  formatShiftTime,
-  formatTonnes,
-} from '@/features/discharges/discharge-detail-view'
+import { formatShiftDay, formatShiftTime } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto, DischargeDetailTab } from '@/features/discharges/types'
 import { DetailSection } from '@/features/discharges/ui/detail/detail-section'
 import { DischargeTabLink } from '@/features/discharges/ui/detail/discharge-tab-link'
 import { formatDateTime } from '@/helpers/dates'
+import { formatTonnes } from '@/helpers/tonnes'
 
 type DischargeProgressCardProps = {
   discharge: DischargeDetailDto

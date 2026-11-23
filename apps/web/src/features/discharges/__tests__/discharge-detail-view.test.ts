@@ -11,7 +11,6 @@ import {
   formatPeriod,
   formatShiftDuration,
   formatShiftPeriod,
-  formatTonnes,
   groupLotsByCustomer,
   isInEffect,
   lotDoorCell,
@@ -77,14 +76,6 @@ describe('lotDoorNotice', () => {
   test('says nothing about a closed discharge, which holds no door any more', () => {
     expect(lotDoorNotice({ doorAssignments: [ENDED] }, 'CLOSED')).toBeNull()
     expect(lotDoorNotice({ doorAssignments: [OPEN] }, 'CLOSED')).toBeNull()
-  })
-})
-
-describe('formatTonnes', () => {
-  test('groups the whole tonnes and keeps the three decimals verbatim', () => {
-    expect(formatTonnes('1234.500')).toBe('1,234.500 t')
-    expect(formatTonnes('999999999.999')).toBe('999,999,999.999 t')
-    expect(formatTonnes('0.000')).toBe('0.000 t')
   })
 })
 

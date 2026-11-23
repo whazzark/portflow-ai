@@ -98,6 +98,8 @@ export function DischargesPage() {
                 createAction={canPrepare ? <CreateDischargeLink /> : undefined}
                 discharges={visible}
                 isNoMatch={isNoMatch}
+                onClearSearch={() => updateSearch('')}
+                search={search}
                 status={filter}
               />
             )}

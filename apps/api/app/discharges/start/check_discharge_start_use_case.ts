@@ -6,17 +6,16 @@ import {
   DischargeNotPlannedException,
 } from '#discharges/shared/discharge_exceptions'
 import DischargeStartRepository from '#discharges/shared/repositories/discharge_start_repository'
-import {
-  buildStartState,
-  evaluateDischargeStart,
-  startReferenceIds,
-} from '#discharges/start/discharge_start_rules'
+import DischargeStartEvaluator from '#discharges/start/discharge_start_evaluator'
 
 export type CheckDischargeStartInput = { dischargeId: string }
 
 @inject()
 export default class CheckDischargeStartUseCase {
-  constructor(private startRepository: DischargeStartRepository) {}
+  constructor(
+    private startRepository: DischargeStartRepository,
+    private startEvaluator: DischargeStartEvaluator,
+  ) {}
 
   /**
    * What a start would answer now, for the review a user reads before confirming. It takes no lock:
@@ -34,22 +33,9 @@ export default class CheckDischargeStartUseCase {
       throw new DischargeNotPlannedException()
     }
 
-    const plan = await this.startRepository.readStartPlan(discharge.id, client)
-    const ids = startReferenceIds(discharge.dockId, plan)
-    const references = await this.startRepository.readReferences(ids, 'READ', client)
-    const holders = await this.startRepository.findActiveHolders(
-      {
-        dischargeId: discharge.id,
-        dockId: discharge.dockId,
-        truckIds: plan.heldTruckIds,
-        warehouseDoorIds: ids.warehouseDoorIds,
-      },
-      client,
-    )
-
     return {
       dischargeId: discharge.id,
-      ...evaluateDischargeStart(buildStartState(discharge.id, plan, references, holders)),
+      ...(await this.startEvaluator.evaluate(discharge, client)),
     }
   }
 }

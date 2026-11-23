@@ -1,9 +1,8 @@
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
-
-import { formatTonnes } from '@/features/discharges/discharge-detail-view'
 import { formatDateTime } from '@/helpers/dates'
+import { formatTonnes } from '@/helpers/tonnes'
 import { renderApp } from '@/test/render-app'
 import {
   buildDischargeDetail,

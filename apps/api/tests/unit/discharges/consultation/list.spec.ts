@@ -12,7 +12,9 @@ import { UserFactory } from '#database/factories/user_factory'
 import ListDischargesUseCase from '#discharges/list/list_discharges_use_case'
 
 async function listDischarges() {
-  return (await app.container.make(ListDischargesUseCase)).handle()
+  const entries = await (await app.container.make(ListDischargesUseCase)).handle()
+
+  return entries.map((entry) => entry.discharge)
 }
 
 test.group('Discharge consultation repository', (group) => {

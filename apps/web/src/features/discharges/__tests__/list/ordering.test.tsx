@@ -10,7 +10,7 @@ async function vesselColumn() {
   return within(table)
     .getAllByRole('row')
     .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[0].textContent)
+    .map((row) => within(row).getByRole('link').textContent)
 }
 
 test('reads planned discharges soonest first', async () => {
@@ -33,12 +33,13 @@ test('reads closed discharges most recent first', async () => {
   await user.click(dischargeTab(/Closed/))
 
   const table = await screen.findByRole('table', { name: 'Discharges' })
-  const imos = within(table)
+  // The IMO sits beneath the vessel name, in the same cell.
+  const vessels = within(table)
     .getAllByRole('row')
     .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[1].textContent)
+    .map((row) => within(row).getAllByRole('cell')[0].textContent)
 
-  expect(imos).toEqual(['9410003', '9410004'])
+  expect(vessels).toEqual(['MV Loire Star9410003', 'MV Loire Star9410004'])
 })
 
 test('distinguishes two discharges sharing a vessel name', async () => {

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { z } from 'zod'
 
 import { DISCHARGE_STATUS_FILTERS } from '@/features/discharges/types'
@@ -14,4 +14,6 @@ const dischargesSearchSchema = z.object({
 export const Route = createFileRoute('/_authenticated/discharges')({
   staticData: { breadcrumb: 'Discharges' },
   validateSearch: dischargesSearchSchema,
+  // An empty search is no search: it leaves the address rather than lingering as `search=`.
+  search: { middlewares: [stripSearchParams({ search: '' })] },
 })

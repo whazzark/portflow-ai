@@ -18,11 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  formatTonnes,
-  groupLotsByCustomer,
-  lotRemovalBlock,
-} from '@/features/discharges/discharge-detail-view'
+import { groupLotsByCustomer, lotRemovalBlock } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { AddProductLotsSheet } from '@/features/discharges/ui/detail/add-product-lots-sheet'
 import { CustomerProductLotsSheet } from '@/features/discharges/ui/detail/customer-product-lots-sheet'
@@ -36,6 +32,7 @@ import {
   RemoveProductLotDialog,
 } from '@/features/discharges/ui/detail/remove-product-lot-dialog'
 import { LotWarehouseDoorsDialog } from '@/features/discharges/ui/planning/lot-warehouse-doors-dialog'
+import { formatTonnes } from '@/helpers/tonnes'
 
 type ProductLot = DischargeDetailDto['productLots'][number]
 

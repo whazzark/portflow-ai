@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { formatTonnes } from '@/features/discharges/discharge-detail-view'
 import { dischargeQueries } from '@/features/discharges/queries/discharge-queries'
+import { formatTonnes } from '@/helpers/tonnes'
 import { ACTIVE_OPERATIONS_LEAD, AVAILABLE_DOCKS, ELIGIBLE_RESPONSIBLES } from '../support/fixtures'
 import {
   allowFormJourneyTime,
