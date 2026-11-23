@@ -30,14 +30,30 @@ test('archives the visible selected customers with one shared request', async ()
     expect(screen.getByRole('button', { name: 'Archive selected' })).toBeInTheDocument(),
   )
 
+  const toolbar = screen.getByRole('toolbar', { name: 'Bulk customer actions' })
+  expect(within(toolbar).getByText('2 selected')).toBeInTheDocument()
+  expect(within(toolbar).getByRole('button', { name: 'Archive selected' })).toHaveTextContent(
+    /^Archive$/,
+  )
+  expect(within(toolbar).getByRole('button', { name: 'Clear selection' })).toHaveTextContent(
+    /^Clear$/,
+  )
+
   fireEvent.click(screen.getByRole('button', { name: 'Archive selected' }))
   const dialog = await screen.findByRole('alertdialog')
+  const selection = within(dialog).getByRole('list', { name: 'Selected customers' })
+  const items = within(selection).getAllByRole('listitem')
+  expect(items).toHaveLength(2)
+  expect(items[0]).toHaveTextContent('ACME-01')
+  expect(items[0]).toHaveTextContent('Acme Logistics')
+  expect(items[1]).toHaveTextContent('BETA-02')
   const comment = within(dialog).getByRole('textbox', { name: 'Comment (optional)' })
   expect(comment).toHaveAttribute('maxlength', '1000')
+  expect(comment).toHaveAttribute('placeholder', 'Why are these customers archived?')
   fireEvent.change(comment, {
     target: { value: 'Portfolio cleanup' },
   })
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Archive' }))
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Archive 2 customers' }))
 
   await waitFor(() => {
     expect(requestBody).toEqual({

@@ -3,26 +3,26 @@ import type { CustomerDto } from '@/features/customers/types'
 import { CustomerForm } from '@/features/customers/ui/customer-form'
 
 type CreateCustomerPanelProps = {
+  customers: CustomerDto[]
   onCreate: (value: { code: string; companyName: string }) => Promise<CustomerDto>
   onSuccess: (customer: CustomerDto) => void
 }
 
-export function CreateCustomerPanel({ onCreate, onSuccess }: CreateCustomerPanelProps) {
+export function CreateCustomerPanel({ customers, onCreate, onSuccess }: CreateCustomerPanelProps) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <SheetHeader>
-        <SheetTitle>Create customer</SheetTitle>
-        <SheetDescription>Add a reusable customer reference for the site.</SheetDescription>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <SheetHeader className="shrink-0 border-b px-6 py-5 pr-14">
+        <SheetTitle className="text-lg">Create customer</SheetTitle>
+        <SheetDescription>Available as soon as it is created</SheetDescription>
       </SheetHeader>
-      <div className="px-4">
-        <CustomerForm
-          onCreate={onCreate}
-          onSuccess={onSuccess}
-          onUpdate={() => {
-            throw new Error('Update is not available while creating')
-          }}
-        />
-      </div>
+      <CustomerForm
+        customers={customers}
+        onCreate={onCreate}
+        onSuccess={onSuccess}
+        onUpdate={() => {
+          throw new Error('Update is not available while creating')
+        }}
+      />
     </div>
   )
 }

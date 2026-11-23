@@ -1,5 +1,5 @@
-import { XIcon } from 'lucide-react'
-import { useState } from 'react'
+import { ArchiveIcon, ArchiveRestoreIcon } from 'lucide-react'
+import { useId, useState } from 'react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -41,6 +41,11 @@ export type BulkLifecycleOutcome = {
   blocked: BulkLifecycleBlocker[]
 }
 
+const ACTION_ICONS: Partial<Record<LifecycleAction, typeof ArchiveIcon>> = {
+  archive: ArchiveIcon,
+  reactivate: ArchiveRestoreIcon,
+}
+
 export const DEFAULT_BLOCKER_REASON_LABELS: Record<string, string> = {
   IN_USE: 'used by an active or planned discharge',
   NOT_FOUND: 'not found',
@@ -72,6 +77,14 @@ type BulkResourceLifecycleSubmissionProps = {
   /** Names blocked reasons this resource can report beyond the shared four. Missing keys fall
    * back to the defaults, and an unknown reason falls back to its own code. */
   blockerReasonLabels?: Record<string, string>
+  /** The selected records, listed under the description so the administrator can check what they
+   * act on: a customer by its code over its company name. Nothing is listed when omitted. */
+  selection?: readonly { id: string; primary: string; secondary?: string }[]
+  /** Replaces the canonical confirm label with one counting the selection — "Archive 3
+   * customers". The pending label is unchanged. */
+  describeConfirm?: (action: LifecycleAction, count: number) => string
+  /** Prompts the comment field. No placeholder when omitted. */
+  commentPlaceholder?: (action: LifecycleAction) => string
 }
 
 type BulkResourceLifecycleDialogProps = BulkResourceLifecycleSubmissionProps & {
@@ -96,9 +109,13 @@ export function BulkResourceLifecycleDialog({
   refresh,
   describeEffect,
   blockerReasonLabels,
+  selection,
+  describeConfirm,
+  commentPlaceholder,
   open,
   onOpenChange,
 }: BulkResourceLifecycleDialogProps) {
+  const selectionLabelId = useId()
   const countLabel = (count: number) => `${count} ${count === 1 ? singular : plural}`
   const reasonLabels = { ...DEFAULT_BLOCKER_REASON_LABELS, ...blockerReasonLabels }
   const describeBlocked = (blocked: BulkLifecycleBlocker) =>
@@ -160,6 +177,28 @@ export function BulkResourceLifecycleDialog({
               describeBulkLifecycleEffect(action, selectedIds.length, singular, plural)}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {selection && selection.length > 0 && (
+          <>
+            <span className="sr-only" id={selectionLabelId}>
+              Selected {plural}
+            </span>
+            <ul
+              aria-labelledby={selectionLabelId}
+              className="flex max-h-48 flex-col divide-y overflow-y-auto rounded-lg border"
+            >
+              {selection.map((record) => (
+                <li className="flex items-baseline gap-3 px-3 py-2 text-sm" key={record.id}>
+                  <span className="shrink-0 font-medium font-mono text-[13px] tracking-wide">
+                    {record.primary}
+                  </span>
+                  {record.secondary && (
+                    <span className="truncate text-muted-foreground">{record.secondary}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
         <Field>
           <FieldLabel htmlFor={`bulk-${idPrefix}-lifecycle-comment`}>
             {LIFECYCLE_COMMENT_LABEL}
@@ -168,6 +207,7 @@ export function BulkResourceLifecycleDialog({
             id={`bulk-${idPrefix}-lifecycle-comment`}
             maxLength={1000}
             onChange={(event) => setComment(event.target.value)}
+            placeholder={commentPlaceholder?.(action)}
             value={comment}
           />
           <FieldDescription>{BULK_LIFECYCLE_COMMENT_DESCRIPTION}</FieldDescription>
@@ -181,7 +221,9 @@ export function BulkResourceLifecycleDialog({
               void submit()
             }}
           >
-            {isSubmitting ? LIFECYCLE_PENDING_LABELS[action] : LIFECYCLE_ACTION_LABELS[action]}
+            {isSubmitting
+              ? LIFECYCLE_PENDING_LABELS[action]
+              : (describeConfirm?.(action, selectedIds.length) ?? LIFECYCLE_ACTION_LABELS[action])}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -219,6 +261,7 @@ export function BulkResourceLifecycleActions({
   const visible = selectedIds.length > 0
   const listed = listedIds && new Set(listedIds)
   const hiddenCount = listed ? selectedIds.filter((id) => !listed.has(id)).length : 0
+  const ActionIcon = ACTION_ICONS[action]
 
   return (
     <>
@@ -232,23 +275,29 @@ export function BulkResourceLifecycleActions({
         inert={!visible}
         role="toolbar"
       >
-        <div className="pointer-events-auto flex max-w-full items-center gap-2 rounded-xl bg-popover px-2 py-2 text-popover-foreground shadow-lg ring-1 ring-foreground/10">
-          <span className="flex items-baseline gap-1.5 whitespace-nowrap px-2 text-sm tabular-nums">
-            <span className="font-medium">{selectedIds.length} selected</span>
+        <div className="pointer-events-auto flex max-w-full items-center gap-4 rounded-lg border bg-popover py-2.5 pr-2.5 pl-4.5 text-popover-foreground shadow-xl">
+          <span className="flex items-baseline gap-1.5 whitespace-nowrap text-sm tabular-nums">
+            <span className="font-semibold">{selectedIds.length} selected</span>
             {hiddenCount > 0 && (
               <span className="text-muted-foreground">· {hiddenCount} hidden by the search</span>
             )}
           </span>
-          <Button
-            onClick={() => setOpen(true)}
-            size="sm"
-            variant={action === 'reactivate' ? 'default' : 'destructive'}
-          >
-            {LIFECYCLE_ACTION_LABELS[action]} selected
-          </Button>
-          <Button aria-label="Clear selection" onClick={onClear} size="icon-sm" variant="ghost">
-            <XIcon aria-hidden="true" />
-          </Button>
+          <span aria-hidden="true" className="h-5 w-px bg-border" />
+          <div className="flex items-center gap-1">
+            {/* The visible label is the action alone, as on every button; the accessible name
+                keeps saying what it acts on, and still contains the visible text. */}
+            <Button
+              aria-label={`${LIFECYCLE_ACTION_LABELS[action]} selected`}
+              onClick={() => setOpen(true)}
+              variant={action === 'reactivate' ? 'default' : 'destructive'}
+            >
+              {ActionIcon && <ActionIcon aria-hidden="true" />}
+              {LIFECYCLE_ACTION_LABELS[action]}
+            </Button>
+            <Button aria-label="Clear selection" onClick={onClear} variant="ghost">
+              Clear
+            </Button>
+          </div>
         </div>
       </div>
       <BulkResourceLifecycleDialog {...submission} onOpenChange={setOpen} open={open} />

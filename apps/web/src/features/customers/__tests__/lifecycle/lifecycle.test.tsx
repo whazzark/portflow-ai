@@ -63,10 +63,8 @@ test('archives and reactivates a customer with explicit lifecycle actions', asyn
   fireEvent.click(within(archiveDialog).getByRole('button', { name: 'Archive' }))
 
   expect((await within(detailsDialog).findAllByText('Archived')).length).toBeGreaterThan(0)
-  // The detail pane reports the context the customer now sits in, not both directions at once.
-  expect(await within(detailsDialog).findByText('Archive context')).toBeInTheDocument()
-  expect(within(detailsDialog).getByText('Archived at')).toBeInTheDocument()
-  expect(within(detailsDialog).getByText('Comment')).toBeInTheDocument()
+  const history = await within(detailsDialog).findByRole('region', { name: 'History' })
+  expect(await within(history).findByText('“Retired account”')).toBeInTheDocument()
   expect(within(detailsDialog).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
   expect(
     await within(detailsDialog).findByRole('button', { name: 'Reactivate' }),
@@ -74,6 +72,17 @@ test('archives and reactivates a customer with explicit lifecycle actions', asyn
 
   fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }))
   const reactivateDialog = await screen.findByRole('alertdialog')
+  expect(
+    within(reactivateDialog).getByRole('heading', { name: 'Reactivate Acme Logistics?' }),
+  ).toBeInTheDocument()
+  expect(
+    within(reactivateDialog).getByText(
+      'ACME-01 can be added to new discharges again. Its archive stays in the history.',
+    ),
+  ).toBeInTheDocument()
+  expect(
+    within(reactivateDialog).getByRole('textbox', { name: 'Comment (optional)' }),
+  ).toHaveAttribute('placeholder', 'Why is this customer reactivated?')
   fireEvent.click(within(reactivateDialog).getByRole('button', { name: 'Reactivate' }))
 
   expect(await screen.findByText('Available')).toBeInTheDocument()

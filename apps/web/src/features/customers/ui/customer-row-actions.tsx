@@ -24,7 +24,8 @@ export function CustomerRowActions({
       actions={canAdminister ? customerLifecycleActions(customer.status) : []}
       // Editing is refused on an archived customer, exactly as the detail pane gates it.
       editable={canAdminister && customer.status === 'AVAILABLE'}
-      name={customer.companyName}
+      // The code is what the directory shows in the row, so it is what names the row's menu.
+      name={customer.code}
       onEdit={onEdit && (() => onEdit(customer.id))}
       onView={onView && (() => onView(customer.id))}
       renderDialog={({ action, onClose }) => (

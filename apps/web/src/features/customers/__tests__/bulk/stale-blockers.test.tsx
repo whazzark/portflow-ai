@@ -40,7 +40,9 @@ test.each([
 
   fireEvent.click(screen.getByRole('button', { name: 'Archive selected' }))
   fireEvent.click(
-    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Archive' }),
+    within(await screen.findByRole('alertdialog')).getByRole('button', {
+      name: /^Archive \d+ customers?$/,
+    }),
   )
 
   // The outcome names the reason rather than leaving the administrator to guess it.
@@ -50,7 +52,9 @@ test.each([
   await waitFor(() => expect(screen.getByText('1 selected')).toBeInTheDocument())
   fireEvent.click(screen.getByRole('button', { name: 'Archive selected' }))
   fireEvent.click(
-    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Archive' }),
+    within(await screen.findByRole('alertdialog')).getByRole('button', {
+      name: /^Archive \d+ customers?$/,
+    }),
   )
 
   await waitFor(() => expect(attempts).toBe(2))

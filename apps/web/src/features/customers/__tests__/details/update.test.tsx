@@ -30,7 +30,7 @@ test('lets administrators inspect and update an available customer in the sheet'
   fireEvent.click(await screen.findByRole('button', { name: 'View customer ACME-01' }))
   const dialog = await screen.findByRole('dialog')
   expect(await within(dialog).findByRole('heading', { name: 'Acme Logistics' })).toBeInTheDocument()
-  expect(within(dialog).getByText('ACME-01')).toBeInTheDocument()
+  expect(within(dialog).getAllByText('ACME-01').length).toBeGreaterThan(0)
   expect(within(dialog).getByText('Created')).toBeInTheDocument()
   expect(within(dialog).getByText('Last updated')).toBeInTheDocument()
   expect(within(dialog).getByRole('button', { name: 'Edit' })).toBeInTheDocument()
@@ -38,8 +38,15 @@ test('lets administrators inspect and update an available customer in the sheet'
   expect((await within(dialog).findAllByText('Acme Logistics')).length).toBeGreaterThan(0)
 
   fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
-  expect(await screen.findByRole('heading', { name: 'Edit customer' })).toBeInTheDocument()
-  fireEvent.click(await screen.findByRole('button', { name: 'Back to details' }))
+  const editSheet = await screen.findByRole('dialog', { name: 'Edit customer' })
+  expect(within(editSheet).getByText('Acme Logistics · ACME-01')).toBeInTheDocument()
+  expect(
+    within(editSheet).getByText(
+      'Stored in uppercase. Reports already generated keep the previous code.',
+    ),
+  ).toBeInTheDocument()
+  expect(within(editSheet).queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
+  fireEvent.click(within(editSheet).getByRole('button', { name: 'Back to details' }))
   expect(await screen.findByRole('heading', { name: 'Acme Logistics' })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Edit customer' })).not.toBeInTheDocument()
 
@@ -48,6 +55,9 @@ test('lets administrators inspect and update an available customer in the sheet'
     target: { value: 'Acme Maritime' },
   })
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+  expect(await screen.findByText('Customer “Acme Maritime” updated')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Acme Maritime' })).toBeInTheDocument()
 
   expect(
     (await within(screen.getByRole('dialog')).findAllByText('Acme Maritime')).length,

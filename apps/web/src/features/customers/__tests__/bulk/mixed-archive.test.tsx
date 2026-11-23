@@ -33,7 +33,9 @@ test('keeps blocked selections after a mixed archive result', async () => {
   fireEvent.click(within(table).getByRole('checkbox', { name: 'Select all available customers' }))
   fireEvent.click(screen.getByRole('button', { name: 'Archive selected' }))
   fireEvent.click(
-    within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Archive' }),
+    within(await screen.findByRole('alertdialog')).getByRole('button', {
+      name: /^Archive \d+ customers?$/,
+    }),
   )
 
   // The outcome is reported in a toast; the toolbar stays compact and keeps only the blocked
@@ -41,7 +43,7 @@ test('keeps blocked selections after a mixed archive result', async () => {
   expect(await screen.findByText('1 customer archived; 1 customer unchanged')).toBeInTheDocument()
   expect(screen.getByText(/active or planned/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Archive selected' })).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: 'Available (1)' })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: 'Available 1' })).toBeInTheDocument()
   expect(
     within(screen.getByRole('table', { name: 'Available customers' })).getByRole('checkbox', {
       name: 'Select customer BETA-02',

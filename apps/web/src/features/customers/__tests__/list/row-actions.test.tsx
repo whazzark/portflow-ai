@@ -21,10 +21,11 @@ test('offers view, edit, and the lifecycle action from an available row', async 
   mockCustomers()
   renderCustomers()
 
-  await openRowMenu(AVAILABLE.companyName)
+  await openRowMenu(AVAILABLE.code)
 
   expect(screen.getByRole('menuitem', { name: 'View' })).toBeInTheDocument()
   expect(screen.getByRole('menuitem', { name: 'Edit' })).toBeInTheDocument()
+  expect(within(screen.getByRole('menu')).getByRole('separator')).toBeInTheDocument()
   expect(screen.getByRole('menuitem', { name: 'Archive' })).toBeInTheDocument()
   expect(screen.queryByRole('menuitem', { name: 'Reactivate' })).not.toBeInTheDocument()
 })
@@ -33,22 +34,26 @@ test('offers reactivation, and no edit, from an archived row', async () => {
   mockCustomers()
   renderCustomers('/customers?status=archived')
 
-  await openRowMenu(ARCHIVED.companyName, 'Archived customers')
+  await openRowMenu(ARCHIVED.code, 'Archived customers')
 
   expect(screen.getByRole('menuitem', { name: 'Reactivate' })).toBeInTheDocument()
   expect(screen.queryByRole('menuitem', { name: 'Edit' })).not.toBeInTheDocument()
   expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
 })
 
-test('leaves a non-administrator with consultation only', async () => {
+test('leaves a non-administrator without row menus', async () => {
   mockCustomers(OBSERVER)
   renderCustomers()
 
-  await openRowMenu(AVAILABLE.companyName)
+  const table = await screen.findByRole('table', { name: 'Available customers' })
 
-  expect(screen.getByRole('menuitem', { name: 'View' })).toBeInTheDocument()
-  expect(screen.queryByRole('menuitem', { name: 'Edit' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
+  expect(within(table).queryByRole('columnheader', { name: 'Actions' })).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('button', { name: `Actions for ${AVAILABLE.code}` }),
+  ).not.toBeInTheDocument()
+  expect(
+    within(table).getByRole('button', { name: `View customer ${AVAILABLE.code}` }),
+  ).toBeInTheDocument()
 })
 
 test('archives a customer from its row without opening the detail pane', async () => {
@@ -64,12 +69,24 @@ test('archives a customer from its row without opening the detail pane', async (
 
   renderCustomers()
 
-  await openRowMenu(AVAILABLE.companyName)
+  await openRowMenu(AVAILABLE.code)
   fireEvent.click(screen.getByRole('menuitem', { name: 'Archive' }))
 
   // The confirmation is the one the detail pane uses, down to its comment field.
   const dialog = await screen.findByRole('alertdialog')
-  expect(within(dialog).getByRole('heading', { name: 'Archive customer?' })).toBeInTheDocument()
+  expect(
+    within(dialog).getByRole('heading', { name: `Archive ${AVAILABLE.companyName}?` }),
+  ).toBeInTheDocument()
+  expect(
+    within(dialog).getByText(
+      `${AVAILABLE.code} can no longer be added to a new discharge. Past discharges and reports keep it. You can reactivate it later.`,
+    ),
+  ).toBeInTheDocument()
+  expect(within(dialog).getByRole('textbox', { name: /comment/i })).toHaveAttribute(
+    'placeholder',
+    'Why is this customer archived?',
+  )
+  expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
   fireEvent.change(within(dialog).getByRole('textbox', { name: /comment/i }), {
     target: { value: 'Retired from the row menu' },
   })

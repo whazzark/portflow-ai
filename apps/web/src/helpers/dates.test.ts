@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/helpers/dates'
+import { formatShortDate, fromDateTimeLocalValue, toDateTimeLocalValue } from '@/helpers/dates'
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
@@ -27,4 +27,12 @@ test('round-trips between the two representations', () => {
 test('returns null for an empty or invalid local value', () => {
   expect(fromDateTimeLocalValue('')).toBeNull()
   expect(fromDateTimeLocalValue('not-a-date')).toBeNull()
+})
+
+test('formats a short date with the day, the abbreviated month, and the year', () => {
+  expect(formatShortDate('2026-08-14T10:00:00.000Z')).toBe('14 Aug 2026')
+})
+
+test('formats no date as an empty string', () => {
+  expect(formatShortDate(null)).toBe('')
 })

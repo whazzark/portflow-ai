@@ -1,8 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { OnChangeFn, SortingState } from '@tanstack/react-table'
+import { PlusIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { BulkResourceLifecycleActions } from '@/components/lifecycle/bulk-resource-lifecycle-actions'
+import {
+  LIFECYCLE_ACTION_LABELS,
+  LIFECYCLE_PAST_PARTICIPLES,
+} from '@/components/lifecycle/lifecycle-copy'
 import { useBulkSelection } from '@/components/lifecycle/use-bulk-selection'
 import {
   useClearSelectionShortcut,
@@ -50,6 +55,17 @@ export function CustomersPage() {
   const customers = customersQuery.data?.data ?? []
   const availableCustomers = customers.filter((customer) => customer.status === 'AVAILABLE')
   const archivedCustomers = customers.filter((customer) => customer.status === 'ARCHIVED')
+  // The selection as the confirmation lists it: each customer by the code the row shows, over its
+  // company name. Every selected id is listed, so the list always agrees with the count on the
+  // confirm button; one a refresh no longer returns is listed by its id, as its outcome will be.
+  const customersById = new Map(customers.map((customer) => [customer.id, customer]))
+  const bulkSelection = [...selectedCustomerIds].map((id) => {
+    const customer = customersById.get(id)
+
+    return customer
+      ? { id, primary: customer.code, secondary: customer.companyName }
+      : { id, primary: id }
+  })
 
   // What the active tab currently lists, once the search has narrowed it — the same set the table
   // renders, and so the same set `Select all` and Ctrl/Cmd+A act on.
@@ -113,6 +129,15 @@ export function CustomersPage() {
   }
 
   const activeCustomers = status === 'available' ? availableCustomers : archivedCustomers
+  const otherStatus = status === 'available' ? 'archived' : 'available'
+  const otherTabMatchCount = (
+    status === 'available' ? archivedCustomers : availableCustomers
+  ).filter((customer) => customerMatchesSearch(customer, search)).length
+
+  const openCreate = () =>
+    navigate({
+      search: (previous) => ({ ...previous, customerId: undefined, mode: 'create' }),
+    })
   const activeSort = status === 'available' ? availableSort : archivedSort
   const activeOrder = status === 'available' ? availableOrder : archivedOrder
   const isArchived = status === 'archived'
@@ -148,17 +173,12 @@ export function CustomersPage() {
           id="customer-search"
           label="Search customers"
           onValueChange={updateSearch}
-          placeholder="Search by code, company name, or lifecycle comment"
+          placeholder="Search by code, company name or comment"
           value={search}
         />
         {canAdminister && (
-          <Button
-            onClick={() =>
-              navigate({
-                search: (previous) => ({ ...previous, customerId: undefined, mode: 'create' }),
-              })
-            }
-          >
+          <Button onClick={openCreate}>
+            <PlusIcon aria-hidden="true" />
             Create customer
           </Button>
         )}
@@ -168,13 +188,15 @@ export function CustomersPage() {
         <TabsList aria-label="Customer status" variant="line">
           <TabsTrigger value="available">
             Available{' '}
-            <span className="text-muted-foreground tabular-nums">
-              ({availableCustomers.length})
+            <span className="font-normal text-muted-foreground tabular-nums">
+              {availableCustomers.length}
             </span>
           </TabsTrigger>
           <TabsTrigger value="archived">
             Archived{' '}
-            <span className="text-muted-foreground tabular-nums">({archivedCustomers.length})</span>
+            <span className="font-normal text-muted-foreground tabular-nums">
+              {archivedCustomers.length}
+            </span>
           </TabsTrigger>
         </TabsList>
         <TabsContent className="min-h-0 md:overflow-hidden" value="available">
@@ -189,6 +211,10 @@ export function CustomersPage() {
                 navigate({ search: (previous) => ({ ...previous, customerId, mode: 'view' }) })
               }
               search={search}
+              otherTabMatchCount={otherTabMatchCount}
+              onClearSearch={() => updateSearch('')}
+              onShowOtherTab={() => updateStatus(otherStatus)}
+              onCreate={openCreate}
               sorting={[{ id: activeSort, desc: activeOrder === 'desc' }]}
               onSortingChange={updateSorting(status)}
               canAdminister={canAdminister}
@@ -209,6 +235,10 @@ export function CustomersPage() {
                 navigate({ search: (previous) => ({ ...previous, customerId, mode: 'view' }) })
               }
               search={search}
+              otherTabMatchCount={otherTabMatchCount}
+              onClearSearch={() => updateSearch('')}
+              onShowOtherTab={() => updateStatus(otherStatus)}
+              onCreate={openCreate}
               sorting={[{ id: activeSort, desc: activeOrder === 'desc' }]}
               onSortingChange={updateSorting(status)}
               canAdminister={canAdminister}
@@ -231,6 +261,13 @@ export function CustomersPage() {
           plural={CUSTOMER_PLURAL}
           refresh={mutations.refreshCustomers}
           selectedIds={lifecycleActionIds}
+          selection={bulkSelection}
+          describeConfirm={(action, count) =>
+            `${LIFECYCLE_ACTION_LABELS[action]} ${count} ${count === 1 ? CUSTOMER_SINGULAR : CUSTOMER_PLURAL}`
+          }
+          commentPlaceholder={(action) =>
+            `Why are these customers ${LIFECYCLE_PAST_PARTICIPLES[action]}?`
+          }
           singular={CUSTOMER_SINGULAR}
           submit={async ({ ids, comment }) =>
             toBulkCustomerLifecycleOutcome(
@@ -244,6 +281,7 @@ export function CustomersPage() {
       )}
       <CustomerSheet
         canAdminister={canAdminister}
+        customers={customers}
         customerId={sheetCustomerId}
         customer={
           sheetCustomerId
