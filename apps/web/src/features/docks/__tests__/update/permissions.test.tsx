@@ -38,7 +38,7 @@ test('does not offer editing an archived dock, even to an administrator', async 
   await screen.findByRole('heading', { name: RETIRED_DOCK.name })
 
   expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
-  expect(screen.getByText('Archived docks cannot receive new operations.')).toBeInTheDocument()
+  expect(screen.getByText(/can’t be selected for new discharges/)).toBeInTheDocument()
 })
 
 test('ignores a direct edit=dock URL for a non-administrator', async () => {

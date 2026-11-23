@@ -4,7 +4,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
 import { API_BASE_URL, DOCKS } from '@/features/docks/__tests__/support/fixtures'
 import { server } from '@/test/msw/server'
-import { mockDocks, renderCheckpoints } from '../support/test-helpers'
+import { mockDocks, renderCheckpoints, startSelecting } from '../support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -17,7 +17,7 @@ async function enterSelectModeAndCheck(
   user: ReturnType<typeof userEvent.setup>,
   ...names: string[]
 ) {
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
   for (const name of names) {
     await user.click(screen.getByRole('button', { name: `Select dock ${name}` }))
   }
@@ -125,7 +125,7 @@ test('a mixed result clears the whole selection, blocked docks included, and lis
   )
 
   renderCheckpoints()
-  await user.click(await screen.findByRole('button', { name: 'Select docks' }))
+  await startSelecting(user, 'docks')
   await user.click(screen.getByRole('button', { name: `Select dock ${RETIRED_DOCK.name}` }))
 
   await user.click(screen.getByRole('button', { name: 'Reactivate selected' }))

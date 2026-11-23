@@ -5,7 +5,11 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { API_BASE_URL, DOCKS } from '@/features/docks/__tests__/support/fixtures'
 import type { DockDto } from '@/features/docks/types'
 import { server } from '@/test/msw/server'
-import { mockDocks, renderCheckpoints } from '../../../checkpoints/__tests__/support/test-helpers'
+import {
+  mockDocks,
+  renderCheckpoints,
+  startCreating,
+} from '../../../checkpoints/__tests__/support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -46,7 +50,7 @@ test('places, names, and creates a dock, then shows it as the selected read-only
   const { router } = renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New dock' }))
+  await startCreating(user, 'New dock')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
 
   await user.type(screen.getByRole('textbox', { name: 'Dock name' }), created.name)
@@ -97,7 +101,7 @@ test('reveals the new dock even when the active filters would hide it', async ()
   const hidingFilters = new URLSearchParams({ status: 'archived', kinds: 'weighing-area' })
   const { router } = renderCheckpoints(`/checkpoints?${hidingFilters}`)
 
-  await user.click(await screen.findByRole('button', { name: 'New dock' }))
+  await startCreating(user, 'New dock')
   await user.click(screen.getByRole('button', { name: 'Simulate map click to place checkpoint' }))
   await user.type(screen.getByRole('textbox', { name: 'Dock name' }), created.name)
   await user.click(screen.getByRole('button', { name: 'Create dock' }))
@@ -137,7 +141,7 @@ test('creates a dock by typing coordinates directly, without any map click (keyb
   renderCheckpoints()
 
   await screen.findByRole('button', { name: 'View dock North Dock (Available)' })
-  await user.click(screen.getByRole('button', { name: 'New dock' }))
+  await startCreating(user, 'New dock')
 
   expect(screen.getByRole('button', { name: 'Create dock' })).toBeDisabled()
 

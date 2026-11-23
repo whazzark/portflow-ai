@@ -21,8 +21,8 @@ const MOBILE_BREAKPOINT = 768
 /**
  * One card over the map, beside what it describes: a selected record, or the outline or pin being
  * drawn. It is a non-modal region rather than a dialog — the map behind stays workable — labelled
- * by its heading, which takes focus when the card opens so a keyboard user lands on what changed.
- * Escape inside the card closes it. Placement is `computeResourceMapCardPlacement`'s; without an
+ * by its heading, which takes focus when the card opens so a keyboard user lands on what changed,
+ * and hands focus back to whatever opened it when it closes. Escape inside the card closes it. Placement is `computeResourceMapCardPlacement`'s; without an
  * anchor the card sits in the top-right corner, below the breakpoint it docks at the bottom.
  */
 export function ResourceMapCard({
@@ -34,7 +34,10 @@ export function ResourceMapCard({
   footer,
   className,
   ref,
+  autoFocusHeading = true,
 }: {
+  /** Off for a card whose first field takes focus itself, such as an edit form. */
+  autoFocusHeading?: boolean
   /** Lets the page tell whether focus is inside the card — a select-all shortcut means the card's
    * own list there. */
   ref?: RefObject<HTMLElement | null>
@@ -52,8 +55,22 @@ export function ResourceMapCard({
   const headingRef = useRef<HTMLHeadingElement>(null)
   const [placement, setPlacement] = useState<ResourceMapCardPlacement>({ kind: 'fallback' })
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only on mount and unmount
   useEffect(() => {
-    headingRef.current?.focus({ preventScroll: true })
+    const opener = document.activeElement
+    if (autoFocusHeading) {
+      headingRef.current?.focus({ preventScroll: true })
+    }
+    return () => {
+      // Closing unmounts the card with focus inside it, which would otherwise drop to the page body.
+      const focusIsLost =
+        document.activeElement === null ||
+        document.activeElement === document.body ||
+        cardRef.current?.contains(document.activeElement)
+      if (focusIsLost && opener instanceof HTMLElement && opener.isConnected) {
+        opener.focus({ preventScroll: true })
+      }
+    }
   }, [])
 
   useLayoutEffect(() => {
@@ -95,7 +112,10 @@ export function ResourceMapCard({
       )}
       data-placement={placement.kind}
       onKeyDown={(event) => {
-        if (event.key === 'Escape' && onClose) {
+        // React bubbles events from portals through the component tree, so an Escape meant for a
+        // dialog opened from this card — an archive confirmation — would otherwise close the card.
+        const fromThisCard = event.currentTarget.contains(event.target as Node)
+        if (event.key === 'Escape' && onClose && fromThisCard && !event.defaultPrevented) {
           event.stopPropagation()
           onClose()
         }

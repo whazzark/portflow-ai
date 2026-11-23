@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test, vi } from 'vitest'
@@ -55,7 +55,11 @@ test('never arms the map for a dock merely selected for viewing after a weighing
 
   await openEditWeighingArea(user)
 
-  await user.click(screen.getByRole('button', { name: 'Back to details' }))
+  await user.click(
+    within(screen.getByRole('complementary', { name: 'Edit weighing area' })).getByRole('button', {
+      name: 'Cancel',
+    }),
+  )
   await user.click(screen.getByRole('button', { name: 'Close' }))
 
   await user.click(
@@ -73,8 +77,17 @@ test('drops edit mode when a status filter change drops the selection it belonge
 
   await openEditWeighingArea(user)
 
-  await user.click(screen.getByRole('button', { name: /Filter checkpoints:/ }))
-  await user.click(await screen.findByRole('menuitemradio', { name: /^Archived/ }))
+  await act(() =>
+    router.navigate({
+      to: '/checkpoints',
+      search: {
+        search: '',
+        status: 'archived',
+        checkpointId: router.state.location.search.checkpointId,
+        edit: 'weighing-area',
+      },
+    }),
+  )
 
   await waitFor(() => expect(router.state.location.search).toMatchObject({ status: 'archived' }))
   expect(router.state.location.search).not.toMatchObject({ edit: 'weighing-area' })
@@ -84,19 +97,23 @@ test('hides both create controls while a weighing-area edit session is armed', a
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await screen.findByRole('button', { name: 'New dock' })
-  await screen.findByRole('button', { name: 'New weighing area' })
+  await screen.findByRole('button', { name: 'Create' })
+  await screen.findByRole('button', { name: 'Create' })
 
   await openEditWeighingArea(user)
 
-  expect(screen.queryByRole('button', { name: 'New dock' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'New weighing area' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
 
-  await user.click(screen.getByRole('button', { name: 'Back to details' }))
+  await user.click(
+    within(screen.getByRole('complementary', { name: 'Edit weighing area' })).getByRole('button', {
+      name: 'Cancel',
+    }),
+  )
   await user.click(screen.getByRole('button', { name: 'Close' }))
 
-  expect(await screen.findByRole('button', { name: 'New dock' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'New weighing area' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Create' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument()
 })
 
 test('ignores a URL whose edit kind does not match the selected checkpoint kind', async () => {
@@ -127,7 +144,7 @@ test('does not report a concurrent move by someone else as an unsaved position c
   currentAreas = WEIGHING_AREAS.map((area) => (area.id === ALPHA_SCALE.id ? moved : area))
   await refetchWeighingAreas(router)
   await waitFor(() =>
-    expect(document.querySelector('[data-slot="sheet-description"]')).toHaveTextContent(moved.name),
+    expect(screen.getByText(`Drag the pin to move ${moved.name}`)).toBeInTheDocument(),
   )
 
   expect(screen.queryByText('Position modified')).not.toBeInTheDocument()

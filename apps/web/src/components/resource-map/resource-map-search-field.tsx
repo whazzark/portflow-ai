@@ -1,6 +1,7 @@
 import { Autocomplete } from '@base-ui/react/autocomplete'
 import { SearchIcon, XIcon } from 'lucide-react'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
+import { normalizeResourceSearch } from '@/components/resource-map/resource-map-search'
 import { classnames } from '@/libraries/shadcn/helpers'
 
 export type ResourceMapSearchGroup<Item> = {
@@ -13,7 +14,8 @@ export type ResourceMapSearchGroup<Item> = {
  * The map toolbar's search: a combobox whose suggestions are the matching records, grouped when a
  * map holds several kinds (warehouses and their doors). The caller filters — the list is shown as
  * given — and owns the text, which lives in the URL. Picking a suggestion, by click or by Enter on
- * the highlighted one, calls `onSelect` and leaves the text as typed.
+ * the highlighted one, calls `onSelect` and leaves the text as typed; Enter with nothing highlighted
+ * calls `onSubmitAll`, where a map frames every match.
  */
 export function ResourceMapSearch<Item>({
   id,
@@ -26,6 +28,8 @@ export function ResourceMapSearch<Item>({
   onSelect,
   footer,
   className,
+  listLabel = 'Search results',
+  onSubmitAll,
 }: {
   id: string
   /** The field's accessible name and placeholder, e.g. `Search warehouses`. */
@@ -38,8 +42,13 @@ export function ResourceMapSearch<Item>({
   onSelect: (item: Item) => void
   footer?: ReactNode
   className?: string
+  /** The suggestion list's accessible name. */
+  listLabel?: string
+  /** Enter with no suggestion highlighted. */
+  onSubmitAll?: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const highlighted = useRef<Item | undefined>(undefined)
   const shownGroups = groups.filter((group) => group.items.length > 0)
   const hasResults = value.trim().length > 0 && shownGroups.length > 0
 
@@ -47,6 +56,9 @@ export function ResourceMapSearch<Item>({
     <Autocomplete.Root
       items={shownGroups.map((group) => ({ value: group.label, items: group.items }))}
       mode="none"
+      onItemHighlighted={(item) => {
+        highlighted.current = item as Item | undefined
+      }}
       onOpenChange={setOpen}
       onValueChange={(next, details) => {
         // A picked suggestion is reported here too; only typing and clearing change the text.
@@ -75,6 +87,13 @@ export function ResourceMapSearch<Item>({
             value ? 'pr-9' : 'pr-2.5',
           )}
           id={id}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && onSubmitAll && !highlighted.current && value.trim()) {
+              event.preventDefault()
+              setOpen(false)
+              onSubmitAll()
+            }
+          }}
           placeholder={label}
         />
         {value && (
@@ -91,7 +110,7 @@ export function ResourceMapSearch<Item>({
       <Autocomplete.Portal>
         <Autocomplete.Positioner align="start" className="isolate z-50" sideOffset={6}>
           <Autocomplete.Popup className="max-h-[min(var(--available-height),24rem)] w-[max(var(--anchor-width),20rem)] overflow-y-auto rounded-xl border bg-popover p-1 text-popover-foreground shadow-lg">
-            <Autocomplete.List aria-label="Search results">
+            <Autocomplete.List aria-label={listLabel}>
               {(group: { value: string; items: Item[] }) => (
                 <Autocomplete.Group className="py-1" items={group.items} key={group.value}>
                   <Autocomplete.GroupLabel className="flex items-center justify-between px-2 py-1 font-mono text-[10px] text-muted-foreground uppercase tracking-[0.14em]">
@@ -126,22 +145,38 @@ export function ResourceMapSearch<Item>({
   )
 }
 
-/** Wraps the part of `text` matching `search` in a `<mark>`, ignoring case — accents are matched by
- * the caller's own search, so an accented match is simply left unmarked. */
+/** Wraps the part of `text` matching `search` in a `<mark>`, ignoring case and accents the way the
+ * search itself does, so `beta` marks the `Bêta` in `Bêta Dock`. */
 export function HighlightedMatch({ text, search }: { text: string; search: string }) {
-  const needle = search.trim().toLocaleLowerCase('en')
-  const start = needle ? text.toLocaleLowerCase('en').indexOf(needle) : -1
+  const needle = normalizeResourceSearch(search)
+  // Folding one character at a time keeps indexes aligned with the original text, so the marked
+  // slice is the text's own spelling, accents included.
+  const folded = [...text].map((character) => normalizeResourceSearch(character) || character)
+  const start = needle ? folded.join('').indexOf(needle) : -1
   if (start < 0) {
     return text
   }
+  let offset = 0
+  let from = -1
+  let to = -1
+  folded.forEach((part, index) => {
+    if (from < 0 && offset >= start) {
+      from = index
+    }
+    offset += part.length
+    if (to < 0 && offset >= start + needle.length) {
+      to = index + 1
+    }
+  })
+  const characters = [...text]
 
   return (
     <>
-      {text.slice(0, start)}
+      {characters.slice(0, from).join('')}
       <mark className="rounded-sm bg-primary/20 text-inherit">
-        {text.slice(start, start + needle.length)}
+        {characters.slice(from, to).join('')}
       </mark>
-      {text.slice(start + needle.length)}
+      {characters.slice(to).join('')}
     </>
   )
 }

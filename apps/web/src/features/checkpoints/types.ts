@@ -52,6 +52,26 @@ export function checkpointKindFilterFromVisibility(
   return visibility.DOCK ? 'dock' : 'weighing-area'
 }
 
+/** The status toggles that a `status` filter value presses, and back. */
+export function checkpointStatusesFromFilter(filter: CheckpointStatusFilter): CheckpointStatus[] {
+  if (filter === 'available') {
+    return ['AVAILABLE']
+  }
+  if (filter === 'archived') {
+    return ['ARCHIVED']
+  }
+  return [...CHECKPOINT_STATUSES]
+}
+
+export function checkpointStatusFilterFromStatuses(
+  statuses: readonly CheckpointStatus[],
+): CheckpointStatusFilter {
+  if (statuses.length === 1) {
+    return statuses[0] === 'AVAILABLE' ? 'available' : 'archived'
+  }
+  return 'all'
+}
+
 export const CHECKPOINT_KIND_LABELS: Record<CheckpointKind, string> = {
   DOCK: 'Dock',
   WEIGHING_AREA: 'Weighing area',

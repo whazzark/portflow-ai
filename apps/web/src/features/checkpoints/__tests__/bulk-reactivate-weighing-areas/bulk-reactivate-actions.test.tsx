@@ -5,7 +5,7 @@ import { expect, test, vi } from 'vitest'
 import { API_BASE_URL } from '@/features/docks/__tests__/support/fixtures'
 import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixtures'
 import { server } from '@/test/msw/server'
-import { mockDocks, renderCheckpoints } from '../support/test-helpers'
+import { mockDocks, renderCheckpoints, startSelecting } from '../support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -20,7 +20,7 @@ async function enterSelectModeAndCheck(
   user: ReturnType<typeof userEvent.setup>,
   ...names: string[]
 ) {
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   for (const name of names) {
     await user.click(screen.getByRole('button', { name: `Select weighing area ${name}` }))
   }

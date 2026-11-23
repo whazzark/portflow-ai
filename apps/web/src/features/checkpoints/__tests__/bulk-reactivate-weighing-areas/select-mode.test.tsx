@@ -5,7 +5,7 @@ import { WEIGHING_AREAS } from '@/features/weighing-areas/__tests__/support/fixt
 import { weighingAreasSequenceHandler } from '@/features/weighing-areas/__tests__/support/handlers'
 import { weighingAreaQueries } from '@/features/weighing-areas/queries/weighing-area-queries'
 import { server } from '@/test/msw/server'
-import { mockDocks, renderCheckpoints } from '../support/test-helpers'
+import { mockDocks, renderCheckpoints, startSelecting } from '../support/test-helpers'
 
 vi.mock(
   '@/features/checkpoints/map/checkpoint-map',
@@ -21,7 +21,7 @@ test('offers both available and archived weighing areas as checkable while nothi
   const user = userEvent.setup()
   renderCheckpoints('/checkpoints?status=all')
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
 
   expect(
     screen.getByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` }),
@@ -36,7 +36,7 @@ test('checking an archived weighing area fixes the intent to reactivation and ex
   const user = userEvent.setup()
   renderCheckpoints('/checkpoints?status=all')
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(
     screen.getByRole('button', { name: `Select weighing area ${RETIRED_SCALE.name}` }),
   )
@@ -57,7 +57,7 @@ test('checking an available weighing area fixes the intent to archival and exclu
   const user = userEvent.setup()
   renderCheckpoints('/checkpoints?status=all')
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(screen.getByRole('button', { name: `Select weighing area ${ALPHA_SCALE.name}` }))
 
   expect(screen.getByRole('button', { name: 'Archive selected' })).toBeInTheDocument()
@@ -71,7 +71,7 @@ test('clearing the selection makes both statuses checkable again', async () => {
   const user = userEvent.setup()
   renderCheckpoints('/checkpoints?status=all')
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(
     screen.getByRole('button', { name: `Select weighing area ${RETIRED_SCALE.name}` }),
   )
@@ -91,7 +91,7 @@ test('selects several archived weighing areas together', async () => {
   // biome-ignore lint/security/noSecrets: route search string, not a secret
   renderCheckpoints('/checkpoints?status=archived')
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(
     screen.getByRole('button', { name: `Select weighing area ${RETIRED_SCALE.name}` }),
   )
@@ -107,7 +107,7 @@ test('drops a checked weighing area a failed refresh removes rather than flippin
   const user = userEvent.setup()
   const { queryClient } = renderCheckpoints('/checkpoints?status=all')
 
-  await user.click(await screen.findByRole('button', { name: 'Select weighing areas' }))
+  await startSelecting(user, 'weighing areas')
   await user.click(
     screen.getByRole('button', { name: `Select weighing area ${RETIRED_SCALE.name}` }),
   )

@@ -53,8 +53,8 @@ export function CheckpointResourceForm<TResource>({
   /** Update-only: called when the server reports the resource no longer exists. */
   onNotFound?: () => void
   submitLabel: string
-  /** Creation only: the sheet sits unmodal over the map, so leaving needs its own affordance.
-   * An update is left through the panel's own "Back to details". */
+  /** The card sits unmodal over the map, so leaving placement or move mode needs its own
+   * affordance. */
   onCancel?: () => void
   /** Built from the submitted name, because a creation has no stored one to quote. An update
    * ignores it and names the checkpoint as it stands. */

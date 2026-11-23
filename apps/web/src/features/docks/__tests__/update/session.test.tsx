@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test, vi } from 'vitest'
@@ -47,9 +47,7 @@ async function refetchDocks(router: TestRouter) {
 
 /** Waits until the refetched dock has actually reached the open edit panel. */
 async function waitForEditedDockName(name: string) {
-  await waitFor(() =>
-    expect(document.querySelector('[data-slot="sheet-description"]')).toHaveTextContent(name),
-  )
+  await waitFor(() => expect(screen.getByText(`Drag the pin to move ${name}`)).toBeInTheDocument())
 }
 
 test('drops edit mode when a status filter change drops the selection it belonged to', async () => {
@@ -58,9 +56,19 @@ test('drops edit mode when a status filter change drops the selection it belonge
 
   await openEditDock(user)
 
-  // The edit sheet is not modal, so the filters stay reachable while editing.
-  await user.click(screen.getByRole('button', { name: /Filter checkpoints:/ }))
-  await user.click(await screen.findByRole('menuitemradio', { name: /^Archived/ }))
+  // The banner replaces the toolbar while moving, so the filter changes through the address — a
+  // back or forward step, or a pasted link.
+  await act(() =>
+    router.navigate({
+      to: '/checkpoints',
+      search: {
+        search: '',
+        status: 'archived',
+        checkpointId: router.state.location.search.checkpointId,
+        edit: 'dock',
+      },
+    }),
+  )
 
   await waitFor(() => expect(router.state.location.search).toMatchObject({ status: 'archived' }))
   expect(router.state.location.search).not.toMatchObject({ edit: 'dock' })
@@ -93,16 +101,20 @@ test('hides the create control while an edit session is armed', async () => {
   const user = userEvent.setup()
   renderCheckpoints()
 
-  await screen.findByRole('button', { name: 'New dock' })
+  await screen.findByRole('button', { name: 'Create' })
 
   await openEditDock(user)
 
-  expect(screen.queryByRole('button', { name: 'New dock' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
 
-  await user.click(screen.getByRole('button', { name: 'Back to details' }))
+  await user.click(
+    within(screen.getByRole('complementary', { name: 'Edit dock' })).getByRole('button', {
+      name: 'Cancel',
+    }),
+  )
   await user.click(screen.getByRole('button', { name: 'Close' }))
 
-  expect(await screen.findByRole('button', { name: 'New dock' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Create' })).toBeInTheDocument()
 })
 
 test('does not report a concurrent move by someone else as an unsaved position change', async () => {
