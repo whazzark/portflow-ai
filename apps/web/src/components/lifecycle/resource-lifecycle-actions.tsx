@@ -50,8 +50,13 @@ export type ResourceLifecycleConfig<TResult = unknown> = {
   /** Replaces the canonical success message with one that reports what the server actually did —
    * a warehouse archival names the doors it cascaded to. */
   describeSuccess?: (action: LifecycleAction, result: TResult) => string
-  /** A second line under the success toast, for what the change leaves in place. */
+  /** A second line under the success toast, for what the change did beyond the record itself. */
   describeSuccessDetail?: (action: LifecycleAction, result: TResult) => string | undefined
+  /** A follow-up offered on the success toast, such as viewing the record where it now lives. */
+  successAction?: (
+    action: LifecycleAction,
+    result: TResult,
+  ) => { label: string; onClick: () => void } | undefined
 }
 
 const ACTION_VARIANTS: Record<LifecycleAction, 'default' | 'destructive' | 'outline'> = {
@@ -91,10 +96,17 @@ export function ResourceLifecycleDialog<TResult>({
       const result = await config.submit(lifecycleAction, { comment: comment || null })
 
       close()
+      const description = config.describeSuccessDetail?.(lifecycleAction, result)
+      const toastAction = config.successAction?.(lifecycleAction, result)
       toast.success(
         config.describeSuccess?.(lifecycleAction, result) ??
           lifecycleSuccessMessage(lifecycleAction, config.singular, config.name),
-        { description: config.describeSuccessDetail?.(lifecycleAction, result) },
+        description || toastAction
+          ? {
+              ...(description ? { description } : {}),
+              ...(toastAction ? { action: toastAction } : {}),
+            }
+          : undefined,
       )
     } catch (cause) {
       // A refusal may mean the record's authoritative state has moved on since this view loaded,

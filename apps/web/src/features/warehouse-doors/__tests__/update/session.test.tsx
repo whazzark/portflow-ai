@@ -51,7 +51,7 @@ test('cancelling leaves the stored door untouched and returns to the details', a
   await user.type(screen.getByRole('textbox', { name: 'Door name' }), 'Abandoned')
   await dragDraft(user)
 
-  await user.click(screen.getByRole('button', { name: 'Back to details' }))
+  await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
   await waitFor(() => expect(router.state.location.search).not.toHaveProperty('edit'))
   expect(await screen.findByRole('heading', { name: 'Doors' })).toBeInTheDocument()
@@ -67,7 +67,7 @@ test('leaving through the back action ends the session without saving', async ()
   const { router } = renderWarehouses(EDIT_PATH)
 
   await screen.findByRole('heading', { name: 'Edit door' })
-  await user.click(screen.getByRole('button', { name: 'Back to details' }))
+  await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
   await waitFor(() => expect(router.state.location.search).not.toHaveProperty('edit'))
   expect(await screen.findByRole('heading', { name: 'Doors' })).toBeInTheDocument()
@@ -101,7 +101,7 @@ test('activating door creation ends the session without saving it', async () => 
   const { router } = renderWarehouses(EDIT_PATH)
 
   await screen.findByRole('heading', { name: 'Edit door' })
-  await user.click(screen.getByRole('button', { name: 'Back to details' }))
+  await user.click(screen.getByRole('button', { name: 'Cancel' }))
   await user.click(await screen.findByRole('button', { name: 'Create door' }))
 
   await waitFor(() => expect(router.state.location.search).toMatchObject({ create: 'door' }))

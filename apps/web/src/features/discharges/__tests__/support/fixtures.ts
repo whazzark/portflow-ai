@@ -480,3 +480,158 @@ export function startableDetail(): DischargeDetailDto {
     ],
   })
 }
+
+const HOUR_MS = 3_600_000
+/** The first shift of the active scenario starts here; every shift lasts eight hours. */
+const ACTIVE_SCENARIO_START = Date.parse('2026-09-14T04:00:00.000Z')
+const ACTIVE_SCENARIO_RESERVED_AT = '2026-09-12T07:00:00.000Z'
+
+const at = (hours: number) => new Date(ACTIVE_SCENARIO_START + hours * HOUR_MS).toISOString()
+
+/** The trucks of the active scenario's pool, the last one released on its first day. */
+const ACTIVE_SCENARIO_TRUCKS = [
+  'BB-202-PF',
+  'MS-518-PF',
+  'NF-535-PF',
+  'PN-552-PF',
+  'QV-569-PF',
+  'RJ-586-PF',
+  'SR-603-PF',
+  'TY-620-PF',
+  'UM-637-PF',
+  'CC-303-PF',
+]
+
+const RESPONSIBLES = {
+  sophie: { id: 'responsible-sophie', firstName: 'Sophie', lastName: 'Dubois' },
+  thomas: { id: 'responsible-thomas', firstName: 'Thomas', lastName: 'Bernard' },
+  claire: { id: 'responsible-claire', firstName: 'Claire', lastName: 'Martin' },
+}
+
+const DOUANE = {
+  warehouseDoor: { id: 'door-douane', name: 'Porte Douane', status: 'AVAILABLE' as const },
+  warehouse: { id: 'warehouse-douane', name: 'Magasin sous douane', status: 'AVAILABLE' as const },
+}
+const NORD = {
+  warehouseDoor: { id: 'door-nord', name: 'Porte Nord', status: 'AVAILABLE' as const },
+  warehouse: { id: 'warehouse-nord', name: 'Magasin Nord', status: 'AVAILABLE' as const },
+}
+
+function scenarioShift(
+  index: number,
+  status: DetailShift['status'],
+  truckCount: number,
+  doors: Array<typeof DOUANE>,
+): DetailShift {
+  const responsible = [RESPONSIBLES.sophie, RESPONSIBLES.thomas, RESPONSIBLES.claire][index % 3]
+  const started = status !== 'PLANNED'
+
+  return buildShift({
+    id: `shift-${index + 1}`,
+    status,
+    plannedStartAt: at(index * 8),
+    plannedEndAt: at(index * 8 + 8),
+    responsible,
+    actualStartAt: started ? at(index * 8) : null,
+    trucks: ACTIVE_SCENARIO_TRUCKS.slice(0, truckCount).map((registration, truck) => ({
+      id: `shift-${index + 1}-truck-${truck}`,
+      truckId: `truck-${registration}`,
+      registration,
+      truckStatus: 'AVAILABLE',
+      effectiveFrom: ACTIVE_SCENARIO_RESERVED_AT,
+      effectiveTo: null,
+    })),
+    warehouseDoors: doors.map((door, position) => ({
+      id: `shift-${index + 1}-door-${position}`,
+      effectiveFrom: ACTIVE_SCENARIO_RESERVED_AT,
+      effectiveTo: null,
+      ...door,
+    })),
+    weighingAreas: [
+      buildAreaSelection({
+        id: `shift-${index + 1}-area`,
+        effectiveFrom: ACTIVE_SCENARIO_RESERVED_AT,
+        weighingArea: { id: 'area-pont-nord', name: 'Pont-bascule Nord', status: 'AVAILABLE' },
+      }),
+    ],
+  })
+}
+
+/**
+ * The retained design's active scenario: fourteen eight-hour shifts, five completed, the sixth
+ * under way with Claire Martin, two trucks, two doors, and one weighing area, and the seventh next
+ * with Sophie Dubois and six trucks. Five lots for five customers, two of them with a door; ten
+ * trucks reserved, one of them released.
+ */
+export function activeDischargeDetail(
+  overrides: Partial<DischargeDetailDto> = {},
+): DischargeDetailDto {
+  const lot = (
+    id: string,
+    customer: string,
+    productName: string,
+    tonnes: string,
+    door?: typeof DOUANE,
+  ) =>
+    buildLot({
+      id,
+      productName,
+      expectedQuantityTonnes: tonnes,
+      customer: { id: `customer-${id}`, name: customer, status: 'AVAILABLE' },
+      doorAssignments: door
+        ? [
+            buildDoorPeriod({
+              id: `${id}-door`,
+              effectiveFrom: ACTIVE_SCENARIO_RESERVED_AT,
+              ...door,
+            }),
+          ]
+        : [],
+    })
+
+  // The active shift is the sixth; the seventh, next, holds six trucks.
+  const shifts = Array.from({ length: 14 }, (_, index) => {
+    if (index < 5) {
+      return scenarioShift(index, 'COMPLETED', 4, [DOUANE])
+    }
+    if (index === 5) {
+      return {
+        ...scenarioShift(index, 'ACTIVE', 0, [DOUANE, NORD]),
+        trucks: ['PN-552-PF', 'QV-569-PF'].map((registration, truck) => ({
+          id: `shift-6-truck-${truck}`,
+          truckId: `truck-${registration}`,
+          registration,
+          truckStatus: 'AVAILABLE' as const,
+          effectiveFrom: ACTIVE_SCENARIO_RESERVED_AT,
+          effectiveTo: null,
+        })),
+      }
+    }
+
+    return scenarioShift(index, 'PLANNED', index === 6 ? 6 : 3, [DOUANE])
+  })
+
+  return buildDischargeDetail(listedDischarge('MV Ocean Cedar', 'ACTIVE'), {
+    vesselComment: 'Draught restricted at low tide',
+    expectedTonnage: '16790.500',
+    startedAt: at(0),
+    productLots: [
+      lot('armor', 'Armor Chaîne du Froid', 'Petcoke', '3781.000', DOUANE),
+      lot('baltic', 'Baltic Eco Fuels', 'Maïs grain', '4557.500'),
+      lot('boreal', 'Boréal Shipping France', 'Blé dur', '1834.250', NORD),
+      lot('cap', 'Cap Horizon Logistique', 'Colza', '2689.250'),
+      lot('ceres', 'Cérès Agro Négoce', 'Pois protéagineux', '3928.500'),
+    ],
+    truckPool: ACTIVE_SCENARIO_TRUCKS.map((registration) =>
+      buildPoolEntry({
+        id: `pool-${registration}`,
+        truckId: `truck-${registration}`,
+        registration,
+        reservedAt: ACTIVE_SCENARIO_RESERVED_AT,
+        releasedAt: registration === 'CC-303-PF' ? at(6) : null,
+      }),
+    ),
+    shifts,
+    ...overrides,
+  })
+}
