@@ -1,4 +1,5 @@
 import db from '@adonisjs/lucid/services/db'
+import { DateTime } from 'luxon'
 
 import type {
   DischargeDetailRead,
@@ -12,7 +13,10 @@ import WarehouseDoorProductLotAssignment from '#models/warehouse_door_product_lo
 import WeighingArea from '#models/weighing_area'
 import isUuid from '#shared/database/is_uuid'
 
-import DischargeRepository, { type PlanningOptions } from './discharge_repository.ts'
+import DischargeRepository, {
+  type DockOccupancyRead,
+  type PlanningOptions,
+} from './discharge_repository.ts'
 
 export default class LucidDischargeRepository extends DischargeRepository {
   /**
@@ -274,5 +278,39 @@ export default class LucidDischargeRepository extends DischargeRepository {
       }),
       weighingAreas: weighingAreas.map((area) => ({ id: area.id, name: area.name })),
     }
+  }
+
+  /**
+   * The period is folded from the shifts' planned instants here rather than aggregated in SQL: the
+   * models parse instants the same way on every database, where a raw `min` would not.
+   */
+  async listDockOccupancy(dockId: string): Promise<DockOccupancyRead[]> {
+    if (!isUuid(dockId)) {
+      return []
+    }
+
+    const discharges = await Discharge.query()
+      .where('dockId', dockId.toLowerCase())
+      .whereIn('status', ['PLANNED', 'ACTIVE'])
+      .preload('shifts', (shifts) =>
+        shifts.select('id', 'discharge_id', 'planned_start_at', 'planned_end_at'),
+      )
+
+    return discharges
+      .filter((discharge) => discharge.shifts.length > 0)
+      .map((discharge) => ({
+        discharge: {
+          id: discharge.id,
+          vesselName: discharge.vesselName,
+          status: discharge.status as DockOccupancyRead['discharge']['status'],
+        },
+        startAt: DateTime.min(...discharge.shifts.map((shift) => shift.plannedStartAt)) as DateTime,
+        endAt: DateTime.max(...discharge.shifts.map((shift) => shift.plannedEndAt)) as DateTime,
+      }))
+      .sort(
+        (a, b) =>
+          a.startAt.toMillis() - b.startAt.toMillis() ||
+          (a.discharge.id < b.discharge.id ? -1 : a.discharge.id > b.discharge.id ? 1 : 0),
+      )
   }
 }
