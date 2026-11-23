@@ -14,6 +14,11 @@ describe('truck search', () => {
     expect(truckMatchesSearch(TRUCKS[2], TRANSPORT_COMPANIES[2], 'missing')).toBe(false)
   })
 
+  test('matches the vehicle model', () => {
+    expect(truckMatchesSearch(TRUCKS[0], TRANSPORT_COMPANIES[0], 'volvo')).toBe(true)
+    expect(truckMatchesSearch(TRUCKS[1], TRANSPORT_COMPANIES[1], 'volvo')).toBe(false)
+  })
+
   test('treats whitespace-only input as no search', () => {
     expect(TRUCKS.every((truck) => truckMatchesSearch(truck, undefined, '   '))).toBe(true)
   })

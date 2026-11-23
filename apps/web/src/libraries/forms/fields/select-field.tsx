@@ -22,10 +22,17 @@ export function SelectField({
   description,
   id,
   label,
+  labelClassName,
   options,
   placeholder,
   required,
-}: FieldPresentationProps & { id?: string; options: Array<SelectOption>; placeholder?: string }) {
+}: FieldPresentationProps & {
+  id?: string
+  /** Hides or quiets the label where a column header names the field, as in a row of fields. */
+  labelClassName?: string
+  options: Array<SelectOption>
+  placeholder?: string
+}) {
   const field = useFieldContext<string>()
   const form = useFormContext()
   const selectId = id ?? field.name
@@ -33,7 +40,7 @@ export function SelectField({
 
   return (
     <Field data-invalid={isInvalid}>
-      <FieldLabel htmlFor={selectId}>
+      <FieldLabel className={labelClassName} htmlFor={selectId}>
         <FieldLabelContent label={label} required={required} />
       </FieldLabel>
       {description && <FieldDescription>{description}</FieldDescription>}

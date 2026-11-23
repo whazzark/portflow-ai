@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/helpers/dates'
+import { formatDate, fromDateTimeLocalValue, toDateTimeLocalValue } from '@/helpers/dates'
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
@@ -27,4 +27,9 @@ test('round-trips between the two representations', () => {
 test('returns null for an empty or invalid local value', () => {
   expect(fromDateTimeLocalValue('')).toBeNull()
   expect(fromDateTimeLocalValue('not-a-date')).toBeNull()
+})
+
+test('renders a date alone, day first, the way lifecycle cells read it', () => {
+  expect(formatDate('2026-09-23T12:00:00.000Z')).toBe('23/09/2026')
+  expect(formatDate(null)).toBe('—')
 })

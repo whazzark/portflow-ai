@@ -13,6 +13,12 @@ The roadmap groups the transport-company and truck resource roadmaps.
 | GH-48 | Transport Companies | planned | ./transport-companies/ |
 | GH-49 | Trucks | planned | ./trucks/ |
 
+## Cross-resource slices
+
+| ID | Slice | Status | Artifact |
+|---|---|---|---|
+| GH-319 | Restyle Transport resources (Interface V2, epic #313) | in-progress | ./restyle-transport-resources/ |
+
 ## Superseded intake
 
 GH-50 and GH-51 remain closed records for the former aggregate scope. Their delivery slices are

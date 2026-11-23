@@ -31,14 +31,12 @@ export function useTruckMutations() {
       onSuccess: () => invalidateTrucks(),
     }),
   )
-  const archiveMany = useMutation(tuyauQuery.trucks.archiveMany.mutationOptions())
 
   const reactivate = useMutation(
     tuyauQuery.trucks.reactivate.mutationOptions({
       onSuccess: () => invalidateTrucks(),
     }),
   )
-  const reactivateMany = useMutation(tuyauQuery.trucks.reactivateMany.mutationOptions())
 
   const suspend = useMutation(
     tuyauQuery.trucks.suspend.mutationOptions({
@@ -60,10 +58,8 @@ export function useTruckMutations() {
 
   return {
     archive,
-    archiveMany,
     create,
     reactivate,
-    reactivateMany,
     returnToService,
     suspend,
     update,
