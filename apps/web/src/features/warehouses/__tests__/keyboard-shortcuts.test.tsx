@@ -54,7 +54,7 @@ test('ignores Ctrl+A while a text field has focus', async () => {
   const user = userEvent.setup()
   renderWarehouses()
 
-  await user.click(await screen.findByRole('textbox', { name: 'Search warehouses' }))
+  await user.click(await screen.findByRole('combobox', { name: 'Search warehouses' }))
   await user.keyboard('{Control>}a{/Control}')
 
   expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument()

@@ -1,7 +1,7 @@
 import type { ReactNode, Ref } from 'react'
 
 import { closedRecordPeriod } from '@/features/discharges/closed-discharge-record'
-import { formatTonnes } from '@/features/discharges/discharge-detail-view'
+import { formatDischargePeriod, formatTonnes } from '@/features/discharges/discharge-detail-view'
 import type { DischargeDetailDto } from '@/features/discharges/types'
 import { BackToDischargesLink } from '@/features/discharges/ui/detail/back-to-discharges-link'
 import { DischargeStatusBadge } from '@/features/discharges/ui/detail/discharge-status-badge'
@@ -14,11 +14,12 @@ type DischargeDetailHeaderProps = {
   actions?: ReactNode
   /** Where focus goes when an action removes itself, as starting the discharge does. */
   headingRef?: Ref<HTMLHeadingElement>
-  /** Shown under the facts, where the page wants it read: a closed record's overview. */
-  vesselComment?: string | null
 }
 
-/** A closed record's period, saying so where an end is not on record rather than inventing one. */
+/**
+ * A closed record's period, from its start to its closure, saying so where an end is not on
+ * record rather than reading one off its shifts as an active discharge's period does.
+ */
 function formatRecordPeriod(discharge: DischargeDetailDto) {
   const { startAt, endAt } = closedRecordPeriod(discharge)
   const instant = (value: string | null) => (value ? formatDateTime(value) : 'Not recorded')
@@ -31,9 +32,10 @@ export function DischargeDetailHeader({
   discharge,
   actions,
   headingRef,
-  vesselComment,
 }: DischargeDetailHeaderProps) {
-  const closed = discharge.status === 'CLOSED'
+  // An active or closed discharge is read by the period it spans rather than by when it was
+  // expected; an active one's dock timeline tells who started it. A planned record keeps its facts.
+  const spansPeriod = discharge.status !== 'PLANNED'
 
   return (
     <div className="flex flex-col gap-3">
@@ -57,19 +59,20 @@ export function DischargeDetailHeader({
                 <ReferenceLabel name={discharge.dock.name} status={discharge.dock.status} />
               </dd>
             </div>
-            {closed ? (
-              // A closed record reads as a whole: when it ran and which vessel, not its planning.
+            {spansPeriod ? (
               <>
                 <div className="flex items-baseline gap-1.5">
                   <dt>Period</dt>
                   <dd className="font-medium text-foreground tabular-nums">
-                    {formatRecordPeriod(discharge)}
+                    {discharge.status === 'CLOSED'
+                      ? formatRecordPeriod(discharge)
+                      : formatDischargePeriod(discharge)}
                   </dd>
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <dt>IMO</dt>
                   <dd className="font-medium text-foreground tabular-nums">
-                    {discharge.vesselImo ?? '—'}
+                    {discharge.vesselImo ?? 'Not specified'}
                   </dd>
                 </div>
               </>
@@ -100,12 +103,6 @@ export function DischargeDetailHeader({
               </dd>
             </div>
           </dl>
-          {vesselComment && (
-            <p className="text-muted-foreground text-sm">
-              <span className="mr-1.5">Vessel comment</span>
-              <span className="text-foreground">{vesselComment}</span>
-            </p>
-          )}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>

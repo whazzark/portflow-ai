@@ -23,6 +23,13 @@ export type PlanningOptions = {
   weighingAreas: Array<{ id: string; name: string }>
 }
 
+/** One discharge holding a dock over its planned period. */
+export type DockOccupancyRead = {
+  discharge: { id: string; vesselName: string; status: 'PLANNED' | 'ACTIVE' }
+  startAt: DateTime
+  endAt: DateTime
+}
+
 export default abstract class DischargeRepository {
   /**
    * Every discharge, in every status, in one collection, each with its dock and its product lots
@@ -58,4 +65,12 @@ export default abstract class DischargeRepository {
    * and available weighing areas. `null` when no discharge has this identity.
    */
   abstract findPlanningOptions(dischargeId: string): Promise<PlanningOptions | null>
+
+  /**
+   * The planned or active discharges assigned to a dock, each over its planned period: from the
+   * earliest planned start to the latest planned end of its shifts, whatever each shift's status.
+   * A closed discharge holds the dock no more, and one without a shift has no period to show.
+   * Ordered by start, then identity. An unknown dock simply has no occupancy.
+   */
+  abstract listDockOccupancy(dockId: string): Promise<DockOccupancyRead[]>
 }

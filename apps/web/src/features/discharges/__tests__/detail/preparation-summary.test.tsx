@@ -87,12 +87,12 @@ test('opens the section a summary row names', async () => {
 })
 
 test.each([
-  // A closed record sums up what it went through instead of its details.
-  ['an active', listedDischarge('MV Ocean Cedar', 'ACTIVE'), 'Overview'],
+  // An active discharge's overview opens on what is happening now; a closed one on its summary.
+  ['an active', listedDischarge('MV Ocean Cedar', 'ACTIVE'), 'Current shift'],
   ['a closed', listedDischarge('MV Loire Star', 'CLOSED'), 'Summary'],
-])('shows no preparation summary on %s discharge', async (_case, listed, overview) => {
+])('shows no preparation summary on %s discharge', async (_case, listed, firstCard) => {
   await renderSummary(buildDischargeDetail(listed))
 
-  expect(screen.getByRole('region', { name: overview })).toBeInTheDocument()
+  expect(await screen.findByRole('region', { name: firstCard })).toBeInTheDocument()
   expect(screen.queryByRole('region', { name: 'Preparation' })).not.toBeInTheDocument()
 })

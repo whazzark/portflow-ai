@@ -13,11 +13,11 @@ assert these through roles and accessible names. No HTTP contract changes (see r
 | Period value | `<start> → <end>`; a missing side reads `Not recorded` |
 | Actions | None: no `Edit`, no `Start discharge` button |
 | `Expected start`, `Started` terms | Absent |
-| Vessel comment | Shown under the facts only while the Overview tab is selected and the comment is non-empty |
+| Vessel comment | Not in the header: shown at the top of the Overview tab when non-empty, as on the active record (#328) |
 
 ## Overview tab
 
-Order of content: dock timeline region, then Summary region. No region named `Overview` (the former
+Order of content: vessel comment (when any), dock timeline region, then Summary region. No region named `Overview` (the former
 identity card) and no `Preparation` region.
 
 | Element | Contract |

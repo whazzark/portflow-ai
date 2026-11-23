@@ -2,6 +2,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { FieldGroup } from '@/components/ui/field'
+import { SheetFooter } from '@/components/ui/sheet'
 import { identitySchemaFields } from '@/features/users/helpers/identity-schema'
 import { formatFullName } from '@/features/users/helpers/name'
 import {
@@ -96,45 +97,51 @@ export function EditUserForm({ user, onUpdate, onSuccess }: EditUserFormProps) {
 
   return (
     <form.AppForm>
-      <form.Form className="flex flex-col gap-6">
-        <FieldGroup>
-          <form.AppField name="firstName">
-            {(field) => <field.TextField autoComplete="off" label="First name" required={true} />}
-          </form.AppField>
-          <form.AppField name="lastName">
-            {(field) => <field.TextField autoComplete="off" label="Last name" required={true} />}
-          </form.AppField>
-          <form.AppField name="email">
-            {(field) => (
-              <field.TextField
-                autoComplete="off"
-                inputMode="email"
-                label="Email"
-                required={true}
-                type="email"
-              />
-            )}
-          </form.AppField>
-          {roleIsFrozen ? (
-            <div className="grid gap-1 text-sm">
-              <span className="font-medium">Role</span>
-              <span>{USER_ROLE_LABELS[user.role]}</span>
-              <span className="text-muted-foreground">
-                A deactivated user's role cannot be changed. Reactivate the user first.
-              </span>
-            </div>
-          ) : (
-            <form.AppField name="role">
+      {/* The body scrolls and the footer stays put, so the submission is in reach however long the
+          form grows. The footer stays inside the <form> so the button still submits it. */}
+      <form.Form className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6">
+          <FieldGroup>
+            <form.AppField name="firstName">
+              {(field) => <field.TextField autoComplete="off" label="First name" required={true} />}
+            </form.AppField>
+            <form.AppField name="lastName">
+              {(field) => <field.TextField autoComplete="off" label="Last name" required={true} />}
+            </form.AppField>
+            <form.AppField name="email">
               {(field) => (
-                <field.SelectField label="Role" options={USER_ROLE_OPTIONS} required={true} />
+                <field.TextField
+                  autoComplete="off"
+                  inputMode="email"
+                  label="Email"
+                  required={true}
+                  type="email"
+                />
               )}
             </form.AppField>
-          )}
-        </FieldGroup>
-        <form.FormError />
-        <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS.update}>
-          Save changes
-        </form.SubmitButton>
+            {roleIsFrozen ? (
+              <div className="grid gap-1 text-sm">
+                <span className="font-medium">Role</span>
+                <span>{USER_ROLE_LABELS[user.role]}</span>
+                <span className="text-muted-foreground">
+                  A deactivated user's role cannot be changed. Reactivate the user first.
+                </span>
+              </div>
+            ) : (
+              <form.AppField name="role">
+                {(field) => (
+                  <field.SelectField label="Role" options={USER_ROLE_OPTIONS} required={true} />
+                )}
+              </form.AppField>
+            )}
+          </FieldGroup>
+          <form.FormError />
+        </div>
+        <SheetFooter className="shrink-0 border-t px-6 py-4 sm:flex-row sm:justify-end">
+          <form.SubmitButton pendingLabel={WRITE_PENDING_LABELS.update} size="lg">
+            Save changes
+          </form.SubmitButton>
+        </SheetFooter>
       </form.Form>
     </form.AppForm>
   )

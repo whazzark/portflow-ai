@@ -8,6 +8,7 @@ import type {
   DischargeDetailDto,
   DischargeDetailTab,
   DischargeDto,
+  DockOccupancyDto,
   StartCheckDto,
   TruckCandidateDto,
 } from '@/features/discharges/types'
@@ -86,6 +87,11 @@ export function mockDischargeDetail({
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
     http.get(`${API_BASE_URL}/api/v1/discharges/:id`, async ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
+
       const id = String(params.id)
       onRequest?.(id)
 
@@ -109,6 +115,35 @@ export function mockDischargeDetail({
       }
 
       return HttpResponse.json({ data: detail })
+    }),
+  )
+}
+
+type MockDockOccupancyOptions = {
+  occupancy?: DockOccupancyDto[]
+  /** Fail this many reads before answering. */
+  failTimes?: number
+  onRequest?: (dockId: string | null) => void
+}
+
+/** Which discharges hold a dock, as its occupancy read answers. */
+export function mockDockOccupancy({
+  occupancy = [],
+  failTimes = 0,
+  onRequest,
+}: MockDockOccupancyOptions = {}) {
+  let remainingFailures = failTimes
+
+  server.use(
+    http.get(`${API_BASE_URL}/api/v1/discharges/dock-occupancy`, ({ request }) => {
+      onRequest?.(new URL(request.url).searchParams.get('dockId'))
+      if (remainingFailures > 0) {
+        remainingFailures -= 1
+
+        return new HttpResponse(null, { status: 500 })
+      }
+
+      return HttpResponse.json({ data: occupancy })
     }),
   )
 }
@@ -307,6 +342,10 @@ export function mockCreateDischarge({
       return HttpResponse.json(answer.body as object, { status: answer.status })
     }),
     http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
       const detail = created.get(String(params.id))
 
       if (!detail) {
@@ -546,7 +585,11 @@ export function mockDischargeCorrections({
     http.get(`${API_BASE_URL}/api/v1/customers/available`, () =>
       HttpResponse.json({ data: AVAILABLE_CUSTOMERS }),
     ),
-    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
       state.detailRequests += 1
 
       return HttpResponse.json({ data: state.current })
@@ -774,7 +817,11 @@ export function mockTruckPlanning({
 
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
-    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
       state.detailRequests += 1
 
       return HttpResponse.json({ data: state.current })
@@ -1140,7 +1187,11 @@ export function mockDischargePlanning({
 
       return HttpResponse.json({ data: { warehouseDoors: doors, weighingAreas } })
     }),
-    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
       state.detailRequests += 1
 
       return HttpResponse.json({ data: state.current })
@@ -1235,7 +1286,11 @@ export function mockDischargeStart({
 
   server.use(
     http.get(`${API_BASE_URL}/api/v1/auth/me`, () => HttpResponse.json({ data: user })),
-    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, () => {
+    http.get(`${API_BASE_URL}/api/v1/discharges/:id`, ({ params }) => {
+      // Not a discharge: the occupancy read shares the prefix, and its own handler answers it.
+      if (params.id === 'dock-occupancy') {
+        return
+      }
       state.detailRequests += 1
 
       return HttpResponse.json({ data: state.current })
