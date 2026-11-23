@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { PlusIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -15,11 +14,14 @@ import {
   useClearSelectionShortcut,
   useSelectAllShortcut,
 } from '@/components/lifecycle/use-bulk-selection-shortcuts'
+import type { ResourceMapAnchor } from '@/components/resource-map/resource-map-anchor'
+import { ResourceMapCard } from '@/components/resource-map/resource-map-card'
+import { ResourceMapModeBanner } from '@/components/resource-map/resource-map-mode-banner'
+import { ResourceMapNoMatch } from '@/components/resource-map/resource-map-no-match'
 import type { LatLng } from '@/components/resource-map/resource-map-placement'
 import { countResources } from '@/components/resource-map/resource-map-search'
 import { ResourceMapWorkspace } from '@/components/resource-map/resource-map-workspace'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useAuthenticatedUser } from '@/features/auth/context/use-authenticated-user'
 import { isAdministrator } from '@/features/auth/policies/permissions'
 import { useWarehouseDoorMutations } from '@/features/warehouse-doors/mutations/use-warehouse-door-mutations'
@@ -49,8 +51,9 @@ import { warehouseQueries } from '@/features/warehouses/queries/warehouse-querie
 import type { WarehouseStatus } from '@/features/warehouses/types'
 import { CreateWarehousePanel } from '@/features/warehouses/ui/create-warehouse-panel'
 import { EditWarehousePanel } from '@/features/warehouses/ui/edit-warehouse-panel'
-import { WarehouseDetails } from '@/features/warehouses/ui/warehouse-details'
-import { WarehouseMapControls } from '@/features/warehouses/ui/warehouse-map-controls'
+import { WarehouseCard } from '@/features/warehouses/ui/warehouse-card'
+import { WarehouseSearch } from '@/features/warehouses/ui/warehouse-search'
+import { WarehouseToolbar } from '@/features/warehouses/ui/warehouse-toolbar'
 import { WarehousesError } from '@/features/warehouses/ui/warehouses-error'
 import { useWarehouseEditSession } from '@/features/warehouses/use-warehouse-edit-session'
 import {
@@ -62,7 +65,11 @@ import {
   WAREHOUSE_SINGULAR,
   WarehouseLifecycleActions,
 } from '@/features/warehouses/warehouse-lifecycle'
-import { presentWarehouses, warehouseMatchesSearch } from '@/features/warehouses/warehouse-search'
+import {
+  presentWarehouses,
+  searchWarehousesAndDoors,
+  warehouseMatchesSearch,
+} from '@/features/warehouses/warehouse-search'
 import { resourceSuccessMessage } from '@/helpers/resource-copy'
 import { useIsMobile } from '@/hooks/use-mobile'
 
@@ -132,7 +139,21 @@ export function WarehousesPage() {
   const doorStatusBeforeCreating = useRef<WarehouseDoorStatusFilter | undefined>(undefined)
   // Which of this page's two collections a Ctrl/Cmd+A means is decided by whether focus is inside
   // the panel — see `selectAllInFocus` below.
-  const panelRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
+  const [anchor, setAnchor] = useState<ResourceMapAnchor | null>(null)
+  // Escape leaves whichever map mode is active, wherever focus is — on the map, the banner, or the
+  // card. Read through a ref because the cancel handlers are only defined further down.
+  const cancelModeRef = useRef<(() => void) | undefined>(undefined)
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.defaultPrevented) {
+        cancelModeRef.current?.()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   // Leaving the mode — cancelling, navigating away, or landing on the route without the param —
   // discards every pending boundary point rather than carrying it into a later session.
@@ -213,6 +234,10 @@ export function WarehousesPage() {
     insertPoint,
     removePoint,
     restoreOrigin,
+    typePoint,
+    undo: undoEdit,
+    canUndo,
+    movedCount,
     clear: clearEditSession,
   } = useWarehouseEditSession({ requested: isEditRequested, selected })
 
@@ -761,35 +786,302 @@ export function WarehousesPage() {
     })
   }
 
-  const createActions =
-    canManageWarehouses && !isCreating
-      ? [
-          {
-            key: 'warehouse',
-            label: 'Create warehouse',
-            icon: <PlusIcon aria-hidden="true" className="size-4" />,
-            onSelect: startCreating,
-          },
-        ]
-      : []
+  const closeCard = () => {
+    void navigate({
+      replace: true,
+      search: (previous) => ({
+        ...previous,
+        warehouseId: undefined,
+        doorStatus: undefined,
+        doorId: undefined,
+        edit: undefined,
+      }),
+    })
+    // The card took focus when it opened; hand it back to where the next search starts.
+    document.getElementById('warehouse-search')?.focus()
+  }
+  const openWarehouse = (id: string) =>
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        selecting: undefined,
+        warehouseId: id,
+        doorId: undefined,
+        doorStatus: undefined,
+        create: withoutDoorCreation(previous.create),
+        edit: undefined,
+      }),
+    })
+  const openDoor = (door: { id: string; status: WarehouseStatus; warehouseId: string }) =>
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        selecting: undefined,
+        warehouseId: door.warehouseId,
+        doorId: door.id,
+        doorStatus: door.status === 'ARCHIVED' ? ('archived' as const) : ('available' as const),
+        create: withoutDoorCreation(previous.create),
+        edit: undefined,
+      }),
+    })
+  // The archived warehouse leaves the Available view; View brings Archived in beside it and opens it.
+  const viewArchived = (id: string) =>
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        status: previous.status === 'archived' ? ('archived' as const) : ('all' as const),
+        warehouseId: id,
+        doorId: undefined,
+        doorStatus: undefined,
+      }),
+    })
+  // Unlike a row click, which toggles, Show on map always ends with the door highlighted.
+  const showDoorOnMap = (nextDoorId: string) =>
+    void navigate({ search: (previous) => ({ ...previous, doorId: nextDoorId }) })
+
+  cancelModeRef.current = isCreating
+    ? cancelCreating
+    : isCreatingDoor
+      ? cancelCreatingDoor
+      : isEditingDoor
+        ? cancelUpdatingDoor
+        : isEditing
+          ? cancelUpdating
+          : undefined
+
+  const modeBanner = isCreating ? (
+    <ResourceMapModeBanner
+      actionAccessibleLabel="Cancel drawing"
+      actionLabel="Cancel"
+      onAction={cancelCreating}
+    >
+      Drawing a new warehouse · click the first point to close the outline
+    </ResourceMapModeBanner>
+  ) : isCreatingDoor && selected ? (
+    <ResourceMapModeBanner
+      actionAccessibleLabel="Cancel placing the door"
+      actionLabel="Cancel"
+      onAction={cancelCreatingDoor}
+    >
+      Placing a new door · click inside {selected.name}
+    </ResourceMapModeBanner>
+  ) : isEditingDoor && selected && admittedDoor ? (
+    <ResourceMapModeBanner
+      actionAccessibleLabel="Cancel moving the door"
+      actionLabel="Cancel"
+      onAction={cancelUpdatingDoor}
+    >
+      Drag the pin to move {admittedDoor.name} · it must stay inside {selected.name}
+    </ResourceMapModeBanner>
+  ) : isEditing && selected ? (
+    <ResourceMapModeBanner
+      actionAccessibleLabel="Cancel editing the outline"
+      actionLabel="Cancel"
+      onAction={cancelUpdating}
+    >
+      Drag a point to reshape {selected.name} · click a midpoint to add one
+    </ResourceMapModeBanner>
+  ) : undefined
+
+  const anchorPoints = isCreating
+    ? pendingPoints
+    : isCreatingDoor
+      ? pendingDoorPoint
+        ? [pendingDoorPoint]
+        : selected?.footprint.points
+      : isEditingDoor && doorDraft
+        ? [doorDraft]
+        : isEditing
+          ? draftPoints
+          : selected?.footprint.points
+
+  const isSearchEmpty = !modeBanner && searchWarehousesAndDoors(warehouses, status, search).isEmpty
+
+  const card = isCreating ? (
+    <ResourceMapCard anchor={anchor} onClose={cancelCreating} ref={panelRef} title="New warehouse">
+      <CreateWarehousePanel
+        onAddPoint={(point) => setPendingPoints((current) => [...current, point])}
+        onCancel={cancelCreating}
+        onCreate={createWarehouse}
+        onMovePoint={(index, point) =>
+          setPendingPoints((current) =>
+            current.map((existing, position) => (position === index ? point : existing)),
+          )
+        }
+        isOutlineComplete={isOutlineComplete}
+        onRemoveLastPoint={() => {
+          setPendingPoints((current) => current.slice(0, -1))
+          setIsOutlineComplete(false)
+        }}
+        onSuccess={handleCreated}
+        points={pendingPoints}
+      />
+    </ResourceMapCard>
+  ) : isCreatingDoor && selected ? (
+    <ResourceMapCard anchor={anchor} onClose={cancelCreatingDoor} ref={panelRef} title="New door">
+      <CreateWarehouseDoorPanel
+        onCancel={cancelCreatingDoor}
+        onCreate={createWarehouseDoor}
+        onPendingChange={placePendingDoor}
+        onSuccess={handleDoorCreated}
+        pending={pendingDoorPoint}
+        warehouse={selected}
+      />
+    </ResourceMapCard>
+  ) : isEditingDoor && selected && admittedDoor && doorEditSession && doorDraft ? (
+    <ResourceMapCard anchor={anchor} onClose={cancelUpdatingDoor} ref={panelRef} title="Edit door">
+      <EditWarehouseDoorPanel
+        draft={doorDraft}
+        onCancel={cancelUpdatingDoor}
+        onDraftChange={setDoorDraft}
+        onNotFound={handleDoorUpdateNotFound}
+        onRestorePosition={restoreDoorOrigin}
+        onSuccess={handleDoorUpdated}
+        onUpdate={updateWarehouseDoor}
+        origin={doorEditSession.origin}
+        originName={doorEditSession.originName}
+        warehouse={selected}
+      />
+    </ResourceMapCard>
+  ) : isEditing && selected && editSession ? (
+    <ResourceMapCard anchor={anchor} onClose={cancelUpdating} ref={panelRef} title="Edit warehouse">
+      <EditWarehousePanel
+        onCancel={cancelUpdating}
+        onInsertPoint={insertPoint}
+        onMovePoint={typePoint}
+        onNotFound={handleUpdateNotFound}
+        onRemovePoint={removePoint}
+        onRestoreOutline={restoreOrigin}
+        onUndo={undoEdit}
+        canUndo={canUndo}
+        movedCount={movedCount}
+        onSuccess={handleUpdated}
+        onUpdate={updateWarehouse}
+        originName={editSession.originName}
+        originPoints={editSession.originPoints}
+        points={draftPoints}
+        warehouse={selected}
+      />
+    </ResourceMapCard>
+  ) : selected ? (
+    <WarehouseCard
+      anchor={anchor}
+      cardRef={panelRef}
+      doors={
+        <WarehouseDoorsPanel
+          warehouse={selected}
+          status={effectiveDoorStatus}
+          selectedDoorId={admittedDoor?.id}
+          onStatusChange={(next) => {
+            // No selection to clear here: the Archived view is not one a selection can live in,
+            // so the context effect above drops it — and keeps it dropped on the way back.
+            void navigate({
+              search: (previous) => ({ ...previous, doorStatus: next, doorId: undefined }),
+            })
+          }}
+          onDoorSelect={selectDoor}
+          onCreateDoor={
+            canManageWarehouses && selected.status === 'AVAILABLE' ? startCreatingDoor : undefined
+          }
+          // Each row is gated again by its own and its warehouse's lifecycle state, and renders
+          // only Show on map and Copy coordinates for a non-administrator. Server-side
+          // authorization stays authoritative — this only mirrors it.
+          canAdministerDoors={canManageWarehouses}
+          onEditDoor={canManageWarehouses ? startUpdatingDoor : undefined}
+          onShowDoorOnMap={showDoorOnMap}
+          selectMode={canSelectDoors}
+          selectionAction={
+            checkedDoorIds.size > 0 ? (
+              <Button onClick={() => setIsArchivingDoors(true)} size="sm" variant="destructive">
+                Archive selected
+              </Button>
+            ) : undefined
+          }
+          checkedDoorIds={checkedDoorIds}
+          onToggleChecked={toggleDoorChecked}
+          onSelectAll={selectAllDoorsIn}
+          onClearSelection={clearDoorSelection}
+        />
+      }
+      // Editing is absent rather than disabled for an archived warehouse, which is read-only until
+      // it is reactivated (#211); the lifecycle action itself is what offers that reactivation.
+      footer={
+        canManageWarehouses ? (
+          <>
+            {selected.status === 'AVAILABLE' && (
+              <Button onClick={startUpdating} variant="outline">
+                Edit
+              </Button>
+            )}
+            <WarehouseLifecycleActions
+              className="ml-auto"
+              onViewArchived={viewArchived}
+              warehouse={selected}
+            />
+          </>
+        ) : undefined
+      }
+      onClose={closeCard}
+      warehouse={selected}
+    />
+  ) : undefined
 
   return (
     <>
       <ResourceMapWorkspace
-        controls={
-          <WarehouseMapControls
+        banner={modeBanner}
+        card={card}
+        toolbar={
+          <WarehouseToolbar
             counts={counts}
-            hasMatches={visible.some((warehouse) => warehouse.isSearchMatch)}
-            onSearchChange={(value) =>
-              void navigate({
-                replace: true,
-                search: (previous) => ({ ...previous, search: value }),
-              })
-            }
+            onCreate={canManageWarehouses ? startCreating : undefined}
             onStatusChange={updateStatus}
-            search={search}
+            search={
+              <WarehouseSearch
+                onOpenDoor={openDoor}
+                onOpenWarehouse={openWarehouse}
+                onSearchChange={(value) =>
+                  void navigate({
+                    replace: true,
+                    search: (previous) => ({ ...previous, search: value }),
+                  })
+                }
+                search={search}
+                status={status}
+                warehouses={warehouses}
+              />
+            }
             status={status}
           />
+        }
+        overlay={
+          isSearchEmpty ? (
+            <ResourceMapNoMatch
+              actions={
+                <>
+                  <Button
+                    onClick={() =>
+                      void navigate({
+                        replace: true,
+                        search: (previous) => ({ ...previous, search: '' }),
+                      })
+                    }
+                    size="sm"
+                    variant="outline"
+                  >
+                    Clear search
+                  </Button>
+                  {status === 'available' && (
+                    <Button onClick={() => updateStatus('all')} size="sm">
+                      Include archived
+                    </Button>
+                  )}
+                </>
+              }
+              description="Search looks at warehouse and door names in the selected status. Turn on Archived to include archived warehouses, or clear the search."
+              title={`No warehouse or door matches “${search}”`}
+            />
+          ) : undefined
         }
         emptyMessage={
           visible.length === 0
@@ -798,10 +1090,11 @@ export function WarehousesPage() {
               : `No ${status} warehouses match this filter.`
             : undefined
         }
-        legend={<WarehouseLegend showDoors={Boolean(selected)} />}
+        legend={<WarehouseLegend />}
         map={(onMapError) => (
           <WarehouseMap
-            createActions={createActions}
+            anchorPoints={anchorPoints}
+            onAnchorChange={setAnchor}
             detailsPanelSide={isMobile ? 'bottom' : 'right'}
             onError={onMapError}
             doorPlacement={
@@ -866,13 +1159,8 @@ export function WarehousesPage() {
             onShiftSelect={canManageWarehouses ? handleShiftSelect : undefined}
           />
         )}
-        // Without a configured basemap the map — and its control cluster with it — never renders,
-        // so creation would otherwise be unreachable in that environment.
-        mapUnavailableActions={createActions.map((action) => (
-          <Button key={action.key} onClick={action.onSelect} type="button" variant="outline">
-            {action.label}
-          </Button>
-        ))}
+        // Without a configured basemap the map never renders, but the toolbar does, so creation
+        // stays reachable from it.
         resourceLabel="Warehouses"
       />
       {isSelecting && (
@@ -962,170 +1250,6 @@ export function WarehousesPage() {
           )
         }
       />
-      <Sheet
-        open={Boolean(selected) || isCreating}
-        onOpenChange={(open) => {
-          if (open) {
-            return
-          }
-          if (isCreating) {
-            cancelCreating()
-            return
-          }
-          if (isCreatingDoor) {
-            cancelCreatingDoor()
-            return
-          }
-          if (isEditingDoor) {
-            cancelUpdatingDoor()
-            return
-          }
-          if (isEditing) {
-            cancelUpdating()
-            return
-          }
-          void navigate({
-            replace: true,
-            search: (previous) => ({
-              ...previous,
-              warehouseId: undefined,
-              doorStatus: undefined,
-              doorId: undefined,
-              edit: undefined,
-            }),
-          })
-        }}
-        modal={false}
-        disablePointerDismissal
-      >
-        <SheetContent
-          className="gap-0 overflow-y-auto data-[side=bottom]:h-[min(75dvh,38rem)]"
-          ref={panelRef}
-          showOverlay={false}
-          side={isMobile ? 'bottom' : 'right'}
-          size="lg"
-        >
-          {isCreating ? (
-            <CreateWarehousePanel
-              onAddPoint={(point) => setPendingPoints((current) => [...current, point])}
-              onCancel={cancelCreating}
-              onCreate={createWarehouse}
-              onMovePoint={(index, point) =>
-                setPendingPoints((current) =>
-                  current.map((existing, position) => (position === index ? point : existing)),
-                )
-              }
-              isOutlineComplete={isOutlineComplete}
-              onRemoveLastPoint={() => {
-                setPendingPoints((current) => current.slice(0, -1))
-                setIsOutlineComplete(false)
-              }}
-              onSuccess={handleCreated}
-              points={pendingPoints}
-            />
-          ) : isCreatingDoor && selected ? (
-            <CreateWarehouseDoorPanel
-              onCancel={cancelCreatingDoor}
-              onCreate={createWarehouseDoor}
-              onPendingChange={placePendingDoor}
-              onSuccess={handleDoorCreated}
-              pending={pendingDoorPoint}
-              warehouse={selected}
-            />
-          ) : isEditingDoor && selected && admittedDoor && doorEditSession && doorDraft ? (
-            <EditWarehouseDoorPanel
-              door={admittedDoor}
-              draft={doorDraft}
-              onCancel={cancelUpdatingDoor}
-              onDraftChange={setDoorDraft}
-              onNotFound={handleDoorUpdateNotFound}
-              onRestorePosition={restoreDoorOrigin}
-              onSuccess={handleDoorUpdated}
-              onUpdate={updateWarehouseDoor}
-              origin={doorEditSession.origin}
-              originName={doorEditSession.originName}
-              warehouse={selected}
-            />
-          ) : isEditing && selected && editSession ? (
-            <EditWarehousePanel
-              onCancel={cancelUpdating}
-              onInsertPoint={insertPoint}
-              onMovePoint={movePoint}
-              onNotFound={handleUpdateNotFound}
-              onRemovePoint={removePoint}
-              onRestoreOutline={restoreOrigin}
-              onSuccess={handleUpdated}
-              onUpdate={updateWarehouse}
-              originName={editSession.originName}
-              originPoints={editSession.originPoints}
-              points={draftPoints}
-              warehouse={selected}
-            />
-          ) : (
-            selected && (
-              <div className="flex min-h-0 flex-1 flex-col">
-                <WarehouseDetails warehouse={selected} />
-                <WarehouseDoorsPanel
-                  warehouse={selected}
-                  status={effectiveDoorStatus}
-                  selectedDoorId={admittedDoor?.id}
-                  onStatusChange={(next) => {
-                    // No selection to clear here: the Archived view is not one a selection can live
-                    // in, so the context effect above drops it — and keeps it dropped when the
-                    // administrator returns to Available.
-                    void navigate({
-                      search: (previous) => ({
-                        ...previous,
-                        doorStatus: next,
-                        doorId: undefined,
-                      }),
-                    })
-                  }}
-                  onDoorSelect={selectDoor}
-                  onCreateDoor={
-                    canManageWarehouses && selected.status === 'AVAILABLE'
-                      ? startCreatingDoor
-                      : undefined
-                  }
-                  // Present for any administrator; each row is gated again by its own and its
-                  // warehouse's lifecycle state, and renders no menu at all when it has nothing to
-                  // offer. Server-side authorization stays authoritative — this only mirrors it.
-                  canAdministerDoors={canManageWarehouses}
-                  onEditDoor={canManageWarehouses ? startUpdatingDoor : undefined}
-                  selectMode={canSelectDoors}
-                  selectionAction={
-                    checkedDoorIds.size > 0 ? (
-                      <Button
-                        onClick={() => setIsArchivingDoors(true)}
-                        size="sm"
-                        variant="destructive"
-                      >
-                        Archive selected
-                      </Button>
-                    ) : undefined
-                  }
-                  checkedDoorIds={checkedDoorIds}
-                  onToggleChecked={toggleDoorChecked}
-                  onSelectAll={selectAllDoorsIn}
-                  onClearSelection={clearDoorSelection}
-                />
-                {/* One footer for every action on the warehouse. Editing is absent rather than
-                    disabled for an archived warehouse, which is read-only until it is reactivated
-                    (#211) — as it is for archived trucks — while the lifecycle action itself is
-                    what offers that reactivation. */}
-                {canManageWarehouses && (
-                  <footer className="flex shrink-0 items-center gap-2 border-t bg-popover px-5 py-4 md:px-6">
-                    {selected.status === 'AVAILABLE' && (
-                      <Button onClick={startUpdating}>Edit</Button>
-                    )}
-                    <WarehouseLifecycleActions className="ml-auto" warehouse={selected} />
-                  </footer>
-                )}
-              </div>
-            )
-          )}
-        </SheetContent>
-      </Sheet>
     </>
   )
 }

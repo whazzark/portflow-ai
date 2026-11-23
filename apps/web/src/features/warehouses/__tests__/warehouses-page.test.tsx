@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { WarehousesPage } from '@/features/warehouses/ui/warehouses-page'
 import { WAREHOUSES } from './support/fixtures'
@@ -47,20 +47,19 @@ vi.mock('@/features/auth/context/use-authenticated-user', () => ({
   useAuthenticatedUser: () => ({ id: 1, role: 'OPERATIONS_ADMIN', accessStatus: 'ACTIVE' }),
 }))
 
-describe('warehouse details sheet', () => {
+describe('warehouse details card', () => {
   beforeEach(() => {
     navigateMock.mockReset()
     isMobileMock.mockReset()
   })
 
-  test('uses a bottom sheet on mobile and a right sheet on desktop', () => {
+  test('opens the card and tells the map which side it leaves room on', () => {
     isMobileMock.mockReturnValue(true)
     const { rerender } = render(<WarehousesPage />)
 
-    expect(document.querySelector('[data-slot="sheet-content"]')).toHaveAttribute(
-      'data-side',
-      'bottom',
-    )
+    // The card's own placement — docked at the bottom on a narrow map — is
+    // `computeResourceMapCardPlacement`'s, covered by its unit tests.
+    expect(screen.getByRole('complementary', { name: WAREHOUSES[0].name })).toBeInTheDocument()
     expect(document.querySelector('[data-testid="warehouse-map"]')).toHaveAttribute(
       'data-panel-side',
       'bottom',
@@ -69,10 +68,6 @@ describe('warehouse details sheet', () => {
     isMobileMock.mockReturnValue(false)
     rerender(<WarehousesPage />)
 
-    expect(document.querySelector('[data-slot="sheet-content"]')).toHaveAttribute(
-      'data-side',
-      'right',
-    )
     expect(document.querySelector('[data-testid="warehouse-map"]')).toHaveAttribute(
       'data-panel-side',
       'right',

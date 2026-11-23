@@ -47,7 +47,7 @@ test('leaves the mode inert without warehouse management permission', async () =
   renderWarehouses(`/warehouses?status=all&warehouseId=${AVAILABLE.id}&create=door`)
 
   await screen.findByRole('heading', { name: 'Doors' })
-  expect(screen.queryByRole('heading', { name: 'Create door' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New door' })).not.toBeInTheDocument()
   expect(
     screen.queryByRole('button', { name: 'Simulate map click to place the door' }),
   ).not.toBeInTheDocument()
@@ -58,7 +58,7 @@ test('leaves the mode inert on an archived warehouse', async () => {
   renderWarehouses(`/warehouses?status=all&warehouseId=${ARCHIVED.id}&create=door`)
 
   await screen.findByRole('heading', { name: 'Doors' })
-  expect(screen.queryByRole('heading', { name: 'Create door' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New door' })).not.toBeInTheDocument()
   expect(
     screen.queryByRole('button', { name: 'Simulate map click to place the door' }),
   ).not.toBeInTheDocument()
@@ -69,14 +69,14 @@ test('leaves the mode inert when no warehouse is named or the identifier is unkn
   const { unmount } = renderWarehouses('/warehouses?status=all&create=door')
 
   await screen.findByRole('button', { name: 'View warehouse North Shed (Available)' })
-  expect(screen.queryByRole('heading', { name: 'Create door' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New door' })).not.toBeInTheDocument()
   unmount()
 
   mockWarehouses(WAREHOUSE_ADMIN)
   renderWarehouses('/warehouses?status=all&warehouseId=unknown-id&create=door')
 
   await screen.findByRole('button', { name: 'View warehouse North Shed (Available)' })
-  expect(screen.queryByRole('heading', { name: 'Create door' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'New door' })).not.toBeInTheDocument()
 })
 
 test('keeps the map selectable while the mode is inert', async () => {
