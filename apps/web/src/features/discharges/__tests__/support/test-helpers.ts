@@ -221,6 +221,8 @@ export function mockPreparationOptions({
       return HttpResponse.json({ data: responsibles })
     }),
   )
+  // The Planned shifts step reads the dock's occupancy; a free dock unless a test says otherwise.
+  mockDockOccupancy()
 }
 
 type CreateDischargeBody = {
@@ -346,6 +348,7 @@ export function mockCreateDischarge({
       if (params.id === 'dock-occupancy') {
         return
       }
+
       const detail = created.get(String(params.id))
 
       if (!detail) {
