@@ -76,17 +76,22 @@ export function UserAccessActions({
       <div className="flex flex-wrap items-center gap-2">
         {/* The button carries the action alone: the record it sits in already names the user. */}
         {mayResetPassword && (
-          <Button onClick={() => setIsResetOpen(true)} type="button" variant="outline">
+          <Button onClick={() => setIsResetOpen(true)} size="lg" type="button" variant="outline">
             Reset password
           </Button>
         )}
         {mayRenewActivationLink && (
-          <Button onClick={() => setIsRenewalOpen(true)} type="button" variant="outline">
+          <Button onClick={() => setIsRenewalOpen(true)} size="lg" type="button" variant="outline">
             Renew activation link
           </Button>
         )}
         {mayRestoreInvitation && (
-          <Button onClick={() => setIsRestorationOpen(true)} type="button" variant="outline">
+          <Button
+            onClick={() => setIsRestorationOpen(true)}
+            size="lg"
+            type="button"
+            variant="outline"
+          >
             Restore
           </Button>
         )}
@@ -94,6 +99,7 @@ export function UserAccessActions({
           <Button
             key={action}
             onClick={() => setOpenAction(action)}
+            size="lg"
             type="button"
             variant={USER_ACCESS_ACTION_VARIANTS[action]}
           >

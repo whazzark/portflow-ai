@@ -166,7 +166,7 @@ test('empties the selection when the archived door view is opened', async () => 
   await user.click(await screen.findByRole('checkbox', { name: `Select door ${DOOR.name}` }))
   expect(await screen.findByRole('button', { name: 'Archive selected' })).toBeInTheDocument()
 
-  await user.click(screen.getByRole('tab', { name: /Archived/ }))
+  await user.click(screen.getByRole('button', { name: /^Archived, \d+ doors/ }))
 
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument(),
@@ -179,11 +179,11 @@ test('does not resurrect the selection when the Available view is reopened', asy
   await user.click(await screen.findByRole('checkbox', { name: `Select door ${DOOR.name}` }))
   await screen.findByRole('button', { name: 'Archive selected' })
 
-  await user.click(screen.getByRole('tab', { name: /Archived/ }))
+  await user.click(screen.getByRole('button', { name: /^Archived, \d+ doors/ }))
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Archive selected' })).not.toBeInTheDocument(),
   )
-  await user.click(screen.getByRole('tab', { name: /Available/ }))
+  await user.click(screen.getByRole('button', { name: /^Available, \d+ doors/ }))
 
   expect(
     await screen.findByRole('checkbox', { name: `Select door ${DOOR.name}` }),

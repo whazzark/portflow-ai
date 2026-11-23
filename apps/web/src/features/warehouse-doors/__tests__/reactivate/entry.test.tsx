@@ -45,39 +45,33 @@ const menuItems = async (doorName: string) => {
 test('offers Reactivate on a door archived on its own under an available warehouse', async () => {
   panel(AVAILABLE_WAREHOUSE, 'archived')
 
-  expect(await menuItems(REACTIVATABLE.name)).toEqual(['Reactivate'])
+  expect(await menuItems(REACTIVATABLE.name)).toEqual(['Copy coordinates', 'Reactivate'])
 })
 
 test('offers Edit and Archive, and not Reactivate, on an available door', async () => {
   panel(AVAILABLE_WAREHOUSE, 'available')
 
-  expect(await menuItems(OPEN_DOOR.name)).toEqual(['Edit', 'Archive'])
+  expect(await menuItems(OPEN_DOOR.name)).toEqual(['Edit', 'Copy coordinates', 'Archive'])
 })
 
-test('renders no menu at all on a door archived with its warehouse', () => {
+test('offers no lifecycle action on a door archived with its warehouse', async () => {
   panel(ARCHIVED_WAREHOUSE, 'archived')
 
   // Its remedy is the warehouse's own reactivation, which restores it in the same action; the row
-  // already says so. A menu entry that only explains would be a control that controls nothing.
-  expect(
-    screen.queryByRole('button', { name: `Actions for ${CASCADED.name}` }),
-  ).not.toBeInTheDocument()
+  // already says so. Only the entries that change nothing remain.
+  expect(await menuItems(CASCADED.name)).toEqual(['Copy coordinates'])
 })
 
-test('renders no menu on any door of an archived warehouse', () => {
+test('offers no lifecycle action on any door of an archived warehouse', async () => {
   panel(TWO_DOOR_ARCHIVED_WAREHOUSE, 'archived')
 
-  expect(
-    screen.queryByRole('button', { name: `Actions for ${SIBLING_UNDER_ARCHIVED.name}` }),
-  ).not.toBeInTheDocument()
+  expect(await menuItems(SIBLING_UNDER_ARCHIVED.name)).toEqual(['Copy coordinates'])
 })
 
-test('renders no menu on any row for a viewer who may not administer doors', () => {
+test('offers only Copy coordinates to a viewer who may not administer doors', async () => {
   panel(AVAILABLE_WAREHOUSE, 'archived', { canAdministerDoors: false })
 
-  expect(
-    screen.queryByRole('button', { name: `Actions for ${REACTIVATABLE.name}` }),
-  ).not.toBeInTheDocument()
+  expect(await menuItems(REACTIVATABLE.name)).toEqual(['Copy coordinates'])
 })
 
 test('still offers Reactivate when the viewer may administer but not correct doors', async () => {
@@ -85,5 +79,5 @@ test('still offers Reactivate when the viewer may administer but not correct doo
   // withheld the one action the row does allow.
   panel(AVAILABLE_WAREHOUSE, 'archived', { editable: false })
 
-  expect(await menuItems(REACTIVATABLE.name)).toEqual(['Reactivate'])
+  expect(await menuItems(REACTIVATABLE.name)).toEqual(['Copy coordinates', 'Reactivate'])
 })

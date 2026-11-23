@@ -1,7 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import { type ReactNode, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
-import { Brand } from '@/components/brand/brand'
 import { Button, buttonVariants } from '@/components/ui/button'
 import type { SessionUser } from '@/features/auth/context/session-context'
 import { useSession } from '@/features/auth/context/use-session'
@@ -12,6 +11,7 @@ import {
 import { useLogout } from '@/features/auth/mutations/use-logout'
 import { useActivationPreview } from '@/features/auth/queries/use-activation-preview'
 import { ActivationForm } from '@/features/auth/ui/activation-form'
+import { GuestCard } from '@/features/auth/ui/guest-card'
 import { parseApiError } from '@/libraries/tuyau/api-error'
 
 export function ActivationScreen({ token }: { token: string }) {
@@ -25,12 +25,12 @@ export function ActivationScreen({ token }: { token: string }) {
 
   if (isActivatedWithoutSession) {
     return (
-      <ActivationPanel
+      <GuestCard
         title="Activation complete"
         description="Your access is active. Log in with the password you just chose."
       >
         <LogInLink />
-      </ActivationPanel>
+      </GuestCard>
     )
   }
 
@@ -40,10 +40,7 @@ export function ActivationScreen({ token }: { token: string }) {
 
   if (preview.isError) {
     return (
-      <ActivationPanel
-        title="Activate your access"
-        description="We couldn't check this activation link."
-      >
+      <GuestCard title="Activate your access" description="We couldn't check this activation link.">
         <Button
           className="h-10 w-full"
           disabled={preview.isFetching}
@@ -54,11 +51,11 @@ export function ActivationScreen({ token }: { token: string }) {
         >
           Try again
         </Button>
-      </ActivationPanel>
+      </GuestCard>
     )
   }
 
-  // Nothing to act on until the link is known to be usable; the split-screen surface is already up.
+  // Nothing to act on until the link is known to be usable; the guest background is already up.
   if (!preview.isSuccess) {
     return null
   }
@@ -72,17 +69,17 @@ export function ActivationScreen({ token }: { token: string }) {
   // stays until the application replaces it.
   if (session.status === 'authenticated' && !isAccepting) {
     return (
-      <ActivationPanel
+      <GuestCard
         title="Activate your access"
         description={`This link activates the access of ${firstName} ${lastName}.`}
       >
         <SignedInNotice user={session.user} />
-      </ActivationPanel>
+      </GuestCard>
     )
   }
 
   return (
-    <ActivationPanel
+    <GuestCard
       title="Activate your access"
       description={`This link activates the access of ${firstName} ${lastName}. Choose the password you will log in with.`}
     >
@@ -92,7 +89,7 @@ export function ActivationScreen({ token }: { token: string }) {
         onUnusable={() => setIsUnusable(true)}
         token={token}
       />
-    </ActivationPanel>
+    </GuestCard>
   )
 }
 
@@ -105,7 +102,7 @@ function SignedInNotice({ user }: { user: SessionUser }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-sm leading-7">
+      <p className="text-sm leading-6">
         You're logged in as {user.firstName} {user.lastName}. Log out to continue with this
         activation.
       </p>
@@ -138,12 +135,12 @@ function SignedInNotice({ user }: { user: SessionUser }) {
  */
 function UnusableLink() {
   return (
-    <ActivationPanel
+    <GuestCard
       title="This activation link can't be used"
       description="If you've already activated your access, log in with your password. Otherwise, ask an organization admin for a new link."
     >
       <LogInLink />
-    </ActivationPanel>
+    </GuestCard>
   )
 }
 
@@ -152,29 +149,5 @@ function LogInLink() {
     <Link className={buttonVariants({ className: 'h-10 w-full', size: 'lg' })} to="/login">
       Log in
     </Link>
-  )
-}
-
-function ActivationPanel({
-  children,
-  description,
-  title,
-}: {
-  children: ReactNode
-  description: ReactNode
-  title: string
-}) {
-  return (
-    <div className="w-full max-w-sm">
-      <div className="mb-7">
-        <Brand
-          tone="inverse"
-          className="font-mono text-indicator text-xs uppercase tracking-[0.16em]"
-        />
-        <h1 className="mt-7 font-semibold text-3xl leading-tight tracking-tight">{title}</h1>
-        <p className="mt-3 text-muted-foreground text-sm leading-7">{description}</p>
-      </div>
-      {children}
-    </div>
   )
 }

@@ -2,8 +2,8 @@ import { Outlet } from '@tanstack/react-router'
 
 export function GuestLayout() {
   return (
-    <div className="grid min-h-screen bg-background lg:grid-cols-2">
-      <aside className="relative hidden overflow-hidden lg:col-start-2 lg:row-start-1 lg:flex lg:min-h-screen lg:flex-col lg:px-16 lg:py-12 xl:px-20">
+    <div className="relative isolate flex min-h-screen flex-col overflow-hidden bg-background">
+      <div aria-hidden="true" className="absolute inset-0 -z-10">
         <style data-theme-background-visibility>{`
           #guest-background-dark{display:none}
           html.dark #guest-background-dark{display:block}
@@ -13,30 +13,29 @@ export function GuestLayout() {
           id="guest-background-dark"
           src="/guest-background-image.png"
           alt=""
-          className="absolute inset-0 hidden size-full object-cover object-center opacity-90 dark:block dark:opacity-75"
+          className="absolute inset-0 hidden size-full object-cover object-center dark:block"
         />
         <img
           id="guest-background-light"
           src="/guest-background-image-light.png"
           alt=""
-          className="absolute inset-0 size-full object-cover object-center opacity-90 dark:hidden dark:opacity-75"
+          className="absolute inset-0 size-full object-cover object-center dark:hidden"
         />
+        {/* Mutes the chart so the card, not the background, holds the eye. */}
+        <div className="absolute inset-0 bg-background/40 dark:bg-background/62" />
+      </div>
 
-        <div className="relative mt-auto max-w-sm lg:mb-1">
-          <p className="font-mono text-sm uppercase tracking-[0.18em]">Port operations</p>
-          <h2 className="mt-3 max-w-[19rem] text-balance font-semibold text-2xl leading-tight tracking-tight lg:max-w-md lg:text-4xl">
-            Every movement, in one operational view
-          </h2>
-          <p className="mt-4 hidden max-w-sm text-md leading-6 lg:block">
-            Follow vessels, trucks, weighbridges and terminal activity before a handoff becomes a
-            delay.
-          </p>
-        </div>
-      </aside>
-
-      <main className="flex min-h-screen items-center justify-center px-6 py-12 sm:px-10 lg:col-start-1 lg:row-start-1 lg:px-16 xl:px-24">
+      {/* The bottom padding clears the tagline, pinned to the corner on desktop, on a short window. */}
+      <main className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:pb-24">
         <Outlet />
       </main>
+
+      <footer className="flex flex-wrap gap-x-2.5 gap-y-1 px-6 pb-9 text-[0.8125rem] text-foreground/80 lg:absolute lg:bottom-9 lg:left-12 lg:p-0">
+        <span className="font-mono text-indicator uppercase tracking-[0.16em]">
+          Port operations
+        </span>
+        <span>Every movement, in one operational view</span>
+      </footer>
     </div>
   )
 }

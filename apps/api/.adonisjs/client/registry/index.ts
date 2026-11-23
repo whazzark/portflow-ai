@@ -234,6 +234,12 @@ const routes = {
     tokens: [{"old":"/api/v1/discharges","type":0,"val":"api","end":""},{"old":"/api/v1/discharges","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges","type":0,"val":"discharges","end":""}],
     types: placeholder as Registry['discharges.store']['types'],
   },
+  'discharges.dock_occupancy': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/discharges/dock-occupancy',
+    tokens: [{"old":"/api/v1/discharges/dock-occupancy","type":0,"val":"api","end":""},{"old":"/api/v1/discharges/dock-occupancy","type":0,"val":"v1","end":""},{"old":"/api/v1/discharges/dock-occupancy","type":0,"val":"discharges","end":""},{"old":"/api/v1/discharges/dock-occupancy","type":0,"val":"dock-occupancy","end":""}],
+    types: placeholder as Registry['discharges.dock_occupancy']['types'],
+  },
   'discharges.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/discharges/:id',

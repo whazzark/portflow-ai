@@ -110,8 +110,11 @@ export function RenewActivationLinkDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={renewActivationLink.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={renewActivationLink.isPending} size="lg">
+            Cancel
+          </AlertDialogCancel>
           <AlertDialogAction
+            size="lg"
             disabled={renewActivationLink.isPending}
             onClick={(event) => {
               event.preventDefault()

@@ -45,6 +45,7 @@ export function LoginForm() {
           <form.AppField name="email">
             {(field) => (
               <field.TextField
+                className="h-10"
                 autoComplete="email"
                 label="Email address"
                 placeholder="name@company.com"
@@ -57,6 +58,7 @@ export function LoginForm() {
           <form.AppField name="password">
             {(field) => (
               <field.TextField
+                className="h-10"
                 autoComplete="current-password"
                 label="Password"
                 placeholder="**********"

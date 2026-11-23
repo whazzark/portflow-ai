@@ -58,9 +58,9 @@ describe('warehouse door consultation', () => {
     expect(screen.getByText('North Door')).toBeInTheDocument()
     expect(screen.queryByText('Old Door')).not.toBeInTheDocument()
     // Parenthesised, as the customers, trucks, and transport-company tab lists already write it.
-    expect(screen.getByRole('tab', { name: 'Available (1)' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Archived (1)' })).toBeInTheDocument()
-    await user.click(screen.getByRole('tab', { name: /Archived/ }))
+    expect(screen.getByRole('button', { name: 'Available, 1 doors' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Archived, 1 doors' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^Archived, \d+ doors/ }))
     expect(onStatusChange).toHaveBeenCalledWith('archived')
   })
 
@@ -76,7 +76,7 @@ describe('warehouse door consultation', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: /North Door/ }))
+    await user.click(screen.getByRole('button', { name: /^North Door/ }))
     expect(onDoorSelect).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111')
   })
 
@@ -91,7 +91,7 @@ describe('warehouse door consultation', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: /North Door/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^North Door/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
@@ -108,7 +108,7 @@ describe('warehouse door consultation', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: /Retired Door/ })).toHaveTextContent(
+    expect(screen.getByRole('button', { name: /^Retired Door/ })).toHaveTextContent(
       'Archived with this warehouse',
     )
 
@@ -121,7 +121,7 @@ describe('warehouse door consultation', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: /Old Door/ })).toHaveTextContent(
+    expect(screen.getByRole('button', { name: /^Old Door/ })).toHaveTextContent(
       'Archived on its own',
     )
   })
@@ -154,7 +154,7 @@ describe('warehouse door consultation', () => {
       />,
     )
 
-    const door = screen.getByRole('button', { name: /North Door/ })
+    const door = screen.getByRole('button', { name: /^North Door/ })
 
     // The row no longer restates the status the lifecycle tab already names; what matters here is
     // that an available door claims none of the archival it came back from.

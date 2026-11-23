@@ -9,9 +9,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LIFECYCLE_ACTION_LABELS, type LifecycleAction } from './lifecycle-copy'
 
+export type ResourceRowItem = { key: string; label: string; onSelect: () => void }
+
 type ResourceRowActionsProps = {
   /** Whether editing is offered for this record's current status, gated as the detail pane gates it. */
   editable?: boolean
+  /** Entries that change nothing — showing or copying the record — offered to every viewer, so the
+   * menu renders for them even where no lifecycle action or edit is theirs to take. */
+  items?: ResourceRowItem[]
   /** The record's own display name, which names the trigger for screen readers. */
   name: string
   onEdit?: () => void
@@ -50,6 +55,7 @@ type ResourceRowActionsProps = {
 export function ResourceRowActions({
   actions,
   editable = false,
+  items = [],
   name,
   onEdit,
   onView,
@@ -59,7 +65,7 @@ export function ResourceRowActions({
   const canEdit = editable && onEdit !== undefined
 
   // A menu with nothing in it is not rendered at all, rather than as an empty popup.
-  if (onView === undefined && !canEdit && actions.length === 0) {
+  if (onView === undefined && !canEdit && items.length === 0 && actions.length === 0) {
     return null
   }
 
@@ -83,6 +89,11 @@ export function ResourceRowActions({
         <DropdownMenuContent align="end">
           {onView && <DropdownMenuItem onClick={onView}>View</DropdownMenuItem>}
           {canEdit && <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>}
+          {items.map((item) => (
+            <DropdownMenuItem key={item.key} onClick={item.onSelect}>
+              {item.label}
+            </DropdownMenuItem>
+          ))}
           {actions.map((action) => (
             <DropdownMenuItem
               key={action}
